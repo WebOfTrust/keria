@@ -1,0 +1,63 @@
+{
+  "version": "0.1.0",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "start": "tsdx watch",
+    "build": "tsdx build",
+    "test": "tsdx test",
+    "lint": "tsdx lint",
+    "prepare": "tsdx build",
+    "size": "size-limit",
+    "analyze": "size-limit --why"
+  },
+  "peerDependencies": {},
+  "husky": {
+    "hooks": {
+      "pre-commit": "tsdx lint"
+    }
+  },
+  "prettier": {
+    "printWidth": 80,
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "name": "keri-skwa",
+  "author": "Phil Feairheller",
+  "module": "dist/keri-skwa.esm.js",
+  "size-limit": [
+    {
+      "path": "dist/keri-skwa.cjs.production.min.js",
+      "limit": "10 KB"
+    },
+    {
+      "path": "dist/keri-skwa.esm.js",
+      "limit": "10 KB"
+    }
+  ],
+  "devDependencies": {
+    "@size-limit/preset-small-lib": "^5.0.4",
+    "husky": "^7.0.2",
+    "size-limit": "^5.0.4",
+    "ts-migrate": "^0.1.23",
+    "tsdx": "^0.14.1",
+    "tslib": "^2.3.1",
+    "typescript": "^4.4.3"
+  },
+  "dependencies": {
+    "blake3": "^2.1.4",
+    "cbor": "^8.0.0",
+    "collections": "^5.1.12",
+    "libsodium-wrappers-sumo": "^0.7.9",
+    "lodash": "^4.17.21",
+    "msgpack5": "^5.3.2",
+    "urlsafe-base64": "^1.0.0",
+    "xregexp": "^5.1.0"
+  }
+}
