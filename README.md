@@ -1,2 +1,2 @@
 # xora
-XOR Accumulator (XORA).  Accumulators for compact performant registries of blinded digests of data
+XOR Accumulator (XORA).  XORed accumulators ofblinded digests of data for compact performant confidential data registries
