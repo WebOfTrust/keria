@@ -1,6 +1,7 @@
 const libsodium = require('libsodium-wrappers-sumo');
 const Base64 = require('urlsafe-base64');
-const derivationCodes = require('../../src/keri/core/derivationCodes');
+import { oneCharCode} from "../../src/keri/core/derivationCodes";
+
 const assert = require('assert').strict;
 
 
@@ -25,10 +26,10 @@ describe('Verfer', () => {
         Buffer.from(verkey, 'binary'),
         null,
         null,
-        derivationCodes.oneCharCode.Ed25519N,
+        oneCharCode.Ed25519N,
     );
     assert.deepStrictEqual(verfer.raw(), verkey);
-    assert.deepStrictEqual(verfer.code(), derivationCodes.oneCharCode.Ed25519N);
+    assert.deepStrictEqual(verfer.code(), oneCharCode.Ed25519N);
   });
 });
 

@@ -1,22 +1,21 @@
-const Deque = require('collections/deque');
 const derivationCodeLength = require('../core/derivationCodes');
-function string2Bin(s) {
-  var b = new Array();
-  var last = s.length;
 
-  for (var i = 0; i < last; i++) {
-    var d = s.charCodeAt(i);
+export function string2Bin(s: string) {
+  let b = new Array();
+  let last = s.length;
+
+  for (let i = 0; i < last; i++) {
+    let d = s.charCodeAt(i);
     if (d < 128)
       b[i] = dec2Bin(d);
     else {
-      let c = s.charAt(i);
       b[i] = -1;
     }
   }
   return b;
 }
 
-function dec2Bin(d) {
+export function dec2Bin(d: number) {
   var b = '';
 
   for (var i = 0; i < 8; i++) {
@@ -27,7 +26,7 @@ function dec2Bin(d) {
   return b;
 }
 
-function intToB64(i, l = 1) {
+export function intToB64(i: number, l = 1) {
   const queue = [];
   queue.unshift(derivationCodeLength.b64ChrByIdx[i % 64]);
   i = Math.floor(i / 64);
@@ -49,21 +48,16 @@ function intToB64(i, l = 1) {
  * @description Returns conversion of Base64 str cs to int
  * @param {} cs
  */
-function b64ToInt(cs) {
+export function b64ToInt(cs: string) {
   let i = 0;
 
   const splitString = cs.split('');
   const reverseArray = splitString.reverse();
 
-  for (const [index, element] of reverseArray.entries()) {
-    const keyOfValue = Object.keys(derivationCodeLength.b64ChrByIdx).find(key => derivationCodeLength.b64ChrByIdx[key] === element);
-    i += keyOfValue * 64 ** index;
+  for (const entriesKey in reverseArray.entries()) {
+    const keyOfValue = Object.keys(derivationCodeLength.b64ChrByIdx)?.find(key => derivationCodeLength.b64ChrByIdx[key] === entriesKey[1]);
+    i += parseInt(keyOfValue!) * 64 ** parseInt(entriesKey[0]);
   }
 
   return i;
 }
-module.exports = {
-  string2Bin,
-  intToB64,
-  b64ToInt,
-};

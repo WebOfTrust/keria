@@ -1,7 +1,7 @@
 'use strict';
 export {};
 
-const oneCharCode = {
+export const oneCharCode: any = {
   Ed25519_Seed: 'A', //  Ed25519 256 bit random seed for private key
   Ed25519N: 'B', //  Ed25519 verification key non-transferable, basic derivation.
   X25519: 'C', //  X25519 public encryption key, converted from Ed25519.
@@ -16,7 +16,7 @@ const oneCharCode = {
   X448: 'L', //  X448 public encryption key, converted from Ed448
 };
 
-const CryOneSizes = {
+export const CryOneSizes: any = {
   A: 44,
   B: 44,
   C: 44,
@@ -32,7 +32,7 @@ const CryOneSizes = {
 };
 
 // Mapping of Code to Size
-const CryOneRawSizes = {
+export const CryOneRawSizes: any = {
   A: 32,
   B: 32,
   C: 32,
@@ -47,44 +47,44 @@ const CryOneRawSizes = {
   L: 56,
 };
 
-const twoCharCode = {
+export const twoCharCode: any = {
   Seed_128: '0A', // 128 bit random seed.
   Ed25519: '0B', // Ed25519 signature.
   ECDSA_256k1: '0C', // ECDSA secp256k1 signature.
 };
 
-const CryTwoSizes = {
+export const CryTwoSizes: any = {
   '0A': 24,
   '0B': 88,
 };
 
-const CryTwoRawSizes = {
+export const CryTwoRawSizes: any = {
   '0A': 16,
   '0B': 64,
 };
 
-const fourCharCode = {
+export const fourCharCode: any = {
   ECDSA_256k1N: '1AAA', // ECDSA secp256k1 verification key non-transferable, basic derivation.
   ECDSA_256k1: '1AAB', // Ed25519 public verification or encryption key, basic derivation
 };
 
-const CryFourSizes = {
+export const CryFourSizes : any = {
   '1AAA': 48,
   '1AAB': 48,
 };
 
-const CryFourRawSizes = {
+export const CryFourRawSizes: any = {
   '1AAA': 33,
   '1AAB': 33,
 };
 
-const crySelectCodex = {
+export const crySelectCodex: any = {
   two: '0',
   four: '1',
   dash: '-',
 };
 
-const cryAllSizes = {
+export const cryAllSizes: any = {
   A: 44,
   B: 44,
   C: 44,
@@ -105,45 +105,45 @@ const cryAllSizes = {
   '-B': 4,
 };
 
-const cryAllRawSizes = {
+export const cryAllRawSizes: any = {
   '-A': 0,
   '-B': 0,
-  A: 32,
-  B: 32,
-  C: 32,
-  D: 32,
-  E: 32,
-  F: 32,
-  G: 32,
-  H: 32,
-  I: 32,
-  J: 32,
-  K: 56,
-  L: 56,
+  'A': 32,
+  'B': 32,
+  'C': 32,
+  'D': 32,
+  'E': 32,
+  'F': 32,
+  'G': 32,
+  'H': 32,
+  'I': 32,
+  'J': 32,
+  'K': 56,
+  'L': 56,
   '0A': 16,
   '0B': 64,
   '1AAA': 33,
   '1AAB': 33,
 };
 
-const CryCntSizes = {
+export const CryCntSizes: any = {
   '-A': 4,
   '-B': 4,
 };
 
 // size of index portion of code qb64
-const CryCntIdxSizes = {
+export const CryCntIdxSizes: any = {
   '-A': 2,
   '-B': 2,
 };
 
 // total size of raw unqualified
-const CryCntRawSizes = {
+export const CryCntRawSizes: any = {
   '-A': 0,
   '-B': 0,
 };
 
-const CRYCNTMAX = 4095; // maximum count value given two base 64 digits
+export const CRYCNTMAX = 4095; // maximum count value given two base 64 digits
 
 /*
  """
@@ -161,7 +161,7 @@ const CRYCNTMAX = 4095; // maximum count value given two base 64 digits
     """
     */
 
-const CryCntCodex = {
+export const CryCntCodex: any = {
   Base64: '-A', // Fully Qualified Base64 Format Receipt Couplets.
   Base2: '-B', // Fully Qualified Base2 Format Receipt Couplets.
 };
@@ -181,38 +181,38 @@ const CryCntCodex = {
 
 // =================================SIG Derivation codes started =============
 
-const SigSelectCodex = {
+export const SigSelectCodex: any = {
   four: '0', // # use four character table.
   five: '1', // # use five character table.
   six: '2', // # use six character table.
   dash: '-', // # use signature count table
 };
 
-const SigTwoCodex = {
+export const SigTwoCodex: any = {
   Ed25519: 'A', // Ed25519 signature.
   ECDSA_256k1: 'B', //# ECDSA secp256k1 signature.
 };
 
 //# Mapping of Code to Size
-const SigTwoSizes = {
+export const SigTwoSizes: any = {
   A: 88,
   B: 88,
 };
 
 //# size of index portion of code qb64
-const SigTwoIdxSizes = {
+export const SigTwoIdxSizes: any = {
   A: 1,
   B: 1,
 };
 
-const SigTwoRawSizes = {
+export const SigTwoRawSizes: any = {
   A: 64,
   B: 64,
 };
 
-const SIGTWOMAX = 63; // # maximum index value given one base64 digit
+export const SIGTWOMAX = 63; // # maximum index value given one base64 digit
 
-const SigFourCodex = {
+export const SigFourCodex: any = {
   /*
      SigFourCodex codex of four character length derivation codes
      Only provide defined codes.
@@ -225,20 +225,20 @@ const SigFourCodex = {
   Ed448: '0A', // # Ed448 signature.
 };
 
-const SigFourSizes = {
+export const SigFourSizes: any = {
   '0A': 156,
 };
 
 // # size of index portion of code qb64
-const SigFourIdxSizes = {
+export const SigFourIdxSizes: any = {
   '0A': 2,
 };
 
-const SigFourRawSizes = {
+export const SigFourRawSizes: any = {
   '0A': 114,
 };
 
-const SigFiveCodex = {
+export const SigFiveCodex: any = {
   /*
 Five codex of five character length derivation codes
 Only provide defined codes. Undefined are left out so that inclusion
@@ -253,12 +253,12 @@ Only provide first three characters here
 */
 };
 
-const SigFiveSizes = {};
-const SigFiveIdxSizes = {};
-const SigFiveRawSizes = {};
+export const SigFiveSizes: any = {};
+export const SigFiveIdxSizes: any = {};
+export const SigFiveRawSizes: any = {};
 
-const SIGFOURMAX = 4095; // # maximum index value given two base 64 digits
-const SigCntCodex = {
+export const SIGFOURMAX = 4095; // # maximum index value given two base 64 digits
+export const SigCntCodex: any = {
   /*
     SigCntCodex codex of four character length derivation codes that indicate
     count (number) of attached signatures following an event .
@@ -278,26 +278,26 @@ const SigCntCodex = {
 
 // # Mapping of Code to Size
 // # Total size  qb64
-const SigCntSizes = {
+export const SigCntSizes: any = {
   '-A': 4,
   '-B': 4,
 };
 
 // # size of index portion of code qb64
-const SigCntIdxSizes = {
+export const SigCntIdxSizes: any = {
   '-A': 2,
   '-B': 2,
 };
 
 // # total size of raw unqualified
-const SigCntRawSizes = {
+export const SigCntRawSizes: any = {
   '-A': 0,
   '-B': 0,
 };
 
-const SIGCNTMAX = 4095; // # maximum count value given two base 64 digits
+export const SIGCNTMAX = 4095; // # maximum count value given two base 64 digits
 
-const SigIdxSizes = {
+export const SigIdxSizes: any = {
   '-A': 2,
   '-B': 2,
   A: 1,
@@ -305,7 +305,7 @@ const SigIdxSizes = {
   '0A': 2,
 };
 
-const SigSizes = {
+export const SigSizes: any = {
   '-A': 4,
   '-B': 4,
   A: 88,
@@ -313,15 +313,15 @@ const SigSizes = {
   '0A': 156,
 };
 
-const SigRawSizes = {
+export const SigRawSizes: any = {
   '-A': 0,
   '-B': 0,
   A: 64,
   B: 64,
   '0A': 114,
 };
-const SIGFIVEMAX = 4095;
-const b64ChrByIdx = {
+export const SIGFIVEMAX = 4095;
+export const b64ChrByIdx: any = {
   0: 'A',
   1: 'B',
   2: 'C',
@@ -386,51 +386,4 @@ const b64ChrByIdx = {
   61: '9',
   62: '-',
   63: '_',
-};
-
-
-
-module.exports = {
-  oneCharCode,
-  CryOneSizes,
-  CryOneRawSizes,
-  twoCharCode,
-  CryTwoSizes,
-  CryTwoRawSizes,
-  fourCharCode,
-  CryFourSizes,
-  CryFourRawSizes,
-  crySelectCodex,
-  cryAllSizes,
-  CryCntSizes,
-  CryCntIdxSizes,
-  CryCntRawSizes,
-  CRYCNTMAX,
-  CryCntCodex,
-  cryAllRawSizes,
-  b64ChrByIdx,
-  SigTwoCodex,
-  SigSelectCodex,
-  SigTwoSizes,
-  SigTwoIdxSizes,
-  SigTwoRawSizes,
-  SIGTWOMAX,
-  SigFourCodex,
-  SIGFOURMAX,
-  SigCntCodex,
-  SigCntSizes,
-  SigCntIdxSizes,
-  SigCntRawSizes,
-  SIGCNTMAX,
-  SigIdxSizes,
-  SigSizes,
-  SigRawSizes,
-  SigFourSizes,
-  SigFiveSizes,
-  SigFiveIdxSizes,
-  SigFiveRawSizes,
-  SigFourIdxSizes,
-  SigFourRawSizes,
-  SigFiveCodex,
-  SIGFIVEMAX,
 };

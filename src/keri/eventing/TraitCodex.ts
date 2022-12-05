@@ -1,12 +1,8 @@
 const {
-  // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'Serials'.
   Serials, versify, Ilks,Versionage
 } = require('../core/core');
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable '_'.
 const _ = require('lodash');
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'Prefixer'.
 const { Prefixer } = require('../core/prefixer');
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'Serder'.
 const { Serder } = require('../core/serder');
 const derivationCodeLength = require('../core/derivationCodes');
 
@@ -15,8 +11,7 @@ const derivationCodeLength = require('../core/derivationCodes');
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
  */
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'TraitCodex... Remove this comment to see the full error message
-class TraitCodex {
+export class TraitCodex {
 
   static readonly EstOnly = 'EO'
   constructor() { }
@@ -330,7 +325,6 @@ class TraitCodex {
   }
 }
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'isSorted'.
 function isSorted(array: any) {
   const limit = array.length - 1;
   for (let i = 0; i < limit; i++) {
@@ -341,7 +335,6 @@ function isSorted(array: any) {
 }
 
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'hasDuplica... Remove this comment to see the full error message
 function hasDuplicates(array: any) {
   return (new Set(array)).size !== array.length;
 }

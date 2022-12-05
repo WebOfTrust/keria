@@ -16,12 +16,11 @@ const { range } = require('./utls');
     as cipher suite for creating key-pair.
  */
 
-class Signer extends Crymat {
+export class Signer extends Crymat {
   constructor(
-    raw = null,
+    raw?: Uint8Array,
     code = derivationCodes.oneCharCode.Ed25519_Seed,
     transferable = true,
-    // lib = null,
     qb64 = null,
   ) {
     let setVerfer;
@@ -172,7 +171,7 @@ async function generateSigners(root = null, count = 8) {
             random root created if not provided
      * @param {*} count count is number of signers in list
      */
-function generateSecrets(root = null, count = 8) {
+export function generateSecrets(root = null, count = 8) {
   const signrs: any = [];
   const signers = generateSigners(root, count);
 
@@ -182,5 +181,3 @@ function generateSecrets(root = null, count = 8) {
 
   return signrs;
 }
-
-module.exports = { Signer, generateSigners, generateSecrets };

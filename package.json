@@ -16,7 +16,6 @@
     "size": "size-limit",
     "analyze": "size-limit --why"
   },
-  "peerDependencies": {},
   "husky": {
     "hooks": {
       "pre-commit": "tsdx lint"
@@ -43,6 +42,8 @@
   ],
   "devDependencies": {
     "@size-limit/preset-small-lib": "^5.0.4",
+    "@types/lodash": "^4.14.185",
+    "@types/urlsafe-base64": "^1.0.28",
     "husky": "^7.0.2",
     "size-limit": "^5.0.4",
     "ts-migrate": "^0.1.23",
@@ -51,7 +52,8 @@
     "typescript": "^4.4.3"
   },
   "dependencies": {
-    "blake3": "^2.1.4",
+    "@types/libsodium-wrappers-sumo": "^0.7.5",
+    "blake3": "^2.1.7",
     "cbor": "^8.0.0",
     "collections": "^5.1.12",
     "libsodium-wrappers-sumo": "^0.7.9",

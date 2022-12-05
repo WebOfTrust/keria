@@ -11,7 +11,7 @@ let getKeys: any;
                     next sith and next keys
  */
 
-class Nexter extends Diger {
+export class Nexter extends Diger {
   /**
      *
  Assign digest verification function to ._verify
@@ -35,9 +35,9 @@ class Nexter extends Diger {
      */
   constructor(
     ser = null,
-    sith = null,
-    keys = null,
-    ked = null,
+    sith?:number,
+    keys?: any[],
+    ked?: {},
     qb64 = null,
     code = codeAndLength.oneCharCode.Blake3_256,
   ) {
@@ -142,5 +142,3 @@ function deriveSer(sith: any, keys: any, ked: any) {
 
   return [getSer, sith, keys];
 }
-
-module.exports = { Nexter };

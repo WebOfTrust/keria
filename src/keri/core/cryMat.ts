@@ -1,10 +1,12 @@
 /* eslint-disable no-underscore-dangle */
-const Base64 = require('urlsafe-base64');
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'codeAndLen... Remove this comment to see the full error message
-const codeAndLength = require('./derivationCodes');
-const { b64ToInt, intToB64 } = require('../help/stringToBinary');
-// const util = require("util");
-// const encoder = new util.TextEncoder("utf-8");
+import Base64 from "urlsafe-base64";
+import {
+  oneCharCode, CryOneSizes, CryTwoSizes, CryFourSizes, CryCntCodex, cryAllRawSizes, cryAllSizes,
+  CryCntSizes, crySelectCodex, CRYCNTMAX, fourCharCode, CryCntIdxSizes, twoCharCode
+} from "./derivationCodes";
+
+import { b64ToInt, intToB64 } from '../help/stringToBinary';
+
 /**
  * @description CRYPTOGRAPHC MATERIAL BASE CLASS
  * @subclasses  provides derivation codes and key event element context specific
@@ -15,17 +17,16 @@ const { b64ToInt, intToB64 } = require('../help/stringToBinary');
         .qb64 str in Base64 with derivation code and crypto material
         .qb2  bytes in binary with derivation code and crypto material
  */
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'Crymat'.
-class Crymat {
+export class Crymat {
   getCode: any;
   getIndex: any;
   getRaw: any;
   getqb64: any;
   constructor(
-    raw = null,
+    raw: Buffer,
     qb64 = null,
     qb2 = null,
-    code = codeAndLength.oneCharCode.Ed25519N,
+    code = oneCharCode.Ed25519N,
     index = 0
   ) {
     /*
@@ -49,45 +50,42 @@ class Crymat {
       if (
         !(
           (pad === 1 &&
-            Object.values(JSON.stringify(codeAndLength.CryOneSizes)).includes(
+            Object.values(JSON.stringify(CryOneSizes)).includes(
               code
             )) ||
           (pad === 2 &&
             Object.values(
-              JSON.stringify(codeAndLength.CryTwoSizes).includes(code)
+              JSON.stringify(CryTwoSizes).includes(code)
             )) ||
           (pad === 0 &&
             Object.values(
-              JSON.stringify(codeAndLength.CryFourSizes).includes(code)
+              JSON.stringify(CryFourSizes).includes(code)
             ))
         )
       ) {
         throw new Error(`Wrong code= ${code} for raw= ${raw} .`);
       }
       if (
-        (Object.values(codeAndLength.CryCntCodex).includes(code) &&
+        (Object.values(CryCntCodex).includes(code) &&
           index < 0) ||
-        index > codeAndLength.CRYCNTMAX
+        index > CRYCNTMAX
       ) {
         throw new Error(`Invalid index=${index} for code=${code}.`);
       }
 
-      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-      raw = raw.slice(0, codeAndLength.cryAllRawSizes[code]);
+      raw = raw.slice(0, cryAllRawSizes[code]);
 
-      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-      if (raw.length !== codeAndLength.cryAllRawSizes[code]) {
-        // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
+      if (raw.length !== cryAllRawSizes[code]) {
         throw new Error(`Unexpected raw size= ${raw.length} for code= ${code}"
-        " not size= ${codeAndLength.cryAllRawSizes[code]}.`);
+        " not size= ${cryAllRawSizes[code]}.`);
       }
       this.getCode = code;
       this.getIndex = index;
       this.getRaw = raw; // crypto ops require bytes not bytearray
     } else if (qb64 != null) {
       // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-      qb64 = qb64.toString('utf-8');
-      this.exfil(qb64);
+      let x = qb64.toString('utf-8');
+      this.exfil(x);
     } else if (qb2 != null) {
       this.exfil(Base64.encode(qb2));
     } else {
@@ -105,51 +103,51 @@ class Crymat {
     return 3 - reminder;
   }
 
-  exfil(qb64: any) {
+  exfil(qb64: string) {
     const base64Pad = '=';
     let cs = 1; // code size
     let codeSlice = qb64.slice(0, cs);
     let index;
 
-    if (Object.values(codeAndLength.oneCharCode).includes(codeSlice)) {
-      qb64 = qb64.slice(0, codeAndLength.CryOneSizes[codeSlice]);
-    } else if (codeSlice === codeAndLength.crySelectCodex.two) {
+    if (Object.values(oneCharCode).includes(codeSlice)) {
+      qb64 = qb64.slice(0, CryOneSizes[codeSlice]);
+    } else if (codeSlice === crySelectCodex.two) {
       cs += 1;
       codeSlice = qb64.slice(0, cs);
 
-      if (!Object.values(codeAndLength.twoCharCode).includes(codeSlice)) {
+      if (!Object.values(twoCharCode).includes(codeSlice)) {
         throw new Error(`Invalid derivation code = ${codeSlice} in ${qb64}.`);
       }
 
-      qb64 = qb64.slice(0, codeAndLength.CryTwoSizes[codeSlice]);
-    } else if (codeSlice === codeAndLength.crySelectCodex.four) {
+      qb64 = qb64.slice(0, CryTwoSizes[codeSlice]);
+    } else if (codeSlice === crySelectCodex.four) {
       cs += 3;
       codeSlice = qb64.slice(0, cs);
 
-      if (!Object.values(codeAndLength.fourCharCode).includes(codeSlice)) {
+      if (!Object.values(fourCharCode).includes(codeSlice)) {
         throw new Error(`Invalid derivation code = ${codeSlice} in ${qb64}.`);
       }
-      qb64 = qb64.slice(0, codeAndLength.CryFourSizes[codeSlice]);
-    } else if (codeSlice === codeAndLength.crySelectCodex.dash) {
+      qb64 = qb64.slice(0, CryFourSizes[codeSlice]);
+    } else if (codeSlice === crySelectCodex.dash) {
       cs += 1;
       codeSlice = qb64.slice(0, cs);
 
-      if (!Object.values(codeAndLength.CryCntCodex).includes(codeSlice)) {
+      if (!Object.values(CryCntCodex).includes(codeSlice)) {
         throw new Error(`Invalid derivation code = ${codeSlice} in ${qb64}.`);
       }
 
-      qb64 = qb64.slice(0, codeAndLength.CryCntSizes[codeSlice]);
+      qb64 = qb64.slice(0, CryCntSizes[codeSlice]);
       cs += 2; // increase code size
       index = b64ToInt(qb64.slice(cs - 2, cs));
-      //  index = Object.keys(codeAndLength.b64ChrByIdx).find(key =>
-      // codeAndLength.b64ChrByIdx[key] === qb64.slice(cs - 2, cs)) // last two characters for index
+      //  index = Object.keys(b64ChrByIdx).find(key =>
+      // b64ChrByIdx[key] === qb64.slice(cs - 2, cs)) // last two characters for index
     } else {
       throw new Error(`Improperly coded material = ${qb64}`);
     }
 
-    if (qb64.length !== codeAndLength.cryAllSizes[codeSlice]) {
+    if (qb64.length !== cryAllSizes[codeSlice]) {
       throw new Error(
-        `Unexpected qb64 size= ${qb64.length} for code= ${codeSlice} not size= ${codeAndLength.cryAllSizes[codeSlice]}.`
+        `Unexpected qb64 size= ${qb64.length} for code= ${codeSlice} not size= ${cryAllSizes[codeSlice]}.`
       );
     }
     const derivedRaw = Base64.decode(
@@ -161,17 +159,17 @@ class Crymat {
       throw new Error(`Improperly qualified material = ${qb64}`);
     }
     this.getCode = codeSlice;
-    this.getRaw = Buffer.from(derivedRaw, 'binary'); // encode
+    this.getRaw = Buffer.from(derivedRaw); // encode
     // eslint-disable-next-line radix
-    this.getIndex = parseInt(index);
+    this.getIndex = index;
     this.getqb64 = qb64;
   }
 
   infil() {
     let l = null;
     let full = this.getCode;
-    if (Object.values(codeAndLength.CryCntCodex).includes(this.getCode)) {
-      l = codeAndLength.CryCntIdxSizes[this.getCode];
+    if (Object.values(CryCntCodex).includes(this.getCode)) {
+      l = CryCntIdxSizes[this.getCode];
       full = `${this.getCode}${intToB64(this.getIndex, l)}`;
     }
 
@@ -213,7 +211,7 @@ class Crymat {
          # decode self.code as bits and prepend to self.raw
          */
 
-    return Base64.decode(Buffer.from(this.infil(), 'binary')).toString();
+    return Base64.decode(Buffer.from(this.infil()).toString());
     // check here
   }
 
@@ -234,5 +232,3 @@ class Crymat {
     return this.getIndex;
   }
 }
-
-module.exports = { Crymat };

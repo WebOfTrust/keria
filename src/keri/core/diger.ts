@@ -1,8 +1,6 @@
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'blake3'.
 const blake3 = require('blake3');
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'Crymat'.
-const { Crymat } = require('./cryMat');
-const derivationCode = require('./derivationCodes');
+import { Crymat } from './cryMat';
+import { oneCharCode } from './derivationCodes';
 
 /**
  * @description : Diger is subset of Crymat and is used to verify the digest of serialization
@@ -10,18 +8,17 @@ const derivationCode = require('./derivationCodes');
  * .code as digest algorithm
  *
  */
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'Diger'.
-class Diger extends Crymat {
+export class Diger extends Crymat {
   verifyFunc: any;
   // This constructor will assign digest verification function to ._verify
-  constructor(raw = null, ser = null, code = derivationCode.oneCharCode.Blake3_256, qb64 = null) {
+  constructor(raw: Buffer, ser = null, code = oneCharCode.Blake3_256, qb64 = null) {
     try {
       super(raw, qb64, null, code, 0);
     } catch (error:any) {
       if (!ser) {
         throw new Error(error);
       }
-      if (code === derivationCode.oneCharCode.Blake3_256) {
+      if (code === oneCharCode.Blake3_256) {
         const hasher = blake3.createHash();
         // let dig = blake3.hash(ser);
         const dig = hasher.update(ser).digest('');
@@ -31,7 +28,7 @@ class Diger extends Crymat {
       }
     }
 
-    if (code === derivationCode.oneCharCode.Blake3_256) {
+    if (code === oneCharCode.Blake3_256) {
       this.verifyFunc = this.blake3_256;
     } else {
       throw new Error(`Unsupported code = ${code} for digester.`); 
@@ -61,4 +58,3 @@ class Diger extends Crymat {
     return (digest.toString() === dig.toString());
   }
 }
-module.exports = { Diger };

@@ -5,7 +5,6 @@
 // an outgoing steam. When the incoming streams includes key event messages
 // then Kevery acts putKes Kever (KERI key event verifier) factory.
 
-// @ts-expect-error ts-migrate(6200) FIXME: Definitions of the following identifiers conflict ... Remove this comment to see the full error message
 const { Serder } = require('../core/serder')
 const derivationCodes = require('../core/derivationCode&Length')
 const { Prefixer } = require('../core/prefixer')
@@ -14,12 +13,10 @@ const { CryCounter } = require('../core/cryCounter')
 const {Sigcounter} = require('../core/SigCounter')
 const {Sigver} = require('../core/sigver')
 const {Siger} = require('../core/siger')
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'Serials'.
 const { Serials, Versionage, IcpLabels, Ilks } = require('../core/core')
 // const {SealEvent} = require('../eventing/util')
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable '_'.
 const _ = require('lodash');
-const { range } = require("lodash");
+import { range } from "lodash";
 const { Verfer } = require("../core/verfer");
 const { snkey, Logger, dgkey } = require('../db/index')
 // Only supports current version VERSION

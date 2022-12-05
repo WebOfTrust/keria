@@ -7,10 +7,10 @@ export const Vstrings = Serialage;
 export const Serials = {json: 'JSON', mgpk: 'MGPK', cbor: 'CBOR'};
 
 // # element labels to exclude in digest or signature derivation from inception icp
-const IcpExcludes = ['pre'];
+export const IcpExcludes = ['pre'];
 // # element labels to exclude in digest or signature derivation from delegated inception dip
-const DipExcludes = ['pre'];
-const Ilks = {
+export const DipExcludes = ['pre'];
+export const Ilks = {
     icp: 'icp',
     rot: 'rot',
     ixn: 'ixn',
@@ -20,22 +20,22 @@ const Ilks = {
     vrc: 'vrc',
 };
 
-const IcpLabels = ["v", "i", "s", "t", "kt", "k", "n",
+export const IcpLabels = ["v", "i", "s", "t", "kt", "k", "n",
     "bt", "b", "c", "a"];
 
-const DipLabels = ["v", "i", "s", "t", "kt", "k", "n",
+export const DipLabels = ["v", "i", "s", "t", "kt", "k", "n",
     "bt", "b", "c", "a", "di"];
 
-const RotLabels = ["v", "i", "s", "t", "p", "kt", "k", "n",
+export const RotLabels = ["v", "i", "s", "t", "p", "kt", "k", "n",
     "bt", "br", "ba", "a"]
-const DrtLabels = ["v", "i", "s", "t", "p", "kt", "k", "n",
+export const DrtLabels = ["v", "i", "s", "t", "p", "kt", "k", "n",
     "bt", "br", "ba", "a"]
-const IxnLabels = ["v", "i", "s", "t", "p", "a"]
+export const IxnLabels = ["v", "i", "s", "t", "p", "a"]
 
-const KsnLabels = ["v", "i", "s", "t", "p", "d", "f", "dt", "et", "kt", "k", "n",
+export const KsnLabels = ["v", "i", "s", "t", "p", "d", "f", "dt", "et", "kt", "k", "n",
     "bt", "b", "c", "ee", "di", "r"]
 
-const RpyLabels = ["v", "t", "d", "dt", "r", "a"]
+export const RpyLabels = ["v", "t", "d", "dt", "r", "a"]
 
 
 // let mimes = {
@@ -48,14 +48,14 @@ const RpyLabels = ["v", "t", "d", "dt", "r", "a"]
 // let two = '29'.toString(16);
 // let three = '39'.toString(16)
 // let VERFMT = `KERI${hexString} ${two} ${three}_`   /// version format string
-const VERFULLSIZE = 17;
-const MINSNIFFSIZE = 12 + VERFULLSIZE;
-const MINSIGSIZE = 4;
+export const VERFULLSIZE = 17;
+export const MINSNIFFSIZE = 12 + VERFULLSIZE;
+export const MINSIGSIZE = 4;
 
 /**
  * @description  It will return version string
  */
-function versify(version: { major: number, minor: number }, kind = Serials.json, size: number) {
+export function versify(version: { major: number, minor: number }, kind = Serials.json, size: number) {
     if (!(Object.values(Serials).indexOf(kind) > -1)) {
         throw new Error('Invalid serialization kind =' + kind);
     }
@@ -81,7 +81,7 @@ Vstrings.cbor = versify(Versionage, Serials.cbor, 0);
 // const version_pattern1 = `KERI\(\?P<major>\[0\-9a\-f\]\)\(\?P<minor>\[0\-9a\-f\]\)\
 // (\?P<kind>\[A\-Z\]\{4\}\)\(\?P<size>\[0\-9a\-f\]\{6\}\)_`
 
-const VEREX = 'KERI([0-9a-f])([0-9a-f])([A-Z]{4})([0-9a-f]{6})';
+export const VEREX = 'KERI([0-9a-f])([0-9a-f])([A-Z]{4})([0-9a-f]{6})';
 
 // Regex pattern matching
 
@@ -92,7 +92,7 @@ const VEREX = 'KERI([0-9a-f])([0-9a-f])([A-Z]{4})([0-9a-f]{6})';
  * @return {Object}  contaning kind of serialization like cbor,json,mgpk
  *                    version = version of object ,size = raw size integer
  */
-function deversify(versionString: string) {
+export function deversify(versionString: string) {
     let kind;
     let size;
     const version = Versionage;
@@ -116,24 +116,3 @@ function deversify(versionString: string) {
     }
     throw new Error(`Invalid version string = ${versionString}`);
 }
-
-module.exports = {
-    deversify,
-    versify,
-    Versionage,
-    Ilks,
-    Serialage,
-    Serials,
-    IcpLabels,
-    DipLabels,
-    RotLabels,
-    DrtLabels,
-    IxnLabels,
-    KsnLabels,
-    RpyLabels,
-    Vstrings,
-    MINSNIFFSIZE,
-    MINSIGSIZE,
-    IcpExcludes,
-    DipExcludes,
-};

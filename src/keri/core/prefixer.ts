@@ -22,7 +22,7 @@ const { Signer } = require('./signer');
     Methods:verify():  Verifies derivation of aid
  */
 
-class Prefixer extends Crymat {
+export class Prefixer extends Crymat {
   //        elements in digest or signature derivation from inception icp
   //  IcpLabels ["sith", "keys", "nxt", "toad", "wits", "cnfg"]
 
@@ -34,10 +34,10 @@ class Prefixer extends Crymat {
    *  ._verify to verify derivation of aid  = .qb64
    */
   constructor(
-    raw = null,
+    raw?: Buffer,
     code = derivationCodes.oneCharCode.Ed25519N,
-    ked = null,
-    seed = null,
+    ked = {},
+    seed?:Uint8Array,
     secret = null,
     qb64 = null,
     qb2 = null,
@@ -228,14 +228,15 @@ class Prefixer extends Crymat {
 
 /**
  * @description  Returns tuple raw, code of basic Ed25519 prefix (qb64)
-                 as derived from key event dict ked
+ as derived from key event dict ked
  * @param {*} ked
  * @param {*} _seed
  * @param {*} _secret
+ * @param _code
  */
 function DeriveBasicEd25519(
   ked: any,
-  _seed = null,
+  _seed?: Uint8Array,
   _secret = null,
   _code = derivationCodes.oneCharCode.Ed25519,
 ) {
@@ -364,7 +365,7 @@ function DeriveDigBlake3_256(ked: any) {
  *
  *
  */
-function DeriveSigEd25519(ked: any, seed = null, secret = null) {
+function DeriveSigEd25519(ked: any, seed?:Uint8Array, secret = null) {
   let labels = null;
   let values = null;
   let ser = null;
@@ -404,5 +405,3 @@ function DeriveSigEd25519(ked: any, seed = null, secret = null) {
   sigver = signer.sign(ser);
   return { raw: sigver.raw(), code: derivationCodes.twoCharCode.Ed25519 };
 }
-
-module.exports = { Prefixer };

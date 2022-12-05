@@ -7,10 +7,10 @@ const codeAndLength = require('./derivationCodes');
  * @description  Verfer :sublclass of crymat,helps to verify signature of serialization
  *  using .raw as verifier key and .code as signature cypher suite
  */
-class Verfer extends Crymat {
+export class Verfer extends Crymat {
   verifySig: any;
   // eslint-disable-next-line max-len
-  constructor(raw = null, qb64 = null, qb2 = null, qb64b = null, code = codeAndLength.oneCharCode.Ed25519N, index = 0) {
+  constructor(raw?: Buffer, qb64 = null, qb2 = null, qb64b = null, code = codeAndLength.oneCharCode.Ed25519N, index = 0) {
     super(raw, qb64, qb2, code, index);
     this.qb64b = qb64b
     if (Object.values(codeAndLength.oneCharCode.Ed25519N).includes(this.getCode)
@@ -50,5 +50,3 @@ class Verfer extends Crymat {
     }
   }
 }
-
-module.exports = { Verfer };
