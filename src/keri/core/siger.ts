@@ -1,5 +1,7 @@
+
 export {};
-const { SigMat } = require('./sigmat');
+const { Matter } = require('./matter');
+
 
 /**
  * Siger is subclass of SigMat, indexed signature material,
@@ -16,10 +18,9 @@ const { SigMat } = require('./sigmat');
     Methods:
  */
 
-class Siger extends SigMat {
-  constructor(verfer = null, ...args: any[]) {
-    super(...args);
-    this.getVerfer = verfer;
+export class Siger extends Matter {
+  constructor({}) {
+    super();
   }
 
   verfer() {
@@ -30,5 +31,3 @@ class Siger extends SigMat {
     this.getVerfer = verfer;
   }
 }
-
-module.exports = { Siger };

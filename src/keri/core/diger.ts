@@ -1,60 +1,82 @@
 const blake3 = require('blake3');
-import { Crymat } from './cryMat';
-import { oneCharCode } from './derivationCodes';
+import {Matter, MatterArgs, MtrDex} from './matter';
 
 /**
- * @description : Diger is subset of Crymat and is used to verify the digest of serialization
+ * @description : Diger is subset of Matter and is used to verify the digest of serialization
  * It uses  .raw : as digest
  * .code as digest algorithm
  *
  */
-export class Diger extends Crymat {
-  verifyFunc: any;
-  // This constructor will assign digest verification function to ._verify
-  constructor(raw: Buffer, ser = null, code = oneCharCode.Blake3_256, qb64 = null) {
-    try {
-      super(raw, qb64, null, code, 0);
-    } catch (error:any) {
-      if (!ser) {
-        throw new Error(error);
-      }
-      if (code === oneCharCode.Blake3_256) {
-        const hasher = blake3.createHash();
-        // let dig = blake3.hash(ser);
-        const dig = hasher.update(ser).digest('');
-        super(dig , null , null, code,0);
-      } else {
-        throw new Error(`Unsupported code = ${code} for digester.`);
-      }
+
+
+export class Diger extends Matter {
+    private readonly _verify: any
+
+    // This constructor will assign digest verification function to ._verify
+    constructor({raw, code = MtrDex.Blake3_256, qb64, qb64b, qb2, strip}: MatterArgs, ser: Uint8Array | null = null) {
+        try {
+            super({raw, code, qb64, qb64b, qb2, strip});
+        } catch (error: any) {
+            if (ser == null) {
+                throw error;
+            }
+
+            if (code === MtrDex.Blake3_256) {
+                const hasher = blake3.createHash();
+                const dig = hasher.update(ser).digest('');
+                super({raw: dig, code: code});
+            } else {
+                throw new Error(`Unsupported code = ${code} for digester.`);
+            }
+        }
+
+        if (code === MtrDex.Blake3_256) {
+            this._verify = this.blake3_256;
+        } else {
+            throw new Error(`Unsupported code = ${code} for digester.`);
+        }
     }
 
-    if (code === oneCharCode.Blake3_256) {
-      this.verifyFunc = this.blake3_256;
-    } else {
-      throw new Error(`Unsupported code = ${code} for digester.`); 
-    }
-  }
 
-
-
-  /**
-     * 
-     * @param {bytes} ser  serialization bytes
+    /**
+     *
+     * @param {Uint8Array} ser  serialization bytes
      * @description  This method will return true if digest of bytes serialization ser matches .raw
      * using .raw as reference digest for ._verify digest algorithm determined
-        by .code
+     by .code
      */
-  verify(ser: any) {
+    verify(ser: Uint8Array): boolean {
+        return this._verify(ser, this.raw);
+    }
 
-    return this.verifyFunc(ser, this.raw());
-  }
+    compare(ser: Uint8Array, dig: any = null, diger: Diger | null = null ) {
+        if (dig != null) {
+            if (dig.toString() == this.qb64) {
+                return true
+            }
+
+            diger = new Diger({qb64b: dig})
+        } else if (diger != null) {
+            if (diger.qb64b == this.qb64b) {
+                return true;
+            }
+        }
+
+        else {
+            throw new Error("Both dig and diger may not be None.")
+        }
+
+        if (diger.code == this.code) {
+            return false
+        }
+
+        return diger.verify(ser) && this.verify(ser)
+    }
 
 
-  blake3_256(ser: any, dig: any) {
-
-    const hasher = blake3.createHash();
-    // let dig = blake3.hash(ser);
-    let digest = hasher.update(ser).digest('');
-    return (digest.toString() === dig.toString());
-  }
+    blake3_256(ser: Uint8Array, dig: any) {
+        const hasher = blake3.createHash();
+        let digest = hasher.update(ser).digest('');
+        return (digest.toString() === dig.toString());
+    }
 }

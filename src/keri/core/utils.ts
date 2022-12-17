@@ -1,4 +1,5 @@
-function pad(n: any, width = 3, z = 0) {
+
+export function pad(n: any, width = 3, z = 0) {
   return (String(z).repeat(width) + String(n)).slice(String(n).length);
 }
 
@@ -9,7 +10,7 @@ function pad(n: any, width = 3, z = 0) {
  * @param {*} ked  ked is key event dict
  * @param {*} labels    labels is list of element labels in ked from which to extract values
  */
-function extractValues(ked: any, labels: any) {
+export function extractValues(ked: any, labels: any) {
   let values = [];
   for (let label of labels) {
     values = extractElementValues(ked[label], values);
@@ -18,8 +19,12 @@ function extractValues(ked: any, labels: any) {
   return values;
 }
 
-
-
+export function arrayEquals(ar1: Uint8Array, ar2: Uint8Array) {
+  return (
+      ar1.length === ar2.length &&
+      ar1.every((val, index) => val === ar2[index])
+  );
+}
 
 /**
  * @description   Recusive depth first search that recursively extracts value(s) from element
@@ -65,7 +70,7 @@ function extractElementValues(element: any, values: any) {
 
 
 
-function range(start: any, stop: any, step: any) {
+export function range(start: any, stop: any, step: any) {
   if (typeof stop == 'undefined') {
     // one param defined
     stop = start;
@@ -87,7 +92,3 @@ function range(start: any, stop: any, step: any) {
 
   return result;
 }
-
-module.exports = {
-  pad, extractValues, range,
-};

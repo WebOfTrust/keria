@@ -1,9 +1,10 @@
-const Base64 = require('urlsafe-base64');
+import {Matter} from "../../src/keri/core/matter";
+
 const blake3 = require('blake3');
 import {strict as assert} from "assert";
 
 const { Diger } = require('../../src/keri/core/diger');
-const derivationCodes = require('../../src/keri/core/derivationCodes');
+const { MtrDex } = require('../../src/keri/core/matter');
 
 
 describe('Diger', () => {
@@ -11,15 +12,15 @@ describe('Diger', () => {
       // Create something to digest and verify
       const ser = Buffer.from('abcdefghijklmnopqrstuvwxyz0123456789', 'binary');
       const hasher = blake3.createHash();
-      const dig = blake3.hash(ser);
-      console.log(Base64.encode(dig))
       const digest = hasher.update(ser).digest('');
 
-      let diger = new Diger(digest);
-      assert.deepStrictEqual(diger.code(), derivationCodes.oneCharCode.Blake3_256);
+      let diger = new Diger({raw: digest});
+      assert.deepStrictEqual(diger.code, MtrDex.Blake3_256);
+
+      let sizage = Matter.Sizes.get(diger.code)
       assert.deepStrictEqual(
-        diger.raw().length,
-        derivationCodes.CryOneRawSizes[diger.code()],
+        diger.qb64.length,
+        sizage!.fs,
       );
       let result = diger.verify(ser);
       assert.equal(result, true);
@@ -28,20 +29,26 @@ describe('Diger', () => {
         Buffer.concat([ser, Buffer.from('2j2idjpwjfepjtgi', 'binary')]),
       );
       assert.equal(result, false);
-      diger = new Diger(digest, null, derivationCodes.oneCharCode.Blake3_256);
-      assert.deepStrictEqual(diger.code(), derivationCodes.oneCharCode.Blake3_256);
+      diger = new Diger({raw: digest, code: MtrDex.Blake3_256});
+      assert.deepStrictEqual(diger.code, MtrDex.Blake3_256);
+
+      console.log(diger.qb64)
+      assert.equal(diger.qb64, "ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux");
+      sizage = Matter.Sizes.get(diger.code)
       assert.deepStrictEqual(
-        diger.raw().length,
-        derivationCodes.CryOneRawSizes[diger.getCode],
+        diger.qb64.length,
+        sizage!.fs,
       );
+
       result = diger.verify(ser);
       assert.equal(result, true);
 
-      diger = new Diger(null, ser);
-      assert.deepStrictEqual(diger.code(), derivationCodes.oneCharCode.Blake3_256);
+      diger = new Diger({}, ser);
+      assert.equal(diger.qb64, "ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux");
+      sizage = Matter.Sizes.get(diger.code)
       assert.deepStrictEqual(
-        diger.raw().length,
-        derivationCodes.CryOneRawSizes[diger.code()],
+          diger.qb64.length,
+          sizage!.fs,
       );
       result = diger.verify(ser);
       assert.equal(result, true);
