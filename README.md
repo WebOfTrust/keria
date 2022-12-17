@@ -1,8 +1,10 @@
-# TypeScript implementation of Signify - KERI Signing at the Edge
+# TypeScript implementation of Signify
 
 Project Name: signify-ts
 
 [![TypeScript](https://badges.frapsoft.com/typescript/code/typescript.png?v=101)](https://github.com/ellerbrock/typescript-badges/)
+
+## Signify - KERI Signing at the Edge
 
 Of the five functions in a KERI agent, 
 
