@@ -8,8 +8,8 @@ import {MatterArgs, MtrDex} from './matter';
  *  using .raw as verifier key and .code as signature cypher suite
  */
 export class Verfer extends Matter {
-    constructor({raw, code, qb64, qb64b, qb2, strip}: MatterArgs) {
-        super({raw, code, qb64, qb64b, qb2, strip});
+    constructor({raw, code, qb64, qb64b, qb2}: MatterArgs) {
+        super({raw, code, qb64, qb64b, qb2});
 
         if (Array.from([MtrDex.Ed25519N, MtrDex.Ed25519]).includes(this.code)) {
             this._verify = this._ed25519

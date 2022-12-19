@@ -3,7 +3,7 @@ import {Decrypter} from "./decrypter";
 
 
 export class Cipher extends Matter {
-    constructor({raw, code, qb64, qb64b, qb2, strip}:MatterArgs) {
+    constructor({raw, code, qb64, qb64b, qb2}:MatterArgs) {
         if (raw != undefined && code == undefined) {
             if (raw.length == Matter._rawSize(MtrDex.X25519_Cipher_Salt)) {
                 code = MtrDex.X25519_Cipher_Salt
@@ -11,7 +11,7 @@ export class Cipher extends Matter {
                 code = MtrDex.X25519_Cipher_Salt
             }
         }
-        super({raw, code, qb64, qb64b, qb2, strip});
+        super({raw: raw, code: code, qb64b: qb64b, qb64: qb64, qb2: qb2});
 
         if (!(Array.from([MtrDex.X25519_Cipher_Salt, MtrDex.X25519_Cipher_Seed]).includes(this.code))) {
             throw new Error(`Unsupported Cipher code == ${this.code}`)

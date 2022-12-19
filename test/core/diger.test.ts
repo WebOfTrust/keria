@@ -32,7 +32,6 @@ describe('Diger', () => {
       diger = new Diger({raw: digest, code: MtrDex.Blake3_256});
       assert.deepStrictEqual(diger.code, MtrDex.Blake3_256);
 
-      console.log(diger.qb64)
       assert.equal(diger.qb64, "ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux");
       sizage = Matter.Sizes.get(diger.code)
       assert.deepStrictEqual(

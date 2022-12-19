@@ -3,7 +3,7 @@ import libsodium from "libsodium-wrappers-sumo";
 
 import { Signer } from '../../src/keri/core/signer';
 import {Matter, MtrDex} from "../../src/keri/core/matter";
-import {TextEncoder} from 'util'
+import {b} from "../../src/keri/core/core";
 
 describe('Signer', () => {
     it('should sign things', async () => {
@@ -15,7 +15,7 @@ describe('Signer', () => {
         assert.equal(signer.verfer.code, MtrDex.Ed25519)
         assert.equal(signer.verfer.raw.length, Matter._rawSize(signer.verfer.code))
 
-        let ser = new TextEncoder().encode('abcdefghijklmnopqrstuvwxyz0123456789')
+        let ser = b('abcdefghijklmnopqrstuvwxyz0123456789')
 
         let cigar = signer.sign(ser)
         assert.equal(cigar.code, MtrDex.Ed25519_Sig)

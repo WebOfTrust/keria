@@ -1,4 +1,5 @@
 const util = require('./utils');
+import {TextEncoder, TextDecoder} from 'util'
 
 export const VERRAWSIZE = 6;
 export const Versionage = {major: 1, minor: 0};
@@ -37,17 +38,9 @@ export const KsnLabels = ["v", "i", "s", "t", "p", "d", "f", "dt", "et", "kt", "
 
 export const RpyLabels = ["v", "t", "d", "dt", "r", "a"]
 
+const encoder = new TextEncoder()
+const decoder = new TextDecoder()
 
-// let mimes = {
-//   json: "application/keri+json",
-//   mgpk: "application/keri+msgpack",
-//   cbor: "application/keri+cbor",
-// };
-// let yourNumber = 899
-// let hexString =  yourNumber.toString(16);
-// let two = '29'.toString(16);
-// let three = '39'.toString(16)
-// let VERFMT = `KERI${hexString} ${two} ${three}_`   /// version format string
 export const VERFULLSIZE = 17;
 export const MINSNIFFSIZE = 12 + VERFULLSIZE;
 export const MINSIGSIZE = 4;
@@ -125,11 +118,52 @@ export const B64ChrByIdx = new Map<number, string>([[0, 'A'], [1, 'B'], [2, 'C']
     [46, 'u'], [47, 'v'], [48, 'w'], [49, 'x'], [50, 'y'], [51, 'z'],[ 52, '0'], [53, '1'], [54, '2'], [55, '3'],
     [56, '4'], [57, '5'], [58, '6'], [59, '7'], [60, '8'], [61, '9'], [62, '-'], [63, '_']]);
 
-// TODO: Implement...
-export function intToB64(i:number, l=1) {
-    console.log(B64ChrByIdx.get(i), l);
-    return ""
+export const B64IdxByChr = new Map<string, number>(Array.from(B64ChrByIdx, entry => [entry[1], entry[0]]))
+
+export function intToB64(i:number | undefined, l=1): string {
+    let out = ""
+    while(l != 0) {
+        out = B64ChrByIdx.get(i! % 64) + out
+        i = Math.floor(i! / 64)
+        if (i == 0) {
+            break
+        }
+    }
+
+    for(let i = 0; i < (l - out.length); i++) {
+        out = "A" + out
+    }
+
+    return out
 }
+
+export function intToB64b(n: number, l: number = 1): Uint8Array {
+    let s = intToB64(n, l)
+    return b(s)
+}
+
+export function b64ToInt(s: string): number {
+    if (s.length == 0) {
+        throw new Error("Empty string, conversion undefined.")
+    }
+
+    let i = 0
+    let rev =  [...s].reverse()
+    rev.forEach((c: string, e: number) => {
+        i |= B64IdxByChr.get(c)! << (e * 6)
+    })
+
+    return i
+}
+
+export function b(s?: string): Uint8Array {
+    return encoder.encode(s)
+}
+
+export function d(u? :Uint8Array): string {
+    return decoder.decode(u)
+}
+
 
 export function readInt(array: Uint8Array) {
     let value = 0;

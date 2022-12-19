@@ -2,11 +2,11 @@ import {Matter} from "../../src/keri/core/matter";
 
 import {strict as assert} from "assert";
 const { MtrDex } = require('../../src/keri/core/matter');
-import {TextDecoder} from 'util'
 import libsodium from "libsodium-wrappers-sumo";
 import {Signer} from "../../src/keri/core/signer";
 import {Encrypter} from "../../src/keri/core/encrypter";
 import {Verfer} from "../../src/keri/core/verfer";
+import {d} from "../../src/keri/core/core";
 
 
 describe('Encrypter', () => {
@@ -17,7 +17,7 @@ describe('Encrypter', () => {
         let seed = new Uint8Array([24, 59, 48, 196, 15, 42, 118, 70, 250, 227, 162, 69, 101, 101, 31, 150, 111, 206, 41, 71, 133, 227, 88, 134, 218, 4, 240, 220, 222, 6, 192, 43])
         let seedqb64b = new Matter({raw: seed, code: MtrDex.Ed25519_Seed}).qb64b
 
-        assert.equal(new TextDecoder().decode(seedqb64b), 'ABg7MMQPKnZG-uOiRWVlH5ZvzilHheNYhtoE8NzeBsAr')
+        assert.equal(d(seedqb64b), 'ABg7MMQPKnZG-uOiRWVlH5ZvzilHheNYhtoE8NzeBsAr')
 
         // b'6\x08d\r\xa1\xbb9\x8dp\x8d\xa0\xc0\x13J\x87r'
         let salt = new Uint8Array([54, 8, 100, 13, 161, 187, 57, 141, 112, 141, 160, 192, 19, 74, 135, 114])
