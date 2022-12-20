@@ -4,7 +4,7 @@ tests.test_main module
 
 """
 
-from xora.cli import main
+from cesr.cli import main
 
 
 def test_main():

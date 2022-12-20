@@ -1,7 +1,7 @@
 """
 main entry package
 
-Entrypoint module, in case you use `python -m xora`.
+Entrypoint module, in case you use `python -m cesr`.
 
 
 Why does this file exist, and why __main__? For more info, read:
@@ -10,7 +10,7 @@ Why does this file exist, and why __main__? For more info, read:
 - https://docs.python.org/3/using/cmdline.html#cmdoption-m
 """
 
-from xora.cli import main
+from cesr.cli import main
 
 if __name__ == "__main__":
     main()

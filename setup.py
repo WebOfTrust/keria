@@ -10,7 +10,7 @@ https://pypi.org/manage/projects/
 More secure to use twine to upload
 $ pip3 install twine
 $ python3 setup.py sdist
-$ twine upload dist/xora-0.0.1.tar.gz
+$ twine upload dist/cesr-0.0.1.tar.gz
 
 
 Update sphinx /docs
@@ -35,15 +35,14 @@ from setuptools import setup
 
 
 setup(
-    name='xora',
-    version='0.0.1',  #  also change in src/xora/__init__.py
+    name='cesr',
+    version='0.0.1',  #  also change in src/cesr/__init__.py
     license='Apache Software License 2.0',
-    description='XORA: XOR Accumulator',
-    long_description=("XORA: XORed accumulators or blinded data digests for "
-                      "compact and performant data registries."),
+    description='CESR: Composable Event Streaming Representation',
+    long_description=("CESR: Composable text-binary encoding for cryptographic primitives and streaming."),
     author='Samuel M. Smith',
-    author_email='smith.samuel.m@gmail.com',
-    url='https://github.com/WebOfTrust/xora',
+    author_email='sam@samuelsmith.org',
+    url='https://github.com/WebOfTrust/cesrpy',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
@@ -57,7 +56,7 @@ setup(
         'Operating System :: Unix',
         'Operating System :: POSIX',
         'Operating System :: Microsoft :: Windows',
-        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: Implementation :: CPython',
         # uncomment if you test on these interpreters:
         #'Programming Language :: Python :: Implementation :: PyPy',
@@ -67,7 +66,7 @@ setup(
         'Topic :: Utilities',
     ],
     project_urls={
-        'Issue Tracker': 'https://github.com/WebOfTrust/xora/issues',
+        'Issue Tracker': 'https://github.com/WebOfTrust/cesrpy/issues',
     },
     keywords=[ "secure attribution",
                "authentic data",
@@ -75,7 +74,7 @@ setup(
                "resolver",
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
-    python_requires='>=3.9.5',
+    python_requires='>=3.10.4',
     install_requires=[
         'pysodium>=0.7.9',
     ],
@@ -92,8 +91,8 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'xora = xora.cli:main',
-            'xorad = xora.daemon:main'
+            'cesr = cesr.cli:main',
+            'cesrd = cesr.daemon:main'
         ]
     },
 )
