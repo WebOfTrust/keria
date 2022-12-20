@@ -1,7 +1,7 @@
 """
 main entry package
 
-Entrypoint module, in case you use `python -m cesr`.
+Entrypoint module, in case you use `python -m keria`.
 
 
 Why does this file exist, and why __main__? For more info, read:
@@ -10,7 +10,7 @@ Why does this file exist, and why __main__? For more info, read:
 - https://docs.python.org/3/using/cmdline.html#cmdoption-m
 """
 
-from cesr.cli import main
+from keria.cli import main
 
 if __name__ == "__main__":
     main()

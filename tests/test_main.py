@@ -4,7 +4,7 @@ tests.test_main module
 
 """
 
-from cesr.cli import main
+from keria.cli import main
 
 
 def test_main():

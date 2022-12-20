@@ -1,9 +1,4 @@
-# CESR Composable Event Streaming Representation
+# KERIA
 
-Python implementation of CESR Protocol
+KERI Agent in the cloud
 
-Supports composable text and binary encoding
-
-Supports pipelined streaming
-
-Supports interleaved JSON, CBOR, MGPK, and native CESR
