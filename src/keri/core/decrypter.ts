@@ -9,9 +9,9 @@ import {Salter} from "./salter";
 
 export class Decrypter extends Matter {
     private readonly _decrypt: any;
-    constructor({raw, code = MtrDex.X25519_Private, qb64, qb64b, qb2, strip}:MatterArgs, seed: Uint8Array | undefined = undefined) {
+    constructor({raw, code = MtrDex.X25519_Private, qb64, qb64b, qb2}:MatterArgs, seed: Uint8Array | undefined = undefined) {
         try {
-            super({raw, code, qb64, qb64b, qb2, strip})
+            super({raw, code, qb64, qb64b, qb2})
         } catch(e) {
             if(e instanceof EmptyMaterialError) {
                 if (seed != undefined) {
@@ -23,7 +23,7 @@ export class Decrypter extends Matter {
                     sigkey.set(signer.raw)
                     sigkey.set(signer.verfer.raw, signer.raw.length)
                     raw = libsodium.crypto_sign_ed25519_sk_to_curve25519(sigkey)
-                    super({raw, code, qb64, qb64b, qb2, strip})
+                    super({raw, code, qb64, qb64b, qb2})
                 }
                 else {
                     throw e

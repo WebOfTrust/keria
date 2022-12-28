@@ -9,7 +9,7 @@ import {arrayEquals} from "./utils";
 
 export class Encrypter extends Matter {
     private _encrypt: any;
-    constructor({raw, code = MtrDex.X25519, qb64, qb64b, qb2, strip}:MatterArgs, verkey: Uint8Array | null = null) {
+    constructor({raw, code = MtrDex.X25519, qb64, qb64b, qb2}:MatterArgs, verkey: Uint8Array | null = null) {
         if (raw == undefined && verkey != null) {
             let verfer = new Verfer({qb64b: verkey})
             if (!Array.from([MtrDex.Ed25519N, MtrDex.Ed25519]).includes(verfer.code)) {
@@ -18,7 +18,7 @@ export class Encrypter extends Matter {
             raw = libsodium.crypto_sign_ed25519_pk_to_curve25519(verfer.raw)
         }
 
-        super({raw, code, qb64, qb64b, qb2, strip});
+        super({raw, code, qb64, qb64b, qb2});
 
         if (this.code == MtrDex.X25519) {
             this._encrypt = this._x25519;

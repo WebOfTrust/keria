@@ -1,6 +1,6 @@
 {
   "version": "0.1.0",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "files": [
@@ -27,16 +27,16 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "name": "keri-skwa",
+  "name": "signify-ts",
   "author": "Phil Feairheller",
-  "module": "dist/keri-skwa.esm.js",
+  "module": "dist/signify-ts.js",
   "size-limit": [
     {
-      "path": "dist/keri-skwa.cjs.production.min.js",
+      "path": "dist/signify-ts.cjs.production.min.js",
       "limit": "10 KB"
     },
     {
-      "path": "dist/keri-skwa.esm.js",
+      "path": "dist/signify.esm.js",
       "limit": "10 KB"
     }
   ],
@@ -45,6 +45,7 @@
     "@types/lodash": "^4.14.185",
     "@types/urlsafe-base64": "^1.0.28",
     "husky": "^7.0.2",
+    "jest": "^29.3.1",
     "size-limit": "^5.0.4",
     "ts-migrate": "^0.1.23",
     "tsdx": "^0.14.1",

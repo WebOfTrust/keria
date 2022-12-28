@@ -13,9 +13,9 @@ export class Diger extends Matter {
     private readonly _verify: any
 
     // This constructor will assign digest verification function to ._verify
-    constructor({raw, code = MtrDex.Blake3_256, qb64, qb64b, qb2, strip}: MatterArgs, ser: Uint8Array | null = null) {
+    constructor({raw, code = MtrDex.Blake3_256, qb64, qb64b, qb2}: MatterArgs, ser: Uint8Array | null = null) {
         try {
-            super({raw, code, qb64, qb64b, qb2, strip});
+            super({raw, code, qb64, qb64b, qb2});
         } catch (error: any) {
             if (ser == null) {
                 throw error;

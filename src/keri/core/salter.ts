@@ -6,9 +6,9 @@ const { EmptyMaterialError } = require('./kering')
 import libsodium  from 'libsodium-wrappers-sumo';
 
 export const enum Tier {
-    Low = "Low",
-    Med = "Med",
-    High = "High"
+    low = "low",
+    med = "med",
+    high = "high"
 }
 
 interface SalterArgs {
@@ -18,13 +18,12 @@ interface SalterArgs {
     qb64b? :Uint8Array | undefined
     qb64?: string
     qb2?: Uint8Array | undefined
-    strip?: boolean
 }
 export class Salter extends Matter {
 
-    constructor({raw, code = MtrDex.Salt_128, tier=Tier.Low, qb64, qb64b, qb2, strip=false}:SalterArgs) {
+    constructor({raw, code = MtrDex.Salt_128, tier=Tier.low, qb64, qb64b, qb2}:SalterArgs) {
         try {
-            super({raw, code, qb64, qb64b, qb2, strip});
+            super({raw, code, qb64, qb64b, qb2});
         } catch (e) {
             if(e instanceof EmptyMaterialError) {
                 if (code == MtrDex.Salt_128) {
@@ -42,7 +41,7 @@ export class Salter extends Matter {
             throw new Error("invalid code for Salter, only Salt_128 accepted")
         }
 
-        this.tier = tier !== null ? tier : Tier.Low
+        this.tier = tier !== null ? tier : Tier.low
     }
 
     private stretch(size: number = 32, path: string = "", tier: Tier | null = null, temp: boolean = false): Uint8Array {
@@ -56,15 +55,15 @@ export class Salter extends Matter {
 
         } else {
             switch (tier) {
-                case Tier.Low:
+                case Tier.low:
                     opslimit = libsodium.crypto_pwhash_OPSLIMIT_INTERACTIVE
                     memlimit = libsodium.crypto_pwhash_MEMLIMIT_INTERACTIVE
                     break;
-                case Tier.Med:
+                case Tier.med:
                     opslimit = libsodium.crypto_pwhash_OPSLIMIT_MODERATE
                     memlimit = libsodium.crypto_pwhash_MEMLIMIT_MODERATE
                     break;
-                case Tier.High:
+                case Tier.high:
                     opslimit = libsodium.crypto_pwhash_OPSLIMIT_SENSITIVE
                     memlimit = libsodium.crypto_pwhash_MEMLIMIT_SENSITIVE
                     break;

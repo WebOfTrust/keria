@@ -33,7 +33,7 @@ describe('Salter.signer', () => {
         let salter = new Salter({qb64: "0ACSTo66vU2CA-j4usUIAEm2"})
         let signer = salter.signer()
         assert.notEqual(signer, null)
-        assert.equal(signer.verfer().qb64, "DD28x2a4KCZ8f6OAcA856jAD1chNOo4pT8ICxyzJUJhj")
+        assert.equal(signer.verfer.qb64, "DD28x2a4KCZ8f6OAcA856jAD1chNOo4pT8ICxyzJUJhj")
 
     });
 });

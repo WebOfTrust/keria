@@ -1,14 +1,12 @@
-
-export {};
-const { Matter } = require('./matter');
-
+import {IdxSigDex, Indexer, IndexerArgs} from "./indexer";
+import {Verfer} from "./verfer";
 
 /**
- * Siger is subclass of SigMat, indexed signature material,
+   Siger is subclass of Indexer, indexed signature material,
     Adds .verfer property which is instance of Verfer that provides
           associated signature verifier.
 
-    See SigMat for inherited attributes and properties:
+    See Indexer for inherited attributes and properties:
 
     Attributes:
 
@@ -16,18 +14,26 @@ const { Matter } = require('./matter');
         .verfer is Verfer object instance
 
     Methods:
- */
+ **/
 
-export class Siger extends Matter {
-  constructor({}) {
-    super();
+export class Siger extends Indexer {
+
+  private _verfer?: Verfer
+  constructor({raw, code, qb64, qb64b, qb2}: IndexerArgs, verfer?: Verfer) {
+    super({raw, code, qb64, qb64b, qb2});
+
+    if (!IdxSigDex.has(this.code)) {
+      throw new Error(`Invalid code = ${this.code} for Siger.`)
+    }
+    this._verfer = verfer
   }
 
-  verfer() {
-    return this.getVerfer;
+  get verfer(): Verfer | undefined {
+    return this._verfer;
   }
 
-  setVerfer(verfer: any) {
-    this.getVerfer = verfer;
+  set verfer(verfer: Verfer | undefined) {
+    this._verfer = verfer;
   }
+
 }

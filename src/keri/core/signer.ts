@@ -24,7 +24,6 @@ interface SignerArgs {
     qb64b?: Uint8Array | undefined
     qb64?: string
     qb2?: Uint8Array | undefined
-    strip?: boolean
     transferable?: boolean
 }
 
@@ -32,14 +31,14 @@ export class Signer extends Matter {
     private readonly _sign
     private readonly _verfer: Verfer
 
-    constructor({raw, code = MtrDex.Ed25519_Seed, qb64, qb64b, qb2, transferable = true, strip = false}: SignerArgs) {
+    constructor({raw, code = MtrDex.Ed25519_Seed, qb64, qb64b, qb2, transferable = true}: SignerArgs) {
         try {
-            super({raw, code, qb64, qb64b, qb2, strip})
+            super({raw, code, qb64, qb64b, qb2})
         } catch (e) {
             if (e instanceof EmptyMaterialError) {
                 if (code == MtrDex.Ed25519_Seed) {
                     let raw = libsodium.randombytes_buf(libsodium.crypto_sign_SEEDBYTES);
-                    super({raw, code, qb64, qb64b, qb2, strip})
+                    super({raw, code, qb64, qb64b, qb2})
                 } else {
                     throw new Error(`Unsupported signer code = ${code}.`)
                 }
@@ -71,12 +70,12 @@ export class Signer extends Matter {
         return this._verfer;
     }
 
-    sign(ser: Uint8Array, index: number | null = null, only: boolean = false, ondex: number | null = null) {
+    sign(ser: Uint8Array, index: number | null = null, only: boolean = false, ondex: number | undefined = undefined) {
         return this._sign(ser, this.raw, this.verfer, index, only, ondex)
     }
 
     _ed25519(ser: Uint8Array, seed: Uint8Array, verfer: Verfer, index: number | null,
-             only: boolean = false, ondex: number | null) {
+             only: boolean = false, ondex: number | undefined) {
 
         let sig = libsodium.crypto_sign_detached(
             ser,
@@ -88,14 +87,14 @@ export class Signer extends Matter {
         } else {
             let code;
             if (only) {
-                ondex = null
+                ondex = undefined
                 if (index <= 63) {
                     code = IdrDex.Ed25519_Crt_Sig
                 } else {
                     code = IdrDex.Ed25519_Big_Crt_Sig
                 }
             } else {
-                if(ondex == null) {
+                if(ondex == undefined) {
                     ondex = index
                 }
 
@@ -106,7 +105,7 @@ export class Signer extends Matter {
 
             }
 
-            return new Siger({raw: sig, code: code, index: index, ondex: ondex, verfer: verfer});
+            return new Siger({raw: sig, code: code, index: index, ondex: ondex}, verfer)
         }
 
     }

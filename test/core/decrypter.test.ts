@@ -5,7 +5,7 @@ import {strict as assert} from "assert";
 import {Salter} from "../../src/keri/core/salter";
 import {Decrypter} from "../../src/keri/core/decrypter";
 import {Encrypter} from "../../src/keri/core/encrypter";
-import {TextEncoder} from 'util'
+import {b} from "../../src/keri/core/core";
 
 
 describe('Decrypter', () => {
@@ -96,7 +96,7 @@ describe('Decrypter', () => {
         // use previously stored fully qualified seed cipher with different nonce
         // get from seedcipher above
         let cipherseed = 'PM9jOGWNYfjM_oLXJNaQ8UlFSAV5ACjsUY7J16xfzrlpc9Ve3A5WYrZ4o_NHtP5lhp78Usspl9fyFdnCdItNd5JyqZ6dt8SXOt6TOqOCs-gy0obrwFkPPqBvVkEw'
-        designer = decrypter.decrypt(new TextEncoder().encode(cipherseed), null, signer.verfer.transferable)
+        designer = decrypter.decrypt(b(cipherseed), null, signer.verfer.transferable)
         assert.deepStrictEqual(designer.qb64b, seedqb64b)
         assert.equal(designer.code, MtrDex.Ed25519_Seed)
         assert.equal(designer.verfer.code, MtrDex.Ed25519)
@@ -104,7 +104,7 @@ describe('Decrypter', () => {
         // use previously stored fully qualified salt cipher with different nonce
         // get from saltcipher above
         let ciphersalt = '1AAHjlR2QR9J5Et67Wy-ZaVdTryN6T6ohg44r73GLRPnHw-5S3ABFkhWyIwLOI6TXUB_5CT13S8JvknxLxBaF8ANPK9FSOPD8tYu'
-        desalter = decrypter.decrypt(new TextEncoder().encode(ciphersalt))
+        desalter = decrypter.decrypt(b(ciphersalt))
         assert.deepStrictEqual(desalter.qb64b, saltqb64b)
         assert.equal(desalter.code, MtrDex.Salt_128)
 

@@ -2,7 +2,7 @@ import {EmptyMaterialError} from "./kering";
 
 const {intToB64, readInt} = require('./core');
 const Base64 = require('urlsafe-base64');
-import {TextEncoder, TextDecoder} from 'util'
+import {b, d} from "./core";
 
 
 export class MatterCodex {
@@ -40,7 +40,6 @@ export interface MatterArgs {
     qb64b?: Uint8Array | undefined
     qb64?: string
     qb2?: Uint8Array | undefined
-    strip?: boolean
 }
 
 export class Matter {
@@ -70,7 +69,7 @@ export class Matter {
     private _size: number = -1;
     private _raw: Uint8Array = new Uint8Array(0);
 
-    constructor({raw, code = MtrDex.Ed25519N, qb64b, qb64, qb2, strip = false}: MatterArgs) {
+    constructor({raw, code = MtrDex.Ed25519N, qb64b, qb64, qb2}: MatterArgs) {
 
         let size = -1
         if (raw !== undefined) {
@@ -97,17 +96,10 @@ export class Matter {
         } else if (qb64 !== undefined) {
             this._exfil(qb64)
         } else if (qb64b !== undefined) {
-            let qb64 = new TextDecoder().decode(qb64b)
+            let qb64 = d(qb64b)
             this._exfil(qb64)
-            if (strip) {
-                console.log("stripping qb64b")
-            }
-
         } else if (qb2 !== undefined) {
-            if (strip) {
-                console.log("stripping qb2")
-            }
-
+            this._bexfil(qb2)
         } else {
             throw new EmptyMaterialError("EmptyMaterialError");
         }
@@ -130,8 +122,7 @@ export class Matter {
     }
 
     get qb64b() {
-        let utf8Encode = new TextEncoder();
-        return utf8Encode.encode(this.qb64)
+        return b(this.qb64)
     }
 
     get transferable(): boolean {
@@ -227,11 +218,11 @@ export class Matter {
         qb64 = qb64.slice(0, sizage!.fs)
         let ps = cs % 4
         let pbs = 2 * (ps == 0 ? sizage!.ls : ps)
-        let raw;
+        let raw
         if (ps != 0) {
             let base = new Array(ps + 1).join('A') + qb64.slice(cs);
             let paw = Base64.decode(base)  // decode base to leave prepadded raw
-            let pi = (readInt(paw.slice(0, ps), "big"))  // prepad as int
+            let pi = (readInt(paw.slice(0, ps)))  // prepad as int
             if (pi & (2 ** pbs - 1)) {  // masked pad bits non-zero
                 throw new Error(`Non zeroed prepad bits = {pi & (2 ** pbs - 1 ):<06b} in {qb64b[cs:cs+1]}.`)
             }
@@ -253,5 +244,9 @@ export class Matter {
         this._code = hard  // hard only
         this._size = size
         this._raw = Uint8Array.from(raw)  // ensure bytes so immutable and for crypto ops
+    }
+
+    private _bexfil(qb2: Uint8Array) {
+        throw new Error(`qb2 not yet supported: ${qb2}`)
     }
 }
