@@ -72,14 +72,14 @@ export class Matter {
     constructor({raw, code = MtrDex.Ed25519N, qb64b, qb64, qb2}: MatterArgs) {
 
         let size = -1
-        if (raw !== undefined) {
-            if (code.length === 0) {
+        if (raw != undefined) {
+            if (code.length == 0) {
                 throw new Error("Improper initialization need either (raw and code) or qb64b or qb64 or qb2.")
             }
 
             // Add support for variable size codes here if needed, this code only works for stable size codes
             let sizage = Matter.Sizes.get(code)
-            if (sizage!.fs === -1) {  // invalid
+            if (sizage!.fs == -1) {  // invalid
                 throw new Error(`Unsupported variable size code=${code}`)
             }
 
@@ -222,15 +222,15 @@ export class Matter {
         if (ps != 0) {
             let base = new Array(ps + 1).join('A') + qb64.slice(cs);
             let paw = Base64.decode(base)  // decode base to leave prepadded raw
-            let pi = (readInt(paw.slice(0, ps)))  // prepad as int
+            let pi = (readInt(paw.subarray(0, ps)))  // prepad as int
             if (pi & (2 ** pbs - 1)) {  // masked pad bits non-zero
                 throw new Error(`Non zeroed prepad bits = {pi & (2 ** pbs - 1 ):<06b} in {qb64b[cs:cs+1]}.`)
             }
-            raw = paw.slice(ps)  // strip off ps prepad paw bytes
+            raw = paw.subarray(ps)  // strip off ps prepad paw bytes
         } else {
             let base = qb64.slice(cs);
             let paw = Base64.decode(base);
-            let li = readInt(paw.slice(0, sizage!.ls))
+            let li = readInt(paw.subarray(0, sizage!.ls))
             if (li != 0) {
                 if (li == 1) {
                     throw new Error(`Non zeroed lead byte = 0x{li:02x}.`)
@@ -238,7 +238,7 @@ export class Matter {
                     throw new Error(`Non zeroed lead bytes = 0x{li:04x}`)
                 }
             }
-            raw = paw.slice(sizage!.ls)
+            raw = paw.subarray(sizage!.ls)
         }
 
         this._code = hard  // hard only

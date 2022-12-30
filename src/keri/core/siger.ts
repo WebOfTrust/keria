@@ -19,8 +19,8 @@ import {Verfer} from "./verfer";
 export class Siger extends Indexer {
 
   private _verfer?: Verfer
-  constructor({raw, code, qb64, qb64b, qb2}: IndexerArgs, verfer?: Verfer) {
-    super({raw, code, qb64, qb64b, qb2});
+  constructor({raw, code, index, ondex, qb64, qb64b, qb2}: IndexerArgs, verfer?: Verfer) {
+    super({raw, code, index, ondex, qb64, qb64b, qb2});
 
     if (!IdxSigDex.has(this.code)) {
       throw new Error(`Invalid code = ${this.code} for Siger.`)
