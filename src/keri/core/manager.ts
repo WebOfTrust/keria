@@ -74,7 +74,7 @@ export class RandyCreator implements Creator {
     }
 
     get tier(): Tier {
-        return Tier.low;
+        return "" as Tier;
     }
 }
 
@@ -407,7 +407,7 @@ export class Manager {
         let pp = new PrePrm()
         pp.pidx = pidx!
         pp.algo = algo!
-        pp.salt = this._encrypter?.encrypt(b(creator.salt)).qb64
+        pp.salt = creator.salt.length > 0 ? this._encrypter?.encrypt(b(creator.salt)).qb64 : creator.salt
         pp.stem = creator.stem
         pp.tier = creator.tier
 
@@ -528,7 +528,7 @@ export class Manager {
     }
 
     rotate({pre, ncodes=undefined, ncount=1, ncode=MtrDex.Ed25519_Seed, dcode=MtrDex.Blake3_256,
-           transferable=true, temp=false, erase=true}:RotateArgs) {
+           transferable=true, temp=false, erase=true}:RotateArgs):  [Array<Verfer>, Array<Diger>] {
         let pp = this.ks.getPrms(pre)
         if (pp == undefined) {
             throw new Error(`Attempt to rotate nonexistent pre=${pre}.`)
@@ -539,7 +539,7 @@ export class Manager {
             throw new Error(`Attempt to rotate nonexistent pre=${pre}.`)
         }
 
-        if (ps.nxt.pubs == undefined) {
+        if (ps.nxt.pubs == undefined || ps.nxt.pubs.length == 0) {
             throw new Error(`Attempt to rotate nontransferable pre=${pre}.`)
         }
 
@@ -566,7 +566,7 @@ export class Manager {
             salt = this.decrypter.decrypt(b(salt)).qb64
         }
 
-        let creator = new Creatory(pp.algo).make(salt, pp.stem, pp.tier)
+        let creator = new Creatory(pp.algo).make(salt, pp.tier, pp.stem)
 
         if (ncodes == undefined) {
             if (ncount < 0) {
