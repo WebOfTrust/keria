@@ -22,10 +22,10 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '18.12.1'
-          cache: 'yarn'
+          cache: 'npm'
 
       - name: build
         run: |
-          yarn
-          yarn test
-          yarn build
+          npm ci
+          npm test
+          npm run build
