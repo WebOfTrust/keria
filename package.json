@@ -36,7 +36,7 @@
       "limit": "10 KB"
     },
     {
-      "path": "dist/signify.esm.js",
+      "path": "dist/signify-ts.esm.js",
       "limit": "10 KB"
     }
   ],
