@@ -1,6 +1,4 @@
-const util = require('./utils');
 import {TextEncoder, TextDecoder} from 'util'
-
 export const VERRAWSIZE = 6;
 export const Versionage = {major: 1, minor: 0};
 export const Serialage = {json: '', mgpk: '', cbor: ''};
@@ -44,30 +42,6 @@ const decoder = new TextDecoder()
 export const VERFULLSIZE = 17;
 export const MINSNIFFSIZE = 12 + VERFULLSIZE;
 export const MINSIGSIZE = 4;
-
-/**
- * @description  It will return version string
- */
-export function versify(version: { major: number, minor: number }, kind = Serials.json, size: number) {
-    if (!(Object.values(Serials).indexOf(kind) > -1)) {
-        throw new Error('Invalid serialization kind =' + kind);
-    }
-
-    if (!version) {
-        version = Versionage;
-    }
-
-    const hex1 = version.major.toString(16);
-    const hex2 = version.minor.toString(16);
-    const kindHex = kind;
-    const hex3 = util.pad(size.toString(16), VERRAWSIZE);
-
-    return `KERI${hex1}${hex2}${kindHex}${hex3}_`;
-}
-
-Vstrings.json = versify(Versionage, Serials.json, 0);
-Vstrings.mgpk = versify(Versionage, Serials.mgpk, 0);
-Vstrings.cbor = versify(Versionage, Serials.cbor, 0);
 
 // const version_pattern = 'KERI(?P<major>[0-9a-f])(?P<minor>[0-9a-f])
 // (?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})'

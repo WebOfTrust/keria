@@ -150,6 +150,28 @@ export class Creatory {
     }
 }
 
+export function openManager(passcode: string, salt?: string) {
+    if (passcode.length < 21) {
+        throw new Error("Bran (passcode seed material) too short.")
+    }
+
+    let bran = MtrDex.Salt_128 + 'A' + passcode.substring(0, 21)  // qb64 salt for seed
+    let signer = new Salter({qb64: bran}).signer(MtrDex.Ed25519_Seed, false)
+    let seed = signer.qb64
+    let aeid = signer.verfer.qb64  // lest it remove encryption
+
+    let algo;
+
+    if (salt != undefined) {
+        algo = Algos.salty
+        salt = new Salter({qb64: salt}).qb64
+    } else {
+        algo = Algos.randy
+    }
+
+    return new Manager({seed: seed, aeid: aeid, algo: algo, salt: salt})
+}
+
 export interface ManagerArgs {
     ks?: KeyStore | undefined
     seed?: string | undefined
@@ -160,7 +182,7 @@ export interface ManagerArgs {
     tier?: string | undefined
 }
 
-interface InceptArgs {
+export interface InceptArgs {
     icodes?: any | undefined
     icount?: number
     icode?: string
@@ -201,7 +223,7 @@ export class Manager {
     private _seed: string
     private _encrypter: Encrypter | undefined
     private _decrypter: Decrypter | undefined
-    private _ks: KeyStore
+    private readonly _ks: KeyStore
 
     constructor({ks, seed, aeid, pidx, algo, salt, tier}: ManagerArgs) {
 

@@ -119,7 +119,6 @@ describe('Creator', () => {
 
         creator = new Creatory(Algos.randy).make(salt)
         assert.equal(creator instanceof RandyCreator, true)
-
     })
 })
 
