@@ -41,9 +41,39 @@ class PubSet {
     pubs: Array<string> = new Array<string>() // list qb64 public keys.
 }
 
+class PubPath {
+    path: string = ""
+    code: string = ""
+    tier: string = Tier.high
+    temp: boolean = false
+}
+
+class Keys {
+    private readonly _signers: Array<Signer>
+    private readonly _paths?: Array<string>
+
+    constructor(signers: Array<Signer>, paths?: Array<string>) {
+        this._signers = signers
+        if (paths != undefined) {
+            if (signers.length != paths.length) {
+                throw new Error("If paths are provided, they must be the same length as signers")
+            }
+        }
+        this._paths = paths
+    }
+
+    get paths(): Array<string> | undefined {
+        return this._paths;
+    }
+
+    get signers(): Array<Signer> {
+        return this._signers;
+    }
+}
+
 export interface Creator {
-    create(codes: Array<string> | undefined, count: number, code: string, transferable: boolean,
-           pidx: number, ridx: number, kidx: number, temp: boolean): Array<Signer>
+    create(codes: Array<string> | undefined, count: number, code: string, transferable: boolean, pidx: number,
+           ridx: number, kidx: number, temp: boolean): Keys
     get salt(): string
     get stem(): string
     get tier(): Tier
@@ -52,7 +82,7 @@ export interface Creator {
 export class RandyCreator implements Creator {
 
     create(codes: Array<string> | undefined = undefined, count: number = 1, code: string = MtrDex.Ed25519_Seed,
-           transferable: boolean = true): Array<Signer> {
+           transferable: boolean = true): Keys {
         let signers = new Array<Signer>()
         if (codes == undefined) {
             codes = new Array(count).fill(code)
@@ -62,7 +92,7 @@ export class RandyCreator implements Creator {
             signers.push(new Signer({code: code, transferable: transferable}))
         })
 
-        return signers
+        return new Keys(signers)
     }
 
     get salt(): string {
@@ -103,11 +133,14 @@ export class SaltyCreator implements Creator {
     }
 
     create(codes: Array<string> | undefined = undefined, count: number = 1, code: string = MtrDex.Ed25519_Seed,
-           transferable: boolean = true, pidx: number = 0, ridx: number = 0, kidx: number = 0,
-           temp: boolean = false): Array<Signer> {
+           transferable: boolean = true,  pidx: number = 0, ridx: number = 0, kidx: number = 0,
+           temp: boolean = false): Keys {
+
         let signers =  new Array<Signer>()
+        let paths = new Array<string>()
+
         if (codes == undefined) {
-            codes = new Array(count).fill(code)
+            codes = new Array<string>(count).fill(code)
         }
 
         let stem = this.stem == "" ? pidx.toString(16) : this.stem
@@ -115,15 +148,15 @@ export class SaltyCreator implements Creator {
         codes.forEach((code, idx) => {
             let path = stem + ridx.toString(16) + (kidx+idx).toString(16)
             signers.push(this.salter.signer(code, transferable, path, this.tier, temp))
+            paths.push(path)
         })
 
-        return signers
+        return new Keys(signers, paths)
     }
-
 }
 
 export class Creatory {
-    private _make: any
+    private readonly _make: any
     constructor(algo: Algos = Algos.salty) {
         switch(algo) {
             case Algos.randy:
@@ -137,15 +170,15 @@ export class Creatory {
         }
     }
 
-    make(...args: any[]) {
+    make(...args: any[]): Creator {
         return this._make(...args)
     }
 
-    _makeRandy() {
+    _makeRandy(): Creator {
         return new RandyCreator()
     }
 
-    _makeSalty(...args: any[]) {
+    _makeSalty(...args: any[]): Creator {
         return new SaltyCreator(...args)
     }
 }
@@ -220,7 +253,8 @@ interface SignArgs {
 }
 
 export class Manager {
-    private _seed: string
+    private _seed?: string
+    private _salt?: string
     private _encrypter: Encrypter | undefined
     private _decrypter: Decrypter | undefined
     private readonly _ks: KeyStore
@@ -228,11 +262,11 @@ export class Manager {
     constructor({ks, seed, aeid, pidx, algo, salt, tier}: ManagerArgs) {
 
         this._ks = ks == undefined ? new Keeper() : ks
-        this._seed = seed == undefined ? "" : seed
+        this._seed = seed
         this._encrypter = undefined
         this._decrypter = undefined
 
-        aeid = aeid == undefined ? "" : aeid
+        aeid = aeid == undefined ? undefined : aeid
         pidx = pidx == undefined ? 0 : pidx
         algo = algo == undefined ? Algos.salty : algo
 
@@ -271,15 +305,15 @@ export class Manager {
         return this._ks
     }
 
-    get encrypter(): Encrypter {
-        return this._encrypter!
+    get encrypter(): Encrypter | undefined {
+        return this._encrypter
     }
 
-    get decrypter(): Decrypter {
-        return this._decrypter!
+    get decrypter(): Decrypter | undefined {
+        return this._decrypter
     }
 
-    get seed(): string {
+    get seed(): string | undefined {
         return this._seed
     }
 
@@ -299,19 +333,22 @@ export class Manager {
         this.ks.pinGbls('pidx', pidx!.toString(16))
     }
 
-    get salt(): string  | undefined{
-        let salt = this.ks.getGbls('salt')
-        if (this._decrypter != undefined) {
-            return this._decrypter?.decrypt(b(salt)).qb64
+    get salt(): string  | undefined {
+        if (this._decrypter == undefined) {
+            return this._salt
+        } else {
+            let salt = this.ks.getGbls('salt')
+            return this._decrypter.decrypt(b(salt)).qb64
         }
-        return salt
     }
 
     set salt(salt: string | undefined) {
-        if(this._encrypter != undefined) {
+        if(this._encrypter == undefined) {
+            this._salt = salt
+        } else {
             salt = this._encrypter.encrypt(b(salt)).qb64
+            this.ks.pinGbls('salt', salt!)
         }
-        this.ks.pinGbls('salt', salt!)
     }
 
     get tier(): string | undefined {
@@ -332,7 +369,7 @@ export class Manager {
         this.ks.pinGbls('algo', algo!)
     }
 
-    private updateAeid(aeid: string | undefined, seed: string) {
+    private updateAeid(aeid: string | undefined, seed?: string) {
         if (this.aeid != undefined) {
             let seed = b(this._seed)
             if (this._seed == undefined || !this._encrypter?.verifySeed(seed)) {
@@ -349,9 +386,11 @@ export class Manager {
                                            "  with provided aeid=${aeid}.`)
                 }
             }
-        } else {
+        } else if (this.algo == Algos.randy) {
             // Unlike KERIpy, we don't support unencrypted secrets
-            throw new Error("Invalid use of Manager, unencrypted keystore not supported")
+            throw new Error("Invalid Manager configuration, encryption must be used with Randy key creation.")
+        } else {
+            this._encrypter = undefined
         }
 
         let salt = this.salt
@@ -374,7 +413,7 @@ export class Manager {
 
         }
 
-        this.ks.pinGbls("aeid", aeid)  // set aeid in db
+        this.ks.pinGbls("aeid", aeid!)  // set aeid in db
         this._seed = seed  // set .seed in memory
 
         // update .decrypter
@@ -396,7 +435,7 @@ export class Manager {
             tier = this.tier
         }
 
-        let pidx = this.pidx
+        let pidx = this.pidx!
         let ridx = 0
         let kidx = 0
 
@@ -410,8 +449,8 @@ export class Manager {
             icodes = new Array<string>(icount).fill(icode)
         }
 
-        let isigners = creator.create(icodes, 0, MtrDex.Ed25519_Seed, transferable, pidx, ridx, kidx, temp)
-        let verfers = Array.from(isigners, (signer: Signer) => signer.verfer)
+        let ikeys = creator.create(icodes, 0, MtrDex.Ed25519_Seed, transferable, pidx, ridx, kidx, temp)
+        let verfers = Array.from(ikeys.signers, (signer: Signer) => signer.verfer)
 
         if (ncodes == undefined) {
             if (ncount < 0) {
@@ -421,15 +460,15 @@ export class Manager {
             ncodes = new Array<string>(ncount).fill(ncode)
         }
 
-        let nsigners = creator.create(ncodes, 0, MtrDex.Ed25519_Seed, transferable, pidx, ridx+1, kidx+icodes.length,
+        let nkeys = creator.create(ncodes, 0, MtrDex.Ed25519_Seed, transferable, pidx, ridx+1, kidx+icodes.length,
             temp)
 
-        let digers = Array.from(nsigners, (signer: Signer) => new Diger({code: dcode}, signer.verfer.qb64b))
+        let digers = Array.from(nkeys.signers, (signer: Signer) => new Diger({code: dcode}, signer.verfer.qb64b))
 
         let pp = new PrePrm()
         pp.pidx = pidx!
         pp.algo = algo!
-        pp.salt = creator.salt.length > 0 ? this._encrypter?.encrypt(b(creator.salt)).qb64 : creator.salt
+        pp.salt = creator.salt.length == 0 || this.encrypter == undefined ? "" : this.encrypter.encrypt(b(creator.salt)).qb64
         pp.stem = creator.stem
         pp.tier = creator.tier
 
@@ -441,7 +480,7 @@ export class Manager {
         nw.dt = dt
 
         let nt = new PubLot()
-        nt.pubs = Array.from(nsigners, (signer: Signer) => signer.verfer.qb64)
+        nt.pubs = Array.from(nkeys.signers, (signer: Signer) => signer.verfer.qb64)
         nt.ridx = ridx + 1
         nt.kidx = kidx + icodes.length
         nt.dt = dt
@@ -465,17 +504,40 @@ export class Manager {
             throw new Error(`Already incepted sit for pre=${pre}.`)
         }
 
-        isigners.forEach((signer: Signer) => {
-            this.ks.putPris(signer.verfer.qb64, signer, this._encrypter!)
-        })
+        if (this.encrypter != undefined) { // Only store encrypted keys if we have an encrypter, otherwise regenerate
+            ikeys.signers.forEach((signer: Signer) => {
+                this.ks.putPris(signer.verfer.qb64, signer, this.encrypter!)
+            })
+
+            nkeys.signers.forEach((signer: Signer) => {
+                this.ks.putPris(signer.verfer.qb64, signer, this.encrypter!)
+            })
+        } else if (this._encrypter == undefined && ikeys.paths != undefined && nkeys.paths != undefined) {
+            ikeys.paths.forEach((path: string, idx: number) => {
+                let signer = ikeys.signers[idx]
+                let ppt = new PubPath()
+                ppt.path = path
+                ppt.code = icodes[idx]
+                ppt.tier = pp.tier
+                ppt.temp = temp
+                this.ks.putPths(signer.verfer.qb64, ppt)
+            })
+            nkeys.paths.forEach((path: string, idx: number) => {
+                let signer = nkeys.signers[idx]
+                let ppt = new PubPath()
+                ppt.path = path
+                ppt.code = ncodes[idx]
+                ppt.tier = pp.tier
+                ppt.temp = temp
+                this.ks.putPths(signer.verfer.qb64, ppt)
+            })
+        } else {
+            throw new Error("invalid configuration, randy keys without encryption")
+        }
 
         let pubSet = new PubSet()
         pubSet.pubs = ps.new.pubs
         this.ks.putPubs(riKey(pre, ridx), pubSet)
-
-        nsigners.forEach((signer: Signer) => {
-            this.ks.putPris(signer.verfer.qb64, signer, this._encrypter!)
-        })
 
         let nxtPubSet = new PubSet()
         nxtPubSet.pubs = ps.nxt.pubs
@@ -575,17 +637,27 @@ export class Manager {
 
         let verfers = new Array<Verfer>()
         ps.new.pubs.forEach((pub) => {
-            let signer = this.ks.getPris(pub, this.decrypter)
-            if (signer == undefined) {
-                throw new Error(`Missing prikey in db for pubkey=${pub}`)
+            if (this.decrypter != undefined) {
+                let signer = this.ks.getPris(pub, this.decrypter)
+                if (signer == undefined) {
+                    throw new Error(`Missing prikey in db for pubkey=${pub}`)
+                }
+                verfers.push(signer.verfer)
+            } else {
+                // Should we regenerate from salt here since this.decryptor is undefined
+                verfers.push(new Verfer({qb64: pub}))
             }
 
-            verfers.push(signer.verfer)
         })
 
         let salt = pp.salt
-        if (salt != undefined && salt != "") {
+        if (salt != undefined && salt != "") { // If you provded a Salt for an AID but don't have encryption, pitch a fit
+            if (this.decrypter == undefined) {
+                throw new Error("Invalid configuration: AID salt with no encryption")
+            }
             salt = this.decrypter.decrypt(b(salt)).qb64
+        } else {
+            salt = this.salt!
         }
 
         let creator = new Creatory(pp.algo).make(salt, pp.tier, pp.stem)
@@ -601,12 +673,12 @@ export class Manager {
         let ridx = ps.new.ridx + 1
         let kidx = ps.nxt.kidx + ps.new.pubs.length
 
-        let signers = creator.create(ncodes, 0, undefined, transferable, pidx, ridx, kidx, temp)
-        let digers = Array.from(signers, (signer: Signer) => new Diger({code: dcode}, signer.verfer.qb64b))
+        let keys = creator.create(ncodes, 0, "", transferable, pidx, ridx, kidx, temp)
+        let digers = Array.from(keys.signers, (signer: Signer) => new Diger({code: dcode}, signer.verfer.qb64b))
 
         let dt = new Date().toString()
         ps.nxt = new PubLot()
-        ps.nxt.pubs = Array.from(signers, (signer: Signer) => signer.verfer.qb64)
+        ps.nxt.pubs = Array.from(keys.signers, (signer: Signer) => signer.verfer.qb64)
         ps.nxt.ridx = ridx
         ps.nxt.kidx = kidx
         ps.nxt.dt = dt
@@ -615,9 +687,22 @@ export class Manager {
             throw new Error(`Problem updating pubsit db for pre=${pre}.`)
         }
 
-        signers.forEach((signer: Signer) => {
-            this.ks.putPris(signer.verfer.qb64, signer, this.encrypter)
-        })
+        if (this.encrypter != undefined) { // Only store encrypted keys if we have an encrypter, otherwise regenerate
+            keys.signers.forEach((signer: Signer) => {
+                this.ks.putPris(signer.verfer.qb64, signer, this.encrypter!)
+            })
+        } else if (this._encrypter == undefined && keys.paths != undefined) {
+            keys.paths.forEach((path: string, idx: number) => {
+                let signer = keys.signers[idx]
+                let ppt = new PubPath()
+                ppt.path = path
+                ppt.tier = pp!.tier
+                ppt.temp = temp
+                this.ks.putPths(signer.verfer.qb64, ppt)
+            })
+        } else {
+            throw new Error("invalid configuration, randy keys without encryption")
+        }
 
         let newPs = new PubSet()
         newPs.pubs = ps.nxt.pubs
@@ -625,7 +710,7 @@ export class Manager {
 
         if (erase) {
             old.pubs.forEach((pub) => {
-                this.ks.remPubs(pub)
+                this.ks.remPris(pub)
             })
         }
 
@@ -645,19 +730,39 @@ export class Manager {
             }
 
             pubs.forEach((pub) => {
-                let signer = this.ks.getPris(pub, this.decrypter)
-                if (signer == undefined) {
-                    throw new Error(`Missing prikey in db for pubkey=${pub}`)
+                //If no decrypter then get SaltyState and regenerate prikey
+                if (this.decrypter != undefined) {
+                    let signer = this.ks.getPris(pub, this.decrypter)
+                    if (signer == undefined) {
+                        throw new Error(`Missing prikey in db for pubkey=${pub}`)
+                    }
+                    signers.push(signer)
+                } else {
+                    let verfer = new Verfer({qb64: pub})
+                    let ppt = this.ks.getPths(pub)
+                    if (ppt == undefined) {
+                        throw new Error(`Missing prikey in db for pubkey=${pub}`)
+                    }
+                    let salter = new Salter({qb64: this.salt})
+                    signers.push(salter.signer(ppt.code, verfer.transferable, ppt.path, ppt.tier as Tier, ppt.temp))
                 }
-                signers.push(signer)
             })
         } else {
             verfers!.forEach((verfer: Verfer) => {
-                let signer = this.ks.getPris(verfer.qb64, this.decrypter)
-                if (signer == undefined) {
-                    throw new Error(`Missing prikey in db for pubkey=${verfer.qb64}`)
+                if (this.decrypter != undefined) {
+                    let signer = this.ks.getPris(verfer.qb64, this.decrypter)
+                    if (signer == undefined) {
+                        throw new Error(`Missing prikey in db for pubkey=${verfer.qb64}`)
+                    }
+                    signers.push(signer)
+                } else {
+                    let ppt = this.ks.getPths(verfer.qb64)
+                    if (ppt == undefined) {
+                        throw new Error(`Missing prikey in db for pubkey=${verfer.qb64}`)
+                    }
+                    let salter = new Salter({qb64: this.salt})
+                    signers.push(salter.signer(ppt.code, verfer.transferable, ppt.path, ppt.tier as Tier, ppt.temp))
                 }
-                signers.push(signer)
             })
         }
 
@@ -712,6 +817,7 @@ export function riKey(pre: string, ridx: number) {
 
 }
 
+
 export interface KeyStore {
     getGbls(key: string): string | undefined
     pinGbls(key: string, val: string): void
@@ -726,6 +832,11 @@ export interface KeyStore {
     getPris(keys: string, decrypter: Decrypter): Signer | undefined
     pinPris(keys: string, data: Signer, encrypter: Encrypter): void
     putPris(pubKey: string, signer: Signer, encrypter: Encrypter): boolean
+    remPris(pubKey: string): void
+
+    getPths(pubKey: string): PubPath | undefined
+    putPths(pubKey: string, val: PubPath): boolean
+    pinPths(pubKey: string, val: PubPath): boolean
 
     getPres(pre: string): Uint8Array | undefined
     putPres(pre: string, val: Uint8Array): boolean
@@ -738,15 +849,16 @@ export interface KeyStore {
 
     getPubs(keys: string): PubSet | undefined
     putPubs(keys: string, data: PubSet): boolean
-    remPubs(keys: string): boolean
 }
 
 /*
      In memory test implementation of Keeper key store
 */
+
 class Keeper implements KeyStore {
     private readonly _gbls: Map<string, string>
     private readonly _pris: Map<string, Uint8Array>
+    private readonly _pths: Map<string, PubPath>
     private readonly _pres: Map<string, Uint8Array>
     private readonly _prms: Map<string, PrePrm>
     private readonly _sits: Map<string, PreSit>
@@ -755,6 +867,7 @@ class Keeper implements KeyStore {
     constructor() {
         this._gbls = new Map<string, string>()
         this._pris = new Map<string, Uint8Array>()
+        this._pths = new Map<string, PubPath>()
         this._pres = new Map<string, Uint8Array>()
         this._prms = new Map<string, PrePrm>()
         this._sits = new Map<string, PreSit>()
@@ -779,7 +892,7 @@ class Keeper implements KeyStore {
         return out
     }
 
-    getPrms(keys: string) :PrePrm | undefined {
+    getPrms(keys: string): PrePrm | undefined {
         return this._prms.get(keys)
     }
 
@@ -801,7 +914,7 @@ class Keeper implements KeyStore {
 
     prisElements(decrypter: Decrypter): Array<[string, Signer]> {
         let out = new Array<[string, Signer]>()
-        this._pris.forEach(function(val, pubKey) {
+        this._pris.forEach(function (val, pubKey) {
             let verfer = new Verfer({qb64: pubKey})
             let signer = decrypter.decrypt(val, null, verfer.transferable)
             out.push([pubKey, signer])
@@ -834,6 +947,25 @@ class Keeper implements KeyStore {
         return decrypter.decrypt(val, null, verfer.transferable)
     }
 
+    pinPths(pubKey: string, val: PubPath): boolean {
+        this._pths.set(pubKey, val)
+        return true
+    }
+
+    putPths(pubKey: string, val: PubPath): boolean {
+        if (this._pths.has(pubKey)) {
+            return false
+        }
+
+        this._pths.set(pubKey, val)
+        return true
+
+    }
+
+    getPths(pubKey: string): PubPath | undefined {
+        return this._pths.get(pubKey)
+    }
+
     remPris(pubKey: string): void {
         this._pris.delete(pubKey)
     }
@@ -856,7 +988,7 @@ class Keeper implements KeyStore {
         return true
     }
 
-    getSits(keys: string) :PreSit | undefined {
+    getSits(keys: string): PreSit | undefined {
         return this._sits.get(keys)
     }
 
@@ -888,9 +1020,5 @@ class Keeper implements KeyStore {
         }
         this._pubs.set(keys, data)
         return true
-    }
-
-    remPubs(keys: string): boolean {
-        return this._pubs.delete(keys)
     }
 }
