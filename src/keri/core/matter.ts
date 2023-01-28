@@ -4,8 +4,14 @@ const {intToB64, readInt} = require('./core');
 const Base64 = require('urlsafe-base64');
 import {b, d} from "./core";
 
+export class Codex {
+    has(prop: string): boolean {
+        let m = new Map(Array.from(Object.entries(this), (v) => [v[1], v[0]]))
+        return m.has(prop)
+    }
+}
 
-export class MatterCodex {
+export class MatterCodex extends Codex {
     Ed25519_Seed:         string = 'A'    // Ed25519 256 bit random seed for private key
     Ed25519N:             string = 'B'    // Ed25519 verification key non-transferable, basic derivation.
     X25519:               string = 'C'    // X25519 public encryption key, converted from Ed25519 or Ed25519N.
@@ -19,6 +25,30 @@ export class MatterCodex {
 }
 
 export const MtrDex = new MatterCodex()
+
+
+export class NonTransCodex extends Codex {
+    Ed25519N: string = 'B'  // Ed25519 verification key non-transferable, basic derivation.
+    ECDSA_256k1N: string = '1AAA'  // ECDSA secp256k1 verification key non-transferable, basic derivation.
+    Ed448N: string = '1AAC'  // Ed448 non-transferable prefix public signing verification key. Basic derivation.
+}
+
+export const NonTransDex = new NonTransCodex()
+
+
+export class DigiCodex extends Codex {
+    Blake3_256: string = 'E'  // Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256: string = 'F'  // Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256: string = 'G'  // Blake2s 256 bit digest self-addressing derivation.
+    SHA3_256: string = 'H'  // SHA3 256 bit digest self-addressing derivation.
+    SHA2_256: string = 'I'  // SHA2 256 bit digest self-addressing derivation.
+    Blake3_512: string = '0D'  // Blake3 512 bit digest self-addressing derivation.
+    Blake2b_512: string = '0E'  // Blake2b 512 bit digest self-addressing derivation.
+    SHA3_512: string = '0F'  // SHA3 512 bit digest self-addressing derivation.
+    SHA2_512: string = '0G'  // SHA2 512 bit digest self-addressing derivation.
+}
+
+export const DigiDex = new DigiCodex()
 
 export class Sizage {
     public hs: number;
@@ -126,7 +156,11 @@ export class Matter {
     }
 
     get transferable(): boolean {
-        return !Array.from([MtrDex.Ed25519N]).includes(this.code)
+        return !NonTransDex.has(this.code)
+    }
+
+    get digestive(): boolean {
+        return DigiDex.has(this.code)
     }
 
     static _rawSize(code: string) {

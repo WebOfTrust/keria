@@ -23,7 +23,5 @@ describe('Accountant', () => {
         // let pkg = {}
         let accountant = new Accountant(mgr, agentKey)
         assert.notEqual(accountant, undefined)
-
-
     })
 })

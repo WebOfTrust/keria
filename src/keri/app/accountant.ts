@@ -6,6 +6,11 @@ export class Accountant {
     private readonly _mgr: Manager
     private readonly _ready: Promise<void>
 
+    /*
+    *   Accountant is responsible for managing signing keys for the client and agent.  The client
+    *   signing key represents the Account for the client on the agent
+    *
+    */
     constructor(mgr: Manager, agentKey: string) {
         this._mgr = mgr
         this._agentKey = agentKey

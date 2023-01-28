@@ -143,10 +143,8 @@ export class SaltyCreator implements Creator {
             codes = new Array<string>(count).fill(code)
         }
 
-        let stem = this.stem == "" ? pidx.toString(16) : this.stem
-
         codes.forEach((code, idx) => {
-            let path = stem + ridx.toString(16) + (kidx+idx).toString(16)
+            let path = this.stem + pidx.toString(16) + ridx.toString(16) + (kidx+idx).toString(16)
             signers.push(this.salter.signer(code, transferable, path, this.tier, temp))
             paths.push(path)
         })

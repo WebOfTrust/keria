@@ -141,9 +141,9 @@ describe('Manager', () => {
         let stem = "red"
 
 
-        // Create a Manager without encryption should raise an exception
+        // Create a randy Manager without encryption should raise an exception
         assert.throws(() => {
-            new Manager({salt: salt, algo: Algos.randy})
+            new Manager({algo: Algos.randy})
         })
 
         // cryptseed0 = b('h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf')
@@ -404,7 +404,7 @@ describe('Manager', () => {
         assert.equal(manager.pidx, 4)
 
         spre = verfers[0].qb64
-        assert.equal(spre, "DOtu4gX3oc4feusD8wWIykLhjkpiJHXEe29eJ2b_1CyM")
+        assert.equal(spre, "DIMPlAYsqdL8OxoDTdmCzYL6WCBRWgFov2S9mjhkZBgu")
 
         pp = manager.ks.getPrms(spre)!
         assert.equal(pp.pidx, 3)
@@ -416,11 +416,11 @@ describe('Manager', () => {
         ps = manager.ks.getSits(spre)!
         assert.deepStrictEqual(ps.old.pubs, [])
         assert.equal(ps.new.pubs.length, 1)
-        assert.deepStrictEqual(ps.new.pubs, ['DOtu4gX3oc4feusD8wWIykLhjkpiJHXEe29eJ2b_1CyM'])
+        assert.deepStrictEqual(ps.new.pubs, ['DIMPlAYsqdL8OxoDTdmCzYL6WCBRWgFov2S9mjhkZBgu'])
         assert.equal(ps.new.ridx, 0)
         assert.equal(ps.new.kidx, 0)
         assert.equal(ps.nxt.pubs.length, 1)
-        assert.deepStrictEqual(ps.nxt.pubs, ['DBzZ6vejSNAZpXv1SDRnIF_P1UqcW5d2pu2U-v-uhXvE'])
+        assert.deepStrictEqual(ps.nxt.pubs, ['DCkCKvj0TLQinsvDSTXUnrBVUfFKFQObWbPpF5bz-QDG'])
         assert.equal(ps.nxt.ridx, 1)
         assert.equal(ps.nxt.kidx, 1)
 
@@ -428,26 +428,14 @@ describe('Manager', () => {
         assert.deepStrictEqual(keys, ps.new.pubs)
 
         digs = Array.from(digers, (diger: Diger) => diger.qb64)
-        assert.deepStrictEqual(digs, ['EIGjhyyBRcqCkPE9bmkph7morew0wW0ak-rQ-dHCH-M2'])
-
-        assert.throws(() => {
-            manager.incept({salt: salt, stem: stem, temp: true})
-        })
-
-        oldspre = spre
-        spre = 'DCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxMVG3Ic'
-        manager.move(oldspre, spre)
-
-        assert.throws(() => {
-            manager.incept({salt: salt, stem: stem, temp: true})
-        })
+        assert.deepStrictEqual(digs, ['EA-BrckClECptkbamqWj-Ssu6bSiL4c7ZruQ1PNrLOGI'])
 
         hashes = manager.incept({ncount: 0, salt: salt, stem: 'wit0', transferable: false, temp: true})
         verfers = hashes[0]
         digers = hashes[1]
 
         let witpre0 = verfers[0].qb64
-        assert.equal(verfers[0].qb64, 'BOTNI4RzN706NecNdqTlGEcMSTWiFUvesEqmxWR_op8n')
+        assert.equal(verfers[0].qb64, 'BPAKr6S6GHg2w4R72_XJNRJ1kELitBQr8a5tCrt5yOpM')
         assert.equal(verfers[0].code, MtrDex.Ed25519N)
         assert.notEqual(digers, undefined)
 
@@ -456,7 +444,7 @@ describe('Manager', () => {
         digers = hashes[1]
 
         let witpre1 = verfers[0].qb64
-        assert.equal(verfers[0].qb64, 'BAB_5xNXH4hoxDCtAHPFPDedZ6YwTo8mbdw_v0AOHOMt')
+        assert.equal(verfers[0].qb64, 'BJ0vexQbWe8ysL03FeTn6yZiIVaTisiZstysKjGFK_6D')
         assert.equal(verfers[0].code, MtrDex.Ed25519N)
         assert.notEqual(digers, undefined)
 

@@ -1,14 +1,26 @@
 import {TextEncoder, TextDecoder} from 'util'
-export const VERRAWSIZE = 6;
-export const Versionage = {major: 1, minor: 0};
-export const Serialage = {json: '', mgpk: '', cbor: ''};
-export const Vstrings = Serialage;
-export const Serials = {json: 'JSON', mgpk: 'MGPK', cbor: 'CBOR'};
 
-// # element labels to exclude in digest or signature derivation from inception icp
-export const IcpExcludes = ['pre'];
-// # element labels to exclude in digest or signature derivation from delegated inception dip
-export const DipExcludes = ['pre'];
+export enum Serials {
+    JSON = "JSON",
+}
+
+export enum Ident {
+    KERI = "KERI"
+}
+
+export class Version {
+    public major: number
+    public minor: number
+
+    constructor(major: number = 1, minor: number = 0) {
+        this.major = major
+        this.minor = minor
+    }
+}
+
+export const Versionage = new Version()
+
+
 export const Ilks = {
     icp: 'icp',
     rot: 'rot',
@@ -48,18 +60,22 @@ export const MINSIGSIZE = 4;
 // const version_pattern1 = `KERI\(\?P<major>\[0\-9a\-f\]\)\(\?P<minor>\[0\-9a\-f\]\)\
 // (\?P<kind>\[A\-Z\]\{4\}\)\(\?P<size>\[0\-9a\-f\]\{6\}\)_`
 
-export const VEREX = 'KERI([0-9a-f])([0-9a-f])([A-Z]{4})([0-9a-f]{6})';
+export const VEREX = 'KERI([0-9a-f])([0-9a-f])([A-Z]{4})([0-9a-f]{6})_';
+
+export interface Dict<TValue> {
+    [id: string]: TValue;
+}
 
 // Regex pattern matching
 
 /**
  * @description This function is use to deversify the version
  * Here we will use regex to  to validate and extract serialization kind,size and version
- * @param {string} vs   version string
+ * @param {string} versionString   version string
  * @return {Object}  contaning kind of serialization like cbor,json,mgpk
  *                    version = version of object ,size = raw size integer
  */
-export function deversify(versionString: string) {
+export function deversify(versionString: string): [Serials, Version, string] {
     let kind;
     let size;
     const version = Versionage;
@@ -76,13 +92,24 @@ export function deversify(versionString: string) {
             match[3],
             match[4],
         ];
-        if (!Object.values(Serials).includes(kind)) {
+        if (!Object.values(Serials).includes(kind as Serials)) {
             throw new Error(`Invalid serialization kind = ${kind}`);
         }
+
+        let ta = kind as keyof typeof Serials
+        kind = Serials[ta]
+
         return [kind, version, size];
     }
     throw new Error(`Invalid version string = ${versionString}`);
 }
+
+export function versify(ident: Ident = Ident.KERI, version?: Version, kind: Serials=Serials.JSON, size:number = 0) {
+    version = version == undefined ? Versionage : version
+
+    return  `${ident}${version.major.toString(16)}${version.minor.toString()}${kind}${size.toString(16).padStart(6, '0')}_`
+}
+
 
 export const B64ChrByIdx = new Map<number, string>([[0, 'A'], [1, 'B'], [2, 'C'], [3, 'D'], [4, 'E'], [5, 'F'],
     [6, 'G'], [7, 'H'], [8, 'I'], [9, 'J'], [10, 'K'], [11, 'L'], [12, 'M'], [13, 'N'], [14, 'O'], [15, 'P'],
@@ -94,17 +121,19 @@ export const B64ChrByIdx = new Map<number, string>([[0, 'A'], [1, 'B'], [2, 'C']
 
 export const B64IdxByChr = new Map<string, number>(Array.from(B64ChrByIdx, entry => [entry[1], entry[0]]))
 
-export function intToB64(i:number | undefined, l=1): string {
+
+export function intToB64(i:number, l=1): string {
     let out = ""
     while(l != 0) {
-        out = B64ChrByIdx.get(i! % 64) + out
-        i = Math.floor(i! / 64)
+        out = B64ChrByIdx.get(i % 64) + out
+        i = Math.floor(i / 64)
         if (i == 0) {
             break
         }
     }
 
-    for(let i = 0; i < (l - out.length); i++) {
+    let x = (l - out.length)
+    for(let i = 0; i < x; i++) {
         out = "A" + out
     }
 
@@ -136,6 +165,13 @@ export function b(s?: string): Uint8Array {
 
 export function d(u? :Uint8Array): string {
     return decoder.decode(u)
+}
+
+export function concat(one: Uint8Array, two: Uint8Array): Uint8Array {
+    let out = new Uint8Array(one.length + two.length)
+    out.set(one)
+    out.set(two, one.length)
+    return out
 }
 
 

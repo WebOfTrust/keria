@@ -18,8 +18,6 @@ describe('int to b64 and back', () => {
             i = b64ToInt(cs)
         })
 
-        cs = intToB64(undefined, 0)
-        assert.equal(cs, "")
         assert.throws(() => {
             i = b64ToInt(cs)
         })

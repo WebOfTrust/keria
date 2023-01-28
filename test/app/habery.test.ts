@@ -14,7 +14,7 @@ describe('Habery', () => {
 
         let icp = hab.makeHab({})
 
-        assert.deepStrictEqual(icp["keys"], ["DAQVURvW74OJH1Q0C6YLim_tdBYoXABwg6GsAlPaUJXE"])
-        assert.deepStrictEqual(icp["ndigs"], ["ENBWnU8wNHqq9oqJIimWhxUtNDHReUXtiCwwtjg9zKY0"])
+        assert.deepStrictEqual(icp["keys"], ["DC7Zg7BasK65MdK1hgVd8nB9_2Dj_i1DruqNN9VBsrRd"])
+        assert.deepStrictEqual(icp["ndigs"], ["EBRJBDoLKcD9s5tGg0uXLgt79iClVnlceMJHi1qdwRdC"])
     })
 })
