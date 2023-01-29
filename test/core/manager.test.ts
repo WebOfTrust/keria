@@ -21,25 +21,25 @@ describe('RandyCreator', () => {
         let randy = new RandyCreator()
 
         // test default arguments
-        let signers = randy.create()
-        assert.equal(signers.length, 1)
-        assert.equal(signers[0].qb64.length, 44)
-        assert.equal(signers[0].code, MtrDex.Ed25519_Seed)
-        assert.equal(signers[0].transferable, true)
+        let keys = randy.create()
+        assert.equal(keys.signers.length, 1)
+        assert.equal(keys.signers[0].qb64.length, 44)
+        assert.equal(keys.signers[0].code, MtrDex.Ed25519_Seed)
+        assert.equal(keys.signers[0].transferable, true)
 
         // Create 5 with default code
-        signers = randy.create(undefined, 5)
-        assert.equal(signers.length, 5)
-        signers.forEach((signer) => {
+        keys = randy.create(undefined, 5)
+        assert.equal(keys.signers.length, 5)
+        keys.signers.forEach((signer) => {
             assert.equal(signer.qb64.length, 44)
             assert.equal(signer.code, MtrDex.Ed25519_Seed)
             assert.equal(signer.transferable, true)
         })
 
         // Create 3 with specified codes (the only one we support)
-        signers = randy.create([MtrDex.Ed25519_Seed, MtrDex.Ed25519_Seed, MtrDex.Ed25519_Seed])
-        assert.equal(signers.length, 3)
-        signers.forEach((signer) => {
+        keys = randy.create([MtrDex.Ed25519_Seed, MtrDex.Ed25519_Seed, MtrDex.Ed25519_Seed])
+        assert.equal(keys.signers.length, 3)
+        keys.signers.forEach((signer) => {
             assert.equal(signer.qb64.length, 44)
             assert.equal(signer.code, MtrDex.Ed25519_Seed)
             assert.equal(signer.transferable, true)
@@ -59,15 +59,15 @@ describe('SaltyCreator', () => {
         assert.equal(salty.stem, "")
         assert.equal(salty.tier, salty.salter.tier)
 
-        let signers = salty.create()
-        assert.equal(signers.length, 1)
-        assert.equal(signers[0].qb64.length, 44)
-        assert.equal(signers[0].code, MtrDex.Ed25519_Seed)
-        assert.equal(signers[0].transferable, true)
+        let keys = salty.create()
+        assert.equal(keys.signers.length, 1)
+        assert.equal(keys.signers[0].qb64.length, 44)
+        assert.equal(keys.signers[0].code, MtrDex.Ed25519_Seed)
+        assert.equal(keys.signers[0].transferable, true)
 
-        signers = salty.create(undefined, 2, MtrDex.Ed25519_Seed, false)
-        assert.equal(signers.length, 2)
-        signers.forEach((signer) => {
+        keys = salty.create(undefined, 2, MtrDex.Ed25519_Seed, false)
+        assert.equal(keys.signers.length, 2)
+        keys.signers.forEach((signer) => {
             assert.equal(signer.code, MtrDex.Ed25519_Seed)
             assert.equal(signer.verfer.code, MtrDex.Ed25519N)
             assert.equal(signer.qb64.length, 44)
@@ -84,19 +84,19 @@ describe('SaltyCreator', () => {
         assert.equal(salty.salt, salty.salter.qb64)
         assert.equal(salty.stem, "")
         assert.equal(salty.tier, salty.salter.tier)
-        signers = salty.create()
-        assert.equal(signers.length, 1)
-        assert.equal(signers[0].code, MtrDex.Ed25519_Seed)
-        assert.equal(signers[0].qb64, "APMJe0lwOpwnX9PkvX1mh26vlzGYl6RWgWGclc8CAQJ9")
-        assert.equal(signers[0].verfer.code, MtrDex.Ed25519)
-        assert.equal(signers[0].verfer.qb64, "DMZy6qbgnKzvCE594tQ4SPs6pIECXTYQBH7BkC4hNY3E")
+        keys = salty.create()
+        assert.equal(keys.signers.length, 1)
+        assert.equal(keys.signers[0].code, MtrDex.Ed25519_Seed)
+        assert.equal(keys.signers[0].qb64, "APMJe0lwOpwnX9PkvX1mh26vlzGYl6RWgWGclc8CAQJ9")
+        assert.equal(keys.signers[0].verfer.code, MtrDex.Ed25519)
+        assert.equal(keys.signers[0].verfer.qb64, "DMZy6qbgnKzvCE594tQ4SPs6pIECXTYQBH7BkC4hNY3E")
 
-        signers = salty.create(undefined, 1, MtrDex.Ed25519_Seed, false, 0, 0, 0, true)
-        assert.equal(signers.length, 1)
-        assert.equal(signers[0].code, MtrDex.Ed25519_Seed)
-        assert.equal(signers[0].qb64, "AMGrAM0noxLpRteO9mxGT-yzYSrKFwJMuNI4KlmSk26e")
-        assert.equal(signers[0].verfer.code, MtrDex.Ed25519N)
-        assert.equal(signers[0].verfer.qb64, "BFRtyHAjSuJaRX6TDPva35GN11VHAruaOXMc79ZYDKsT")
+        keys = salty.create(undefined, 1, MtrDex.Ed25519_Seed, false, 0, 0, 0, true)
+        assert.equal(keys.signers.length, 1)
+        assert.equal(keys.signers[0].code, MtrDex.Ed25519_Seed)
+        assert.equal(keys.signers[0].qb64, "AMGrAM0noxLpRteO9mxGT-yzYSrKFwJMuNI4KlmSk26e")
+        assert.equal(keys.signers[0].verfer.code, MtrDex.Ed25519N)
+        assert.equal(keys.signers[0].verfer.qb64, "BFRtyHAjSuJaRX6TDPva35GN11VHAruaOXMc79ZYDKsT")
 
     })
 })
@@ -109,30 +109,30 @@ describe('Creator', () => {
         let salter = new Salter({raw: b(raw)})
         let salt = salter.qb64
 
-        let creator = new Creatory(Algos.salty).make(salt)
+        let creator = new Creatory(Algos.salty).make(salt) as SaltyCreator
         assert.equal(creator instanceof SaltyCreator, true)
         assert.equal(creator.salter.qb64, salt)
 
-        creator = new Creatory().make(salt)
+        creator = new Creatory().make(salt) as SaltyCreator
         assert.equal(creator instanceof SaltyCreator, true)
         assert.equal(creator.salter.qb64, salt)
 
-        creator = new Creatory(Algos.randy).make(salt)
-        assert.equal(creator instanceof RandyCreator, true)
-
+        let rcreator = new Creatory(Algos.randy).make(salt) as RandyCreator
+        assert.equal(rcreator instanceof RandyCreator, true)
     })
 })
+
+const ser = '{"vs":"KERI10JSON0000fb_","pre":"EvEnZMhz52iTrJU8qKwtDxzmypyosgG' +
+    '70m6LIjkiCdoI","sn":"0","ilk":"icp","sith":"1","keys":["DSuhyBcP' +
+    'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA"],"nxt":"EPYuj8mq_PYYsoBKkz' +
+    'X1kxSPGYBWaIya3slgCOyOtlqU","toad":"0","wits":[],"cnfg":[]}-AABA' +
+    'ApYcYd1cppVg7Inh2YCslWKhUwh59TrPpIoqWxN2A38NCbTljvmBPBjSGIFDBNOv' +
+    'VjHpdZlty3Hgk6ilF8pVpAQ'
+
 
 describe('Manager', () => {
     it('should manage key pairs for identifiers', async () => {
         await libsodium.ready;
-
-        let ser = '{"vs":"KERI10JSON0000fb_","pre":"EvEnZMhz52iTrJU8qKwtDxzmypyosgG' +
-        '70m6LIjkiCdoI","sn":"0","ilk":"icp","sith":"1","keys":["DSuhyBcP' +
-        'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA"],"nxt":"EPYuj8mq_PYYsoBKkz' +
-        'X1kxSPGYBWaIya3slgCOyOtlqU","toad":"0","wits":[],"cnfg":[]}-AABA' +
-        'ApYcYd1cppVg7Inh2YCslWKhUwh59TrPpIoqWxN2A38NCbTljvmBPBjSGIFDBNOv' +
-        'VjHpdZlty3Hgk6ilF8pVpAQ'
 
         let raw = "0123456789abcdef"
         let salter = new Salter({raw: b(raw)})
@@ -141,9 +141,9 @@ describe('Manager', () => {
         let stem = "red"
 
 
-        // Create a Manager without encryption should raise an exception
+        // Create a randy Manager without encryption should raise an exception
         assert.throws(() => {
-            new Manager({salt: salt})
+            new Manager({algo: Algos.randy})
         })
 
         // cryptseed0 = b('h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf')
@@ -169,8 +169,8 @@ describe('Manager', () => {
         assert.equal(encrypter1.verifySeed(seed1), true)
 
         let manager = new Manager({seed: seed0, salt: salt, aeid: aeid0})
-        assert.equal(manager.encrypter.qb64, encrypter0.qb64)
-        assert.equal(manager.decrypter.qb64, decrypter0.qb64)
+        assert.equal(manager.encrypter!.qb64, encrypter0.qb64)
+        assert.equal(manager.decrypter!.qb64, decrypter0.qb64)
         assert.equal(manager.seed, seed0)
         assert.equal(manager.aeid, aeid0)
 
@@ -192,7 +192,7 @@ describe('Manager', () => {
         let pp = manager.ks.getPrms(spre)!
         assert.equal(pp.pidx, 0)
         assert.equal(pp.algo, Algos.salty)
-        assert.equal(manager.decrypter.decrypt(b(pp.salt)).qb64, salt)
+        assert.equal(manager.decrypter!.decrypt(b(pp.salt)).qb64, salt)
         assert.equal(pp.stem, "")
         assert.equal(pp.tier, Tier.low)
 
@@ -257,7 +257,7 @@ describe('Manager', () => {
         assert.equal(pcigars.length, 1)
         assert.equal(pcigars[0] instanceof Cigar, true)
         let vcigars = manager.sign({ser: serb, verfers: verfers, indexed: false})
-        assert.equal(vcigars.length , 1)
+        assert.equal(vcigars.length, 1)
         let pcigs = Array.from(pcigars as Array<Cigar>, (psiger) => psiger.qb64)
         let vcigs = Array.from(vcigars as Array<Cigar>, (vsiger) => vsiger.qb64)
         assert.deepStrictEqual(vcigs, pcigs)
@@ -273,7 +273,7 @@ describe('Manager', () => {
         pp = manager.ks.getPrms(spre)!
         assert.equal(pp.pidx, 0)
         assert.equal(pp.algo, Algos.salty)
-        assert.equal(manager.decrypter.decrypt(b(pp.salt)).qb64, salt)
+        assert.equal(manager.decrypter!.decrypt(b(pp.salt)).qb64, salt)
         assert.equal(pp.stem, '')
         assert.equal(pp.tier, Tier.low)
 
@@ -289,7 +289,7 @@ describe('Manager', () => {
         assert.equal(ps.nxt.kidx, 2)
 
         keys = Array.from(verfers, (verfer: Verfer) => verfer.qb64)
-        assert.deepStrictEqual(keys, ps.new.pubs )
+        assert.deepStrictEqual(keys, ps.new.pubs)
 
         digs = Array.from(digers, (diger: Diger) => diger.qb64)
         assert.deepStrictEqual(digs, ['EJczV8HmnEWZiEHw2lVuSatrvzCmJOZ3zpa7JFfrnjau'])
@@ -308,7 +308,7 @@ describe('Manager', () => {
         assert.deepStrictEqual(oldpubs, ps.old.pubs)
 
         deadpubs.forEach((pub: string) => {
-            assert.notEqual(manager.ks.getPris(pub, decrypter0), undefined)
+            assert.equal(manager.ks.getPris(pub, decrypter0), undefined)
         })
 
         pl = manager.ks.getPubs(riKey(spre, ps.new.ridx))!
@@ -404,23 +404,23 @@ describe('Manager', () => {
         assert.equal(manager.pidx, 4)
 
         spre = verfers[0].qb64
-        assert.equal(spre, "DOtu4gX3oc4feusD8wWIykLhjkpiJHXEe29eJ2b_1CyM")
+        assert.equal(spre, "DIMPlAYsqdL8OxoDTdmCzYL6WCBRWgFov2S9mjhkZBgu")
 
         pp = manager.ks.getPrms(spre)!
         assert.equal(pp.pidx, 3)
         assert.equal(pp.algo, Algos.salty)
-        assert.equal(manager.decrypter.decrypt(b(pp.salt)).qb64, salt)
+        assert.equal(manager.decrypter!.decrypt(b(pp.salt)).qb64, salt)
         assert.equal(pp.stem, 'red')
         assert.equal(pp.tier, Tier.low)
 
         ps = manager.ks.getSits(spre)!
         assert.deepStrictEqual(ps.old.pubs, [])
         assert.equal(ps.new.pubs.length, 1)
-        assert.deepStrictEqual(ps.new.pubs, ['DOtu4gX3oc4feusD8wWIykLhjkpiJHXEe29eJ2b_1CyM'])
+        assert.deepStrictEqual(ps.new.pubs, ['DIMPlAYsqdL8OxoDTdmCzYL6WCBRWgFov2S9mjhkZBgu'])
         assert.equal(ps.new.ridx, 0)
         assert.equal(ps.new.kidx, 0)
         assert.equal(ps.nxt.pubs.length, 1)
-        assert.deepStrictEqual(ps.nxt.pubs, ['DBzZ6vejSNAZpXv1SDRnIF_P1UqcW5d2pu2U-v-uhXvE'])
+        assert.deepStrictEqual(ps.nxt.pubs, ['DCkCKvj0TLQinsvDSTXUnrBVUfFKFQObWbPpF5bz-QDG'])
         assert.equal(ps.nxt.ridx, 1)
         assert.equal(ps.nxt.kidx, 1)
 
@@ -428,26 +428,14 @@ describe('Manager', () => {
         assert.deepStrictEqual(keys, ps.new.pubs)
 
         digs = Array.from(digers, (diger: Diger) => diger.qb64)
-        assert.deepStrictEqual(digs, ['EIGjhyyBRcqCkPE9bmkph7morew0wW0ak-rQ-dHCH-M2'])
-
-        assert.throws(() => {
-            manager.incept({salt: salt, stem: stem, temp: true})
-        })
-
-        oldspre = spre
-        spre = 'DCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxMVG3Ic'
-        manager.move(oldspre, spre)
-
-        assert.throws(() => {
-            manager.incept({salt: salt, stem: stem, temp: true})
-        })
+        assert.deepStrictEqual(digs, ['EA-BrckClECptkbamqWj-Ssu6bSiL4c7ZruQ1PNrLOGI'])
 
         hashes = manager.incept({ncount: 0, salt: salt, stem: 'wit0', transferable: false, temp: true})
         verfers = hashes[0]
         digers = hashes[1]
 
         let witpre0 = verfers[0].qb64
-        assert.equal(verfers[0].qb64, 'BOTNI4RzN706NecNdqTlGEcMSTWiFUvesEqmxWR_op8n')
+        assert.equal(verfers[0].qb64, 'BPAKr6S6GHg2w4R72_XJNRJ1kELitBQr8a5tCrt5yOpM')
         assert.equal(verfers[0].code, MtrDex.Ed25519N)
         assert.notEqual(digers, undefined)
 
@@ -456,10 +444,112 @@ describe('Manager', () => {
         digers = hashes[1]
 
         let witpre1 = verfers[0].qb64
-        assert.equal(verfers[0].qb64, 'BAB_5xNXH4hoxDCtAHPFPDedZ6YwTo8mbdw_v0AOHOMt')
+        assert.equal(verfers[0].qb64, 'BJ0vexQbWe8ysL03FeTn6yZiIVaTisiZstysKjGFK_6D')
         assert.equal(verfers[0].code, MtrDex.Ed25519N)
         assert.notEqual(digers, undefined)
 
         assert.notEqual(witpre0, witpre1)
+    })
+
+    it('should support only Salty/Encrypted, Salty/Unencrypted and Randy/Encrypted', async () => {
+        await libsodium.ready;
+
+        // Support Salty/Unencrypted - pass only stretched passcode as Salt.
+        let passcode = "0123456789abcdefghijk"
+        let salter = new Salter({raw: b(passcode)})
+        let salt = salter.qb64
+
+        let manager = new Manager({salt: salt})
+        assert.equal(manager.encrypter, undefined)
+
+        let [verfers, digers] = manager.incept({salt: salt, temp: true})
+        assert.equal(verfers.length, 1)
+        assert.equal(digers.length, 1)
+        assert.equal(manager.pidx, 1)
+
+        let spre = verfers[0].qb64
+        assert.equal(spre, "DFRtyHAjSuJaRX6TDPva35GN11VHAruaOXMc79ZYDKsT")
+        let ps = manager.ks.getSits(spre)!
+
+        let keys = Array.from(verfers, (verfer: Verfer) => verfer.qb64)
+        assert.deepStrictEqual(keys, ps.new.pubs)
+
+        let pl = manager.ks.getPubs(riKey(spre, ps.new.ridx))!
+        assert.deepStrictEqual(pl.pubs, ps.new.pubs)
+        pl = manager.ks.getPubs(riKey(spre, ps.nxt.ridx))!
+        assert.deepStrictEqual(pl.pubs, ps.nxt.pubs)
+
+        let ppt = manager.ks.getPths(ps.new.pubs[0])
+        assert.equal(ppt!.path, "000")
+        assert.equal(ppt!.code, "A")
+        assert.equal(ppt!.tier, "low")
+        assert.equal(ppt!.temp, true)
+
+        let digs = Array.from(digers, (diger: Diger) => diger.qb64)
+        assert.deepStrictEqual(digs, ['EBhBRqVbqhhP7Ciah5pMIOdsY5Mm1ITm2Fjqb028tylu'])
+
+        let serb = b(ser)
+        let psigers = manager.sign({ser: serb, pubs: ps.new.pubs})
+        assert.equal(psigers.length, 1)
+        assert.equal(psigers[0] instanceof Siger, true)
+        let vsigers = manager.sign({ser: serb, verfers: verfers})
+        let psigs = Array.from(psigers as Array<Siger>, (psiger) => psiger.qb64)
+        let vsigs = Array.from(vsigers as Array<Siger>, (vsiger) => vsiger.qb64)
+        assert.deepStrictEqual(psigs, vsigs)
+        assert.equal(psigs[0], 'AAAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH')
+
+        let oldspre = spre
+        spre = "DCu5o5cxzv1lgMqxMVG3IcCNK4lpFfpMM-9rfkY3XVUc"
+        manager.move(oldspre, spre)
+
+
+        let oldpubs = Array.from(verfers, (verfer) => verfer.qb64)
+        let hashes = manager.rotate({pre: spre})
+        verfers = hashes[0]
+        digers = hashes[1]
+
+        assert.equal(verfers.length, 1)
+        assert.equal(digers.length, 1)
+        let pp = manager.ks.getPrms(spre)!
+        assert.equal(pp.pidx, 0)
+        assert.equal(pp.algo, Algos.salty)
+        assert.equal(pp.salt, '')
+        assert.equal(pp.stem, '')
+        assert.equal(pp.tier, Tier.low)
+
+        ps = manager.ks.getSits(spre)!
+        assert.deepStrictEqual(ps.old.pubs, ['DFRtyHAjSuJaRX6TDPva35GN11VHAruaOXMc79ZYDKsT'])
+        assert.equal(ps.new.pubs.length, 1)
+        assert.deepStrictEqual(ps.new.pubs, ['DHByVjuBrM1D9K71TuE5dq1HVDNS5-aLD-wcIlHiVoXX'])
+        assert.equal(ps.new.ridx, 1)
+        assert.equal(ps.new.kidx, 1)
+        assert.equal(ps.nxt.pubs.length, 1)
+        assert.deepStrictEqual(ps.nxt.pubs, ['DAoQ1WxT29XtCFtOpJZyuO2q38BD8KTefktf7X0WN4YW'])
+        assert.equal(ps.nxt.ridx, 2)
+        assert.equal(ps.nxt.kidx, 2)
+
+        keys = Array.from(verfers, (verfer: Verfer) => verfer.qb64)
+        assert.deepStrictEqual(keys, ps.new.pubs)
+
+        digs = Array.from(digers, (diger: Diger) => diger.qb64)
+        assert.deepStrictEqual(digs, ['EJczV8HmnEWZiEHw2lVuSatrvzCmJOZ3zpa7JFfrnjau'])
+
+        assert.deepStrictEqual(oldpubs, ps.old.pubs)
+
+        ppt = manager.ks.getPths(ps.new.pubs[0])
+        assert.equal(ppt!.path, "011")
+        assert.equal(ppt!.code, "A")
+        assert.equal(ppt!.tier, "low")
+        assert.equal(ppt!.temp, true)
+
+        psigers = manager.sign({ser: serb, pubs: ps.new.pubs})
+        assert.equal(psigers.length, 1)
+        assert.equal(psigers[0] instanceof Siger, true)
+        vsigers = manager.sign({ser: serb, verfers: verfers})
+        psigs = Array.from(psigers as Array<Siger>, (psiger) => psiger.qb64)
+        vsigs = Array.from(vsigers as Array<Siger>, (vsiger) => vsiger.qb64)
+        assert.deepStrictEqual(psigs, vsigs)
+        assert.equal(psigs[0], 'AADB9jKiR8y1_gYDCQoPhAbkZJSB2oqfUf3Otu-BW8lU3g5nPtJbDUNK8aSiLWbyM3AtMZYMXPPrxp9sOWLY9O0L')
+
     })
 })

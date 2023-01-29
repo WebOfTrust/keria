@@ -1,13 +1,13 @@
 export {};
 const libsodium = require('libsodium-wrappers-sumo');
-const {Matter} = require('./matter');
-import {MatterArgs, MtrDex} from './matter';
+import {Matter, MatterArgs, MtrDex} from './matter';
 
 /**
  * @description  Verfer :sublclass of Matter,helps to verify signature of serialization
  *  using .raw as verifier key and .code as signature cypher suite
  */
 export class Verfer extends Matter {
+    private readonly _verify: (sig: any, ser: any, key: any) => boolean;
     constructor({raw, code, qb64, qb64b, qb2}: MatterArgs) {
         super({raw, code, qb64, qb64b, qb2});
 
