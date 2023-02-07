@@ -69,6 +69,10 @@ function extractElementValues(element: any, values: any) {
 // }
 
 
+export function nowUTC(): Date {
+  return new Date()
+}
+
 
 export function range(start: any, stop: any, step: any) {
   if (typeof stop == 'undefined') {

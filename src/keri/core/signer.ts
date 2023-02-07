@@ -70,7 +70,8 @@ export class Signer extends Matter {
         return this._verfer;
     }
 
-    sign(ser: Uint8Array, index: number | null = null, only: boolean = false, ondex: number | undefined = undefined) {
+    sign(ser: Uint8Array, index: number | null = null, only: boolean = false,
+         ondex: number | undefined = undefined): Siger | Cigar {
         return this._sign(ser, this.raw, this.verfer, index, only, ondex)
     }
 

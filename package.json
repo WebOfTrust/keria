@@ -61,6 +61,7 @@
     "libsodium-wrappers-sumo": "^0.7.9",
     "lodash": "^4.17.21",
     "msgpack5": "^5.3.2",
+    "structured-headers": "^0.5.0",
     "urlsafe-base64": "^1.0.0",
     "xregexp": "^5.1.0"
   }
