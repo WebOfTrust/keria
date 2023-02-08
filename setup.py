@@ -32,14 +32,12 @@ from os.path import splitext
 from setuptools import find_packages
 from setuptools import setup
 
-
-
 setup(
     name='keria',
-    version='0.0.1',  #  also change in src/keria/__init__.py
+    version='0.0.1',  # also change in src/keria/__init__.py
     license='Apache Software License 2.0',
     description='KERIA: KERI Agent in the cloud',
-    long_description=("KERIA: KERI Agent in the cloud."),
+    long_description="KERIA: KERI Agent in the cloud.",
     author='Samuel M. Smith',
     author_email='sam@samuelsmith.org',
     url='https://github.com/WebOfTrust/keria',
@@ -59,7 +57,7 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: Implementation :: CPython',
         # uncomment if you test on these interpreters:
-        #'Programming Language :: Python :: Implementation :: PyPy',
+        # 'Programming Language :: Python :: Implementation :: PyPy',
         # 'Programming Language :: Python :: Implementation :: IronPython',
         # 'Programming Language :: Python :: Implementation :: Jython',
         # 'Programming Language :: Python :: Implementation :: Stackless',
@@ -68,15 +66,19 @@ setup(
     project_urls={
         'Issue Tracker': 'https://github.com/WebOfTrust/cesrpy/issues',
     },
-    keywords=[ "secure attribution",
-               "authentic data",
-               "discovery",
-               "resolver",
+    keywords=[
+        "secure attribution",
+        "authentic data",
+        "discovery",
+        "resolver",
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
     python_requires='>=3.10.4',
     install_requires=[
-        'pysodium>=0.7.9',
+        'keri>=0.6.9',
+        'multicommand>=1.0.0',
+        'falcon>=3.1.0',
+        'http_sfv>=0.9.8'
     ],
     extras_require={
         # eg:
@@ -84,15 +86,14 @@ setup(
         #   ':python_version=="2.6"': ['argparse'],
     },
     tests_require=[
-                    'coverage>=5.5',
-                    'pytest>=6.2.4',
-                  ],
+        'coverage>=5.5',
+        'pytest>=6.2.4',
+    ],
     setup_requires=[
     ],
     entry_points={
         'console_scripts': [
-            'keria = keria.cli:main',
-            'keriad = keria.daemon:main'
+            'keria = keria.app.cli.keria:main',
         ]
     },
 )
