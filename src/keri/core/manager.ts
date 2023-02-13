@@ -74,9 +74,9 @@ class Keys {
 export interface Creator {
     create(codes: Array<string> | undefined, count: number, code: string, transferable: boolean, pidx: number,
            ridx: number, kidx: number, temp: boolean): Keys
-    get salt(): string
-    get stem(): string
-    get tier(): Tier
+    salt: string
+    stem: string
+    tier: Tier
 }
 
 export class RandyCreator implements Creator {
@@ -129,7 +129,7 @@ export class SaltyCreator implements Creator {
     }
 
     get tier(): Tier {
-        return this.salter.tier;
+        return this.salter.tier!;
     }
 
     create(codes: Array<string> | undefined = undefined, count: number = 1, code: string = MtrDex.Ed25519_Seed,
@@ -208,7 +208,7 @@ export interface ManagerArgs {
     seed?: string | undefined
     aeid?: string | undefined
     pidx?: number | undefined
-    algo?: string | undefined
+    algo?: Algos | undefined
     salt?: string | undefined
     tier?: string | undefined
 }
@@ -363,8 +363,8 @@ export class Manager {
         return Algos[ta]
     }
 
-    set algo(algo: string | undefined) {
-        this.ks.pinGbls('algo', algo!)
+    set algo(algo: Algos | undefined) {
+        this.ks.pinGbls('algo', algo! as string)
     }
 
     private updateAeid(aeid: string | undefined, seed?: string) {

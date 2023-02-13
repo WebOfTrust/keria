@@ -1,7 +1,7 @@
 import {Matter} from "../../src/keri/core/matter";
 
 import {strict as assert} from "assert";
-const { MtrDex } = require('../../src/keri/core/matter');
+import { MtrDex }  from'../../src/keri/core/matter';
 import libsodium from "libsodium-wrappers-sumo";
 import {Signer} from "../../src/keri/core/signer";
 import {Encrypter} from "../../src/keri/core/encrypter";

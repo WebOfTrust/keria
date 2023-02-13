@@ -4,7 +4,8 @@ import {b} from "./core";
 import {Cigar} from "./cigar";
 import {nowUTC} from "./utils";
 import {Siger} from "./siger";
-const Base64 = require('urlsafe-base64');
+import Base64 from "urlsafe-base64"
+import { Buffer } from 'buffer';
 
 export function normalize(header: string) {
     return header.trim()

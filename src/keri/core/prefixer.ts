@@ -4,14 +4,14 @@ import {Dict, Ilks} from "./core";
 import {sizeify} from "./serder";
 import {Verfer} from "./verfer";
 
-const blake3 = require('blake3');
+import {createHash} from "blake3"
 
 const Dummy: string = "#"
 
 
 export class Prefixer extends Matter {
-    private readonly _derive
-    private readonly _verify
+    private readonly _derive: Function | undefined
+    private readonly _verify: Function | undefined
 
     constructor({raw, code, qb64b, qb64, qb2}: MatterArgs, ked?: Dict<any>) {
         try {
@@ -69,7 +69,7 @@ export class Prefixer extends Matter {
         if (ked["i"] != Ilks.icp) {
             throw new Error(`Non-incepting ilk ${ked['i']} for prefix derivation`)
         }
-        return this._verify(ked, this.qb64, prefixed)
+        return this._verify!(ked, this.qb64, prefixed)
     }
 
 
@@ -138,7 +138,7 @@ export class Prefixer extends Matter {
         kd["i"] = "".padStart(Matter.Sizes.get(MtrDex.Blake3_256)!.fs, Dummy)
         kd["d"] = ked["i"]
         let [raw] = sizeify(ked)
-        const hasher = blake3.createHash();
+        const hasher = createHash();
         const dig = hasher.update(raw).digest('');
         return [dig, MtrDex.Blake3_256]
     }
@@ -193,7 +193,7 @@ export class Prefixer extends Matter {
 
     _verify_blake3_256(ked: Dict<any>, pre: string, prefixed: boolean = false): boolean {
         try {
-            let [raw, _] = Prefixer._derive_blake3_256(ked)
+            let [raw,] = Prefixer._derive_blake3_256(ked)
             let crymat = new Matter({raw: raw, code: MtrDex.Blake3_256})
             if (crymat.qb64 != pre) {
                 return false

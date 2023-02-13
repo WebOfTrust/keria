@@ -1,8 +1,7 @@
 import {Signer} from "./signer";
 
-export {};
-const { Matter, MtrDex } = require('./matter');
-const { EmptyMaterialError } = require('./kering')
+import { Matter, MtrDex } from './matter';
+import { EmptyMaterialError } from './kering'
 import libsodium  from 'libsodium-wrappers-sumo';
 
 export const enum Tier {
@@ -14,12 +13,13 @@ export const enum Tier {
 interface SalterArgs {
     raw?: Uint8Array | undefined
     code? :string
-    tier?:string
+    tier?:Tier
     qb64b? :Uint8Array | undefined
     qb64?: string
     qb2?: Uint8Array | undefined
 }
 export class Salter extends Matter {
+    private readonly _tier: Tier | null;
 
     constructor({raw, code = MtrDex.Salt_128, tier=Tier.low, qb64, qb64b, qb2}:SalterArgs) {
         try {
@@ -41,7 +41,7 @@ export class Salter extends Matter {
             throw new Error("invalid code for Salter, only Salt_128 accepted")
         }
 
-        this.tier = tier !== null ? tier : Tier.low
+        this._tier = tier !== null ? tier : Tier.low
     }
 
     private stretch(size: number = 32, path: string = "", tier: Tier | null = null, temp: boolean = false): Uint8Array {
@@ -80,6 +80,10 @@ export class Salter extends Matter {
         let seed = this.stretch(Matter._rawSize(code), path, tier, temp)
 
         return new Signer({raw: seed, code: code, transferable: transferable})
+    }
+
+    get tier(): Tier | null {
+        return this._tier;
     }
 
 }

@@ -7,7 +7,7 @@ import {Signage, signature} from "../end/ending";
 import {Cigar} from "./cigar";
 import {Siger} from "./siger";
 
-const Base64 = require('urlsafe-base64');
+import Base64 from "urlsafe-base64"
 
 export class Authenticater {
 

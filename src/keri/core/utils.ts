@@ -47,8 +47,8 @@ function extractElementValues(element: any, values: any) {
       values.push(element);
     }
     data = values;
-  } catch (error:any) {
-    throw new Error(error);
+  } catch (error) {
+    throw new Error(error as string);
   }
 
   return data;
@@ -74,7 +74,7 @@ export function nowUTC(): Date {
 }
 
 
-export function range(start: any, stop: any, step: any) {
+export function range(start: number, stop: number, step: number) {
   if (typeof stop == 'undefined') {
     // one param defined
     stop = start;
@@ -89,8 +89,8 @@ export function range(start: any, stop: any, step: any) {
     return [];
   }
 
-  let result = [];
-  for (let i = start; step > 0 ? i < stop : i > stop; i += step) {
+  let result = new Array<number>();
+  for (let i: number = start; step > 0 ? i < stop : i > stop; i += step) {
     result.push(i);
   }
 

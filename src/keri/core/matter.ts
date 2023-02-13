@@ -1,8 +1,9 @@
 import {EmptyMaterialError} from "./kering";
 
-const {intToB64, readInt} = require('./core');
-const Base64 = require('urlsafe-base64');
+import {intToB64, readInt} from './core';
+import Base64 from "urlsafe-base64"
 import {b, d} from "./core";
+import { Buffer } from 'buffer';
 
 export class Codex {
     has(prop: string): boolean {

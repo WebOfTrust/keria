@@ -8,7 +8,7 @@ import {Verfer} from "./verfer";
 import {Cigar} from "./cigar";
 import {Siger} from "./siger";
 import {IdrDex} from "./indexer";
-
+import { Buffer } from 'buffer';
 
 /**
  * @description Signer is Matter subclass with method to create signature of serialization
@@ -28,7 +28,7 @@ interface SignerArgs {
 }
 
 export class Signer extends Matter {
-    private readonly _sign
+    private readonly _sign: Function
     private readonly _verfer: Verfer
 
     constructor({raw, code = MtrDex.Ed25519_Seed, qb64, qb64b, qb2, transferable = true}: SignerArgs) {
