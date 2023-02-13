@@ -2,8 +2,8 @@ import libsodium from "libsodium-wrappers-sumo";
 import {strict as assert} from "assert";
 import {IdrDex, Indexer} from "../../src/keri/core/indexer";
 import {b, intToB64} from "../../src/keri/core/core";
-const Base64 = require('urlsafe-base64');
-
+import Base64 from "urlsafe-base64"
+import { Buffer } from 'buffer';
 
 describe('Indexer', () => {
     it('should encode and decode dual indexed signatures', async () => {

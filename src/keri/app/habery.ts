@@ -3,6 +3,8 @@ import {MtrDex} from "../core/matter";
 import {Salter} from "../core/salter";
 import {Verfer} from "../core/verfer";
 import {Diger} from "../core/diger";
+import {incept} from "../core/eventing";
+import {Serder} from "../core/serder";
 
 
 export class TraitCodex {
@@ -38,9 +40,25 @@ export interface MakeHabArgs {
     data?: any
 }
 
+export class Hab {
+    public name: string
+    public serder: Serder
+
+    constructor(name: string, icp: Serder) {
+        this.name = name
+        this.serder = icp
+    }
+
+    get pre(): string {
+        return this.serder.ked["i"]
+    }
+}
+
+
 export class Habery {
     private readonly _name: string;
     private readonly _mgr: Manager;
+    private readonly _habs: Map<string, Hab> = new Map<string, Hab>()
 
     constructor({name, passcode, seed, aeid, pidx, salt}: HaberyArgs) {
         this._name = name
@@ -65,8 +83,6 @@ export class Habery {
             algo = Algos.randy
         }
 
-        // TODO: Have to determine if there is already an Accountant (Keystore call for A
-
         this._mgr = new Manager({seed: seed, aeid: aeid, pidx: pidx, algo: algo, salt: salt})
     }
 
@@ -74,9 +90,17 @@ export class Habery {
         return this._mgr
     }
 
-    makeHab({code = MtrDex.Blake3_256, transferable = true, isith = undefined, icount = 1, nsith = undefined,
-                ncount = undefined, toad = undefined, wits = undefined, delpre = undefined, estOnly = false,
-                DnD = false, data = undefined}: MakeHabArgs) {
+    get habs(): Array<Hab> {
+        return Array.from(this._habs.values())
+    }
+
+    habByName(name: string): Hab|undefined {
+        return this._habs.get(name)
+    }
+
+    makeHab(name:string, {code = MtrDex.Blake3_256, transferable = true, isith = undefined, icount = 1,
+                          nsith = undefined, ncount = undefined, toad = undefined, wits = undefined, delpre = undefined,
+                          estOnly = false, DnD = false, data = undefined}: MakeHabArgs): Hab {
 
         if (nsith == undefined) {
             nsith = isith
@@ -115,18 +139,11 @@ export class Habery {
         let keys = Array.from(verfers, (verfer: Verfer) => verfer.qb64)
         let ndigs = Array.from(digers, (diger: Diger) => diger.qb64)
 
-        return {
-            delpre: delpre,
-            keys: keys,
-            isith: isith,
-            nsith: nsith,
-            ndigs: ndigs,
-            toad: toad,
-            wits: wits,
-            cnfg: cnfg,
-            code: code,
-            data: data            
-        }
+
+        const icp = incept({keys, isith, ndigs, nsith, toad, wits, cnfg, data, code, delpre})
+        const hab = new Hab(name, icp)
+        this._habs.set(name, hab)
+        return hab
     }
 
     get name(): string {

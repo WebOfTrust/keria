@@ -1,5 +1,6 @@
 export {};
-const libsodium = require('libsodium-wrappers-sumo');
+import libsodium from "libsodium-wrappers-sumo"
+
 import {Matter, MatterArgs, MtrDex} from './matter';
 
 /**
@@ -26,8 +27,8 @@ export class Verfer extends Matter {
         try {
             return libsodium.crypto_sign_verify_detached(sig, ser, key);
 
-        } catch (error: any) {
-            throw new Error(error);
+        } catch (error) {
+            throw new Error(error as string);
         }
     }
 }

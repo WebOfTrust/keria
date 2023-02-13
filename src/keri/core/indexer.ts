@@ -1,6 +1,7 @@
 import {EmptyMaterialError} from "./kering";
 import {b, b64ToInt, d, intToB64, readInt} from "./core";
-const Base64 = require('urlsafe-base64');
+import Base64 from "urlsafe-base64"
+import { Buffer } from 'buffer';
 
 export class IndexerCodex {
     Ed25519_Sig: string = 'A'  // Ed25519 sig appears same in both lists if any.

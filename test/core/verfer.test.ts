@@ -1,11 +1,11 @@
 import {MtrDex} from "../../src/keri/core/matter";
 
-const libsodium = require('libsodium-wrappers-sumo');
+import libsodium from "libsodium-wrappers-sumo"
 
-const assert = require('assert').strict;
+import {strict as assert} from "assert";
 
 
-const { Verfer } = require('../../src/keri/core/verfer');
+import { Verfer } from '../../src/keri/core/verfer';
 
 describe('Verfer', () => {
   it('should verify digests', async () => {

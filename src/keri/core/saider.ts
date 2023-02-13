@@ -3,7 +3,7 @@ import {deversify, Dict, Serials} from "./core";
 import {EmptyMaterialError} from "./kering";
 import {dumps, sizeify} from "./serder";
 
-const blake3 = require('blake3');
+import {createHash} from "blake3"
 
 const Dummy = "#"
 
@@ -65,7 +65,7 @@ export class Saider extends Matter {
     }
 
     static _derive_blake3_256(ser: Uint8Array, _digest_size: number, _length: number) {
-        const hasher = blake3.createHash();
+        const hasher = createHash();
         return hasher.update(ser).digest('');
     }
 

@@ -40,6 +40,7 @@ export class Tholder {
     private processSith(sith: string | number | Array<string>) {
         if (typeof(sith) == "string") {
             this._sith = sith
+            this._thold = parseInt(sith)
         } else if (typeof(sith) == "number") {
             this._thold = sith
             this._size = this._thold

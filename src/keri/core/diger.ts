@@ -1,4 +1,5 @@
-const blake3 = require('blake3');
+import {createHash} from "blake3"
+
 import {Matter, MatterArgs, MtrDex} from './matter';
 
 /**
@@ -8,7 +9,6 @@ import {Matter, MatterArgs, MtrDex} from './matter';
  *
  */
 
-
 export class Diger extends Matter {
     private readonly _verify: any
 
@@ -16,13 +16,13 @@ export class Diger extends Matter {
     constructor({raw, code = MtrDex.Blake3_256, qb64, qb64b, qb2}: MatterArgs, ser: Uint8Array | null = null) {
         try {
             super({raw, code, qb64, qb64b, qb2});
-        } catch (error: any) {
+        } catch (error) {
             if (ser == null) {
                 throw error;
             }
 
             if (code === MtrDex.Blake3_256) {
-                const hasher = blake3.createHash();
+                const hasher = createHash();
                 const dig = hasher.update(ser).digest('');
                 super({raw: dig, code: code});
             } else {
@@ -75,7 +75,7 @@ export class Diger extends Matter {
 
 
     blake3_256(ser: Uint8Array, dig: any) {
-        const hasher = blake3.createHash();
+        const hasher = createHash();
         let digest = hasher.update(ser).digest('');
         return (digest.toString() === dig.toString());
     }

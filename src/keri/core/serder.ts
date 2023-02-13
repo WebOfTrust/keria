@@ -78,7 +78,7 @@ export function sizeify(ked: Dict<any>, kind?: Serials) : [string, Ident, Serial
     }
 
     let ident = Ident.KERI
-    let [knd, version, _] = deversify(ked["v"] as string)
+    let [knd, version,] = deversify(ked["v"] as string)
     if (version != Versionage) {
         throw new Error(`unsupported version ${version.toString()}`)
     }
