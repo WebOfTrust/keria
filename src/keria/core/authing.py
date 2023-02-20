@@ -11,8 +11,6 @@ from keri import kering
 from keri.app.habbing import Hab
 from keri.end import ending
 
-from ..core import httping
-
 
 class Authenticater:
 
@@ -21,25 +19,25 @@ class Authenticater:
                      "@path",
                      "Signify-Timestamp"]
 
-    def __init__(self, agent: Hab, caid: str):
+    def __init__(self, agent: Hab, ctrlAid: str):
         """ Create Agent Authenticator for verifying requests and signing responses
 
         Parameters:
             agent(Hab): habitat of Agent for signing responses
-            caid(str): qb64 conAid signing AID
+            ctrlAid(str): qb64 ctrlAid signing AID
 
         Returns:
               Authenicator:  the configured habery
 
         """
         self.agent = agent
-        self.caid = caid
+        self.ctrlAid = ctrlAid
 
     def verify(self, request):
-        if self.caid not in self.agent.kevers:
-            raise kering.AuthNError("conAid AID not in kevers")
+        if self.ctrlAid not in self.agent.kevers:
+            raise kering.AuthNError("ctrlAid AID not in kevers")
 
-        ckever = self.agent.kevers[self.caid]
+        ckever = self.agent.kevers[self.ctrlAid]
         headers = request.headers
         siginput = headers["SIGNATURE-INPUT"]
         if not siginput:
@@ -48,7 +46,7 @@ class Authenticater:
         if not signature:
             return False
 
-        inputs = httping.desiginput(siginput.encode("utf-8"))
+        inputs = ending.desiginput(siginput.encode("utf-8"))
         inputs = [i for i in inputs if i.name == "signify"]
 
         if not inputs:
@@ -69,7 +67,7 @@ class Authenticater:
                     if key not in headers:
                         continue
 
-                    value = httping.normalize(headers[key])
+                    value = ending.normalize(headers[key])
                     items.append(f'"{field}": {value}')
 
             values = [f"({' '.join(inputage.fields)})", f"created={inputage.created}"]
@@ -113,8 +111,8 @@ class Authenticater:
         if fields is None:
             fields = self.DefaultFields
 
-        header, qsig = httping.siginput(self.agent, "signify", method, path, headers, fields=fields,
-                                        alg="ed25519", keyid=self.agent.pre)
+        header, qsig = ending.siginput(self.agent, "signify", method, path, headers, fields=fields,
+                                       alg="ed25519", keyid=self.agent.pre)
         headers.extend(header)
         signage = ending.Signage(markers=dict(signify=qsig), indexed=False, signer=None, ordinal=None, digest=None,
                                  kind=None)
@@ -137,7 +135,7 @@ class SignatureValidationComponent(object):
         self.allowed = allowed
 
     def process_request(self, req, resp):
-        """ Process request to ensure has a valid signature from conAid
+        """ Process request to ensure has a valid signature from ctrlAid
 
         Parameters:
             req: Http request object

@@ -74,7 +74,7 @@ def launch(args):
                 ".******", args.name, args.admin, args.http)
 
 
-def runAgent(conAid, *, name="ahab", base="", bran="", admin=5623, http=5632, configFile=None,
+def runAgent(ctrlAid, *, name="ahab", base="", bran="", admin=5623, http=5632, configFile=None,
              configDir=None, expire=0.0):
     """
     Setup and run one witness
@@ -82,7 +82,7 @@ def runAgent(conAid, *, name="ahab", base="", bran="", admin=5623, http=5632, co
 
     doers = []
     doers.extend(agenting.setup(name=name, base=base, bran=bran,
-                                conAid=conAid,
+                                ctrlAid=ctrlAid,
                                 adminPort=admin,
                                 httpPort=http,
                                 configFile=configFile,
