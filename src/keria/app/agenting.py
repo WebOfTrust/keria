@@ -14,16 +14,17 @@ from hio.help import decking
 from keri import kering
 from keri.app import configing, keeping, habbing, indirecting, storing, signaling, notifying
 from keri.app.indirecting import HttpEnd
-from keri.core import coring, parsing
+from keri.core import coring, parsing, eventing
 from keri.peer import exchanging
 from keri.vc import protocoling
 from keri.vdr import verifying, credentialing
 
 from ..core.authing import Authenticater
 from ..core import authing
+from ..core.eventing import cloneAid
 
 
-def setup(name, base, bran, conAid, adminPort, configFile=None, configDir=None, httpPort=None):
+def setup(name, base, bran, ctrlAid, adminPort, configFile=None, configDir=None, httpPort=None):
     """ Set up an ahab in Signify mode """
     ks = keeping.Keeper(name=name,
                         base=base,
@@ -42,22 +43,22 @@ def setup(name, base, bran, conAid, adminPort, configFile=None, configDir=None, 
                                 clear=False)
 
     # Create the Hab for the Agent with only 2 AIDs
-    cagHby = habbing.Habery(name=name, base=base, bran=bran)
+    agentHby = habbing.Habery(name=name, base=base, bran=bran)
 
     # Create Agent AID if it does not already exist
-    cagHab = cagHby.habByName(name)
-    if cagHab is None:
-        cagHab = cagHby.makeHab(name, transferable=True)
-        print(f"Created Agent AID {cagHab.pre}")
+    agentHab = agentHby.habByName(name)
+    if agentHab is None:
+        agentHab = agentHby.makeHab(name, transferable=True, data=[ctrlAid])
+        print(f"Created Agent AID {agentHab.pre}")
     else:
-        print(f"Loading Agent AID {cagHab.pre}")
+        print(f"Loading Agent AID {agentHab.pre}")
 
     # Create the Hab for the Controller AIDs.
-    conHby = habbing.Habery(name=conAid, base=base, cf=cf)
-    doers = [habbing.HaberyDoer(habery=cagHby), habbing.HaberyDoer(habery=conHby)]
+    ctrlHby = habbing.Habery(name=ctrlAid, base=base, cf=cf)
+    doers = [habbing.HaberyDoer(habery=agentHby), habbing.HaberyDoer(habery=ctrlHby)]
 
     # Create Authenticater for verifying signatures on all requests
-    authn = Authenticater(agent=cagHab, caid=conAid)
+    authn = Authenticater(agent=agentHab, ctrlAid=ctrlAid)
 
     app = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*',
@@ -67,21 +68,21 @@ def setup(name, base, bran, conAid, adminPort, configFile=None, configDir=None, 
     app.resp_options.media_handlers.update(media.Handlers())
 
     cues = decking.Deck()
-    mbx = storing.Mailboxer(name=conHby.name)
-    rep = storing.Respondant(hby=conHby, mbx=mbx)
-    rgy = credentialing.Regery(hby=conHby, name=name, base=base)
-    verifier = verifying.Verifier(hby=conHby, reger=rgy.reger)
+    mbx = storing.Mailboxer(name=ctrlHby.name)
+    rep = storing.Respondant(hby=ctrlHby, mbx=mbx)
+    rgy = credentialing.Regery(hby=ctrlHby, name=name, base=base)
+    verifier = verifying.Verifier(hby=ctrlHby, reger=rgy.reger)
 
     signaler = signaling.Signaler()
-    notifier = notifying.Notifier(hby=conHby, signaler=signaler)
-    issueHandler = protocoling.IssueHandler(hby=conHby, rgy=rgy, notifier=notifier)
-    requestHandler = protocoling.PresentationRequestHandler(hby=conHby, notifier=notifier)
-    applyHandler = protocoling.ApplyHandler(hby=conHby, rgy=rgy, verifier=verifier, name=conHby.name)
+    notifier = notifying.Notifier(hby=ctrlHby, signaler=signaler)
+    issueHandler = protocoling.IssueHandler(hby=ctrlHby, rgy=rgy, notifier=notifier)
+    requestHandler = protocoling.PresentationRequestHandler(hby=ctrlHby, notifier=notifier)
+    applyHandler = protocoling.ApplyHandler(hby=ctrlHby, rgy=rgy, verifier=verifier, name=ctrlHby.name)
     proofHandler = protocoling.PresentationProofHandler(notifier=notifier)
 
     handlers = [issueHandler, requestHandler, proofHandler, applyHandler]
-    exchanger = exchanging.Exchanger(db=conHby.db, handlers=handlers)
-    mbd = indirecting.MailboxDirector(hby=conHby,
+    exchanger = exchanging.Exchanger(db=ctrlHby.db, handlers=handlers)
+    mbd = indirecting.MailboxDirector(hby=ctrlHby,
                                       exc=exchanger,
                                       verifier=verifier,
                                       rep=rep,
@@ -107,17 +108,17 @@ def setup(name, base, bran, conAid, adminPort, configFile=None, configDir=None, 
         httpServerDoer = http.ServerDoer(server=server)
         doers.append(httpServerDoer)
 
-    doers += loadEnds(app=app, cagHab=cagHab, conHby=conHby, conAid=conAid)
+    doers += loadEnds(app=app, agentHby=agentHby, agentHab=agentHab, ctrlHby=ctrlHby, ctrlAid=ctrlAid)
 
     return doers
 
 
-def loadEnds(app, cagHab, conHby, conAid):
+def loadEnds(app, agentHby, agentHab, ctrlHby, ctrlAid):
 
-    bootEnd = BootEnd(cagHab, conAid)
+    bootEnd = BootEnd(agentHby, agentHab, ctrlAid)
     app.add_route("/boot", bootEnd)
 
-    habEnd = HabEnd(conHby)
+    habEnd = HabEnd(ctrlHby)
     app.add_route("/aids", habEnd)
 
     return [bootEnd]
@@ -126,16 +127,19 @@ def loadEnds(app, cagHab, conHby, conAid):
 class BootEnd(doing.DoDoer):
     """ Resource class for creating datastore in cloud ahab """
 
-    def __init__(self, ahab, caid):
+    def __init__(self, agentHby, agentHab, ctrlAid):
         """ Provides endpoints for initializing and unlocking an agent
 
         Parameters:
-            ahab (Hab): Hab for Signify Agent
-            caid (str): qb64 of conAid AID
+            agentHby (Habery): Habery for Signify Agent
+            agentHab (Hab): Hab for Signify Agent
+            ctrlAid (str): qb64 of ctrlAid AID
 
         """
-        self.agent = ahab
-        self.caid = caid
+        self.authn = authing.Authenticater(agent=agentHab, ctrlAid=ctrlAid)
+        self.agentHby = agentHby
+        self.agent = agentHab
+        self.ctrlAid = ctrlAid
         doers = []
         super(BootEnd, self).__init__(doers=doers)
 
@@ -167,24 +171,82 @@ class BootEnd(doing.DoDoer):
               description: No keystore exists
 
         """
-        body = dict(aaid=self.agent.pre, caid=self.caid)
+        kel = cloneAid(db=self.agent.db, pre=self.agent.pre)
+        body = dict(kel=kel)
+
+        if (ctrlHab := self.agentHby.habByName(self.ctrlAid)) is not None:
+            body["ridx"] = ctrlHab.kever.sn
 
         rep.content_type = "application/json"
         rep.data = json.dumps(body).encode("utf-8")
         rep.status = falcon.HTTP_200
 
-    def on_post(self, _, rep):
+    def on_post(self, req, rep):
         """ Inception event POST endpoint
 
         Parameters:
-            _ (Request): falcon.Request HTTP request object
+            req (Request): falcon.Request HTTP request object
             rep (Response): falcon.Response HTTP response object
 
         """
-        if self.caid not in self.agent.kevers:
-            rep.status = falcon.HTTP_417
-            rep.data = json.dumps({'msg': f'system ahab AEID not loaded'}).encode("utf-8")
+        body = req.get_media()
+        if "icp" not in body:
+            rep.status = falcon.HTTP_400
+            rep.data = json.dumps({'msg': f'required field "icp" missing from body'}).encode("utf-8")
             return
+        icp = eventing.Serder(ked=body["icp"])
+
+        if "sig" not in body:
+            rep.status = falcon.HTTP_400
+            rep.data = json.dumps({'msg': f'required field "sig" missing from body'}).encode("utf-8")
+            return
+
+        siger = coring.Siger(qb64=body["sig"])
+
+        if "path" not in body:
+            rep.status = falcon.HTTP_400
+            rep.data = json.dumps({'msg': f'required field "path" missing from body'}).encode("utf-8")
+            return
+
+        path = body["path"]
+
+        if "npath" not in body:
+            rep.status = falcon.HTTP_400
+            rep.data = json.dumps({'msg': f'required field "npath" missing from body'}).encode("utf-8")
+            return
+
+        npath = body["npath"]
+
+        if "tier" not in body:
+            rep.status = falcon.HTTP_400
+            rep.data = json.dumps({'msg': f'required field "tier" missing from body'}).encode("utf-8")
+            return
+
+        tier = body["tier"]
+
+        if "temp" not in body:
+            rep.status = falcon.HTTP_400
+            rep.data = json.dumps({'msg': f'required field "temp" missing from body'}).encode("utf-8")
+            return
+
+        temp = body["temp"]
+
+        ctrlHab = self.agentHby.makeSignifyHab(name=self.ctrlAid, serder=icp, sigers=[siger], ipath=path, npath=npath,
+                                               tier=tier, temp=temp)
+
+        if ctrlHab.pre != self.ctrlAid:
+            self.agentHby.deleteHab(self.ctrlAid)
+            rep.status = falcon.HTTP_417
+            rep.data = json.dumps({'msg': f'invalid icp event for ctrlAid {self.ctrlAid}'}).encode("utf-8")
+            return
+
+        if not self.authn.verify(req):
+            self.agentHby.deleteHab(self.ctrlAid)
+            rep.status = falcon.HTTP_401
+            rep.data = json.dumps({'msg': f'invalid signature on rquest'}).encode("utf-8")
+            return
+
+        rep.status = falcon.HTTP_200
 
 
 class HabEnd:
@@ -194,7 +256,7 @@ class HabEnd:
         """
 
         Parameters:
-            hby (HAbery): Controller database and keystore environment
+            hby (Habery): Controller database and keystore environment
         """
         self.hby = hby
         pass
