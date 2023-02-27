@@ -111,7 +111,7 @@ class Authenticater:
         if fields is None:
             fields = self.DefaultFields
 
-        header, qsig = ending.siginput(self.agent, "signify", method, path, headers, fields=fields,
+        header, qsig = ending.siginput("signify", method, path, headers, fields=fields, hab=self.agent,
                                        alg="ed25519", keyid=self.agent.pre)
         headers.extend(header)
         signage = ending.Signage(markers=dict(signify=qsig), indexed=False, signer=None, ordinal=None, digest=None,

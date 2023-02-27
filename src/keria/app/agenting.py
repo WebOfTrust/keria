@@ -5,6 +5,7 @@ keria.app.agenting module
 
 """
 import json
+from urllib.parse import urlparse
 
 import falcon
 from falcon import media
@@ -12,13 +13,17 @@ from hio.base import doing
 from hio.core import http
 from hio.help import decking
 from keri import kering
-from keri.app import configing, keeping, habbing, indirecting, storing, signaling, notifying
+from keri.app import configing, keeping, habbing, storing, signaling, notifying, oobiing, agenting, delegating
 from keri.app.indirecting import HttpEnd
-from keri.core import coring, parsing, eventing
+from keri.core import coring, parsing, eventing, routing
 from keri.core.coring import Ilks
+from keri.db import dbing
+from keri.db.basing import OobiRecord
+from keri.help import helping
 from keri.peer import exchanging
 from keri.vc import protocoling
 from keri.vdr import verifying, credentialing
+from keri.vdr.eventing import Tevery
 
 from ..core.authing import Authenticater
 from ..core import authing
@@ -42,9 +47,17 @@ def setup(name, base, bran, ctrlAid, adminPort, configFile=None, configDir=None,
                                 temp=False,
                                 reopen=True,
                                 clear=False)
+    acf = None
+    if configDir is not None:
+        acf = configing.Configer(name=name,
+                                 base="",
+                                 headDirPath=configDir,
+                                 temp=False,
+                                 reopen=True,
+                                 clear=False)
 
     # Create the Hab for the Agent with only 2 AIDs
-    agentHby = habbing.Habery(name=name, base=base, bran=bran)
+    agentHby = habbing.Habery(name=name, base=base, bran=bran, cf=acf)
 
     # Create Agent AID if it does not already exist
     agentHab = agentHby.habByName(name)
@@ -70,9 +83,11 @@ def setup(name, base, bran, ctrlAid, adminPort, configFile=None, configDir=None,
 
     cues = decking.Deck()
     mbx = storing.Mailboxer(name=ctrlHby.name)
-    rep = storing.Respondant(hby=ctrlHby, mbx=mbx)
     rgy = credentialing.Regery(hby=ctrlHby, name=name, base=base)
     verifier = verifying.Verifier(hby=ctrlHby, reger=rgy.reger)
+
+    witDoer = agenting.WitnessReceiptor(hby=ctrlHby)
+    anchorer = delegating.Boatswain(hby=ctrlHby)
 
     signaler = signaling.Signaler()
     notifier = notifying.Notifier(hby=ctrlHby, signaler=signaler)
@@ -83,24 +98,32 @@ def setup(name, base, bran, ctrlAid, adminPort, configFile=None, configDir=None,
 
     handlers = [issueHandler, requestHandler, proofHandler, applyHandler]
     exchanger = exchanging.Exchanger(db=ctrlHby.db, handlers=handlers)
-    mbd = indirecting.MailboxDirector(hby=ctrlHby,
-                                      exc=exchanger,
-                                      verifier=verifier,
-                                      rep=rep,
-                                      topics=["/receipt", "/replay", "/multisig", "/credential", "/delegate",
-                                              "/challenge", "/oobi"],
-                                      cues=cues)
 
     adminServer = http.Server(port=adminPort, app=app)
     adminServerDoer = http.ServerDoer(server=adminServer)
-    doers.extend([exchanger, mbd, rep, adminServerDoer])
+    oobiery = oobiing.Oobiery(hby=ctrlHby)
+    doers.extend([exchanger, adminServerDoer, witDoer, anchorer, *oobiery.doers])
 
     if httpPort is not None:
+        rvy = routing.Revery(db=ctrlHby.db, cues=cues)
+        kvy = eventing.Kevery(db=ctrlHby.db,
+                              lax=True,
+                              local=False,
+                              rvy=rvy,
+                              cues=cues)
+        kvy.registerReplyRoutes(router=rvy.rtr)
+
+        tvy = Tevery(reger=verifier.reger,
+                     db=ctrlHby.db,
+                     local=False,
+                     cues=cues)
+
+        tvy.registerReplyRoutes(router=rvy.rtr)
         parser = parsing.Parser(framed=True,
-                                kvy=mbd.kvy,
-                                tvy=mbd.tvy,
+                                kvy=kvy,
+                                tvy=tvy,
                                 exc=exchanger,
-                                rvy=mbd.rvy)
+                                rvy=rvy)
 
         httpEnd = HttpEnd(rxbs=parser.ims, mbx=mbx)
         app.add_route("/", httpEnd)
@@ -109,20 +132,22 @@ def setup(name, base, bran, ctrlAid, adminPort, configFile=None, configDir=None,
         httpServerDoer = http.ServerDoer(server=server)
         doers.append(httpServerDoer)
 
-    doers += loadEnds(app=app, agentHby=agentHby, agentHab=agentHab, ctrlHby=ctrlHby, ctrlAid=ctrlAid)
+    doers += loadEnds(app=app, agentHby=agentHby, agentHab=agentHab, ctrlHby=ctrlHby, ctrlAid=ctrlAid,
+                      witners=witDoer.msgs, anchors=anchorer.msgs)
 
     return doers
 
 
-def loadEnds(app, agentHby, agentHab, ctrlHby, ctrlAid):
-
+def loadEnds(app, agentHby, agentHab, ctrlHby, ctrlAid, witners, anchors):
     bootEnd = BootEnd(agentHby, agentHab, ctrlHby, ctrlAid)
     app.add_route("/boot", bootEnd)
 
-    idsEnd = IdentifierCollectionEnd(ctrlHby)
-    app.add_route("/identifiers", idsEnd)
-    idEnd = IdentifierResourceEnd(ctrlHby)
-    app.add_route("/identifiers/{name}", idEnd)
+    aidsEnd = IdentifierCollectionEnd(ctrlHby, witners=witners, anchors=anchors)
+    app.add_route("/identifiers", aidsEnd)
+    aidEnd = IdentifierResourceEnd(ctrlHby, witners=witners, anchors=anchors)
+    app.add_route("/identifiers/{name}", aidEnd)
+    aidOOBIsEnd = IdentifierOOBICollectionEnd(ctrlHby)
+    app.add_route("/identifiers/{name}/oobis", aidOOBIsEnd)
 
     return [bootEnd]
 
@@ -226,13 +251,15 @@ class BootEnd(doing.DoDoer):
 class IdentifierCollectionEnd:
     """ Resource class for creating and managing identifiers """
 
-    def __init__(self, hby):
+    def __init__(self, hby, witners, anchors):
         """
 
         Parameters:
             hby (Habery): Controller database and keystore environment
         """
         self.hby = hby
+        self.witners = witners
+        self.anchors = anchors
         pass
 
     def on_get(self, _, rep):
@@ -265,46 +292,55 @@ class IdentifierCollectionEnd:
             body = req.get_media()
             icp = body.get("icp")
             if icp is None:
-                rep.status = falcon.HTTP_423
-                rep.data = json.dumps({'msg': f"required field 'icp' missing from request"}).encode("utf-8")
-                return
+                raise falcon.HTTPBadRequest(title=f"required field 'icp' missing from request")
 
             name = body.get("name")
             if name is None:
-                rep.status = falcon.HTTP_423
-                rep.data = json.dumps({'msg': f"required field 'name' missing from request"}).encode("utf-8")
-                return
-            
+                raise falcon.HTTPBadRequest(title=f"required field 'name' missing from request")
+
             stem = body.get("stem")
             if stem is None:
-                rep.status = falcon.HTTP_423
-                rep.data = json.dumps({'msg': f"required field 'stem' missing from request"}).encode("utf-8")
-                return
-            
+                raise falcon.HTTPBadRequest(title=f"required field 'stem' missing from request")
+
             pidx = body.get("pidx")
             if pidx is None:
-                rep.status = falcon.HTTP_423
-                rep.data = json.dumps({'msg': f"required field 'pidx' missing from request"}).encode("utf-8")
-                return
-            
+                raise falcon.HTTPBadRequest(title=f"required field 'pidx' missing from request")
+
             sigs = body.get("sigs")
             if sigs is None or len(sigs) == 0:
-                rep.status = falcon.HTTP_423
-                rep.data = json.dumps({'msg': f"required field 'sigs' missing from request"}).encode("utf-8")
-                return
+                raise falcon.HTTPBadRequest(title=f"required field 'sigs' missing from request")
 
             tier = body.get("tier")
             if tier not in coring.Tiers:
-                rep.status = falcon.HTTP_423
-                rep.data = json.dumps({'msg': f"required field 'tier' missing from request"}).encode("utf-8")
-                return
+                raise falcon.HTTPBadRequest(title=f"required field 'tier' missing from request")
 
             temp = body.get("temp")
             serder = coring.Serder(ked=icp)
             sigers = [coring.Siger(qb64=sig) for sig in sigs]
 
-            self.hby.makeSignifyHab(name, serder=serder, sigers=sigers, pidx=pidx, stem=stem, tier=tier,
-                                    temp=temp)
+            hab = self.hby.makeSignifyHab(name, serder=serder, sigers=sigers, pidx=pidx, stem=stem, tier=tier,
+                                          temp=temp)
+
+            rpy = body.get("rpy")
+            if rpy is not None:
+                rserder = coring.Serder(ked=rpy)
+                rsigs = body.get("rsigs")
+                rsigers = [coring.Siger(qb64=rsig) for rsig in rsigs]
+                tsg = (hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn), hab.kever.serder.saider, rsigers)
+                self.hby.rvy.processReply(rserder, tsgs=[tsg])
+
+            msgs = bytearray()
+            for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(hab.pre,)):
+                if end.enabled or end.allowed:
+                    msgs.extend(hab.loadLocScheme(eid=eid))
+
+            if hab.kever.delegator:
+                self.anchors.append(dict(alias=name, pre=hab.pre, sn=0))
+                # TODO: return long running operation
+
+            if hab.kever.wits:
+                self.witners.append(dict(pre=hab.pre))
+                # TODO: return long running operation
 
             rep.status = falcon.HTTP_200
             rep.content_type = "application/json"
@@ -318,14 +354,15 @@ class IdentifierCollectionEnd:
 class IdentifierResourceEnd:
     """ Resource class for updating and deleting identifiers """
 
-    def __init__(self, hby):
+    def __init__(self, hby, witners, anchors):
         """
 
         Parameters:
             hby (Habery): Controller database and keystore environment
         """
         self.hby = hby
-        pass
+        self.witners = witners
+        self.anchors = anchors
 
     def on_get(self, _, rep, name):
         """ Identifier GET endpoint
@@ -374,7 +411,7 @@ class IdentifierResourceEnd:
     def rotate(self, name, body):
         hab = self.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(title=f"No AID {name} found")
+            raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
 
         rot = body.get("rot")
         if rot is None:
@@ -390,6 +427,14 @@ class IdentifierResourceEnd:
         sigers = [coring.Siger(qb64=sig) for sig in sigs]
 
         hab.rotate(serder=serder, sigers=sigers, )
+
+        if hab.kever.delegator:
+            self.anchors.append(dict(alias=name, pre=hab.pre, sn=0))
+            # TODO: return long running operation
+
+        if hab.kever.wits:
+            self.witners.append(dict(pre=hab.pre))
+            # TODO: return long running operation
 
         return serder
 
@@ -412,6 +457,10 @@ class IdentifierResourceEnd:
         sigers = [coring.Siger(qb64=sig) for sig in sigs]
 
         hab.interact(serder=serder, sigers=sigers)
+
+        if hab.kever.wits:
+            self.witners.append(dict(pre=hab.pre))
+            # TODO: return long running operation
 
         return serder
 
@@ -437,5 +486,135 @@ def info(hab, full=False):
     if hab.accepted and full:
         kever = hab.kevers[hab.pre]
         data["state"] = kever.state().ked
+        dgkey = dbing.dgKey(kever.prefixer.qb64b, kever.serder.saidb)
+        wigs = hab.db.getWigs(dgkey)
+        data["windexes"] = [coring.Siger(qb64b=bytes(wig)).index for wig in wigs]
 
     return data
+
+
+class IdentifierOOBICollectionEnd:
+    """
+      This class represents the OOBI subresource collection endpoint for Identfiiers
+
+    """
+
+    def __init__(self, hby):
+        """  Initialize Identifier / OOBI subresource endpoint
+
+        Parameters:
+            hby (Habery): database environment for controller AIDs
+
+        """
+        self.hby = hby
+
+    def on_get(self, req, rep, name):
+        """ Identifier GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            name (str): human readable name for Hab to GET
+
+        """
+
+        hab = self.hby.habByName(name)
+        if not hab:
+            raise falcon.HTTPNotFound(f"invalid alias {name}")
+
+        role = req.params["role"]
+
+        res = dict(role=role)
+        if role in (kering.Roles.witness,):  # Fetch URL OOBIs for all witnesses
+            oobis = []
+            for wit in hab.kever.wits:
+                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+                if not urls:
+                    raise falcon.HTTPNotFound(f"unable to query witness {wit}, no http endpoint")
+
+                up = urlparse(urls[kering.Schemes.http])
+                oobis.append(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/witness/{wit}")
+            res["oobis"] = oobis
+        elif role in (kering.Roles.controller,):  # Fetch any controller URL OOBIs
+            oobis = []
+            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http)
+            if not urls:
+                raise falcon.HTTPNotFound(f"unable to query controller {hab.pre}, no http endpoint")
+
+            up = urlparse(urls[kering.Schemes.http])
+            oobis.append(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/controller")
+            res["oobis"] = oobis
+        else:
+            rep.status = falcon.HTTP_404
+            return
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(res).encode("utf-8")
+
+
+class OOBICollectionEnd:
+
+    def __init__(self, hby):
+        self.hby = hby
+
+
+class OOBIResourceEnd:
+
+    def __init__(self, hby):
+        self.hby = hby
+
+    def on_post(self, req, rep):
+        """ Resolve OOBI endpoint.
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        ---
+        summary: Resolve OOBI and assign an alias for the remote identifier
+        description: Resolve OOBI URL or `rpy` message by process results of request and assign 'alias' in contact
+                     data for resolved identifier
+        tags:
+           - OOBIs
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: OOBI
+                    properties:
+                        oobialias:
+                          type: string
+                          description: alias to assign to the identifier resolved from this OOBI
+                          required: false
+                        url:
+                          type: string
+                          description:  URL OOBI
+                        rpy:
+                          type: object
+                          description: unsigned KERI `rpy` event message with endpoints
+        responses:
+           202:
+              description: OOBI resolution to key state successful
+
+        """
+        body = req.get_media()
+
+        if "url" in body:
+            oobi = body["url"]
+            dt = helping.nowUTC()
+
+            obr = OobiRecord(date=helping.toIso8601(dt))
+            if "oobialias" in body:
+                obr.oobialias = body["oobialias"]
+
+            self.hby.db.oobis.pin(keys=(oobi,), val=obr)
+
+        elif "rpy" in body:
+            raise falcon.HTTPNotImplemented("'rpy' support not implemented yet")
+
+        else:
+            raise falcon.HTTPBadRequest("invalid OOBI request body, either 'rpy' or 'url' is required")
+
+        rep.status = falcon.HTTP_202

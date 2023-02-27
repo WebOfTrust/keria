@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 SIGNIFY
-signify.core.httping module
+keria.core.authing module
 
 Testing httping utils
 """
@@ -47,11 +47,11 @@ def test_authenticater(mockHelpingNowUTC):
         assert dict(headers) == {'Connection': 'close',
                                  'Content-Length': '256',
                                  'Content-Type': 'application/json',
-                                 'Signature': 'indexed="?0";signify="0BAiW2hHH-nE9Nk_vVDxIVPBTs5HMhui6Zu6ov_TvmzR6NUHY'
-                                              'aws7ugmuB54Ad-YiXozaGonGOt05eVuPZF3b20I"',
+                                 'Signature': 'indexed="?0";signify="0BBiMWsrTn_MEjz0uJ1IG8lhG_xhfKfOmc3_wt1ul_xY6jFx6'
+                                              'EasHbB6RDM1jrboFDx2ULt425efzbeq5zKn9G4J"',
                                  'Signature-Input': 'signify=("signify-resource" "@method" "@path" '
-                                                    '"signify-timestamp");created=1609459200;keyid="EBAWufAXdNwEAQkw_6'
-                                                    'Bnvpvi8PZ2Gl_KMqXNfcF9G-7f";alg="ed25519"',
+                                                    '"signify-timestamp");created=1609459200;keyid="ECaJaP75uGKZOcDZqj'
+                                                    'CbnjZ3L0jre6XWhKxoR3kloHoH";alg="ed25519"',
                                  'Signify-Resource': 'EWJkQCFvKuyxZi582yJPb0wcwuW3VXmFNuvbQuBpgmIs',
                                  'Signify-Timestamp': '2022-09-24T00:05:48.196795+00:00'}
 

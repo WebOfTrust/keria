@@ -25,17 +25,17 @@ parser.add_argument('-V', '--version',
 parser.add_argument('-a', '--admin-http-port',
                     dest="admin",
                     action='store',
-                    default=5623,
+                    default=3901,
                     help="Admin port number the HTTP server listens on. Default is 5623.")
 parser.add_argument('-H', '--http',
                     action='store',
-                    default=5632,
+                    default=3902,
                     help="Local port number the HTTP server listens on. Default is 5631.")
 parser.add_argument('-c', '--controller', required=True,
                     help="Identifier prefix of the controller of this agent.")
 parser.add_argument('-n', '--name',
                     action='store',
-                    default="ahab",
+                    default="keria",
                     help="Name of controller. Default is agent.")
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
