@@ -7,12 +7,13 @@ keria.core.longrunning module
 import datetime
 from collections import namedtuple
 from dataclasses import dataclass
+from base64 import urlsafe_b64decode as decodeB64
 
 import falcon
 from dataclasses_json import dataclass_json
 from keri import kering
 from keri.app.oobiing import Result
-from keri.core import eventing
+from keri.core import eventing, coring
 from keri.db import dbing, koming
 from keri.help import helping
 
@@ -68,10 +69,7 @@ class Operator(dbing.LMDBer):
         super(Operator, self).__init__(name=name, headDirPath=headDirPath, reopen=reopen, **kwa)
 
     def reopen(self, **kwa):
-        """
-
-        :param kwa:
-        :return:
+        """  Reopen database and initialize sub-dbs
         """
         super(Operator, self).reopen(**kwa)
 
@@ -85,22 +83,27 @@ class Monitor:
     """  Monitoring and garbage collecting long running operations
 
     Attributes:
+        hby (Habery): identifier database environment
         opr(Operator): long running operations database
+        swain(Boatswain): Delegation processes tracker
 
     """
 
-    def __init__(self, hby, opr=None):
+    def __init__(self, hby, swain, opr=None):
         """ Create long running operation monitor
 
         Parameters:
+            hby (Habery): identifier database environment
+            swain(Boatswain): Delegation processes tracker
             opr (Operator): long running operations database
 
         """
         self.hby = hby
+        self.swain = swain
         self.opr = opr if opr is not None else Operator(name=hby.name)
 
     def submit(self, oid, typ, metadata=None):
-        """
+        """  Submit a new long running operation to track
 
         parameters:
             oid (str): opaque identifier of the target of the long running operation (type specific)
@@ -133,15 +136,21 @@ class Monitor:
         return operation
 
     def rem(self, name):
+        """ Remove tracking of the long running operation represented by name """
         return self.opr.ops.rem(keys=(name,))
 
     def status(self, op):
-        """
+        """  Calculate the status of an operation.
+
+        Base on the type of an operation, determine the current status of the operation, including loading
+        any availabie error messages if the operation failed of the sucessful result of the operation which
+        will be the same that would be returned by the original endpoint if the operation were not long running
 
         Parameters:
             op (Op): database storage for long running operation
 
         Returns:
+            Operation: The status of the operation, including any errors or results as appropriate.
 
         """
 
@@ -165,8 +174,10 @@ class Monitor:
             wigs = self.hby.db.getWigs(dgkey)
 
             if len(wigs) >= kever.toader.num:
+                evt = self.hby.db.getEvt(keys=dbing.dgKey(pre=kever.pre, dig=bytes(sdig)))
+                serder = coring.Serder(raw=bytes(evt))
                 operation.done = True
-                operation.response = kever.serder.ked
+                operation.response = serder.ked
 
             else:
                 start = helping.fromIso8601(op.start)
@@ -180,15 +191,42 @@ class Monitor:
                     operation.done = False
 
         elif op.type in (OpTypes.oobi,):
-            obr = self.hby.db.oobis.pin(keys=(op.oid,))
-            if obr.state == Result.resolved:
+            if "oobi" not in op.metadata:
+                raise kering.ValidationError("invalid OOBI long running operation, missing oobi")
+
+            oobi = op.metadata["oobi"]
+            obr = self.hby.db.roobi.get(keys=(oobi,))
+            if obr is None:
+                operation.done = False
+            elif obr.state == Result.resolved:
                 operation.done = True
-                kever = self.hby.kevers[op.oid]
+                kever = self.hby.kevers[obr.cid]
                 operation.response = kever.state().ked
             elif obr.state == Result.failed:
                 operation.done = True
                 operation.failed = Status(code=500,
                                           message=f"resolving OOBI {op.oid} failed")
+            else:
+                operation.done = False
+
+        elif op.type in (OpTypes.delegation, ):
+            if op.oid not in self.hby.kevers:
+                raise kering.ValidationError(f"long running {op.type} operation identifier {op.oid} not found")
+
+            if "sn" not in op.metadata:
+                raise kering.ValidationError(f"invalid long running {op.type} operaiton, metadata missing 'sn' field")
+
+            kever = self.hby.kevers[op.oid]
+            sn = op.metadata["sn"]
+            sdig = self.hby.db.getKeLast(key=dbing.snKey(pre=op.oid, sn=sn))
+            anchor = dict(i=op.oid, s=sn, d=bytes(sdig))
+
+            if self.hby.db.findAnchoringEvent(kever.delegator, anchor=anchor) is not None:
+                evt = self.hby.db.getEvt(keys=dbing.dgKey(pre=kever.pre, dig=bytes(sdig)))
+                serder = coring.Serder(raw=bytes(evt))
+
+                operation.done = True
+                operation.response = serder.ked
             else:
                 operation.done = False
 

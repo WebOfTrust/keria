@@ -16,7 +16,7 @@ from keri import kering
 from keri.app import configing, keeping, habbing, storing, signaling, notifying, oobiing, agenting, delegating
 from keri.app.indirecting import HttpEnd
 from keri.core import coring, parsing, eventing, routing
-from keri.core.coring import Ilks
+from keri.core.coring import Ilks, randomNonce
 from keri.db import dbing
 from keri.db.basing import OobiRecord
 from keri.help import helping, ogler
@@ -78,7 +78,10 @@ def setup(name, base, bran, ctrlAid, adminPort, configFile=None, configDir=None,
         print(f"Loading agent...")
 
     rgy = credentialing.Regery(hby=agentHab, name=name, base=base)
-    mon = longrunning.Monitor(hby=ctrlHby)
+    witDoer = agenting.WitnessReceiptor(hby=ctrlHby)
+    swain = delegating.Boatswain(hby=ctrlHby)
+
+    mon = longrunning.Monitor(hby=ctrlHby, swain=swain)
 
     # Create Authenticater for verifying signatures on all requests
     authn = Authenticater(agent=agentHab, ctrlAid=ctrlAid)
@@ -90,9 +93,6 @@ def setup(name, base, bran, ctrlAid, adminPort, configFile=None, configDir=None,
     app.req_options.media_handlers.update(media.Handlers())
     app.resp_options.media_handlers.update(media.Handlers())
 
-    witDoer = agenting.WitnessReceiptor(hby=ctrlHby)
-    anchorer = delegating.Boatswain(hby=ctrlHby)
-
     adminServer = http.Server(port=adminPort, app=app)
     adminServerDoer = http.ServerDoer(server=adminServer)
     oobiery = oobiing.Oobiery(hby=ctrlHby)
@@ -102,9 +102,9 @@ def setup(name, base, bran, ctrlAid, adminPort, configFile=None, configDir=None,
                     rgy=rgy,
                     httpPort=httpPort)
 
-    doers.extend([adminServerDoer, agent, witDoer, anchorer, *oobiery.doers])
+    doers.extend([adminServerDoer, agent, witDoer, swain, *oobiery.doers])
     doers += loadEnds(app=app, agentHby=agentHby, agentHab=agentHab, ctrlHby=ctrlHby, ctrlAid=ctrlAid,
-                      monitor=mon, witners=witDoer.msgs, anchors=anchorer.msgs)
+                      monitor=mon, witners=witDoer.msgs, anchors=swain.msgs)
 
     return doers
 
@@ -245,8 +245,12 @@ def loadEnds(app, agentHby, agentHab, ctrlHby, ctrlAid, monitor, witners, anchor
     app.add_route("/identifiers/{name}", aidEnd)
     aidOOBIsEnd = IdentifierOOBICollectionEnd(ctrlHby)
     app.add_route("/identifiers/{name}/oobis", aidOOBIsEnd)
+
     opEnd = longrunning.OperationResourceEnd(monitor=monitor)
     app.add_route("/operations/{name}", opEnd)
+
+    oobiEnd = OOBICollectionEnd(hby=ctrlHby, monitor=monitor)
+    app.add_route("/oobis", oobiEnd)
 
     return [bootEnd]
 
@@ -677,12 +681,6 @@ class IdentifierOOBICollectionEnd:
 
 class OOBICollectionEnd:
 
-    def __init__(self, hby):
-        self.hby = hby
-
-
-class OOBIResourceEnd:
-
     def __init__(self, hby, monitor):
         """ Create OOBI Collection endpoint instance
 
@@ -747,6 +745,9 @@ class OOBIResourceEnd:
         else:
             raise falcon.HTTPBadRequest("invalid OOBI request body, either 'rpy' or 'url' is required")
 
+        oid = randomNonce()
+        op = self.mon.submit(oid, longrunning.OpTypes.oobi, metadata=dict(oobi=oobi))
+
         rep.status = falcon.HTTP_202
-        op = self.mon.submit(oobi, longrunning.OpTypes.oobi)
-        return op.to_json().encode("utf-8")
+        rep.content_type = "application/json"
+        rep.data = op.to_json().encode("utf-8")
