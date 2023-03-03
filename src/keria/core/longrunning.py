@@ -174,7 +174,7 @@ class Monitor:
             wigs = self.hby.db.getWigs(dgkey)
 
             if len(wigs) >= kever.toader.num:
-                evt = self.hby.db.getEvt(keys=dbing.dgKey(pre=kever.pre, dig=bytes(sdig)))
+                evt = self.hby.db.getEvt(dbing.dgKey(pre=kever.prefixer.qb64, dig=bytes(sdig)))
                 serder = coring.Serder(raw=bytes(evt))
                 operation.done = True
                 operation.response = serder.ked
@@ -222,7 +222,7 @@ class Monitor:
             anchor = dict(i=op.oid, s=sn, d=bytes(sdig))
 
             if self.hby.db.findAnchoringEvent(kever.delegator, anchor=anchor) is not None:
-                evt = self.hby.db.getEvt(keys=dbing.dgKey(pre=kever.pre, dig=bytes(sdig)))
+                evt = self.hby.db.getEvt(dbing.dgKey(pre=kever.prefixer.qb64, dig=bytes(sdig)))
                 serder = coring.Serder(raw=bytes(evt))
 
                 operation.done = True

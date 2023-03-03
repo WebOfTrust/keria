@@ -10,10 +10,11 @@ import json
 import falcon
 from falcon import testing
 from hio.help import decking
-from keri.app import habbing, configing, keeping
+from keri.app import habbing, configing, keeping, delegating
 from keri.core import coring, eventing
 
 from keria.app import agenting
+from keria.core import longrunning
 
 
 def test_identifier_collection_end():
@@ -22,9 +23,11 @@ def test_identifier_collection_end():
     cf = configing.Configer(name="keria", headDirPath="scripts", temp=False, reopen=True, clear=False)
 
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
+        swain = delegating.Boatswain(hby=hby)
+        monitor = longrunning.Monitor(hby=hby, swain=swain)
         witners = decking.Deck()
         anchors = decking.Deck()
-        end = agenting.IdentifierCollectionEnd(hby=hby, witners=witners, anchors=anchors)
+        end = agenting.IdentifierCollectionEnd(hby=hby, witners=witners, anchors=anchors, monitor=monitor)
 
         app = falcon.App()
         app.add_route("/identifiers", end)
@@ -107,7 +110,7 @@ def test_identifier_collection_end():
                 'stem': 'signify:aid', 'pidx': 3, 'tier': 'low', 'temp': False}
 
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
-        assert res.status_code == 200
+        assert res.status_code == 202
 
         assert len(end.witners) == 1
         res = client.simulate_get(path="/identifiers")
