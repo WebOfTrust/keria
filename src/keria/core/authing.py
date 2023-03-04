@@ -39,6 +39,10 @@ class Authenticater:
 
         ckever = self.agent.kevers[self.ctrlAid]
         headers = request.headers
+        if "SIGNATURE-INPUT" not in headers or "SIGNATURE" not in headers:
+            print("Missing valid signature headers")
+            return False
+
         siginput = headers["SIGNATURE-INPUT"]
         if not siginput:
             return False
@@ -111,7 +115,7 @@ class Authenticater:
         if fields is None:
             fields = self.DefaultFields
 
-        header, qsig = ending.siginput(self.agent, "signify", method, path, headers, fields=fields,
+        header, qsig = ending.siginput("signify", method, path, headers, fields=fields, hab=self.agent,
                                        alg="ed25519", keyid=self.agent.pre)
         headers.extend(header)
         signage = ending.Signage(markers=dict(signify=qsig), indexed=False, signer=None, ordinal=None, digest=None,

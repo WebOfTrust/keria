@@ -1,3 +1,10 @@
+# -*- encoding: utf-8 -*-
+"""
+KERIA
+keria.core.eventing module
+
+"""
+
 from keri import kering
 from keri.core import coring
 from keri.db import dbing
