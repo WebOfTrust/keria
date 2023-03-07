@@ -78,7 +78,6 @@ def setup(name, base, bran, ctrlAid, adminPort, configFile=None, configDir=None,
         print(f"Loading agent...")
 
     rgy = credentialing.Regery(hby=agentHab, name=name, base=base)
-    witDoer = agenting.WitnessReceiptor(hby=ctrlHby)
     swain = delegating.Boatswain(hby=ctrlHby)
 
     mon = longrunning.Monitor(hby=ctrlHby, swain=swain)
@@ -102,9 +101,9 @@ def setup(name, base, bran, ctrlAid, adminPort, configFile=None, configDir=None,
                     rgy=rgy,
                     httpPort=httpPort)
 
-    doers.extend([adminServerDoer, agent, witDoer, swain, *oobiery.doers])
+    doers.extend([adminServerDoer, agent, swain, *oobiery.doers])
     doers += loadEnds(app=app, agentHby=agentHby, agentHab=agentHab, ctrlHby=ctrlHby, ctrlAid=ctrlAid,
-                      monitor=mon, witners=witDoer.msgs, anchors=swain.msgs)
+                      monitor=mon, witners=agent.witners, anchors=swain.msgs)
 
     return doers
 
@@ -117,7 +116,11 @@ class Agenter(doing.DoDoer):
     def __init__(self, hby, hab, rgy, cues=None, httpPort=None, **opts):
         self.agentHab = hab
         self.cues = cues if cues is not None else decking.Deck()
-        doers = [doing.doify(self.start), doing.doify(self.msgDo), doing.doify(self.escrowDo)]
+        self.witners = decking.Deck()
+        self.receiptor = agenting.Receiptor(hby=hby)
+
+        doers = [doing.doify(self.start), doing.doify(self.msgDo), doing.doify(self.escrowDo), doing.doify(self.witDo),
+                 self.receiptor]
 
         if httpPort is not None:
             verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
@@ -233,6 +236,39 @@ class Agenter(doing.DoDoer):
             self.exc.processEscrow()
 
             yield
+
+    def witDo(self, tymth=None, tock=0.0):
+        """
+         Returns doifiable Doist compatibile generator method (doer dog) to process
+            .kevery and .tevery escrows.
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            while self.witners:
+                msg = self.witners.popleft()
+                serder = msg["serder"]
+
+                # If we are a rotation event, may need to catch new witnesses up to current key state
+                if serder.ked['t'] in (Ilks.rot,):
+                    adds = serder.ked["ba"]
+                    for wit in adds:
+                        print(f"catching up {wit}")
+                        yield from self.receiptor.catchup(serder.pre, wit)
+
+                yield from self.receiptor.receipt(serder.pre, serder.sn)
+
+            yield self.tock
 
 
 def loadEnds(app, agentHby, agentHab, ctrlHby, ctrlAid, monitor, witners, anchors):
@@ -451,7 +487,7 @@ class IdentifierCollectionEnd:
                 rep.data = op.to_json().encode("utf-8")
 
             elif hab.kever.wits:
-                self.witners.append(dict(pre=hab.pre))
+                self.witners.append(dict(serder=serder))
                 op = self.mon.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.witness,
                                      metadata=dict(sn=0))
                 rep.status = falcon.HTTP_202
@@ -555,7 +591,7 @@ class IdentifierResourceEnd:
             return op.to_json().encode("utf-8")
 
         if hab.kever.wits:
-            self.witners.append(dict(pre=hab.pre))
+            self.witners.append(dict(serder=serder))
             op = self.mon.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.witness,
                                  metadata=dict(sn=hab.kever.sn))
             return op.to_json().encode("utf-8")
@@ -583,7 +619,7 @@ class IdentifierResourceEnd:
         hab.interact(serder=serder, sigers=sigers)
 
         if hab.kever.wits:
-            self.witners.append(dict(pre=hab.pre))
+            self.witners.append(dict(serder=serder))
             op = self.mon.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
                                  metadata=dict(sn=hab.kever.sn))
             return op.to_json().encode("utf-8")
