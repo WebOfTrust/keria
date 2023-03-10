@@ -218,10 +218,10 @@ class Monitor:
 
             kever = self.hby.kevers[op.oid]
             sn = op.metadata["sn"]
+            seqner = coring.Seqner(sn=sn)
             sdig = self.hby.db.getKeLast(key=dbing.snKey(pre=op.oid, sn=sn))
-            anchor = dict(i=op.oid, s=sn, d=bytes(sdig))
 
-            if self.hby.db.findAnchoringEvent(kever.delegator, anchor=anchor) is not None:
+            if self.swain.complete(kever.prefixer, seqner):
                 evt = self.hby.db.getEvt(dbing.dgKey(pre=kever.prefixer.qb64, dig=bytes(sdig)))
                 serder = coring.Serder(raw=bytes(evt))
 

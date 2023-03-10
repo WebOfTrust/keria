@@ -49,38 +49,24 @@ def setup(name, base, bran, ctrlAid, adminPort, configFile=None, configDir=None,
                                 temp=False,
                                 reopen=True,
                                 clear=False)
-    acf = None
-    if configDir is not None:
-        acf = configing.Configer(name=name,
-                                 base="",
-                                 headDirPath=configDir,
-                                 temp=False,
-                                 reopen=True,
-                                 clear=False)
-
     # Create the Hab for the Agent with only 2 AIDs
-    agentHby = habbing.Habery(name=name, base=base, bran=bran, cf=acf)
+    agentHby = habbing.Habery(name=name, base=base, bran=bran, cf=cf)
 
     # Create the Hab for the Controller AIDs.
-    ctrlHby = habbing.Habery(name=ctrlAid, base=base, cf=cf)
-    doers = [habbing.HaberyDoer(habery=agentHby), habbing.HaberyDoer(habery=ctrlHby)]
+    doers = [habbing.HaberyDoer(habery=agentHby)]
 
     # Create Agent AID if it does not already exist
-    agentHab = agentHby.habByName(name)
+    agentHab = agentHby.habByName(name, ns="agent")
     if agentHab is None:
         print(f"Creating agent...")
-        agentHab = agentHby.makeHab(name, transferable=True, data=[ctrlAid])
-
-        # Have to let the Controller Hab know about the Agent AID and exposed Locs
-        ctrlHby.psr.parse(ims=agentHab.makeOwnInception())
-        ctrlHby.psr.parse(ims=agentHab.replyLocScheme(eid=agentHab.pre))
+        agentHab = agentHby.makeHab(name, ns="agent", transferable=True, data=[ctrlAid])
     else:
         print(f"Loading agent...")
 
-    rgy = credentialing.Regery(hby=agentHab, name=name, base=base)
-    swain = delegating.Boatswain(hby=ctrlHby)
+    rgy = credentialing.Regery(hby=agentHby, name=name, base=base)
+    swain = delegating.Boatswain(hby=agentHby)
 
-    mon = longrunning.Monitor(hby=ctrlHby, swain=swain)
+    mon = longrunning.Monitor(hby=agentHby, swain=swain)
 
     # Create Authenticater for verifying signatures on all requests
     authn = Authenticater(agent=agentHab, ctrlAid=ctrlAid)
@@ -94,16 +80,18 @@ def setup(name, base, bran, ctrlAid, adminPort, configFile=None, configDir=None,
 
     adminServer = http.Server(port=adminPort, app=app)
     adminServerDoer = http.ServerDoer(server=adminServer)
-    oobiery = oobiing.Oobiery(hby=ctrlHby)
+    oobiery = oobiing.Oobiery(hby=agentHby)
+    agentOobiery = oobiing.Oobiery(hby=agentHby)
 
-    agent = Agenter(hby=ctrlHby,
+    agent = Agenter(hby=agentHby,
                     hab=agentHab,
                     rgy=rgy,
+                    swain=swain,
                     httpPort=httpPort)
 
-    doers.extend([adminServerDoer, agent, swain, *oobiery.doers])
-    doers += loadEnds(app=app, agentHby=agentHby, agentHab=agentHab, ctrlHby=ctrlHby, ctrlAid=ctrlAid,
-                      monitor=mon, witners=agent.witners, anchors=swain.msgs)
+    doers.extend([adminServerDoer, agent, swain, *oobiery.doers, *agentOobiery.doers])
+    doers += loadEnds(app=app, agentHby=agentHby, agentHab=agentHab, ctrlAid=ctrlAid,
+                      monitor=mon, witners=agent.witners, anchors=agent.anchors)
 
     return doers
 
@@ -113,14 +101,16 @@ class Agenter(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, hab, rgy, cues=None, httpPort=None, **opts):
+    def __init__(self, hby, hab, rgy, swain, cues=None, httpPort=None, **opts):
         self.agentHab = hab
+        self.swain = swain
         self.cues = cues if cues is not None else decking.Deck()
         self.witners = decking.Deck()
+        self.anchors = decking.Deck()
         self.receiptor = agenting.Receiptor(hby=hby)
 
         doers = [doing.doify(self.start), doing.doify(self.msgDo), doing.doify(self.escrowDo), doing.doify(self.witDo),
-                 self.receiptor]
+                 doing.doify(self.anchorDo), self.receiptor]
 
         if httpPort is not None:
             verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
@@ -270,22 +260,47 @@ class Agenter(doing.DoDoer):
 
             yield self.tock
 
+    def anchorDo(self, tymth=None, tock=0.0):
+        """
+         Returns doifiable Doist compatibile generator method (doer dog) to process
+            delegation anchor requests
 
-def loadEnds(app, agentHby, agentHab, ctrlHby, ctrlAid, monitor, witners, anchors):
-    bootEnd = BootEnd(agentHby, agentHab, ctrlHby, ctrlAid)
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            while self.anchors:
+                msg = self.anchors.popleft()
+                sn = msg["sn"] if "sn" in msg else None
+                self.swain.delegation(pre=msg["pre"], sn=sn, proxy=self.agentHab)
+
+            yield self.tock
+
+
+def loadEnds(app, agentHby, agentHab, ctrlAid, monitor, witners, anchors):
+    bootEnd = BootEnd(agentHby, agentHab, ctrlAid)
     app.add_route("/boot", bootEnd)
 
-    aidsEnd = IdentifierCollectionEnd(ctrlHby, witners=witners, anchors=anchors, monitor=monitor)
+    aidsEnd = IdentifierCollectionEnd(agentHby, witners=witners, anchors=anchors, monitor=monitor)
     app.add_route("/identifiers", aidsEnd)
-    aidEnd = IdentifierResourceEnd(ctrlHby, witners=witners, anchors=anchors, monitor=monitor)
+    aidEnd = IdentifierResourceEnd(agentHby, witners=witners, anchors=anchors, monitor=monitor)
     app.add_route("/identifiers/{name}", aidEnd)
-    aidOOBIsEnd = IdentifierOOBICollectionEnd(ctrlHby)
+    aidOOBIsEnd = IdentifierOOBICollectionEnd(agentHby)
     app.add_route("/identifiers/{name}/oobis", aidOOBIsEnd)
 
     opEnd = longrunning.OperationResourceEnd(monitor=monitor)
     app.add_route("/operations/{name}", opEnd)
 
-    oobiEnd = OOBICollectionEnd(hby=ctrlHby, monitor=monitor)
+    oobiEnd = OOBICollectionEnd(hby=agentHby, monitor=monitor, agent=agentHby)
     app.add_route("/oobis", oobiEnd)
 
     return [bootEnd]
@@ -294,7 +309,7 @@ def loadEnds(app, agentHby, agentHab, ctrlHby, ctrlAid, monitor, witners, anchor
 class BootEnd(doing.DoDoer):
     """ Resource class for creating datastore in cloud ahab """
 
-    def __init__(self, agentHby, agentHab, ctrlHby, ctrlAid):
+    def __init__(self, agentHby, agentHab, ctrlAid):
         """ Provides endpoints for initializing and unlocking an agent
 
         Parameters:
@@ -305,7 +320,6 @@ class BootEnd(doing.DoDoer):
         """
         self.authn = authing.Authenticater(agent=agentHab, ctrlAid=ctrlAid)
         self.agentHby = agentHby
-        self.ctrlHby = ctrlHby
         self.agent = agentHab
         self.ctrlAid = ctrlAid
         doers = []
@@ -322,10 +336,10 @@ class BootEnd(doing.DoDoer):
 
         """
         kel = cloneAid(db=self.agent.db, pre=self.agent.pre)
-        pidx = self.ctrlHby.db.habs.cntAll()
+        pidx = self.agentHby.db.habs.cntAll()
         body = dict(kel=kel, pidx=pidx)
 
-        if (ctrlHab := self.agentHby.habByName(self.ctrlAid)) is not None:
+        if (ctrlHab := self.agentHby.habByName(self.ctrlAid, ns="agent")) is not None:
             body["ridx"] = ctrlHab.kever.sn
 
         rep.content_type = "application/json"
@@ -371,8 +385,8 @@ class BootEnd(doing.DoDoer):
                                         description=f'required field "temp" missing from body')
         temp = body["temp"]
 
-        ctrlHab = self.agentHby.makeSignifyHab(name=self.ctrlAid, serder=icp, sigers=[siger], stem=stem, pidx=pidx,
-                                               tier=tier, temp=temp)
+        ctrlHab = self.agentHby.makeSignifyHab(name=self.ctrlAid, ns="agent", serder=icp, sigers=[siger], stem=stem,
+                                               pidx=pidx, tier=tier, temp=temp)
 
         if ctrlHab.pre != self.ctrlAid:
             self.agentHby.deleteHab(self.ctrlAid)
@@ -480,7 +494,7 @@ class IdentifierCollectionEnd:
                     msgs.extend(hab.loadLocScheme(eid=eid))
 
             if hab.kever.delegator:
-                self.anchors.append(dict(alias=name, pre=hab.pre, sn=0))
+                self.anchors.append(dict(pre=hab.pre, sn=0))
                 op = self.mon.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
                                      metadata=dict(sn=0))
                 rep.status = falcon.HTTP_202
@@ -717,15 +731,17 @@ class IdentifierOOBICollectionEnd:
 
 class OOBICollectionEnd:
 
-    def __init__(self, hby, monitor):
+    def __init__(self, hby, agent, monitor):
         """ Create OOBI Collection endpoint instance
 
         Parameters:
             hby (Habery): Controller database and keystore environment
+            agent (Habery): Agent database and keystore environment
             monitor (Monitor): Long running process monitor
         """
 
         self.hby = hby
+        self.agent = agent
         self.mon = monitor
 
     def on_post(self, req, rep):
@@ -774,6 +790,7 @@ class OOBICollectionEnd:
                 obr.oobialias = body["oobialias"]
 
             self.hby.db.oobis.pin(keys=(oobi,), val=obr)
+            self.agent.db.oobis.pin(keys=(oobi,), val=obr)
 
         elif "rpy" in body:
             raise falcon.HTTPNotImplemented("'rpy' support not implemented yet")
