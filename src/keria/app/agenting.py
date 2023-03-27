@@ -14,7 +14,9 @@ from hio.core import http
 from hio.help import decking
 from keri import kering
 from keri.app import configing, keeping, habbing, storing, signaling, notifying, oobiing, agenting, delegating
+from keri.app.grouping import Counselor
 from keri.app.indirecting import HttpEnd
+from keri.app.keeping import Algos
 from keri.core import coring, parsing, eventing, routing
 from keri.core.coring import Ilks, randomNonce
 from keri.db import dbing
@@ -25,8 +27,10 @@ from keri.vc import protocoling
 from keri.vdr import verifying, credentialing
 from keri.vdr.eventing import Tevery
 
+from . import grouping
+from .keeping import RemoteManager
 from ..core.authing import Authenticater
-from ..core import authing, longrunning
+from ..core import authing, longrunning, httping
 from ..core.eventing import cloneAid
 
 logger = ogler.getLogger()
@@ -65,8 +69,9 @@ def setup(name, base, bran, ctrlAid, adminPort, configFile=None, configDir=None,
 
     rgy = credentialing.Regery(hby=agentHby, name=name, base=base)
     swain = delegating.Boatswain(hby=agentHby)
+    counselor = Counselor(hby=agentHby)
 
-    mon = longrunning.Monitor(hby=agentHby, swain=swain)
+    mon = longrunning.Monitor(hby=agentHby, swain=swain, counselor=counselor)
 
     # Create Authenticater for verifying signatures on all requests
     authn = Authenticater(agent=agentHab, ctrlAid=ctrlAid)
@@ -86,12 +91,14 @@ def setup(name, base, bran, ctrlAid, adminPort, configFile=None, configDir=None,
     agent = Agenter(hby=agentHby,
                     hab=agentHab,
                     rgy=rgy,
+                    counselor=counselor,
                     swain=swain,
                     httpPort=httpPort)
 
     doers.extend([adminServerDoer, agent, swain, *oobiery.doers, *agentOobiery.doers])
-    doers += loadEnds(app=app, agentHby=agentHby, agentHab=agentHab, ctrlAid=ctrlAid,
-                      monitor=mon, witners=agent.witners, anchors=agent.anchors)
+    loadEnds(app=app, agentHby=agentHby, agentHab=agentHab, ctrlAid=ctrlAid,
+             monitor=mon, groups=agent.groups, witners=agent.witners, anchors=agent.anchors)
+    grouping.loadEnds(app=app, agentHby=agentHby)
 
     return doers
 
@@ -101,12 +108,15 @@ class Agenter(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, hab, rgy, swain, cues=None, httpPort=None, **opts):
+    def __init__(self, hby, hab, rgy, swain, counselor, cues=None, httpPort=None, **opts):
         self.agentHab = hab
+        self.hby = hby
         self.swain = swain
+        self.counselor = counselor
         self.cues = cues if cues is not None else decking.Deck()
-        self.witners = decking.Deck()
+        self.groups = decking.Deck()
         self.anchors = decking.Deck()
+        self.witners = decking.Deck()
         self.receiptor = agenting.Receiptor(hby=hby)
 
         doers = [doing.doify(self.start), doing.doify(self.msgDo), doing.doify(self.escrowDo), doing.doify(self.witDo),
@@ -285,12 +295,47 @@ class Agenter(doing.DoDoer):
 
             yield self.tock
 
+    def groupDo(self, tymth=None, tock=0.0):
+        """
+         Returns doifiable Doist compatibile generator method (doer dog) to process
+            delegation anchor requests
 
-def loadEnds(app, agentHby, agentHab, ctrlAid, monitor, witners, anchors):
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            while self.groups:
+                msg = self.groups.popleft()
+                pre = msg['pre']
+                sn = msg['sn']
+                said = msg['d']
+                smids = msg['smids']
+                rmids = msg['rmids']
+
+                prefixer = coring.Prefixer(qb64=pre)
+                seqner = coring.Seqner(sn=sn)
+                saider = coring.Saider(qb64=said)
+                ghab = self.hby.habs[pre]
+                self.counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=saider, smids=smids,
+                                     rmids=rmids, proxy=self.agentHab)
+
+            yield self.tock
+
+
+def loadEnds(app, agentHby, agentHab, ctrlAid, monitor, groups, anchors, witners):
     bootEnd = BootEnd(agentHby, agentHab, ctrlAid)
     app.add_route("/boot", bootEnd)
 
-    aidsEnd = IdentifierCollectionEnd(agentHby, witners=witners, anchors=anchors, monitor=monitor)
+    aidsEnd = IdentifierCollectionEnd(agentHby, witners=witners, groups=groups, anchors=anchors, monitor=monitor)
     app.add_route("/identifiers", aidsEnd)
     aidEnd = IdentifierResourceEnd(agentHby, witners=witners, anchors=anchors, monitor=monitor)
     app.add_route("/identifiers/{name}", aidEnd)
@@ -303,13 +348,14 @@ def loadEnds(app, agentHby, agentHab, ctrlAid, monitor, witners, anchors):
     oobiEnd = OOBICollectionEnd(hby=agentHby, monitor=monitor, agent=agentHby)
     app.add_route("/oobis", oobiEnd)
 
-    return [bootEnd]
+    statesEnd = KeyStateCollectionEnd(hby=agentHby)
+    app.add_route("/states", statesEnd)
 
 
-class BootEnd(doing.DoDoer):
+class BootEnd:
     """ Resource class for creating datastore in cloud ahab """
 
-    def __init__(self, agentHby, agentHab, ctrlAid):
+    def __init__(self, agentHby, agentHab, ctrlAid, rm=None):
         """ Provides endpoints for initializing and unlocking an agent
 
         Parameters:
@@ -322,8 +368,7 @@ class BootEnd(doing.DoDoer):
         self.agentHby = agentHby
         self.agent = agentHab
         self.ctrlAid = ctrlAid
-        doers = []
-        super(BootEnd, self).__init__(doers=doers)
+        self.rm = rm if rm is not None else RemoteManager(hby=agentHby, ks=agentHby.ks)
 
     def on_get(self, _, rep):
         """ GET endpoint for Keystores
@@ -365,28 +410,7 @@ class BootEnd(doing.DoDoer):
                                         description=f'required field "sig" missing from body')
         siger = coring.Siger(qb64=body["sig"])
 
-        if "stem" not in body:
-            raise falcon.HTTPBadRequest(title="invalid inception",
-                                        description=f'required field "stem" missing from body')
-        stem = body["stem"]
-
-        if "pidx" not in body:
-            raise falcon.HTTPBadRequest(title="invalid inception",
-                                        description=f'required field "pidx" missing from body')
-        pidx = body["pidx"]
-
-        if "tier" not in body:
-            raise falcon.HTTPBadRequest(title="invalid inception",
-                                        description=f'required field "tier" missing from body')
-        tier = body["tier"]
-
-        if "temp" not in body:
-            raise falcon.HTTPBadRequest(title="invalid inception",
-                                        description=f'required field "temp" missing from body')
-        temp = body["temp"]
-
-        ctrlHab = self.agentHby.makeSignifyHab(name=self.ctrlAid, ns="agent", serder=icp, sigers=[siger], stem=stem,
-                                               pidx=pidx, tier=tier, temp=temp)
+        ctrlHab = self.agentHby.makeSignifyHab(name=self.ctrlAid, ns="agent", serder=icp, sigers=[siger])
 
         if ctrlHab.pre != self.ctrlAid:
             self.agentHby.deleteHab(self.ctrlAid)
@@ -398,13 +422,52 @@ class BootEnd(doing.DoDoer):
             raise falcon.HTTPBadRequest(title="invalid inception",
                                         description=f'invalid signature on rquest')
 
+        # Client is requesting that the Agent track the Salty parameters
+        if "salt" in body:
+            salt = body["salt"]
+            if "stem" not in salt:
+                raise falcon.HTTPBadRequest(title="invalid inception",
+                                            description=f'required field "stem" missing from body.salt')
+            stem = salt["stem"]
+
+            if "pidx" not in salt:
+                raise falcon.HTTPBadRequest(title="invalid inception",
+                                            description=f'required field "pidx" missing from body.salt')
+            pidx = salt["pidx"]
+
+            if "tier" not in salt:
+                raise falcon.HTTPBadRequest(title="invalid inception",
+                                            description=f'required field "tier" missing from body.salt')
+            tier = salt["tier"]
+
+            self.rm.incept(self.ctrlAid, algo=Algos.salty, verfers=ctrlHab.kever.verfers, digers=ctrlHab.kever.digers,
+                           pidx=pidx, ridx=0, kidx=0, stem=stem, tier=tier)
+
+        elif "rand" in body:
+            rand = body["rand"]
+            if "pris" not in rand:
+                raise falcon.HTTPBadRequest(title="invalid inception",
+                                            description=f'required field "pris" missing from body.rand')
+            pris = rand["pris"]
+
+            if "nxts" not in rand:
+                raise falcon.HTTPBadRequest(title="invalid inception",
+                                            description=f'required field "nxts" missing from body.rand')
+            nxts = rand["nxts"]
+
+            self.rm.incept(self.ctrlAid, algo=Algos.randy, verfers=ctrlHab.kever.verfers, digers=ctrlHab.kever.digers,
+                           prxs=pris, nxts=nxts)
+            
+        elif "group" in body:
+            raise falcon.HTTPBadRequest("multisig groups not supported as agent controllers")
+
         rep.status = falcon.HTTP_202
 
 
 class IdentifierCollectionEnd:
     """ Resource class for creating and managing identifiers """
 
-    def __init__(self, hby, monitor, witners, anchors):
+    def __init__(self, hby, monitor, groups, anchors, witners, rm=None):
         """
 
         Parameters:
@@ -416,9 +479,10 @@ class IdentifierCollectionEnd:
         """
         self.hby = hby
         self.mon = monitor
-        self.witners = witners
+        self.groups = groups
         self.anchors = anchors
-        pass
+        self.witners = witners
+        self.rm = rm if rm is not None else RemoteManager(hby=hby, ks=hby.ks)
 
     def on_get(self, _, rep):
         """ Identifier List GET endpoint
@@ -431,7 +495,7 @@ class IdentifierCollectionEnd:
         res = []
 
         for pre, hab in self.hby.habs.items():
-            data = info(hab)
+            data = info(hab, self.rm)
             res.append(data)
 
         rep.status = falcon.HTTP_200
@@ -448,52 +512,93 @@ class IdentifierCollectionEnd:
         """
         try:
             body = req.get_media()
-            icp = body.get("icp")
-            if icp is None:
-                raise falcon.HTTPBadRequest(title=f"required field 'icp' missing from request")
+            icp = httping.getRequiredParam(body, "icp")
+            name = httping.getRequiredParam(body, "name")
+            sigs = httping.getRequiredParam(body, "sigs")
 
-            name = body.get("name")
-            if name is None:
-                raise falcon.HTTPBadRequest(title=f"required field 'name' missing from request")
-
-            stem = body.get("stem")
-            if stem is None:
-                raise falcon.HTTPBadRequest(title=f"required field 'stem' missing from request")
-
-            pidx = body.get("pidx")
-            if pidx is None:
-                raise falcon.HTTPBadRequest(title=f"required field 'pidx' missing from request")
-
-            sigs = body.get("sigs")
-            if sigs is None or len(sigs) == 0:
-                raise falcon.HTTPBadRequest(title=f"required field 'sigs' missing from request")
-
-            tier = body.get("tier")
-            if tier not in coring.Tiers:
-                raise falcon.HTTPBadRequest(title=f"required field 'tier' missing from request")
-
-            temp = body.get("temp")
             serder = coring.Serder(ked=icp)
             sigers = [coring.Siger(qb64=sig) for sig in sigs]
 
-            hab = self.hby.makeSignifyHab(name, serder=serder, sigers=sigers, pidx=pidx, stem=stem, tier=tier,
-                                          temp=temp)
+            # Client is requesting that the Agent track the Salty parameters
+            smids = []
+            rmids = []
+            if "salt" in body:
+                salt = body["salt"]
+                if "stem" not in salt:
+                    raise falcon.HTTPBadRequest(title="invalid inception",
+                                                description=f'required field "stem" missing from body.salt')
+                stem = salt["stem"]
 
-            rpy = body.get("rpy")
-            if rpy is not None:
-                rserder = coring.Serder(ked=rpy)
-                rsigs = body.get("rsigs")
-                rsigers = [coring.Siger(qb64=rsig) for rsig in rsigs]
-                tsg = (hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn), hab.kever.serder.saider, rsigers)
-                self.hby.rvy.processReply(rserder, tsgs=[tsg])
+                if "pidx" not in salt:
+                    raise falcon.HTTPBadRequest(title="invalid inception",
+                                                description=f'required field "pidx" missing from body.salt')
+                pidx = salt["pidx"]
 
-            msgs = bytearray()
+                if "tier" not in salt:
+                    raise falcon.HTTPBadRequest(title="invalid inception",
+                                                description=f'required field "tier" missing from body.salt')
+                tier = salt["tier"]
+
+                inits = dict(pre=serder.pre, algo=Algos.salty, verfers=serder.verfers, digers=serder.digers,
+                             pidx=pidx, ridx=0, kidx=0, stem=stem, tier=tier)
+
+            elif "rand" in body:
+                rand = body["rand"]
+                if "prxs" not in rand:
+                    raise falcon.HTTPBadRequest(title="invalid inception",
+                                                description=f'required field "prxs" missing from body.rand')
+                prxs = rand["prxs"]
+
+                if "nxts" not in rand:
+                    raise falcon.HTTPBadRequest(title="invalid inception",
+                                                description=f'required field "nxts" missing from body.rand')
+                nxts = rand["nxts"]
+
+                inits = dict(pre=serder.pre, algo=Algos.randy, verfers=serder.verfers, digers=serder.digers,
+                             prxs=prxs, nxts=nxts)
+
+            elif "group" in body:
+                group = body["group"]
+                if "smids" not in group:
+                    raise falcon.HTTPBadRequest(title="invalid inception",
+                                                description=f'required field "smids" missing from body.group')
+                smids = group["smids"]
+                local = False
+                for smid in smids:
+                    if smid['i'] in self.hby.habs:
+                        local = True
+                        break
+
+                if not local:
+                    raise falcon.HTTPBadRequest(desctiption="No local AID in group multisig request")
+
+                if "rmids" not in group:
+                    raise falcon.HTTPBadRequest(title="invalid inception",
+                                                description=f'required field "rmids" missing from body.group')
+                rmids = group["rmids"]
+
+                inits = dict(pre=serder.pre, algo=Algos.randy, verfers=serder.verfers, digers=serder.digers,
+                             smids=smids, rmids=rmids)
+            else:
+                raise falcon.HTTPBadRequest(description="invalid request: one of group, rand or salt field required")
+
+            # create Hab and incept the key store (if any)
+            hab = self.hby.makeSignifyHab(name, serder=serder, sigers=sigers)
+            try:
+                self.rm.incept(**inits)
+            except ValueError as e:
+                self.hby.deleteHab(name=name)
+                raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
+
+            # Generate response, either the serder or a long running operaton indicator for the type
             rep.content_type = "application/json"
-            for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(hab.pre,)):
-                if end.enabled or end.allowed:
-                    msgs.extend(hab.loadLocScheme(eid=eid))
+            if "group" in body:
+                self.groups.append(dict(pre=hab.pre, sn=0, d=serder.said, smids=smids, rmids=rmids))
+                op = self.mon.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=0))
+                rep.status = falcon.HTTP_202
+                rep.data = op.to_json().encode("utf-8")
 
-            if hab.kever.delegator:
+            elif hab.kever.delegator:
                 self.anchors.append(dict(pre=hab.pre, sn=0))
                 op = self.mon.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
                                      metadata=dict(sn=0))
@@ -519,7 +624,7 @@ class IdentifierCollectionEnd:
 class IdentifierResourceEnd:
     """ Resource class for updating and deleting identifiers """
 
-    def __init__(self, hby, monitor, witners, anchors):
+    def __init__(self, hby, monitor, witners, anchors, rm=None):
         """
 
         Parameters:
@@ -530,6 +635,7 @@ class IdentifierResourceEnd:
 
         """
         self.hby = hby
+        self.rm = rm if rm is not None else RemoteManager(hby=hby, ks=hby.ks)
         self.mon = monitor
         self.witners = witners
         self.anchors = anchors
@@ -548,7 +654,7 @@ class IdentifierResourceEnd:
             rep.status = falcon.HTTP_400
             return
 
-        data = info(hab, full=True)
+        data = info(hab, self.rm, full=True)
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(data).encode("utf-8")
@@ -596,7 +702,8 @@ class IdentifierResourceEnd:
         serder = coring.Serder(ked=rot)
         sigers = [coring.Siger(qb64=sig) for sig in sigs]
 
-        hab.rotate(serder=serder, sigers=sigers, )
+        hab.rotate(serder=serder, sigers=sigers)
+        # TODO: save key params here
 
         if hab.kever.delegator:
             self.anchors.append(dict(alias=name, pre=hab.pre, sn=0))
@@ -641,23 +748,16 @@ class IdentifierResourceEnd:
         return serder.raw
 
 
-def info(hab, full=False):
+def info(hab, rm, full=False):
     data = dict(
         name=hab.name,
         prefix=hab.pre,
     )
 
-    if isinstance(hab, habbing.GroupHab):
-        data["group"] = dict(
-            pid=hab.mhab.pre,
-            aids=hab.smids,
-            accepted=hab.accepted
-        )
-    elif isinstance(hab, habbing.SignifySaltyHab):
-        data["stem"] = hab.stem
-        data["pidx"] = hab.pidx
-        data["tier"] = hab.tier
-        data["temp"] = hab.temp
+    if not isinstance(hab, habbing.SignifyHab):
+        raise kering.ConfigurationError("agent only allows SignifyHab instances")
+
+    data |= rm.keyParams(hab.pre)
 
     if hab.accepted and full:
         kever = hab.kevers[hab.pre]
@@ -727,6 +827,58 @@ class IdentifierOOBICollectionEnd:
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
+
+
+class KeyStateCollectionEnd:
+
+    def __init__(self, hby):
+        self.hby = hby
+
+    def on_get(self, req, rep):
+        """
+
+        Parameters:
+            req (Request): falcon.Request HTTP request
+            rep (Response): falcon.Response HTTP response
+
+        ---
+        summary:  Display key event log (KEL) for given identifier prefix
+        description:  If provided qb64 identifier prefix is in Kevers, return the current state of the
+                      identifier along with the KEL and all associated signatures and receipts
+        tags:
+           - Ket Event Log
+        parameters:
+          - in: path
+            name: prefix
+            schema:
+              type: string
+            required: true
+            description: qb64 identifier prefix of KEL to load
+        responses:
+           200:
+              description: Key event log and key state of identifier
+           404:
+              description: Identifier not found in Key event database
+
+
+        """
+        if "pre" not in req.params:
+            raise falcon.HTTPBadRequest("required parameter 'pre' missing")
+
+        pres = req.params.get("pre")
+        pres = pres if isinstance(pres, list) else [pres]
+
+        states = []
+        for pre in pres:
+            if pre not in self.hby.kevers:
+                continue
+
+            kever = self.hby.kevers[pre]
+            states.append(kever.state().ked)
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(states).encode("utf-8")
 
 
 class OOBICollectionEnd:

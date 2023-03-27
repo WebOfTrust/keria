@@ -9,7 +9,8 @@ import os
 import shutil
 
 import pytest
-from keri.core import coring
+from keri.app import keeping
+from keri.core import coring, eventing
 from keri.help import helping
 
 WitnessUrls = {
@@ -87,6 +88,38 @@ class Helpers:
             os.remove(f'~/.keri/cf/{name}.json')
         if os.path.exists(f'~/.keri/cf/{name}'):
             shutil.rmtree(f'~/.keri/cf/{name}')
+
+    @staticmethod
+    def incept(bran, stem, pidx, count=1, sith="1", wits=None, toad="0"):
+        if wits is None:
+            wits = []
+
+        salter = coring.Salter(raw=bran)
+        creator = keeping.SaltyCreator(salt=salter.qb64, stem=stem, tier=coring.Tiers.low)
+
+        signers = creator.create(pidx=pidx, ridx=0, tier=coring.Tiers.low, temp=False, count=count)
+        nsigners = creator.create(pidx=pidx, ridx=1, tier=coring.Tiers.low, temp=False, count=count)
+
+        keys = [signer.verfer.qb64 for signer in signers]
+        ndigs = [coring.Diger(ser=nsigner.verfer.qb64b) for nsigner in nsigners]
+
+        serder = eventing.incept(keys=keys,
+                                 isith=sith,
+                                 nsith=sith,
+                                 ndigs=[diger.qb64 for diger in ndigs],
+                                 code=coring.MtrDex.Blake3_256,
+                                 toad=toad,
+                                 wits=wits)
+
+        return serder, signers
+
+    @staticmethod
+    def endrole(cid, eid):
+        data = dict(cid=cid, role="agent", eid=eid)
+        return eventing.reply(route="/end/role/add", data=data)
+
+
+
 
 
 @pytest.fixture
