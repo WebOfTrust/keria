@@ -7,7 +7,6 @@ keria.core.longrunning module
 import datetime
 from collections import namedtuple
 from dataclasses import dataclass
-from base64 import urlsafe_b64decode as decodeB64
 
 import falcon
 from dataclasses_json import dataclass_json

@@ -11,6 +11,7 @@ import falcon
 from falcon import testing
 from hio.help import decking
 from keri.app import habbing, configing, delegating, grouping
+from keri.app.keeping import Algos
 from keri.core import coring, eventing, parsing
 
 from keria.app import agenting
@@ -53,7 +54,7 @@ def test_identifier_collection_end(helpers):
         body = {'name': 'aid1',
                 'icp': serder.ked,
                 'sigs': sigers,
-                "salt": {
+                "salty": {
                     'stem': 'signify:aid', 'pidx': 0, 'tier': 'low', 'temp': False}
                 }
 
@@ -85,13 +86,13 @@ def test_identifier_collection_end(helpers):
         aid = res.json[0]
         assert aid["name"] == "aid1"
         assert aid["prefix"] == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
-        ss = aid["salt"]
+        ss = aid[Algos.salty]
         assert ss["pidx"] == 0
 
         aid = res.json[1]
         assert aid["name"] == "aid2"
         assert aid["prefix"] == "ECL8abFVW_0RTZXFhiiA4rkRobNvjTfJ6t-T8UdBRV1e"
-        ss = aid["salt"]
+        ss = aid[Algos.salty]
         assert ss["pidx"] == 1
 
         # Test with witnesses
@@ -102,14 +103,9 @@ def test_identifier_collection_end(helpers):
                                          toad="2")
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
 
-        rpy = helpers.endrole(serder.pre, "EPGaq6inGxOx-VVVEcUb_KstzJZldHJvVsHqD4IPxTWf")
-        rsigers = [signer.sign(ser=rpy.raw, index=0).qb64 for signer in signers]
-
         body = {'name': 'aid3',
                 'icp': serder.ked,
                 'sigs': sigers,
-                'rpy': rpy.ked,
-                'rsigs': rsigers,
                 'salt': {'stem': 'signify:aid', 'pidx': 3, 'tier': 'low', 'temp': False}}
 
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
@@ -122,7 +118,7 @@ def test_identifier_collection_end(helpers):
         aid = res.json[2]
         assert aid["name"] == "aid3"
         assert aid["prefix"] == serder.pre
-        ss = aid["salt"]
+        ss = aid[Algos.salty]
         assert ss["pidx"] == 3
 
         # create member habs for group AID

@@ -4,57 +4,197 @@ KERI
 keria.app.keeping module
 
 """
+from dataclasses import dataclass, asdict, field
+
 from keri import kering
-from keri.app.keeping import PrePrm, PreSit, Algos, PubLot, PubSet, riKey
+from keri.app.keeping import PreSit, Algos, PubLot, PubSet, riKey
 from keri.core import coring
-from keri.core.coring import Tiers
+from keri.core.coring import Tiers, MtrDex
+from keri.db import dbing, subing, koming
 from keri.help import helping
 
 
+@dataclass()
+class Prefix:
+    pidx: int = 0  # prefix index for this keypair sequence
+    algo: str = Algos.salty  # salty default uses indices and salt to create new key pairs
+
+
+@dataclass()
+class SaltyPrm:
+    """
+    Salty prefix's parameters for creating new key pairs
+    """
+    pidx: int = 0  # prefix index for this keypair sequence
+    algo: str = Algos.salty  # salty default uses indices and salt to create new key pairs
+    salt: str = ''  # empty salt  used for salty algo.
+    stem: str = ''  # default unique path stem for salty algo
+    tier: str = ''  # security tier for stretch index salty algo
+    dcode: str = ''  # next digest hasing code
+    icodes: list = field(default_factory=list)  # current signing key seed codes
+    ncodes: list = field(default_factory=list)  # next key seed codes
+
+    def __iter__(self):
+        return iter(asdict(self))
+
+
+class RemoteKeeper(dbing.LMDBer):
+    """
+    RemoteKeeper stores data for Salty o rRandy Encrypted edge key generation.
+
+    """
+
+    TailDirPath = "keri/rks"
+    AltTailDirPath = ".keri/rks"
+    TempPrefix = "keri_rks_"
+    MaxNamedDBs = 10
+
+    def __init__(self, headDirPath=None, perm=None, reopen=False, **kwa):
+        """
+        Setup named sub databases.
+
+        Inherited Parameters:
+            name is str directory path name differentiator for main database
+                When system employs more than one keri database, name allows
+                differentiating each instance by name
+                default name='main'
+            temp is boolean, assign to .temp
+                True then open in temporary directory, clear on close
+                Othewise then open persistent directory, do not clear on close
+                default temp=False
+            headDirPath is optional str head directory pathname for main database
+                If not provided use default .HeadDirpath
+                default headDirPath=None so uses self.HeadDirPath
+            perm is numeric optional os dir permissions mode
+                default perm=None so do not set mode
+            reopen is boolean, IF True then database will be reopened by this init
+                default reopen=True
+
+        Notes:
+
+        dupsort=True for sub DB means allow unique (key,pair) duplicates at a key.
+        Duplicate means that is more than one value at a key but not a redundant
+        copies a (key,value) pair per key. In other words the pair (key,value)
+        must be unique both key and value in combination.
+        Attempting to put the same (key,value) pair a second time does
+        not add another copy.
+
+        Duplicates are inserted in lexocographic order by value, insertion order.
+
+        """
+        self.pubs = None
+        self.sits = None
+        self.sprms = None
+        self.pres = None
+        self.rmids = None
+        self.smids = None
+        self.nxts = None
+        self.prxs = None
+        self.gbls = None
+        if perm is None:
+            perm = self.Perm  # defaults to restricted permissions for non temp
+
+        super(RemoteKeeper, self).__init__(headDirPath=headDirPath, perm=perm,
+                                           reopen=reopen, **kwa)
+
+    def reopen(self, **kwa):
+        """
+        Open sub databases
+        """
+        self.opened = super(RemoteKeeper, self).reopen(**kwa)
+
+        # Create by opening first time named sub DBs within main DB instance
+        # Names end with "." as sub DB name must include a non Base64 character
+        # to avoid namespace collisions with Base64 identifier prefixes.
+
+        self.gbls = subing.Suber(db=self, subkey='gbls.')
+        self.prxs = subing.CesrSuber(db=self,
+                                     subkey='prxs.',
+                                     klas=coring.Cipher)
+        self.nxts = subing.CesrSuber(db=self,
+                                     subkey='nxts.',
+                                     klas=coring.Cipher)
+        self.smids = subing.CatCesrIoSetSuber(db=self,
+                                              subkey='smids.',
+                                              klas=(coring.Prefixer, coring.Seqner))
+        self.rmids = subing.CatCesrIoSetSuber(db=self,
+                                              subkey='rmids.',
+                                              klas=(coring.Prefixer, coring.Seqner))
+        self.pres = koming.Komer(db=self,
+                                 subkey='pres.',
+                                 schema=Prefix, )  # New Prefix
+        self.sprms = koming.Komer(db=self,
+                                  subkey='sprms.',
+                                  schema=SaltyPrm, )  # New Salty Parameters
+        self.sits = koming.Komer(db=self,
+                                 subkey='sits.',
+                                 schema=PreSit, )  # Prefix Situation
+        self.pubs = koming.Komer(db=self,
+                                 subkey='pubs.',
+                                 schema=PubSet, )  # public key set at pre.ridx
+        return self.opened
+
+
 class RemoteManager:
-    def __init__(self, hby, ks=None):
+    def __init__(self, hby, ks: RemoteKeeper = None):
         self.hby = hby
-        self.ks = ks
+        self.ks = ks if ks is not None else RemoteKeeper(name=hby.name,
+                                                         base=hby.base,
+                                                         temp=hby.temp,
+                                                         reopen=True,
+                                                         clear=False,
+                                                         headDirPath=hby.ks.headDirPath)
 
-    def incept(self, pre, verfers, digers, *, algo=Algos.salty, pidx=0, ridx=0, kidx=0, stem="",
-               tier=Tiers.low, prxs=None, nxts=None, smids=None, rmids=None):
+    def salty(self, pre, *, icodes, ncodes, dcode=MtrDex.Blake3_256, pidx=0, stem="", tier=Tiers.low):
 
-        smids = smids if smids is not None else []
-        rmids = rmids if rmids is not None else []
+        pp = Prefix(
+            pidx=pidx,
+            algo=Algos.salty
+        )
 
         # Secret to encrypt here
-        pp = PrePrm(pidx=pidx,
-                    algo=algo,
-                    salt='',
-                    stem=stem,
-                    tier=tier)
+        sp = SaltyPrm(pidx=pidx,
+                      salt='',
+                      stem=stem,
+                      tier=tier,
+                      icodes=icodes,
+                      ncodes=ncodes,
+                      dcode=dcode
+                      )
+
+        if not self.ks.pres.put(pre, val=pp):
+            raise ValueError("Already incepted pre={}.".format(pre))
+
+        if not self.ks.sprms.put(pre, val=sp):
+            raise ValueError("Already incepted prm for pre={}.".format(pre))
+
+    def randy(self, pre, verfers, digers, pidx, prxs, nxts):
+
+        pp = Prefix(
+            pidx=pidx,
+            algo=Algos.randy
+        )
+
+        if not self.ks.pres.put(pre, val=pp):
+            raise ValueError("Already incepted pre={}.".format(pre))
 
         dt = helping.nowIso8601()
         ps = PreSit(
             new=PubLot(pubs=[verfer.qb64 for verfer in verfers],
-                       ridx=ridx, kidx=kidx, dt=dt),
+                       dt=dt),
             nxt=PubLot(pubs=[diger.qb64 for diger in digers],
-                       ridx=ridx + 1, kidx=kidx + len(verfers), dt=dt))
-
-        if not self.ks.pres.put(pre, val=coring.Prefixer(qb64=pre)):
-            raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
-
-        if not self.ks.prms.put(pre, val=pp):
-            raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
+                       dt=dt))
 
         if not self.ks.sits.put(pre, val=ps):
-            raise ValueError("Already incepted sit for pre={}.".format(pre.decode("utf-8")))
+            raise ValueError("Already incepted sit for pre={}.".format(pre))
 
-        self.ks.pubs.put(riKey(pre, ri=ridx), val=PubSet(pubs=ps.new.pubs))
-        self.ks.pubs.put(riKey(pre, ri=ridx+1), val=PubSet(pubs=ps.nxt.pubs))
+        # Secret to encrypt here
+        if len(prxs) != len(verfers):
+            raise ValueError("If encrypted private keys are provided, must match verfers")
 
-        if prxs is not None:
-            if len(prxs) != len(verfers):
-                raise ValueError("If encrypted private keys are provided, must match verfers")
-
-            for idx, prx in enumerate(prxs):
-                cipher = coring.Cipher(qb64=prx)
-                self.ks.prxs.put(keys=verfers[idx].qb64b, val=cipher)
+        for idx, prx in enumerate(prxs):
+            cipher = coring.Cipher(qb64=prx)
+            self.ks.prxs.put(keys=verfers[idx].qb64b, val=cipher)
 
         if nxts is not None:
             if len(nxts) != len(digers):
@@ -64,8 +204,20 @@ class RemoteManager:
                 cipher = coring.Cipher(qb64=prx)
                 self.ks.nxts.put(keys=digers[idx].qb64b, val=cipher)
 
+    def group(self, pre, pidx, smids, rmids):
+        pp = Prefix(
+            pidx=pidx,
+            algo=Algos.salty
+        )
+
+        if not self.ks.pres.put(pre, val=pp):
+            raise ValueError("Already incepted pre={}.".format(pre))
+
         self.saveMids(pre, smids, self.ks.smids)
         self.saveMids(pre, rmids, self.ks.rmids)
+
+    def update(self, **kwargs):
+        pass
 
     def saveMids(self, pre, mids, db):
         for smid in mids:
@@ -82,41 +234,57 @@ class RemoteManager:
             db.add(pre, val=(prefixer, seqner))
 
     def keyParams(self, pre):
-        if (pp := self.ks.prms.get(pre)) is None:
-            return {}
-
-        if (ps := self.ks.sits.get(pre)) is None:
+        if (pp := self.ks.pres.get(pre)) is None:
             raise ValueError("Attempt to load nonexistent pre={}.".format(pre))
 
-        prxs = []
-        for pub in ps.new.pubs:
-            if (prx := self.ks.prxs.get(keys=pub)) is not None:
-                prxs.append(prx)
+        match pp.algo:
+            case Algos.salty:
+                if (pp := self.ks.sprms.get(pre)) is None:
+                    raise ValueError("Attempt to load nonexistent pre={}.".format(pre))
 
-        nxts = []
-        for pub in ps.nxt.pubs:
-            if (nxt := self.ks.nxts.get(keys=pub)) is not None:
-                nxts.append(nxt)
+                prms = dict(
+                    salty=asdict(pp)
+                )
 
-        smids = self.ks.smids.get(pre)
-        rmids = self.ks.rmids.get(pre)
+            case Algos.randy:
+                prxs = []
+                if (ps := self.ks.sits.get(pre)) is None:
+                    raise ValueError("Attempt to load nonexistent pre={}.".format(pre))
 
-        return dict(
-            salt=dict(
-                algo=pp.algo,
-                stem=pp.stem,
-                pidx=pp.pidx,
-                tier=pp.tier
-            ),
-            rand=dict(
-                prxs=[prx.qb64 for prx in prxs],
-                nxts=[nxt.qb64 for nxt in nxts],
-            ),
-            group=dict(
-                smids=[dict(i=prefixer.qb64, s=seqner.sn) for (prefixer, seqner) in smids],
-                rmids=[dict(i=prefixer.qb64, s=seqner.sn) for (prefixer, seqner) in rmids],
-            )
-        )
+                for pub in ps.new.pubs:
+                    if (prx := self.ks.prxs.get(keys=pub)) is not None:
+                        prxs.append(prx)
+
+                nxts = []
+                for pub in ps.nxt.pubs:
+                    if (nxt := self.ks.nxts.get(keys=pub)) is not None:
+                        nxts.append(nxt)
+
+                prms = dict(
+                    randy=dict(
+                        prxs=[prx.qb64 for prx in prxs],
+                        nxts=[nxt.qb64 for nxt in nxts],
+                    ),
+                )
+            case Algos.group:
+                smids = self.ks.smids.get(pre)
+                rmids = self.ks.rmids.get(pre)
+
+                prms = dict(
+                    group=dict(
+                        smids=[dict(i=prefixer.qb64, s=seqner.sn) for (prefixer, seqner) in smids],
+                        rmids=[dict(i=prefixer.qb64, s=seqner.sn) for (prefixer, seqner) in rmids],
+                    )
+                )
+
+                for (prefixer, _) in smids:
+                    if prefixer.qb64 in self.hby.habs:
+                        prms['mhab'] = self.keyParams(prefixer.qb64)
+
+            case _:
+                raise ValueError(f"Invalid algo type for key={pre}: {pp.algo}")
+
+        return prms
 
 
 def loadEnds(app):
