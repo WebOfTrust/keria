@@ -97,18 +97,44 @@ class IdentifierCollectionEnd:
 
             # client is requesting agent to join multisig group
             if "group" in body:
-                inits |= loadGroupParams(self.hby, body)
-                hab = self.hby.makeSignifyHab(name, serder=serder, sigers=sigers)
+                group = body["group"]
+
+                if "mhab" not in group:
+                    raise falcon.HTTPBadRequest(description=f'required field "mhab" missing from body.group')
+                mpre = group["mhab"]["prefix"]
+
+                if mpre not in self.hby.habs:
+                    raise falcon.HTTPBadRequest(description=f'signing member {mpre} not a local AID')
+                mhab = self.hby.habs[mpre]
+
+                if "keys" not in group:
+                    raise falcon.HTTPBadRequest(description=f'required field "keys" missing from body.group')
+                keys = group["keys"]
+                verfers = [coring.Verfer(qb64=key) for key in keys]
+
+                if mhab.kever.fetchLatestContribTo(verfers=verfers) is None:
+                    raise falcon.HTTPBadRequest(description=f"Member hab={mhab.pre} not a participant in "
+                                                            f"event for this group hab.")
+
+                if "ndigs" not in group:
+                    raise falcon.HTTPBadRequest(description=f'required field "ndigs" missing from body.group')
+                ndigs = group["ndigs"]
+                digers = [coring.Diger(qb64=ndig) for ndig in ndigs]
+
+                hab = self.hby.makeSignifyGroupHab(name, mhab=mhab, serder=serder, sigers=sigers)
                 try:
-                    self.rm.group(**inits)
+                    self.rm.group(pre=serder.pre, mpre=mpre, verfers=verfers, digers=digers)
                 except ValueError as e:
                     self.hby.deleteHab(name=name)
                     raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
 
-                # Generate response, either the serder or a long running operaton indicator for the type
-                rep.content_type = "application/json"
-                self.groups.append(dict(pre=hab.pre, sn=0, d=serder.said, smids=inits["smids"], rmids=inits["rmids"]))
+                # Generate response, a long running operaton indicator for the type
+                smids = httping.getRequiredParam(group, "smids")
+                rmids = httping.getRequiredParam(group, "rmids")
+                self.groups.append(dict(pre=hab.pre, sn=0, d=serder.said, smids=smids, rmids=rmids))
                 op = self.mon.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=0))
+
+                rep.content_type = "application/json"
                 rep.status = falcon.HTTP_202
                 rep.data = op.to_json().encode("utf-8")
 
@@ -514,29 +540,5 @@ def loadRandyParams(body):
         raise falcon.HTTPBadRequest(title="invalid inception",
                                     description=f'required field "nxts" missing from body.rand')
     nxts = rand["nxts"]
-    inits = dict(algo=Algos.randy, prxs=prxs, nxts=nxts)
-    return inits
-
-
-def loadGroupParams(hby, body):
-    group = body["group"]
-    if "smids" not in group:
-        raise falcon.HTTPBadRequest(title="invalid inception",
-                                    description=f'required field "smids" missing from body.group')
-    smids = group["smids"]
-    local = False
-    for smid in smids:
-        if smid['i'] in hby.habs:
-            local = True
-            break
-
-    if not local:
-        raise falcon.HTTPBadRequest(desctiption="No local AID in group multisig request")
-
-    if "rmids" not in group:
-        raise falcon.HTTPBadRequest(title="invalid inception",
-                                    description=f'required field "rmids" missing from body.group')
-    rmids = group["rmids"]
-
-    inits = dict(algo=Algos.group, smids=smids, rmids=rmids)
+    inits = dict(prxs=prxs, nxts=nxts)
     return inits

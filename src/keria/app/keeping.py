@@ -86,8 +86,7 @@ class RemoteKeeper(dbing.LMDBer):
         self.sits = None
         self.sprms = None
         self.pres = None
-        self.rmids = None
-        self.smids = None
+        self.mhabs = None
         self.nxts = None
         self.prxs = None
         self.gbls = None
@@ -114,12 +113,9 @@ class RemoteKeeper(dbing.LMDBer):
         self.nxts = subing.CesrSuber(db=self,
                                      subkey='nxts.',
                                      klas=coring.Cipher)
-        self.smids = subing.CatCesrIoSetSuber(db=self,
-                                              subkey='smids.',
-                                              klas=(coring.Prefixer, coring.Seqner))
-        self.rmids = subing.CatCesrIoSetSuber(db=self,
-                                              subkey='rmids.',
-                                              klas=(coring.Prefixer, coring.Seqner))
+        self.mhabs = subing.CesrSuber(db=self,
+                                      subkey='mhabs.',
+                                      klas=coring.Prefixer)
         self.pres = koming.Komer(db=self,
                                  subkey='pres.',
                                  schema=Prefix, )  # New Prefix
@@ -204,34 +200,30 @@ class RemoteManager:
                 cipher = coring.Cipher(qb64=prx)
                 self.ks.nxts.put(keys=digers[idx].qb64b, val=cipher)
 
-    def group(self, pre, pidx, smids, rmids):
+    def group(self, pre, mpre, verfers, digers):
         pp = Prefix(
-            pidx=pidx,
-            algo=Algos.salty
+            pidx=0,
+            algo=Algos.group
         )
 
         if not self.ks.pres.put(pre, val=pp):
             raise ValueError("Already incepted pre={}.".format(pre))
 
-        self.saveMids(pre, smids, self.ks.smids)
-        self.saveMids(pre, rmids, self.ks.rmids)
+        if not self.ks.mhabs.put(pre, val=coring.Prefixer(qb64=mpre)):
+            raise ValueError("Already incepted pre={}.".format(pre))
+
+        dt = helping.nowIso8601()
+        ps = PreSit(
+            new=PubLot(pubs=[verfer.qb64 for verfer in verfers],
+                       dt=dt),
+            nxt=PubLot(pubs=[diger.qb64 for diger in digers],
+                       dt=dt))
+
+        if not self.ks.sits.put(pre, val=ps):
+            raise ValueError("Already incepted sit for pre={}.".format(pre))
 
     def update(self, **kwargs):
         pass
-
-    def saveMids(self, pre, mids, db):
-        for smid in mids:
-            mid = smid['i']
-            if mid not in self.hby.kevers:
-                raise kering.ConfigurationError(f"unknown group member {mid}")
-
-            mkever = self.hby.kevers[mid]  # get key state for given member
-
-            sn = smid['s'] if 's' in smid else mkever.sn
-            prefixer = coring.Prefixer(qb64=mid)
-            seqner = coring.Seqner(sn=sn)
-
-            db.add(pre, val=(prefixer, seqner))
 
     def keyParams(self, pre):
         if (pp := self.ks.pres.get(pre)) is None:
@@ -267,19 +259,20 @@ class RemoteManager:
                     ),
                 )
             case Algos.group:
-                smids = self.ks.smids.get(pre)
-                rmids = self.ks.rmids.get(pre)
+                if (mpre := self.ks.mhabs.get(pre)) is None:
+                    raise ValueError("Attempt to load nonexistent pre={}.".format(pre))
+
+                if (ps := self.ks.sits.get(pre)) is None:
+                    raise ValueError("Attempt to load invalid sit for pre={}.".format(pre))
 
                 prms = dict(
                     group=dict(
-                        smids=[dict(i=prefixer.qb64, s=seqner.sn) for (prefixer, seqner) in smids],
-                        rmids=[dict(i=prefixer.qb64, s=seqner.sn) for (prefixer, seqner) in rmids],
+                        keys=[verfer.qb64 for verfer in ps.new.pubs],
+                        rmids=[diger.qb64 for diger in ps.nxt.pubs],
                     )
                 )
 
-                for (prefixer, _) in smids:
-                    if prefixer.qb64 in self.hby.habs:
-                        prms['mhab'] = self.keyParams(prefixer.qb64)
+                prms['mhab'] = self.keyParams(mpre.qb64)
 
             case _:
                 raise ValueError(f"Invalid algo type for key={pre}: {pp.algo}")

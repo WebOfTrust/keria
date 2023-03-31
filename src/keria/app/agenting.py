@@ -94,7 +94,7 @@ def setup(name, base, bran, ctrlAid, adminPort, configFile=None, configDir=None,
                     swain=swain,
                     httpPort=httpPort)
 
-    doers.extend([adminServerDoer, agent, swain, *oobiery.doers, *agentOobiery.doers])
+    doers.extend([adminServerDoer, agent, swain, counselor, *oobiery.doers, *agentOobiery.doers])
     loadEnds(app=app, agentHby=agentHby, agentHab=agentHab, ctrlAid=ctrlAid, monitor=mon)
     aiding.loadEnds(app=app, hby=agentHby, monitor=mon, groups=agent.groups, witners=agent.witners,
                     anchors=agent.anchors)
@@ -120,7 +120,7 @@ class Agenter(doing.DoDoer):
         self.receiptor = agenting.Receiptor(hby=hby)
 
         doers = [doing.doify(self.start), doing.doify(self.msgDo), doing.doify(self.escrowDo), doing.doify(self.witDo),
-                 doing.doify(self.anchorDo), self.receiptor]
+                 doing.doify(self.anchorDo), doing.doify(self.groupDo), self.receiptor]
 
         if httpPort is not None:
             verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
