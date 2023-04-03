@@ -92,8 +92,8 @@ class IdentifierCollectionEnd:
             sigs = httping.getRequiredParam(body, "sigs")
 
             serder = coring.Serder(ked=icp)
+
             sigers = [coring.Siger(qb64=sig) for sig in sigs]
-            inits = dict(pre=serder.pre)
 
             # client is requesting agent to join multisig group
             if "group" in body:
@@ -123,7 +123,8 @@ class IdentifierCollectionEnd:
 
                 hab = self.hby.makeSignifyGroupHab(name, mhab=mhab, serder=serder, sigers=sigers)
                 try:
-                    self.rm.group(pre=serder.pre, mpre=mpre, verfers=verfers, digers=digers)
+                    keeper = self.rm.get(Algos.group)
+                    keeper.incept(pre=serder.pre, mpre=mpre, verfers=verfers, digers=digers)
                 except ValueError as e:
                     self.hby.deleteHab(name=name)
                     raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
@@ -141,21 +142,22 @@ class IdentifierCollectionEnd:
             else:
                 # client is requesting that the Agent track the Salty parameters
                 if Algos.salty in body:
-                    inits |= loadSaltyParams(body)
+                    salt = body[Algos.salty]
                     hab = self.hby.makeSignifyHab(name, serder=serder, sigers=sigers)
                     try:
-                        self.rm.salty(**inits)
+                        keeper = self.rm.get(Algos.salty)
+                        keeper.incept(pre=serder.pre, **salt)
                     except ValueError as e:
                         self.hby.deleteHab(name=name)
                         raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
 
                 # client is storing encrypted randomly generated key material on agent
-                elif "rand" in body:
-                    inits |= dict(verfers=serder.verfers, digers=serder.digers)
-                    inits |= loadRandyParams(body)
+                elif Algos.randy in body:
+                    rand = body[Algos.randy]
                     hab = self.hby.makeSignifyHab(name, serder=serder, sigers=sigers)
                     try:
-                        self.rm.randy(**inits)
+                        keeper = self.rm.get(Algos.randy)
+                        keeper.incept(pre=serder.pre, verfers=serder.verfers, digers=serder.digers, **rand)
                     except ValueError as e:
                         self.hby.deleteHab(name=name)
                         raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
@@ -272,43 +274,27 @@ class IdentifierResourceEnd:
 
         hab.rotate(serder=serder, sigers=sigers)
 
-        if "rand" in body:
-            rand = body["rand"]
-            if "prxs" not in rand:
-                raise falcon.HTTPBadRequest(title="invalid inception",
-                                            description=f'required field "prxs" missing from body.rand')
-            prxs = rand["prxs"]
+        if Algos.salty in body:
+            salt = body[Algos.salty]
+            keeper = self.rm.get(Algos.salty)
 
-            if "nxts" not in rand:
-                raise falcon.HTTPBadRequest(title="invalid inception",
-                                            description=f'required field "nxts" missing from body.rand')
-            nxts = rand["nxts"]
+            try:
+                keeper.rotate(pre=serder.pre, **salt)
+            except ValueError as e:
+                self.hby.deleteHab(name=name)
+                raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
 
-            self.rm.update(pre=serder.pre, algo=Algos.randy, verfers=serder.verfers, digers=serder.digers,
-                           prxs=prxs, nxts=nxts)
+        elif Algos.randy in body:
+            rand = body[Algos.randy]
+            keeper = self.rm.get(Algos.randy)
 
-        elif "group" in body:
+            keeper.rotate(pre=serder.pre, verfers=serder.verfers, digers=serder.digers, **rand)
+
+        elif Algos.group in body:
             group = body["group"]
-            if "smids" not in group:
-                raise falcon.HTTPBadRequest(title="invalid inception",
-                                            description=f'required field "smids" missing from body.group')
-            smids = group["smids"]
-            local = False
-            for smid in smids:
-                if smid['i'] in self.hby.habs:
-                    local = True
-                    break
+            keeper = self.rm.get(Algos.group)
 
-            if not local:
-                raise falcon.HTTPBadRequest(desctiption="No local AID in group multisig request")
-
-            if "rmids" not in group:
-                raise falcon.HTTPBadRequest(title="invalid inception",
-                                            description=f'required field "rmids" missing from body.group')
-            rmids = group["rmids"]
-
-            self.rm.update(pre=serder.pre, algo=Algos.randy, verfers=serder.verfers, digers=serder.digers,
-                           smids=smids, rmids=rmids)
+            keeper.rotate(pre=serder.pre, verfers=serder.verfers, digers=serder.digers, **group)
 
         if hab.kever.delegator:
             self.anchors.append(dict(alias=name, pre=hab.pre, sn=0))
@@ -362,7 +348,8 @@ def info(hab, rm, full=False):
     if not isinstance(hab, habbing.SignifyHab):
         raise kering.ConfigurationError("agent only allows SignifyHab instances")
 
-    data |= rm.keyParams(hab.pre)
+    keeper = rm.get(pre=hab.pre)
+    data.update(keeper.params(pre=hab.pre))
 
     if hab.accepted and full:
         kever = hab.kevers[hab.pre]
@@ -502,43 +489,3 @@ class EndRoleResourceEnd:
 
     def on_delete(self, req, rep):
         pass
-
-
-def loadSaltyParams(body):
-    salt = body[Algos.salty]
-    if "stem" not in salt:
-        raise falcon.HTTPBadRequest(title="invalid inception",
-                                    description=f'required field "stem" missing from body.salt')
-    stem = salt["stem"]
-
-    if "pidx" not in salt:
-        raise falcon.HTTPBadRequest(title="invalid inception",
-                                    description=f'required field "pidx" missing from body.salt')
-    pidx = salt["pidx"]
-
-    if "tier" not in salt:
-        raise falcon.HTTPBadRequest(title="invalid inception",
-                                    description=f'required field "tier" missing from body.salt')
-    tier = salt["tier"]
-
-    dcode = httping.getRequiredParam(salt, "dcode")
-    icodes = httping.getRequiredParam(salt, "icodes")
-    ncodes = httping.getRequiredParam(salt, "ncodes")
-
-    inits = dict(pidx=pidx, stem=stem, tier=tier, icodes=icodes, ncodes=ncodes, dcode=dcode)
-
-    return inits
-
-
-def loadRandyParams(body):
-    rand = body[Algos.salty]
-    if "prxs" not in rand:
-        raise falcon.HTTPBadRequest(title="invalid inception",
-                                    description=f'required field "prxs" missing from body.rand')
-    prxs = rand["prxs"]
-    if "nxts" not in rand:
-        raise falcon.HTTPBadRequest(title="invalid inception",
-                                    description=f'required field "nxts" missing from body.rand')
-    nxts = rand["nxts"]
-    inits = dict(prxs=prxs, nxts=nxts)
-    return inits

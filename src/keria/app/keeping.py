@@ -6,8 +6,7 @@ keria.app.keeping module
 """
 from dataclasses import dataclass, asdict, field
 
-from keri import kering
-from keri.app.keeping import PreSit, Algos, PubLot, PubSet, riKey
+from keri.app.keeping import PreSit, Algos, PubLot, PubSet
 from keri.core import coring
 from keri.core.coring import Tiers, MtrDex
 from keri.db import dbing, subing, koming
@@ -26,21 +25,21 @@ class SaltyPrm:
     Salty prefix's parameters for creating new key pairs
     """
     pidx: int = 0  # prefix index for this keypair sequence
-    algo: str = Algos.salty  # salty default uses indices and salt to create new key pairs
-    salt: str = ''  # empty salt  used for salty algo.
+    kidx: int = 0  # key index for this keypair sequence
     stem: str = ''  # default unique path stem for salty algo
     tier: str = ''  # security tier for stretch index salty algo
     dcode: str = ''  # next digest hasing code
     icodes: list = field(default_factory=list)  # current signing key seed codes
     ncodes: list = field(default_factory=list)  # next key seed codes
+    transferable: bool = False
 
     def __iter__(self):
         return iter(asdict(self))
 
 
-class RemoteKeeper(dbing.LMDBer):
+class RemoteBaser(dbing.LMDBer):
     """
-    RemoteKeeper stores data for Salty o rRandy Encrypted edge key generation.
+    RemoteBaser stores data for Salty or Randy Encrypted edge key generation.
 
     """
 
@@ -93,14 +92,14 @@ class RemoteKeeper(dbing.LMDBer):
         if perm is None:
             perm = self.Perm  # defaults to restricted permissions for non temp
 
-        super(RemoteKeeper, self).__init__(headDirPath=headDirPath, perm=perm,
-                                           reopen=reopen, **kwa)
+        super(RemoteBaser, self).__init__(headDirPath=headDirPath, perm=perm,
+                                          reopen=reopen, **kwa)
 
     def reopen(self, **kwa):
         """
         Open sub databases
         """
-        self.opened = super(RemoteKeeper, self).reopen(**kwa)
+        self.opened = super(RemoteBaser, self).reopen(**kwa)
 
         # Create by opening first time named sub DBs within main DB instance
         # Names end with "." as sub DB name must include a non Base64 character
@@ -132,46 +131,107 @@ class RemoteKeeper(dbing.LMDBer):
 
 
 class RemoteManager:
-    def __init__(self, hby, ks: RemoteKeeper = None):
+    def __init__(self, hby, rb: RemoteBaser = None):
         self.hby = hby
-        self.ks = ks if ks is not None else RemoteKeeper(name=hby.name,
-                                                         base=hby.base,
-                                                         temp=hby.temp,
-                                                         reopen=True,
-                                                         clear=False,
-                                                         headDirPath=hby.ks.headDirPath)
+        self.rb = rb if rb is not None else RemoteBaser(name=hby.name,
+                                                        base=hby.base,
+                                                        temp=hby.temp,
+                                                        reopen=True,
+                                                        clear=False,
+                                                        headDirPath=hby.db.headDirPath)
 
-    def salty(self, pre, *, icodes, ncodes, dcode=MtrDex.Blake3_256, pidx=0, stem="", tier=Tiers.low):
+    def get(self, algo: Algos = None, pre=None):
+        if pre is not None:
+            if (pp := self.rb.pres.get(pre)) is None:
+                raise ValueError("Attempt to load nonexistent pre={}.".format(pre))
+            algo = pp.algo
+
+        match algo:
+            case Algos.salty:
+                return SaltyKeeper(rb=self.rb)
+            case Algos.randy:
+                return RandyKeeper(rb=self.rb)
+            case Algos.group:
+                return GroupKeeper(rb=self.rb, rm=self)
+            case _:
+                return ExternKeeper(rb=self.rb)
+
+
+class SaltyKeeper:
+
+    def __init__(self, rb: RemoteBaser):
+        self.rb = rb
+
+    def incept(self, pre, *, icodes, ncodes, dcode=MtrDex.Blake3_256, pidx=0, kidx=0, stem="", tier=Tiers.low,
+               transferable=False):
 
         pp = Prefix(
             pidx=pidx,
             algo=Algos.salty
         )
 
-        # Secret to encrypt here
         sp = SaltyPrm(pidx=pidx,
-                      salt='',
+                      kidx=kidx,
                       stem=stem,
                       tier=tier,
                       icodes=icodes,
                       ncodes=ncodes,
-                      dcode=dcode
+                      dcode=dcode,
+                      transferable=transferable
                       )
 
-        if not self.ks.pres.put(pre, val=pp):
+        if not self.rb.pres.put(pre, val=pp):
             raise ValueError("Already incepted pre={}.".format(pre))
 
-        if not self.ks.sprms.put(pre, val=sp):
+        if not self.rb.sprms.put(pre, val=sp):
             raise ValueError("Already incepted prm for pre={}.".format(pre))
 
-    def randy(self, pre, verfers, digers, pidx, prxs, nxts):
+    def rotate(self, pre, ncodes, pidx, kidx, stem, icodes, tier, transferable, dcode=MtrDex.Blake3_256):
+        if (pp := self.rb.pres.get(pre)) is None or pp.algo != Algos.salty:
+            raise ValueError("Attempt to rotate nonexistent or invalid pre={}.".format(pre))
+
+        if (sp := self.rb.sprms.get(pre)) is None or pp.algo != Algos.salty:
+            raise ValueError("Attempt to rotate nonexistent or invalid pre={}.".format(pre))
+
+        sp = SaltyPrm(pidx=pidx,
+                      kidx=kidx,
+                      stem=stem,
+                      tier=sp.tier,
+                      icodes=sp.icodes,
+                      ncodes=ncodes,
+                      dcode=dcode,
+                      transferable=transferable
+                      )
+
+        if not self.rb.sprms.pin(pre, val=sp):
+            raise ValueError("Unable to rotate salty prms for pre={}.".format(pre))
+
+    def params(self, pre):
+        if (pp := self.rb.pres.get(pre)) is None or pp.algo != Algos.salty:
+            raise ValueError("Attempt to load nonexistent or invalid pre={}.".format(pre))
+
+        if (pp := self.rb.sprms.get(pre)) is None:
+            raise ValueError("Attempt to load nonexistent pre={}.".format(pre))
+
+        prms = dict(
+            salty=asdict(pp)
+        )
+
+        return prms
+
+
+class RandyKeeper:
+
+    def __init__(self, rb: RemoteBaser):
+        self.rb = rb
+
+    def incept(self, pre, verfers, digers, prxs, nxts, transferable):
 
         pp = Prefix(
-            pidx=pidx,
             algo=Algos.randy
         )
 
-        if not self.ks.pres.put(pre, val=pp):
+        if not self.rb.pres.put(pre, val=pp):
             raise ValueError("Already incepted pre={}.".format(pre))
 
         dt = helping.nowIso8601()
@@ -181,7 +241,7 @@ class RemoteManager:
             nxt=PubLot(pubs=[diger.qb64 for diger in digers],
                        dt=dt))
 
-        if not self.ks.sits.put(pre, val=ps):
+        if not self.rb.sits.put(pre, val=ps):
             raise ValueError("Already incepted sit for pre={}.".format(pre))
 
         # Secret to encrypt here
@@ -190,7 +250,7 @@ class RemoteManager:
 
         for idx, prx in enumerate(prxs):
             cipher = coring.Cipher(qb64=prx)
-            self.ks.prxs.put(keys=verfers[idx].qb64b, val=cipher)
+            self.rb.prxs.put(keys=verfers[idx].qb64b, val=cipher)
 
         if nxts is not None:
             if len(nxts) != len(digers):
@@ -198,18 +258,80 @@ class RemoteManager:
 
             for idx, prx in enumerate(nxts):
                 cipher = coring.Cipher(qb64=prx)
-                self.ks.nxts.put(keys=digers[idx].qb64b, val=cipher)
+                self.rb.nxts.put(keys=digers[idx].qb64b, val=cipher)
 
-    def group(self, pre, mpre, verfers, digers):
+    def rotate(self, pre, verfers, digers, prxs, nxts):
+        if (pp := self.rb.pres.put(pre)) is None or pp.algo != Algos.randy:
+            raise ValueError("Attempt to rotate non-existant or invalid pre={}.".format(pre))
+
+        dt = helping.nowIso8601()
+        ps = PreSit(
+            new=PubLot(pubs=[verfer.qb64 for verfer in verfers],
+                       dt=dt),
+            nxt=PubLot(pubs=[diger.qb64 for diger in digers],
+                       dt=dt))
+
+        if not self.rb.sits.pin(pre, val=ps):
+            raise ValueError("Already incepted sit for pre={}.".format(pre))
+
+        # Secret to encrypt here
+        if len(prxs) != len(verfers):
+            raise ValueError("If encrypted private keys are provided, must match verfers")
+
+        for idx, prx in enumerate(prxs):
+            cipher = coring.Cipher(qb64=prx)
+            self.rb.prxs.put(keys=verfers[idx].qb64b, val=cipher)
+
+        if nxts is not None:
+            if len(nxts) != len(digers):
+                raise ValueError("If encrypted private keys are provided, must match verfers")
+
+            for idx, prx in enumerate(nxts):
+                cipher = coring.Cipher(qb64=prx)
+                self.rb.nxts.put(keys=digers[idx].qb64b, val=cipher)
+
+    def params(self, pre):
+        if (pp := self.rb.pres.get(pre)) is None or pp.algo != Algos.randy:
+            raise ValueError("Attempt to load nonexistent or invalid pre={}.".format(pre))
+
+        prxs = []
+        if (ps := self.rb.sits.get(pre)) is None:
+            raise ValueError("Attempt to load nonexistent pre={}.".format(pre))
+
+        for pub in ps.new.pubs:
+            if (prx := self.rb.prxs.get(keys=pub)) is not None:
+                prxs.append(prx)
+
+        nxts = []
+        for pub in ps.nxt.pubs:
+            if (nxt := self.rb.nxts.get(keys=pub)) is not None:
+                nxts.append(nxt)
+
+        prms = dict(
+            randy=dict(
+                prxs=[prx.qb64 for prx in prxs],
+                nxts=[nxt.qb64 for nxt in nxts],
+            ),
+        )
+
+        return prms
+
+
+class GroupKeeper:
+
+    def __init__(self, rb: RemoteBaser, rm: RemoteManager):
+        self.rb = rb
+        self.rm = rm
+
+    def incept(self, pre, mpre, verfers, digers):
         pp = Prefix(
-            pidx=0,
             algo=Algos.group
         )
 
-        if not self.ks.pres.put(pre, val=pp):
+        if not self.rb.pres.put(pre, val=pp):
             raise ValueError("Already incepted pre={}.".format(pre))
 
-        if not self.ks.mhabs.put(pre, val=coring.Prefixer(qb64=mpre)):
+        if not self.rb.mhabs.put(pre, val=coring.Prefixer(qb64=mpre)):
             raise ValueError("Already incepted pre={}.".format(pre))
 
         dt = helping.nowIso8601()
@@ -219,72 +341,44 @@ class RemoteManager:
             nxt=PubLot(pubs=[diger.qb64 for diger in digers],
                        dt=dt))
 
-        if not self.ks.sits.put(pre, val=ps):
+        if not self.rb.sits.put(pre, val=ps):
             raise ValueError("Already incepted sit for pre={}.".format(pre))
 
-    def update(self, **kwargs):
-        pass
+    def rotate(self, pre, verfers, digers):
+        if (pp := self.rb.pres.get(pre)) is not None or pp.algo != Algos.group:
+            raise ValueError("Attempt to rotate nonexistant or invalid  pre={}.".format(pre))
 
-    def keyParams(self, pre):
-        if (pp := self.ks.pres.get(pre)) is None:
+        dt = helping.nowIso8601()
+        ps = PreSit(
+            new=PubLot(pubs=[verfer.qb64 for verfer in verfers],
+                       dt=dt),
+            nxt=PubLot(pubs=[diger.qb64 for diger in digers],
+                       dt=dt))
+
+        if not self.rb.sits.put(pre, val=ps):
+            raise ValueError("Already incepted sit for pre={}.".format(pre))
+
+    def params(self, pre):
+        if (pp := self.rb.pres.get(pre)) is None or pp.Algos != Algos.group:
+            raise ValueError("Attempt to load nonexistent or invalid pre={}.".format(pre))
+
+        if (mpre := self.rb.mhabs.get(pre)) is None:
             raise ValueError("Attempt to load nonexistent pre={}.".format(pre))
 
-        match pp.algo:
-            case Algos.salty:
-                if (pp := self.ks.sprms.get(pre)) is None:
-                    raise ValueError("Attempt to load nonexistent pre={}.".format(pre))
+        if (ps := self.rb.sits.get(pre)) is None:
+            raise ValueError("Attempt to load invalid sit for pre={}.".format(pre))
 
-                prms = dict(
-                    salty=asdict(pp)
-                )
+        prms = dict(
+            group=dict(
+                keys=[verfer.qb64 for verfer in ps.new.pubs],
+                rmids=[diger.qb64 for diger in ps.nxt.pubs],
+            )
+        )
 
-            case Algos.randy:
-                prxs = []
-                if (ps := self.ks.sits.get(pre)) is None:
-                    raise ValueError("Attempt to load nonexistent pre={}.".format(pre))
-
-                for pub in ps.new.pubs:
-                    if (prx := self.ks.prxs.get(keys=pub)) is not None:
-                        prxs.append(prx)
-
-                nxts = []
-                for pub in ps.nxt.pubs:
-                    if (nxt := self.ks.nxts.get(keys=pub)) is not None:
-                        nxts.append(nxt)
-
-                prms = dict(
-                    randy=dict(
-                        prxs=[prx.qb64 for prx in prxs],
-                        nxts=[nxt.qb64 for nxt in nxts],
-                    ),
-                )
-            case Algos.group:
-                if (mpre := self.ks.mhabs.get(pre)) is None:
-                    raise ValueError("Attempt to load nonexistent pre={}.".format(pre))
-
-                if (ps := self.ks.sits.get(pre)) is None:
-                    raise ValueError("Attempt to load invalid sit for pre={}.".format(pre))
-
-                prms = dict(
-                    group=dict(
-                        keys=[verfer.qb64 for verfer in ps.new.pubs],
-                        rmids=[diger.qb64 for diger in ps.nxt.pubs],
-                    )
-                )
-
-                prms['mhab'] = self.keyParams(mpre.qb64)
-
-            case _:
-                raise ValueError(f"Invalid algo type for key={pre}: {pp.algo}")
-
-        return prms
+        prms['mhab'] = self.rm.get(mpre.qb64).params(mpre.qb64)
 
 
-def loadEnds(app):
-    pass
+class ExternKeeper:
 
-
-class KeeperEnd:
-
-    def __init__(self, ks):
-        self.ks = ks
+    def __init__(self, rb: RemoteBaser):
+        self.rb = rb

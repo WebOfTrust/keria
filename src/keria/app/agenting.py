@@ -17,6 +17,7 @@ from keri.app.indirecting import HttpEnd
 from keri.app.keeping import Algos
 from keri.core import coring, parsing, eventing, routing
 from keri.core.coring import Ilks, randomNonce
+from keri.db import dbing
 from keri.db.basing import OobiRecord
 from keri.end import ending
 from keri.help import helping, ogler
@@ -345,6 +346,9 @@ def loadEnds(app, agentHby, agentHab, ctrlAid, monitor):
     statesEnd = KeyStateCollectionEnd(hby=agentHby)
     app.add_route("/states", statesEnd)
 
+    eventsEnd = KeyEventCollectionEnd(hby=agentHby)
+    app.add_route("/events", eventsEnd)
+
 
 class BootEnd:
     """ Resource class for creating datastore in cloud ahab """
@@ -508,6 +512,58 @@ class KeyStateCollectionEnd:
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(states).encode("utf-8")
+
+
+class KeyEventCollectionEnd:
+
+    def __init__(self, hby):
+        self.hby = hby
+
+    def on_get(self, req, rep):
+        """
+
+        Parameters:
+            req (Request): falcon.Request HTTP request
+            rep (Response): falcon.Response HTTP response
+
+        ---
+        summary:  Display key event log (KEL) for given identifier prefix
+        description:  If provided qb64 identifier prefix is in Kevers, return the current state of the
+                      identifier along with the KEL and all associated signatures and receipts
+        tags:
+           - Ket Event Log
+        parameters:
+          - in: path
+            name: prefix
+            schema:
+              type: string
+            required: true
+            description: qb64 identifier prefix of KEL to load
+        responses:
+           200:
+              description: Key event log and key state of identifier
+           404:
+              description: Identifier not found in Key event database
+
+
+        """
+        if "pre" not in req.params:
+            raise falcon.HTTPBadRequest("required parameter 'pre' missing")
+
+        pre = req.params.get("pre")
+        preb = pre.encode("utf-8")
+        events = []
+        for fn, dig in self.hby.db.getFelItemPreIter(preb, fn=0):
+            dgkey = dbing.dgKey(preb, dig)  # get message
+            if not (raw := self.hby.db.getEvt(key=dgkey)):
+                raise falcon.HTTPInternalServerError(f"Missing event for dig={dig}.")
+
+            serder = coring.Serder(raw=bytes(raw))
+            events.append(serder.ked)
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(events).encode("utf-8")
 
 
 class OOBICollectionEnd:
