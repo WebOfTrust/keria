@@ -260,8 +260,8 @@ class RandyKeeper:
                 cipher = coring.Cipher(qb64=prx)
                 self.rb.nxts.put(keys=digers[idx].qb64b, val=cipher)
 
-    def rotate(self, pre, verfers, digers, prxs, nxts):
-        if (pp := self.rb.pres.put(pre)) is None or pp.algo != Algos.randy:
+    def rotate(self, pre, verfers, digers, prxs, nxts, transferable):
+        if (pp := self.rb.pres.get(pre)) is None or pp.algo != Algos.randy:
             raise ValueError("Attempt to rotate non-existant or invalid pre={}.".format(pre))
 
         dt = helping.nowIso8601()
