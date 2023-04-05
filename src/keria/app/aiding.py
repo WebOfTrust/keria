@@ -26,7 +26,7 @@ logger = ogler.getLogger()
 def loadEnds(app, hby, monitor, groups, anchors, witners):
     aidsEnd = IdentifierCollectionEnd(hby, witners=witners, groups=groups, anchors=anchors, monitor=monitor)
     app.add_route("/identifiers", aidsEnd)
-    aidEnd = IdentifierResourceEnd(hby, witners=witners, anchors=anchors, monitor=monitor)
+    aidEnd = IdentifierResourceEnd(hby, witners=witners, anchors=anchors, groups=groups, monitor=monitor)
     app.add_route("/identifiers/{name}", aidEnd)
 
     aidOOBIsEnd = IdentifierOOBICollectionEnd(hby)
@@ -121,17 +121,18 @@ class IdentifierCollectionEnd:
                 ndigs = group["ndigs"]
                 digers = [coring.Diger(qb64=ndig) for ndig in ndigs]
 
+                smids = httping.getRequiredParam(group, "smids")
+                rmids = httping.getRequiredParam(group, "rmids")
+
                 hab = self.hby.makeSignifyGroupHab(name, mhab=mhab, serder=serder, sigers=sigers)
                 try:
                     keeper = self.rm.get(Algos.group)
-                    keeper.incept(pre=serder.pre, mpre=mpre, verfers=verfers, digers=digers)
+                    keeper.incept(pre=serder.pre, verfers=verfers, digers=digers, smids=smids, rmids=rmids)
                 except ValueError as e:
                     self.hby.deleteHab(name=name)
                     raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
 
                 # Generate response, a long running operaton indicator for the type
-                smids = httping.getRequiredParam(group, "smids")
-                rmids = httping.getRequiredParam(group, "rmids")
                 self.groups.append(dict(pre=hab.pre, sn=0, d=serder.said, smids=smids, rmids=rmids))
                 op = self.mon.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=0))
 
@@ -194,7 +195,7 @@ class IdentifierCollectionEnd:
 class IdentifierResourceEnd:
     """ Resource class for updating and deleting identifiers """
 
-    def __init__(self, hby, monitor, witners, anchors, rm=None):
+    def __init__(self, hby, monitor, witners, anchors, groups, rm=None):
         """
 
         Parameters:
@@ -209,6 +210,7 @@ class IdentifierResourceEnd:
         self.mon = monitor
         self.witners = witners
         self.anchors = anchors
+        self.groups = groups
 
     def on_get(self, _, rep, name):
         """ Identifier GET endpoint
@@ -330,6 +332,16 @@ class IdentifierResourceEnd:
 
         hab.interact(serder=serder, sigers=sigers)
 
+        if "group" in body:
+            group = body["group"]
+            smids = httping.getRequiredParam(group, "smids")
+            rmids = httping.getRequiredParam(group, "rmids")
+
+            self.groups.append(dict(pre=hab.pre, sn=serder.sn, d=serder.said, smids=smids, rmids=rmids))
+            op = self.mon.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=serder.sn))
+
+            return op.to_json().encode("utf-8")
+
         if hab.kever.wits:
             self.witners.append(dict(serder=serder))
             op = self.mon.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
@@ -350,6 +362,8 @@ def info(hab, rm, full=False):
 
     keeper = rm.get(pre=hab.pre)
     data.update(keeper.params(pre=hab.pre))
+    if isinstance(hab, habbing.SignifyGroupHab):
+        data["group"]["mhab"] = info(hab.mhab, rm, full)
 
     if hab.accepted and full:
         kever = hab.kevers[hab.pre]

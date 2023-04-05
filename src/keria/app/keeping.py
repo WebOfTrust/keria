@@ -85,7 +85,8 @@ class RemoteBaser(dbing.LMDBer):
         self.sits = None
         self.sprms = None
         self.pres = None
-        self.mhabs = None
+        self.smids = None
+        self.rmids = None
         self.nxts = None
         self.prxs = None
         self.gbls = None
@@ -112,9 +113,12 @@ class RemoteBaser(dbing.LMDBer):
         self.nxts = subing.CesrSuber(db=self,
                                      subkey='nxts.',
                                      klas=coring.Cipher)
-        self.mhabs = subing.CesrSuber(db=self,
-                                      subkey='mhabs.',
-                                      klas=coring.Prefixer)
+        self.smids = subing.CesrIoSetSuber(db=self,
+                                           subkey='smids.',
+                                           klas=coring.Prefixer)
+        self.rmids = subing.CesrIoSetSuber(db=self,
+                                           subkey='rmids.',
+                                           klas=coring.Prefixer)
         self.pres = koming.Komer(db=self,
                                  subkey='pres.',
                                  schema=Prefix, )  # New Prefix
@@ -323,7 +327,7 @@ class GroupKeeper:
         self.rb = rb
         self.rm = rm
 
-    def incept(self, pre, mpre, verfers, digers):
+    def incept(self, pre, verfers, digers, smids, rmids):
         pp = Prefix(
             algo=Algos.group
         )
@@ -331,7 +335,10 @@ class GroupKeeper:
         if not self.rb.pres.put(pre, val=pp):
             raise ValueError("Already incepted pre={}.".format(pre))
 
-        if not self.rb.mhabs.put(pre, val=coring.Prefixer(qb64=mpre)):
+        if not self.rb.smids.pin(pre, vals=[coring.Prefixer(qb64=mid) for mid in smids]):
+            raise ValueError("Already incepted pre={}.".format(pre))
+
+        if not self.rb.rmids.pin(pre, vals=[coring.Prefixer(qb64=mid) for mid in rmids]):
             raise ValueError("Already incepted pre={}.".format(pre))
 
         dt = helping.nowIso8601()
@@ -344,9 +351,15 @@ class GroupKeeper:
         if not self.rb.sits.put(pre, val=ps):
             raise ValueError("Already incepted sit for pre={}.".format(pre))
 
-    def rotate(self, pre, verfers, digers):
+    def rotate(self, pre, verfers, digers, smids, rmids):
         if (pp := self.rb.pres.get(pre)) is not None or pp.algo != Algos.group:
             raise ValueError("Attempt to rotate nonexistant or invalid  pre={}.".format(pre))
+
+        if not self.rb.smids.pin(pre, val=[coring.Prefixer(qb64=mid) for mid in smids]):
+            raise ValueError("Already incepted pre={}.".format(pre))
+
+        if not self.rb.rmids.pin(pre, val=[coring.Prefixer(qb64=mid) for mid in rmids]):
+            raise ValueError("Already incepted pre={}.".format(pre))
 
         dt = helping.nowIso8601()
         ps = PreSit(
@@ -356,26 +369,39 @@ class GroupKeeper:
                        dt=dt))
 
         if not self.rb.sits.put(pre, val=ps):
-            raise ValueError("Already incepted sit for pre={}.".format(pre))
+            raise ValueError(f"Already incepted sit for pre={pre}.")
 
     def params(self, pre):
-        if (pp := self.rb.pres.get(pre)) is None or pp.Algos != Algos.group:
-            raise ValueError("Attempt to load nonexistent or invalid pre={}.".format(pre))
+        if (pp := self.rb.pres.get(pre)) is None or pp.algo != Algos.group:
+            raise ValueError(f"Attempt to load nonexistent or invalid pre={pre}.")
 
-        if (mpre := self.rb.mhabs.get(pre)) is None:
-            raise ValueError("Attempt to load nonexistent pre={}.".format(pre))
+        if (smids := self.rb.smids.get(pre)) is None:
+            raise ValueError(f"Attempt to load nonexistent pre={pre}.")
+
+        mpre = None
+        for smid in smids:
+            if smid.qb64 in self.rm.hby.kevers:
+                mpre = smid.qb64
+
+        if mpre is None:
+            raise ValueError(f"Attempt to load invalid pre={pre}")
+
+        if (rmids := self.rb.rmids.get(pre)) is None:
+            raise ValueError(f"Attempt to load nonexistent pre={pre}.")
 
         if (ps := self.rb.sits.get(pre)) is None:
-            raise ValueError("Attempt to load invalid sit for pre={}.".format(pre))
+            raise ValueError(f"Attempt to load invalid sit for pre={pre}.")
 
         prms = dict(
             group=dict(
-                keys=[verfer.qb64 for verfer in ps.new.pubs],
-                rmids=[diger.qb64 for diger in ps.nxt.pubs],
+                keys=[verfer for verfer in ps.new.pubs],
+                ndigs=[diger for diger in ps.nxt.pubs],
+                smids=[smid.qb64 for smid in smids],
+                rmids=[rmid.qb64 for rmid in rmids]
             )
         )
 
-        prms['mhab'] = self.rm.get(mpre.qb64).params(mpre.qb64)
+        return prms
 
 
 class ExternKeeper:
