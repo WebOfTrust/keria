@@ -121,19 +121,19 @@ class IdentifierCollectionEnd:
                 ndigs = group["ndigs"]
                 digers = [coring.Diger(qb64=ndig) for ndig in ndigs]
 
-                smids = httping.getRequiredParam(group, "smids")
-                rmids = httping.getRequiredParam(group, "rmids")
+                smids = httping.getRequiredParam(body, "smids")
+                rmids = httping.getRequiredParam(body, "rmids")
 
                 hab = self.hby.makeSignifyGroupHab(name, mhab=mhab, serder=serder, sigers=sigers)
                 try:
                     keeper = self.rm.get(Algos.group)
-                    keeper.incept(pre=serder.pre, verfers=verfers, digers=digers, smids=smids, rmids=rmids)
+                    keeper.incept(pre=serder.pre, mpre=mhab.pre, verfers=verfers, digers=digers)
                 except ValueError as e:
                     self.hby.deleteHab(name=name)
                     raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
 
                 # Generate response, a long running operaton indicator for the type
-                self.groups.append(dict(pre=hab.pre, sn=0, d=serder.said, smids=smids, rmids=rmids))
+                self.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
                 op = self.mon.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=0))
 
                 rep.content_type = "application/json"
@@ -293,10 +293,17 @@ class IdentifierResourceEnd:
             keeper.rotate(pre=serder.pre, verfers=serder.verfers, digers=serder.digers, **rand)
 
         elif Algos.group in body:
-            group = body["group"]
             keeper = self.rm.get(Algos.group)
 
-            keeper.rotate(pre=serder.pre, verfers=serder.verfers, digers=serder.digers, **group)
+            keeper.rotate(pre=serder.pre, verfers=serder.verfers, digers=serder.digers)
+
+            smids = httping.getRequiredParam(body, "smids")
+            rmids = httping.getRequiredParam(body, "rmids")
+
+            self.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
+            op = self.mon.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=serder.sn))
+
+            return op.to_json().encode("utf-8")
 
         if hab.kever.delegator:
             self.anchors.append(dict(alias=name, pre=hab.pre, sn=0))
@@ -333,11 +340,7 @@ class IdentifierResourceEnd:
         hab.interact(serder=serder, sigers=sigers)
 
         if "group" in body:
-            group = body["group"]
-            smids = httping.getRequiredParam(group, "smids")
-            rmids = httping.getRequiredParam(group, "rmids")
-
-            self.groups.append(dict(pre=hab.pre, sn=serder.sn, d=serder.said, smids=smids, rmids=rmids))
+            self.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers))
             op = self.mon.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=serder.sn))
 
             return op.to_json().encode("utf-8")

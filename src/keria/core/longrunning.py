@@ -17,9 +17,9 @@ from keri.db import dbing, koming
 from keri.help import helping
 
 # long running operationt types
-Typeage = namedtuple("Tierage", 'oobi witness delegation group')
+Typeage = namedtuple("Tierage", 'oobi witness delegation group query')
 
-OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation', group='group')
+OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation', group='group', query='query')
 
 
 @dataclass_json
@@ -229,6 +229,7 @@ class Monitor:
                 operation.response = serder.ked
             else:
                 operation.done = False
+
         elif op.type in (OpTypes.group, ):
             if "sn" not in op.metadata:
                 raise kering.ValidationError(f"invalid long running {op.type} operaiton, metadata missing 'sn' field")
@@ -245,6 +246,37 @@ class Monitor:
                 operation.response = serder.ked
             else:
                 operation.done = False
+
+        elif op.type in (OpTypes.query, ):
+            if op.oid not in self.hby.kevers:
+                operation.done = False
+
+            else:
+                kever = self.hby.kevers[op.oid]
+                if "sn" in op.metadata:
+                    if kever.sn >= op.metadata["sn"]:
+                        operation.done = True
+                        operation.response = kever.state().ked
+                    else:
+                        operation.done = False
+                elif "anchor" in op.metadata:
+                    anchor = op.metadata["anchor"]
+                    if self.hby.db.findAnchoringEvent(op.oid, anchor=anchor) is not None:
+                        operation.done = True
+                        operation.response = kever.state().ked
+                    else:
+                        operation.done = False
+                else:
+                    ksn = None
+                    for (_, saider) in self.hby.db.knas.getItemIter(keys=(op.oid,)):
+                        ksn = self.hby.db.ksns.get(keys=(saider.qb64,))
+                        break
+
+                    if ksn and ksn.ked['d'] == kever.serder.said:
+                        operation.done = True
+                        operation.response = kever.state().ked
+                    else:
+                        operation.done = False
 
         else:
             operation.done = True

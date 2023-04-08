@@ -5,13 +5,15 @@ keria.app.agenting module
 
 """
 import json
+from ordered_set import OrderedSet as oset
 
 import falcon
 from falcon import media
 from hio.base import doing
 from hio.core import http
 from hio.help import decking
-from keri.app import configing, keeping, habbing, storing, signaling, notifying, oobiing, agenting, delegating
+from keri.app import configing, keeping, habbing, storing, signaling, notifying, oobiing, agenting, delegating, \
+    forwarding, querying
 from keri.app.grouping import Counselor
 from keri.app.indirecting import HttpEnd
 from keri.app.keeping import Algos
@@ -28,7 +30,7 @@ from keri.vdr.eventing import Tevery
 
 from . import grouping, aiding
 from .keeping import RemoteManager
-from ..core import authing, longrunning
+from ..core import authing, longrunning, httping
 from ..core.authing import Authenticater
 from ..core.eventing import cloneAid
 
@@ -96,7 +98,7 @@ def setup(name, base, bran, ctrlAid, adminPort, configFile=None, configDir=None,
                     httpPort=httpPort)
 
     doers.extend([adminServerDoer, agent, swain, counselor, *oobiery.doers, *agentOobiery.doers])
-    loadEnds(app=app, agentHby=agentHby, agentHab=agentHab, ctrlAid=ctrlAid, monitor=mon)
+    loadEnds(app=app, agentHby=agentHby, agentHab=agentHab, ctrlAid=ctrlAid, monitor=mon, queries=agent.queries)
     aiding.loadEnds(app=app, hby=agentHby, monitor=mon, groups=agent.groups, witners=agent.witners,
                     anchors=agent.anchors)
     grouping.loadEnds(app=app, agentHby=agentHby)
@@ -118,10 +120,14 @@ class Agenter(doing.DoDoer):
         self.groups = decking.Deck()
         self.anchors = decking.Deck()
         self.witners = decking.Deck()
+        self.queries = decking.Deck()
         self.receiptor = agenting.Receiptor(hby=hby)
+        self.postman = forwarding.Poster(hby=hby)
+        self.rep = storing.Respondant(hby=hby, cues=self.cues)
 
         doers = [doing.doify(self.start), doing.doify(self.msgDo), doing.doify(self.escrowDo), doing.doify(self.witDo),
-                 doing.doify(self.anchorDo), doing.doify(self.groupDo), self.receiptor]
+                 doing.doify(self.anchorDo), doing.doify(self.groupDo), doing.doify(self.queryDo), self.receiptor,
+                 self.postman, self.rep]
 
         if httpPort is not None:
             verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
@@ -137,18 +143,18 @@ class Agenter(doing.DoDoer):
             self.exc = exchanging.Exchanger(db=hby.db, handlers=handlers)
 
             mbx = storing.Mailboxer(name=hby.name)
-            self.rvy = routing.Revery(db=hby.db, cues=cues)
+            self.rvy = routing.Revery(db=hby.db, cues=self.cues)
             self.kvy = eventing.Kevery(db=hby.db,
                                        lax=True,
                                        local=False,
                                        rvy=self.rvy,
-                                       cues=cues)
+                                       cues=self.cues)
             self.kvy.registerReplyRoutes(router=self.rvy.rtr)
 
             self.tvy = Tevery(reger=verifier.reger,
                               db=hby.db,
                               local=False,
-                              cues=cues)
+                              cues=self.cues)
 
             self.tvy.registerReplyRoutes(router=self.rvy.rtr)
             self.parser = parsing.Parser(framed=True,
@@ -297,6 +303,37 @@ class Agenter(doing.DoDoer):
 
             yield self.tock
 
+    def queryDo(self, tymth=None, tock=0.0):
+        """
+         Returns doifiable Doist compatibile generator method (doer dog) to process
+            delegation anchor requests
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            while self.queries:
+                msg = self.queries.popleft()
+                pre = msg["pre"]
+
+                qryDo = querying.QueryDoer(hby=self.hby, hab=self.agentHab, pre=pre, kvy=self.kvy)
+                self.extend([qryDo])
+                while not qryDo.done:
+                    yield self.tock
+
+                self.remove([qryDo])
+
+            yield self.tock
+
     def groupDo(self, tymth=None, tock=0.0):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
@@ -317,23 +354,41 @@ class Agenter(doing.DoDoer):
         while True:
             while self.groups:
                 msg = self.groups.popleft()
-                pre = msg['pre']
-                sn = msg['sn']
-                said = msg['d']
-                smids = msg['smids']
-                rmids = msg['rmids']
+                serder = msg["serder"]
+                sigers = msg["sigers"]
 
-                prefixer = coring.Prefixer(qb64=pre)
-                seqner = coring.Seqner(sn=sn)
-                saider = coring.Saider(qb64=said)
-                ghab = self.hby.habs[pre]
-                self.counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=saider, smids=smids,
-                                     rmids=rmids, proxy=self.agentHab)
+                ghab = self.hby.habs[serder.pre]
+                if "smids" in msg:
+                    smids = msg['smids']
+                else:
+                    smids = ghab.db.signingMembers(pre=ghab.pre)
+
+                if "rmids" in msg:
+                    rmids = msg['rmids']
+                else:
+                    rmids = ghab.db.rotationMembers(pre=ghab.pre)
+
+                atc = bytearray()  # attachment
+                atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
+                for siger in sigers:
+                    atc.extend(siger.qb64b)
+
+                others = list(oset(smids + (rmids or [])))
+                others.remove(ghab.mhab.pre)  # don't send to self
+                print(f"Sending multisig event to {len(others)} other participants")
+                for recpt in others:
+                    self.postman.send(hab=self.agentHab, dest=recpt, topic="multisig", serder=serder,
+                                      attachment=atc)
+
+                prefixer = coring.Prefixer(qb64=serder.pre)
+                seqner = coring.Seqner(sn=serder.sn)
+                saider = coring.Saider(qb64=serder.said)
+                self.counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=saider)
 
             yield self.tock
 
 
-def loadEnds(app, agentHby, agentHab, ctrlAid, monitor):
+def loadEnds(app, agentHby, agentHab, ctrlAid, monitor, queries):
     bootEnd = BootEnd(agentHby, agentHab, ctrlAid)
     app.add_route("/boot", bootEnd)
 
@@ -348,6 +403,9 @@ def loadEnds(app, agentHby, agentHab, ctrlAid, monitor):
 
     eventsEnd = KeyEventCollectionEnd(hby=agentHby)
     app.add_route("/events", eventsEnd)
+
+    queryEnd = QueryCollectionEnd(hby=agentHby, queries=queries, monitor=monitor)
+    app.add_route("/queries", queryEnd)
 
 
 class BootEnd:
@@ -641,3 +699,63 @@ class OOBICollectionEnd:
         rep.status = falcon.HTTP_202
         rep.content_type = "application/json"
         rep.data = op.to_json().encode("utf-8")
+
+
+class QueryCollectionEnd:
+
+    def __init__(self, hby, monitor, queries):
+        self.hby = hby
+        self.monitor = monitor
+        self.queries = queries
+
+    def on_post(self, req, rep):
+        """
+
+        Parameters:
+            req (Request): falcon.Request HTTP request
+            rep (Response): falcon.Response HTTP response
+
+        ---
+        summary:  Display key event log (KEL) for given identifier prefix
+        description:  If provided qb64 identifier prefix is in Kevers, return the current state of the
+                      identifier along with the KEL and all associated signatures and receipts
+        tags:
+          - Query
+        parameters:
+          - in: body
+            name: pre
+            schema:
+              type: string
+            required: true
+            description: qb64 identifier prefix of KEL to load
+        responses:
+           200:
+              description: Key event log and key state of identifier
+           404:
+              description: Identifier not found in Key event database
+
+
+        """
+        body = req.get_media()
+        pre = httping.getRequiredParam(body, "pre")
+        qry = dict(pre=pre)
+
+        meta = dict()
+        if "anchor" in body:
+            meta["anchor"] = body["anchor"]
+        elif "sn" in body:
+            meta["sn"] = body["sn"]
+        else:  # Must reset key state so we know when we have a new update.
+            for (keys, saider) in self.hby.db.knas.getItemIter(keys=(pre,)):
+                self.hby.db.knas.rem(keys)
+                self.hby.db.ksns.rem((saider.qb64,))
+                self.hby.db.ksns.rem((saider.qb64,))
+
+        qry.update(meta)
+        self.queries.append(qry)
+        op = self.monitor.submit(pre, longrunning.OpTypes.query, metadata=meta)
+
+        rep.status = falcon.HTTP_202
+        rep.content_type = "application/json"
+        rep.data = op.to_json().encode("utf-8")
+
