@@ -78,7 +78,8 @@ setup(
         'keri>=0.6.9',
         'multicommand>=1.0.0',
         'falcon>=3.1.0',
-        'http_sfv>=0.9.8'
+        'http_sfv>=0.9.8',
+        'dataclasses_json>=0.5.7'
     ],
     extras_require={
         # eg:

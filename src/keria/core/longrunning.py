@@ -7,7 +7,6 @@ keria.core.longrunning module
 import datetime
 from collections import namedtuple
 from dataclasses import dataclass
-from base64 import urlsafe_b64decode as decodeB64
 
 import falcon
 from dataclasses_json import dataclass_json
@@ -18,9 +17,9 @@ from keri.db import dbing, koming
 from keri.help import helping
 
 # long running operationt types
-Typeage = namedtuple("Tierage", 'oobi witness delegation')
+Typeage = namedtuple("Tierage", 'oobi witness delegation group query')
 
-OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation')
+OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation', group='group', query='query')
 
 
 @dataclass_json
@@ -89,7 +88,7 @@ class Monitor:
 
     """
 
-    def __init__(self, hby, swain, opr=None):
+    def __init__(self, hby, swain, counselor, opr=None):
         """ Create long running operation monitor
 
         Parameters:
@@ -100,6 +99,7 @@ class Monitor:
         """
         self.hby = hby
         self.swain = swain
+        self.counselor = counselor
         self.opr = opr if opr is not None else Operator(name=hby.name)
 
     def submit(self, oid, typ, metadata=None):
@@ -218,10 +218,10 @@ class Monitor:
 
             kever = self.hby.kevers[op.oid]
             sn = op.metadata["sn"]
+            seqner = coring.Seqner(sn=sn)
             sdig = self.hby.db.getKeLast(key=dbing.snKey(pre=op.oid, sn=sn))
-            anchor = dict(i=op.oid, s=sn, d=bytes(sdig))
 
-            if self.hby.db.findAnchoringEvent(kever.delegator, anchor=anchor) is not None:
+            if self.swain.complete(kever.prefixer, seqner):
                 evt = self.hby.db.getEvt(dbing.dgKey(pre=kever.prefixer.qb64, dig=bytes(sdig)))
                 serder = coring.Serder(raw=bytes(evt))
 
@@ -229,6 +229,54 @@ class Monitor:
                 operation.response = serder.ked
             else:
                 operation.done = False
+
+        elif op.type in (OpTypes.group, ):
+            if "sn" not in op.metadata:
+                raise kering.ValidationError(f"invalid long running {op.type} operaiton, metadata missing 'sn' field")
+
+            prefixer = coring.Prefixer(qb64=op.oid)
+            seqner = coring.Seqner(sn=op.metadata["sn"])
+
+            if self.counselor.complete(prefixer, seqner):
+                sdig = self.hby.db.getKeLast(key=dbing.snKey(pre=op.oid, sn=seqner.sn))
+                evt = self.hby.db.getEvt(dbing.dgKey(pre=prefixer.qb64, dig=bytes(sdig)))
+                serder = coring.Serder(raw=bytes(evt))
+
+                operation.done = True
+                operation.response = serder.ked
+            else:
+                operation.done = False
+
+        elif op.type in (OpTypes.query, ):
+            if op.oid not in self.hby.kevers:
+                operation.done = False
+
+            else:
+                kever = self.hby.kevers[op.oid]
+                if "sn" in op.metadata:
+                    if kever.sn >= op.metadata["sn"]:
+                        operation.done = True
+                        operation.response = kever.state().ked
+                    else:
+                        operation.done = False
+                elif "anchor" in op.metadata:
+                    anchor = op.metadata["anchor"]
+                    if self.hby.db.findAnchoringEvent(op.oid, anchor=anchor) is not None:
+                        operation.done = True
+                        operation.response = kever.state().ked
+                    else:
+                        operation.done = False
+                else:
+                    ksn = None
+                    for (_, saider) in self.hby.db.knas.getItemIter(keys=(op.oid,)):
+                        ksn = self.hby.db.ksns.get(keys=(saider.qb64,))
+                        break
+
+                    if ksn and ksn.ked['d'] == kever.serder.said:
+                        operation.done = True
+                        operation.response = kever.state().ked
+                    else:
+                        operation.done = False
 
         else:
             operation.done = True
