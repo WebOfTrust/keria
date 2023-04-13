@@ -8,7 +8,6 @@ import json
 from urllib.parse import urlparse
 
 import falcon
-from hio.help import decking
 from keri import kering
 from keri.app import habbing
 from keri.app.keeping import Algos
@@ -17,67 +16,89 @@ from keri.core.coring import Ilks
 from keri.db import dbing
 from keri.help import ogler
 
-from .keeping import RemoteManager
 from ..core import longrunning, httping
+from ..core.eventing import cloneAid
 
 logger = ogler.getLogger()
 
 
-def loadEnds(app, hby, monitor, groups, anchors, witners):
-    aidsEnd = IdentifierCollectionEnd(hby, witners=witners, groups=groups, anchors=anchors, monitor=monitor)
+def loadEnds(app, agency):
+    agentEnd = AgentResourceEnd(agency=agency)
+    app.add_route("/agent/{caid}", agentEnd)
+
+    aidsEnd = IdentifierCollectionEnd()
     app.add_route("/identifiers", aidsEnd)
-    aidEnd = IdentifierResourceEnd(hby, witners=witners, anchors=anchors, groups=groups, monitor=monitor)
+    aidEnd = IdentifierResourceEnd()
     app.add_route("/identifiers/{name}", aidEnd)
 
-    aidOOBIsEnd = IdentifierOOBICollectionEnd(hby)
+    aidOOBIsEnd = IdentifierOOBICollectionEnd()
     app.add_route("/identifiers/{name}/oobis", aidOOBIsEnd)
 
-    endRolesEnd = EndRoleCollectionEnd(hby=hby)
+    endRolesEnd = EndRoleCollectionEnd()
     app.add_route("/identifiers/{name}/endroles", endRolesEnd)
 
-    endRoleEnd = EndRoleResourceEnd(hby=hby)
+    endRoleEnd = EndRoleResourceEnd()
     app.add_route("/identifiers/{name}/endroles/{cid}/{role}/{eid}", endRoleEnd)
+
+
+class AgentResourceEnd:
+    """ Resource class for getting agent specific launch information """
+
+    def __init__(self, agency):
+        self.agency = agency
+
+    def on_get(self, _, rep, caid):
+        """ GET endpoint for Keystores
+
+        Get keystore status
+
+        Args:
+            _: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            caid(str): qb64 identifier prefix of Controller
+
+        """
+        agent = self.agency.get(caid)
+        if agent is None:
+            raise falcon.HTTPNotFound(description=f"not agent found for controller {caid}")
+
+        kel = cloneAid(db=agent.hby.db, pre=agent.pre)
+        pidx = agent.hby.db.habs.cntAll()
+        body = dict(kel=kel, pidx=pidx)
+
+        if (ctrlHab := agent.hby.habByName(agent.caid, ns="agent")) is not None:
+            body["ridx"] = ctrlHab.kever.sn
+
+        rep.content_type = "application/json"
+        rep.data = json.dumps(body).encode("utf-8")
+        rep.status = falcon.HTTP_200
 
 
 class IdentifierCollectionEnd:
     """ Resource class for creating and managing identifiers """
 
-    def __init__(self, hby, monitor, groups, anchors, witners, rm=None):
-        """
-
-        Parameters:
-            hby (Habery): Controller database and keystore environment
-            monitor (Monitor): Long running process monitor
-            witners (decking.Deck): cues for witness receiption
-            anchors (decking.Deck): cues for delegation processing
-
-        """
-        self.hby = hby
-        self.mon = monitor
-        self.groups = groups
-        self.anchors = anchors
-        self.witners = witners
-        self.rm = rm if rm is not None else RemoteManager(hby=hby)
-
-    def on_get(self, _, rep):
+    @staticmethod
+    def on_get(req, rep):
         """ Identifier List GET endpoint
 
         Parameters:
-            _: falcon.Request HTTP request
+            req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
 
         """
+        agent = req.context.agent
         res = []
 
-        for pre, hab in self.hby.habs.items():
-            data = info(hab, self.rm)
+        for pre, hab in agent.hby.habs.items():
+            data = info(hab, agent.remoteMgr)
             res.append(data)
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
 
-    def on_post(self, req, rep):
+    @staticmethod
+    def on_post(req, rep):
         """ Inception event POST endpoint
 
         Parameters:
@@ -85,6 +106,7 @@ class IdentifierCollectionEnd:
             rep (Response): falcon.Response HTTP response object
 
         """
+        agent = req.context.agent
         try:
             body = req.get_media()
             icp = httping.getRequiredParam(body, "icp")
@@ -103,9 +125,9 @@ class IdentifierCollectionEnd:
                     raise falcon.HTTPBadRequest(description=f'required field "mhab" missing from body.group')
                 mpre = group["mhab"]["prefix"]
 
-                if mpre not in self.hby.habs:
+                if mpre not in agent.hby.habs:
                     raise falcon.HTTPBadRequest(description=f'signing member {mpre} not a local AID')
-                mhab = self.hby.habs[mpre]
+                mhab = agent.hby.habs[mpre]
 
                 if "keys" not in group:
                     raise falcon.HTTPBadRequest(description=f'required field "keys" missing from body.group')
@@ -124,17 +146,17 @@ class IdentifierCollectionEnd:
                 smids = httping.getRequiredParam(body, "smids")
                 rmids = httping.getRequiredParam(body, "rmids")
 
-                hab = self.hby.makeSignifyGroupHab(name, mhab=mhab, serder=serder, sigers=sigers)
+                hab = agent.hby.makeSignifyGroupHab(name, mhab=mhab, serder=serder, sigers=sigers)
                 try:
-                    keeper = self.rm.get(Algos.group)
+                    keeper = agent.remoteMgr.get(Algos.group)
                     keeper.incept(pre=serder.pre, mpre=mhab.pre, verfers=verfers, digers=digers)
                 except ValueError as e:
-                    self.hby.deleteHab(name=name)
+                    agent.hby.deleteHab(name=name)
                     raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
 
                 # Generate response, a long running operaton indicator for the type
-                self.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
-                op = self.mon.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=0))
+                agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
+                op = agent.monitor.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=0))
 
                 rep.content_type = "application/json"
                 rep.status = falcon.HTTP_202
@@ -144,42 +166,43 @@ class IdentifierCollectionEnd:
                 # client is requesting that the Agent track the Salty parameters
                 if Algos.salty in body:
                     salt = body[Algos.salty]
-                    hab = self.hby.makeSignifyHab(name, serder=serder, sigers=sigers)
+                    hab = agent.hby.makeSignifyHab(name, serder=serder, sigers=sigers)
                     try:
-                        keeper = self.rm.get(Algos.salty)
+                        keeper = agent.remoteMgr.get(Algos.salty)
                         keeper.incept(pre=serder.pre, **salt)
                     except ValueError as e:
-                        self.hby.deleteHab(name=name)
+                        agent.hby.deleteHab(name=name)
                         raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
 
                 # client is storing encrypted randomly generated key material on agent
                 elif Algos.randy in body:
                     rand = body[Algos.randy]
-                    hab = self.hby.makeSignifyHab(name, serder=serder, sigers=sigers)
+                    hab = agent.hby.makeSignifyHab(name, serder=serder, sigers=sigers)
                     try:
-                        keeper = self.rm.get(Algos.randy)
+                        keeper = agent.remoteMgr.get(Algos.randy)
                         keeper.incept(pre=serder.pre, verfers=serder.verfers, digers=serder.digers, **rand)
                     except ValueError as e:
-                        self.hby.deleteHab(name=name)
+                        agent.hby.deleteHab(name=name)
                         raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
 
                 else:
-                    raise falcon.HTTPBadRequest(description="invalid request: one of group, rand or salt field required")
+                    raise falcon.HTTPBadRequest(
+                        description="invalid request: one of group, rand or salt field required")
 
                 # create Hab and incept the key store (if any)
                 # Generate response, either the serder or a long running operaton indicator for the type
                 rep.content_type = "application/json"
                 if hab.kever.delegator:
-                    self.anchors.append(dict(pre=hab.pre, sn=0))
-                    op = self.mon.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
-                                         metadata=dict(sn=0))
+                    agent.anchors.append(dict(pre=hab.pre, sn=0))
+                    op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
+                                              metadata=dict(sn=0))
                     rep.status = falcon.HTTP_202
                     rep.data = op.to_json().encode("utf-8")
 
                 elif hab.kever.wits:
-                    self.witners.append(dict(serder=serder))
-                    op = self.mon.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.witness,
-                                         metadata=dict(sn=0))
+                    agent.witners.append(dict(serder=serder))
+                    op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.witness,
+                                              metadata=dict(sn=0))
                     rep.status = falcon.HTTP_202
                     rep.data = op.to_json().encode("utf-8")
 
@@ -195,38 +218,23 @@ class IdentifierCollectionEnd:
 class IdentifierResourceEnd:
     """ Resource class for updating and deleting identifiers """
 
-    def __init__(self, hby, monitor, witners, anchors, groups, rm=None):
-        """
-
-        Parameters:
-            hby (Habery): Controller database and keystore environment
-            monitor (Monitor): Long running process monitor
-            witners (decking.Deck): cues for witness receiption
-            anchors (decking.Deck): cues for delegation processing
-
-        """
-        self.hby = hby
-        self.rm = rm if rm is not None else RemoteManager(hby=hby)
-        self.mon = monitor
-        self.witners = witners
-        self.anchors = anchors
-        self.groups = groups
-
-    def on_get(self, _, rep, name):
+    @staticmethod
+    def on_get(req, rep, name):
         """ Identifier GET endpoint
 
         Parameters:
-            _: falcon.Request HTTP request
+            req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
             name (str): human readable name for Hab to GET
 
         """
-        hab = self.hby.habByName(name)
+        agent = req.context.agent
+        hab = agent.hby.habByName(name)
         if hab is None:
             rep.status = falcon.HTTP_400
             return
 
-        data = info(hab, self.rm, full=True)
+        data = info(hab, agent.remoteMgr, full=True)
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(data).encode("utf-8")
@@ -240,14 +248,15 @@ class IdentifierResourceEnd:
             name (str): human readable name for Hab to rotate or interact
 
         """
+        agent = req.context.agent
         try:
             body = req.get_media()
             typ = Ilks.ixn if req.params.get("type") == "ixn" else Ilks.rot
 
             if typ in (Ilks.rot,):
-                data = self.rotate(name, body)
+                data = self.rotate(agent, name, body)
             else:
-                data = self.interact(name, body)
+                data = self.interact(agent, name, body)
 
             rep.status = falcon.HTTP_200
             rep.content_type = "application/json"
@@ -256,8 +265,9 @@ class IdentifierResourceEnd:
         except (kering.AuthError, ValueError) as e:
             raise falcon.HTTPBadRequest(description=e.args[0])
 
-    def rotate(self, name, body):
-        hab = self.hby.habByName(name)
+    @staticmethod
+    def rotate(agent, name, body):
+        hab = agent.hby.habByName(name)
         if hab is None:
             raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
 
@@ -278,49 +288,50 @@ class IdentifierResourceEnd:
 
         if Algos.salty in body:
             salt = body[Algos.salty]
-            keeper = self.rm.get(Algos.salty)
+            keeper = agent.remoteMgr.get(Algos.salty)
 
             try:
                 keeper.rotate(pre=serder.pre, **salt)
             except ValueError as e:
-                self.hby.deleteHab(name=name)
+                agent.hby.deleteHab(name=name)
                 raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
 
         elif Algos.randy in body:
             rand = body[Algos.randy]
-            keeper = self.rm.get(Algos.randy)
+            keeper = agent.remoteMgr.get(Algos.randy)
 
             keeper.rotate(pre=serder.pre, verfers=serder.verfers, digers=serder.digers, **rand)
 
         elif Algos.group in body:
-            keeper = self.rm.get(Algos.group)
+            keeper = agent.remoteMgr.get(Algos.group)
 
             keeper.rotate(pre=serder.pre, verfers=serder.verfers, digers=serder.digers)
 
             smids = httping.getRequiredParam(body, "smids")
             rmids = httping.getRequiredParam(body, "rmids")
 
-            self.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
-            op = self.mon.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=serder.sn))
+            agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
+            op = agent.monitor.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=serder.sn))
 
             return op.to_json().encode("utf-8")
 
         if hab.kever.delegator:
-            self.anchors.append(dict(alias=name, pre=hab.pre, sn=0))
-            op = self.mon.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
-                                 metadata=dict(sn=hab.kever.sn))
+            agent.anchors.append(dict(alias=name, pre=hab.pre, sn=0))
+            op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
+                                      metadata=dict(sn=hab.kever.sn))
             return op.to_json().encode("utf-8")
 
         if hab.kever.wits:
-            self.witners.append(dict(serder=serder))
-            op = self.mon.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.witness,
-                                 metadata=dict(sn=hab.kever.sn))
+            agent.witners.append(dict(serder=serder))
+            op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.witness,
+                                      metadata=dict(sn=hab.kever.sn))
             return op.to_json().encode("utf-8")
 
         return serder.raw
 
-    def interact(self, name, body):
-        hab = self.hby.habByName(name)
+    @staticmethod
+    def interact(agent, name, body):
+        hab = agent.hby.habByName(name)
         if hab is None:
             raise falcon.HTTPNotFound(title=f"No AID {name} found")
 
@@ -340,15 +351,15 @@ class IdentifierResourceEnd:
         hab.interact(serder=serder, sigers=sigers)
 
         if "group" in body:
-            self.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers))
-            op = self.mon.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=serder.sn))
+            agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers))
+            op = agent.monitor.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=serder.sn))
 
             return op.to_json().encode("utf-8")
 
         if hab.kever.wits:
-            self.witners.append(dict(serder=serder))
-            op = self.mon.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
-                                 metadata=dict(sn=hab.kever.sn))
+            agent.witners.append(dict(serder=serder))
+            op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
+                                      metadata=dict(sn=hab.kever.sn))
             return op.to_json().encode("utf-8")
 
         return serder.raw
@@ -385,16 +396,8 @@ class IdentifierOOBICollectionEnd:
 
     """
 
-    def __init__(self, hby):
-        """  Initialize Identifier / OOBI subresource endpoint
-
-        Parameters:
-            hby (Habery): database environment for controller AIDs
-
-        """
-        self.hby = hby
-
-    def on_get(self, req, rep, name):
+    @staticmethod
+    def on_get(req, rep, name):
         """ Identifier GET endpoint
 
         Parameters:
@@ -403,8 +406,8 @@ class IdentifierOOBICollectionEnd:
             name (str): human readable name for Hab to GET
 
         """
-
-        hab = self.hby.habByName(name)
+        agent = req.context.agent
+        hab = agent.hby.habByName(name)
         if not hab:
             raise falcon.HTTPNotFound(f"invalid alias {name}")
 
@@ -456,10 +459,8 @@ class IdentifierOOBICollectionEnd:
 
 class EndRoleCollectionEnd:
 
-    def __init__(self, hby):
-        self.hby = hby
-
-    def on_post(self, req, rep, name):
+    @staticmethod
+    def on_post(req, rep, name):
         """
 
         Args:
@@ -468,6 +469,7 @@ class EndRoleCollectionEnd:
             name (str): human readable alias for AID
 
         """
+        agent = req.context.agent
         body = req.get_media()
 
         rpy = httping.getRequiredParam(body, "rpy")
@@ -479,7 +481,7 @@ class EndRoleCollectionEnd:
         role = data['role']
         eid = data['eid']
 
-        hab = self.hby.habByName(name)
+        hab = agent.hby.habByName(name)
         if hab is None:
             raise falcon.errors.HTTPNotFound(f"invalid alias {name}")
 
@@ -488,7 +490,7 @@ class EndRoleCollectionEnd:
 
         rsigers = [coring.Siger(qb64=rsig) for rsig in rsigs]
         tsg = (hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn), hab.kever.serder.saider, rsigers)
-        self.hby.rvy.processReply(rserder, tsgs=[tsg])
+        agent.hby.rvy.processReply(rserder, tsgs=[tsg])
 
         msg = hab.loadEndRole(cid=pre, role=role, eid=eid)
         if msg is None:
@@ -500,9 +502,6 @@ class EndRoleCollectionEnd:
 
 
 class EndRoleResourceEnd:
-
-    def __init__(self, hby):
-        self.hby = hby
 
     def on_delete(self, req, rep):
         pass

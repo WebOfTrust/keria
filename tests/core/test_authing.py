@@ -18,15 +18,15 @@ from keria.core import authing
 
 def test_authenticater(mockHelpingNowUTC):
     salt = b'0123456789abcdef'
-    with habbing.openHab(name="ctrlAid", salt=salt, temp=True) as (controllerHby, controller), \
+    with habbing.openHab(name="caid", salt=salt, temp=True) as (controllerHby, controller), \
             habbing.openHab(name="ahab", salt=salt, temp=True) as (agentHby, agent):
 
         # Create authenticater with Agent and controllers AID
-        authn = authing.Authenticater(agent=agent, ctrlAid=controller.pre)
-        signer = authing.Authenticater(agent=controller, ctrlAid=agent.pre)
+        authn = authing.Authenticater(agent=agent, caid=controller.pre)
+        signer = authing.Authenticater(agent=controller, caid=agent.pre)
 
         rep = falcon.Response()
-        with pytest.raises(kering.AuthNError):  # Should fail if Agent hasn't resolved ctrlAid's KEL
+        with pytest.raises(kering.AuthNError):  # Should fail if Agent hasn't resolved caid's KEL
             authn.verify(rep)
 
         agentKev = eventing.Kevery(db=agent.db, lax=True, local=False)
