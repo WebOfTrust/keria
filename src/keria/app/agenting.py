@@ -94,11 +94,19 @@ class Agency(doing.DoDoer):
         self.bran = bran
         self.configFile = configFile
         self.configDir = configDir
+        self.cf = None
+        if self.configFile is not None:  # Load config file if creating database
+            self.cf = configing.Configer(name=self.configFile,
+                                         base="",
+                                         headDirPath=self.configDir,
+                                         temp=False,
+                                         reopen=True,
+                                         clear=False)
 
         self.agents = dict()
         self.always = True
 
-        self.adb = adb if adb is not None else basing.AgencyBaser(name="TheAgency",  reopen=True)
+        self.adb = adb if adb is not None else basing.AgencyBaser(name="TheAgency", reopen=True)
         super(Agency, self).__init__(doers=[])
 
     def create(self, caid):
@@ -107,16 +115,20 @@ class Agency(doing.DoDoer):
                             temp=False,
                             reopen=True)
 
-        aeid = ks.gbls.get('aeid')
-
         cf = None
-        if aeid is None and self.configFile is not None:  # Load config file if creating database
-            cf = configing.Configer(name=self.configFile,
+        if self.cf is not None:  # Load config file if creating database
+            data = dict(self.cf.get())
+            curls = data["keria"]
+            data[caid] = curls
+            del data["keria"]
+
+            cf = configing.Configer(name=f"{caid}",
                                     base="",
-                                    headDirPath=self.configDir,
+                                    human=False,
                                     temp=False,
                                     reopen=True,
                                     clear=False)
+            cf.put(data)
 
         # Create the Hab for the Agent with only 2 AIDs
         agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, cf=cf)
@@ -129,7 +141,7 @@ class Agency(doing.DoDoer):
                       configDir=self.configDir,
                       configFile=self.configFile)
 
-        self.adb.agnt.pin(keys=(caid, ),
+        self.adb.agnt.pin(keys=(caid,),
                           val=coring.Prefixer(qb64=agent.pre))
 
         # add agent to cache
@@ -175,15 +187,17 @@ class Agency(doing.DoDoer):
     def lookup(self, pre):
         prefixer = self.adb.aids.get(keys=(pre,))
         if prefixer is None:
+            print(f"not found {pre}")
             return None
 
         try:
             return self.get(prefixer.qb64)
-        except kering.ConfigurationError:
+        except kering.ConfigurationError as e:
+            print(e)
             return None
 
     def incept(self, caid, pre):
-        self.adb.aids.add(keys=(pre,), val=coring.Prefixer(qb64=caid))
+        self.adb.aids.pin(keys=(pre,), val=coring.Prefixer(qb64=caid))
 
 
 class Agent(doing.DoDoer):
@@ -218,11 +232,11 @@ class Agent(doing.DoDoer):
         self.receiptor = agenting.Receiptor(hby=hby)
         self.postman = forwarding.Poster(hby=hby)
         self.rep = storing.Respondant(hby=hby, cues=self.cues)
+        gr = GroupRequester(hby, agentHab, self.postman, counselor, self.groups),
 
-        doers = [habbing.HaberyDoer(habery=hby), doing.doify(self.start), doing.doify(self.msgDo),
-                 doing.doify(self.escrowDo), doing.doify(self.witDo), doing.doify(self.anchorDo),
-                 doing.doify(self.groupDo), doing.doify(self.queryDo), self.receiptor, self.postman, self.rep, swain,
-                 counselor, *oobiery.doers]
+        doers = [habbing.HaberyDoer(habery=hby), doing.doify(self.msgDo), doing.doify(self.escrowDo),
+                 doing.doify(self.witDo), doing.doify(self.anchorDo), gr,
+                 Initer(agentHab), self.receiptor, self.postman, self.rep, swain, counselor, *oobiery.doers]
 
         verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
 
@@ -258,32 +272,32 @@ class Agent(doing.DoDoer):
                                      exc=self.exc,
                                      rvy=self.rvy)
 
+        qr = Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries)
+        doers.append(qr)
+
         super().__init__(doers=doers, **opts)
 
     @property
     def pre(self):
         return self.agentHab.pre
 
-    def incept(self, pre):
+    def inceptSalty(self, pre, **kwargs):
+        keeper = self.remoteMgr.get(Algos.salty)
+        keeper.incept(pre=pre, **kwargs)
+
         self.agency.incept(self.caid, pre)
 
-    def start(self, tymth=None, tock=0.0):
-        """ Prints witness name and prefix
+    def inceptRandy(self, pre, verfers, digers, **kwargs):
+        keeper = self.remoteMgr.get(Algos.randy)
+        keeper.incept(pre=pre, verfers=verfers, digers=digers, **kwargs)
 
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
+        self.agency.incept(self.caid, pre)
 
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+    def inceptGroup(self, pre, mpre, verfers, digers):
+        keeper = self.remoteMgr.get(Algos.group)
+        keeper.incept(pre=pre, mpre=mpre, verfers=verfers, digers=digers)
 
-        while not self.agentHab.inited:
-            yield self.tock
-
-        print("  Agent", self.agentHab.name, ":", self.agentHab.pre)
+        self.agency.incept(self.caid, pre)
 
     def msgDo(self, tymth=None, tock=0.0):
         """
@@ -306,32 +320,6 @@ class Agent(doing.DoDoer):
             logger.info("Agent %s received:\n%s\n...\n", self.kvy, self.parser.ims[:1024])
         done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
-
-    def escrowDo(self, tymth=None, tock=0.0):
-        """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            .kevery and .tevery escrows.
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
-
-        while True:
-            self.kvy.processEscrows()
-            self.rvy.processEscrowReply()
-            if self.tvy is not None:
-                self.tvy.processEscrows()
-            self.exc.processEscrow()
-
-            yield
 
     def witDo(self, tymth=None, tock=0.0):
         """
@@ -391,89 +379,110 @@ class Agent(doing.DoDoer):
 
             yield self.tock
 
-    def queryDo(self, tymth=None, tock=0.0):
-        """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            delegation anchor requests
 
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
+class Initer(doing.Doer):
+    def __init__(self, agentHab):
+        self.agentHab = agentHab
+        super(Initer, self).__init__()
 
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+    def recur(self, tyme):
+        """ Prints Agent name and prefix """
+        if not self.agentHab.inited:
+            return False
 
-        while True:
-            while self.queries:
-                msg = self.queries.popleft()
-                pre = msg["pre"]
+        print("  Agent", self.agentHab.name, ":", self.agentHab.pre)
+        return True
 
-                qryDo = querying.QueryDoer(hby=self.hby, hab=self.agentHab, pre=pre, kvy=self.kvy)
-                self.extend([qryDo])
-                while not qryDo.done:
-                    yield self.tock
 
-                self.remove([qryDo])
+class GroupRequester(doing.Doer):
 
-            yield self.tock
+    def __init__(self, hby, agentHab, postman, counselor, groups):
+        self.hby = hby
+        self.agentHab = agentHab
+        self.postman = postman
+        self.counselor = counselor
+        self.groups = groups
 
-    def groupDo(self, tymth=None, tock=0.0):
-        """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            delegation anchor requests
+        super(GroupRequester, self).__init__()
 
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
+    def recur(self, tyme):
+        """ Checks cue for group proceccing requests and processes any with Counselor """
+        if self.groups:
+            msg = self.groups.popleft()
+            serder = msg["serder"]
+            sigers = msg["sigers"]
 
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+            ghab = self.hby.habs[serder.pre]
+            if "smids" in msg:
+                smids = msg['smids']
+            else:
+                smids = ghab.db.signingMembers(pre=ghab.pre)
 
-        while True:
-            while self.groups:
-                msg = self.groups.popleft()
-                serder = msg["serder"]
-                sigers = msg["sigers"]
+            if "rmids" in msg:
+                rmids = msg['rmids']
+            else:
+                rmids = ghab.db.rotationMembers(pre=ghab.pre)
 
-                ghab = self.hby.habs[serder.pre]
-                if "smids" in msg:
-                    smids = msg['smids']
-                else:
-                    smids = ghab.db.signingMembers(pre=ghab.pre)
+            atc = bytearray()  # attachment
+            atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
+            for siger in sigers:
+                atc.extend(siger.qb64b)
 
-                if "rmids" in msg:
-                    rmids = msg['rmids']
-                else:
-                    rmids = ghab.db.rotationMembers(pre=ghab.pre)
+            others = list(oset(smids + (rmids or [])))
+            others.remove(ghab.mhab.pre)  # don't send to self
+            print(f"Sending multisig event to {len(others)} other participants")
+            for recpt in others:
+                self.postman.send(hab=self.agentHab, dest=recpt, topic="multisig", serder=serder,
+                                  attachment=atc)
 
-                atc = bytearray()  # attachment
-                atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
-                for siger in sigers:
-                    atc.extend(siger.qb64b)
+            prefixer = coring.Prefixer(qb64=serder.pre)
+            seqner = coring.Seqner(sn=serder.sn)
+            saider = coring.Saider(qb64=serder.said)
+            self.counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=saider)
 
-                others = list(oset(smids + (rmids or [])))
-                others.remove(ghab.mhab.pre)  # don't send to self
-                print(f"Sending multisig event to {len(others)} other participants")
-                for recpt in others:
-                    self.postman.send(hab=self.agentHab, dest=recpt, topic="multisig", serder=serder,
-                                      attachment=atc)
+        return False
 
-                prefixer = coring.Prefixer(qb64=serder.pre)
-                seqner = coring.Seqner(sn=serder.sn)
-                saider = coring.Saider(qb64=serder.said)
-                self.counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=saider)
 
-            yield self.tock
+class Querier(doing.DoDoer):
+
+    def __init__(self, hby, agentHab, queries, kvy):
+        self.hby = hby
+        self.agentHab = agentHab
+        self.queries = queries
+        self.kvy = kvy
+
+        super(Querier, self).__init__()
+
+    def recur(self, tyme, deeds=None):
+        """ Processes query reqests submitting any on the cue"""
+        if self.queries:
+            msg = self.queries.popleft()
+            pre = msg["pre"]
+
+            qryDo = querying.QueryDoer(hby=self.hby, hab=self.agentHab, pre=pre, kvy=self.kvy)
+            self.extend([qryDo])
+
+        return super(Querier, self).recur(tyme, deeds)
+
+
+class Escrower(doing.Doer):
+    def __init__(self, kvy, rvy, tvy, exc):
+        self.kvy = kvy
+        self.rvy = rvy
+        self.tvy = tvy
+        self.exc = exc
+
+        super(Escrower, self).__init__()
+
+    def recur(self, tyme):
+        """ Process all escrows once per loop. """
+        self.kvy.processEscrows()
+        self.rvy.processEscrowReply()
+        if self.tvy is not None:
+            self.tvy.processEscrows()
+        self.exc.processEscrow()
+
+        return False
 
 
 def loadEnds(app):

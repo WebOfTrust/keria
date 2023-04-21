@@ -148,8 +148,7 @@ class IdentifierCollectionEnd:
 
                 hab = agent.hby.makeSignifyGroupHab(name, mhab=mhab, serder=serder, sigers=sigers)
                 try:
-                    keeper = agent.remoteMgr.get(Algos.group)
-                    keeper.incept(pre=serder.pre, mpre=mhab.pre, verfers=verfers, digers=digers)
+                    agent.inceptGroup(pre=serder.pre, mpre=mhab.pre, verfers=verfers, digers=digers)
                 except ValueError as e:
                     agent.hby.deleteHab(name=name)
                     raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
@@ -168,8 +167,7 @@ class IdentifierCollectionEnd:
                     salt = body[Algos.salty]
                     hab = agent.hby.makeSignifyHab(name, serder=serder, sigers=sigers)
                     try:
-                        keeper = agent.remoteMgr.get(Algos.salty)
-                        keeper.incept(pre=serder.pre, **salt)
+                        agent.inceptSalty(pre=serder.pre, **salt)
                     except ValueError as e:
                         agent.hby.deleteHab(name=name)
                         raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
@@ -179,8 +177,7 @@ class IdentifierCollectionEnd:
                     rand = body[Algos.randy]
                     hab = agent.hby.makeSignifyHab(name, serder=serder, sigers=sigers)
                     try:
-                        keeper = agent.remoteMgr.get(Algos.randy)
-                        keeper.incept(pre=serder.pre, verfers=serder.verfers, digers=serder.digers, **rand)
+                        agent.inceptRandy(pre=serder.pre, verfers=serder.verfers, digers=serder.digers, **rand)
                     except ValueError as e:
                         agent.hby.deleteHab(name=name)
                         raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")

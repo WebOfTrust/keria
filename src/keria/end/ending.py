@@ -48,6 +48,7 @@ class OOBIEnd:
             eid: qb64 identifier prefix of participant in role
 
         """
+
         if aid is None:
             if self.default is None:
                 rep.status = falcon.HTTP_NOT_FOUND
