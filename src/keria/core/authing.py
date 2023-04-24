@@ -97,6 +97,9 @@ class Authenticater:
             if agent is None:
                 raise kering.AuthNError("unknown or invalid controller")
 
+            if resource not in agent.agentHab.kevers:
+                raise kering.AuthNError("unknown or invalid controller")
+
             ckever = agent.agentHab.kevers[resource]
             signages = ending.designature(signature)
             cig = signages[0].markers[inputage.name]

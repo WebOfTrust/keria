@@ -88,10 +88,11 @@ def setup(name, base, bran, adminPort, bootPort, httpPort=None, configFile=None,
 
 
 class Agency(doing.DoDoer):
-    def __init__(self, name, base, bran, configFile, configDir, adb=None):
+    def __init__(self, name, base, bran, configFile=None, configDir=None, adb=None, temp=False):
         self.name = name
         self.base = base
         self.bran = bran
+        self.temp = temp
         self.configFile = configFile
         self.configDir = configDir
         self.cf = None
@@ -105,13 +106,13 @@ class Agency(doing.DoDoer):
 
         self.agents = dict()
 
-        self.adb = adb if adb is not None else basing.AgencyBaser(name="TheAgency", reopen=True)
+        self.adb = adb if adb is not None else basing.AgencyBaser(name="TheAgency", reopen=True, temp=temp)
         super(Agency, self).__init__(doers=[], always=True)
 
     def create(self, caid):
         ks = keeping.Keeper(name=caid,
                             base=self.base,
-                            temp=False,
+                            temp=self.temp,
                             reopen=True)
 
         cf = None
@@ -124,15 +125,15 @@ class Agency(doing.DoDoer):
             cf = configing.Configer(name=f"{caid}",
                                     base="",
                                     human=False,
-                                    temp=False,
+                                    temp=self.temp,
                                     reopen=True,
                                     clear=False)
             cf.put(data)
 
         # Create the Hab for the Agent with only 2 AIDs
-        agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, cf=cf)
+        agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, cf=cf, temp=self.temp)
         agentHab = agentHby.makeHab(caid, ns="agent", transferable=True, data=[caid])
-        agentRgy = credentialing.Regery(hby=agentHby, name=agentHab.name, base=self.base)
+        agentRgy = credentialing.Regery(hby=agentHby, name=agentHab.name, base=self.base, temp=self.temp)
 
         agent = Agent(agentHby, agentRgy, agentHab,
                       caid=caid,
@@ -171,8 +172,8 @@ class Agency(doing.DoDoer):
                             temp=False,
                             reopen=True)
 
-        agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks)
-        agentRgy = credentialing.Regery(hby=agentHby, name=caid, base=self.base)
+        agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, temp=self.temp)
+        agentRgy = credentialing.Regery(hby=agentHby, name=caid, base=self.base, temp=self.temp)
 
         agentHab = agentHby.habByName(caid, ns="agent")
         if aaid.qb64 != agentHab.pre:
