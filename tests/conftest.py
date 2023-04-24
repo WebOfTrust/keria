@@ -118,10 +118,28 @@ class Helpers:
         data = dict(cid=cid, role="agent", eid=eid)
         return eventing.reply(route="/end/role/add", data=data)
 
-
-
+    @staticmethod
+    def middleware(agent):
+        return MockAgentMiddleware(agent=agent)
 
 
 @pytest.fixture
 def helpers():
     return Helpers
+
+
+class MockAgentMiddleware:
+
+    def __init__(self, agent):
+        self.agent = agent
+
+    def process_request(self, req, resp):
+        """ Process request to ensure has a valid signature from caid
+
+        Parameters:
+            req: Http request object
+            resp: Http response object
+
+
+        """
+        req.context.agent = self.agent

@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keria.app.keeping module
+keria.core.keeping module
 
 """
 from dataclasses import dataclass, asdict, field
@@ -37,9 +37,9 @@ class SaltyPrm:
         return iter(asdict(self))
 
 
-class RemoteBaser(dbing.LMDBer):
+class RemoteKeeper(dbing.LMDBer):
     """
-    RemoteBaser stores data for Salty or Randy Encrypted edge key generation.
+    RemoteKeeper stores data for Salty or Randy Encrypted edge key generation.
 
     """
 
@@ -92,14 +92,14 @@ class RemoteBaser(dbing.LMDBer):
         if perm is None:
             perm = self.Perm  # defaults to restricted permissions for non temp
 
-        super(RemoteBaser, self).__init__(headDirPath=headDirPath, perm=perm,
-                                          reopen=reopen, **kwa)
+        super(RemoteKeeper, self).__init__(headDirPath=headDirPath, perm=perm,
+                                           reopen=reopen, **kwa)
 
     def reopen(self, **kwa):
         """
         Open sub databases
         """
-        self.opened = super(RemoteBaser, self).reopen(**kwa)
+        self.opened = super(RemoteKeeper, self).reopen(**kwa)
 
         # Create by opening first time named sub DBs within main DB instance
         # Names end with "." as sub DB name must include a non Base64 character
@@ -131,14 +131,14 @@ class RemoteBaser(dbing.LMDBer):
 
 
 class RemoteManager:
-    def __init__(self, hby, rb: RemoteBaser = None):
+    def __init__(self, hby, rb: RemoteKeeper = None):
         self.hby = hby
-        self.rb = rb if rb is not None else RemoteBaser(name=hby.name,
-                                                        base=hby.base,
-                                                        temp=hby.temp,
-                                                        reopen=True,
-                                                        clear=False,
-                                                        headDirPath=hby.db.headDirPath)
+        self.rb = rb if rb is not None else RemoteKeeper(name=hby.name,
+                                                         base=hby.base,
+                                                         temp=hby.temp,
+                                                         reopen=True,
+                                                         clear=False,
+                                                         headDirPath=hby.db.headDirPath)
 
     def get(self, algo: Algos = None, pre=None):
         if pre is not None:
@@ -148,18 +148,18 @@ class RemoteManager:
 
         match algo:
             case Algos.salty:
-                return SaltyKeeper(rb=self.rb)
+                return SaltyManager(rb=self.rb)
             case Algos.randy:
-                return RandyKeeper(rb=self.rb)
+                return RandyManager(rb=self.rb)
             case Algos.group:
-                return GroupKeeper(rb=self.rb, rm=self)
+                return GroupManager(rb=self.rb, rm=self)
             case _:
                 return ExternKeeper(rb=self.rb)
 
 
-class SaltyKeeper:
+class SaltyManager:
 
-    def __init__(self, rb: RemoteBaser):
+    def __init__(self, rb: RemoteKeeper):
         self.rb = rb
 
     def incept(self, pre, *, icodes, ncodes, dcode=MtrDex.Blake3_256, pidx=0, kidx=0, stem="", tier=Tiers.low,
@@ -220,9 +220,9 @@ class SaltyKeeper:
         return prms
 
 
-class RandyKeeper:
+class RandyManager:
 
-    def __init__(self, rb: RemoteBaser):
+    def __init__(self, rb: RemoteKeeper):
         self.rb = rb
 
     def incept(self, pre, verfers, digers, prxs, nxts, transferable):
@@ -317,9 +317,9 @@ class RandyKeeper:
         return prms
 
 
-class GroupKeeper:
+class GroupManager:
 
-    def __init__(self, rb: RemoteBaser, rm: RemoteManager):
+    def __init__(self, rb: RemoteKeeper, rm: RemoteManager):
         self.rb = rb
         self.rm = rm
 
@@ -381,5 +381,5 @@ class GroupKeeper:
 
 class ExternKeeper:
 
-    def __init__(self, rb: RemoteBaser):
+    def __init__(self, rb: RemoteKeeper):
         self.rb = rb

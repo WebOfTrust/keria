@@ -8,7 +8,6 @@ keria.core.authing module
 import falcon
 from hio.help import Hict
 from keri import kering
-from keri.app.habbing import Hab
 from keri.end import ending
 
 
@@ -19,28 +18,29 @@ class Authenticater:
                      "@path",
                      "Signify-Timestamp"]
 
-    def __init__(self, agent: Hab, ctrlAid: str):
+    def __init__(self, agency):
         """ Create Agent Authenticator for verifying requests and signing responses
 
         Parameters:
-            agent(Hab): habitat of Agent for signing responses
-            ctrlAid(str): qb64 ctrlAid signing AID
+            agency(Agency): habitat of Agent for signing responses
 
         Returns:
               Authenicator:  the configured habery
 
         """
-        self.agent = agent
-        self.ctrlAid = ctrlAid
+        self.agency = agency
+
+    @staticmethod
+    def resource(request):
+        headers = request.headers
+        if "SIGNIFY-RESOURCE" not in headers:
+            raise ValueError("Missing signify resource header")
+
+        return headers["SIGNIFY-RESOURCE"]
 
     def verify(self, request):
-        if self.ctrlAid not in self.agent.kevers:
-            raise kering.AuthNError("ctrlAid AID not in kevers")
-
-        ckever = self.agent.kevers[self.ctrlAid]
         headers = request.headers
         if "SIGNATURE-INPUT" not in headers or "SIGNATURE" not in headers:
-            print("Missing valid signature headers")
             return False
 
         siginput = headers["SIGNATURE-INPUT"]
@@ -91,6 +91,16 @@ class Authenticater:
             items.append(f'"@signature-params: {params}"')
             ser = "\n".join(items).encode("utf-8")
 
+            resource = self.resource(request)
+            agent = self.agency.get(resource)
+
+            if agent is None:
+                raise kering.AuthNError("unknown or invalid controller")
+
+            if resource not in agent.agentHab.kevers:
+                raise kering.AuthNError("unknown or invalid controller")
+
+            ckever = agent.agentHab.kevers[resource]
             signages = ending.designature(signature)
             cig = signages[0].markers[inputage.name]
             if not ckever.verfers[0].verify(sig=cig.raw, ser=ser):
@@ -98,10 +108,11 @@ class Authenticater:
 
         return True
 
-    def sign(self, headers, method, path, fields=None):
+    def sign(self, agent, headers, method, path, fields=None):
         """ Generate and add Signature Input and Signature fields to headers
 
         Parameters:
+            agent (Agent): The agent that is replying to the request
             headers (Hict): HTTP header to sign
             method (str): HTTP method name of request/response
             path (str): HTTP Query path of request/response
@@ -115,8 +126,8 @@ class Authenticater:
         if fields is None:
             fields = self.DefaultFields
 
-        header, qsig = ending.siginput("signify", method, path, headers, fields=fields, hab=self.agent,
-                                       alg="ed25519", keyid=self.agent.pre)
+        header, qsig = ending.siginput("signify", method, path, headers, fields=fields, hab=agent.agentHab,
+                                       alg="ed25519", keyid=agent.agentHab.pre)
         headers.extend(header)
         signage = ending.Signage(markers=dict(signify=qsig), indexed=False, signer=None, ordinal=None, digest=None,
                                  kind=None)
@@ -128,18 +139,19 @@ class Authenticater:
 class SignatureValidationComponent(object):
     """ Validate Signature and Signature-Input header signatures """
 
-    def __init__(self, authn: Authenticater, allowed=None):
+    def __init__(self, agency, authn: Authenticater, allowed=None):
         """
 
         Parameters:
             authn (Authenticater): Authenticator to validate signature headers on request
             allowed (list[str]): Paths that are not protected.
         """
+        self.agency = agency
         self.authn = authn
         self.allowed = allowed
 
     def process_request(self, req, resp):
-        """ Process request to ensure has a valid signature from ctrlAid
+        """ Process request to ensure has a valid signature from caid
 
         Parameters:
             req: Http request object
@@ -148,15 +160,22 @@ class SignatureValidationComponent(object):
 
         """
 
-        if req.path in self.allowed:
-            return
+        for path in self.allowed:
+            if req.path.startswith(path):
+                return
 
         try:
             # Use Authenticater to verify the signature on the request
             if self.authn.verify(req):
+                resource = self.authn.resource(req)
+                agent = self.agency.get(caid=resource)
+
+                req.context.agent = agent
                 return
 
         except kering.AuthNError:
+            pass
+        except ValueError:
             pass
 
         resp.complete = True  # This short-circuits Falcon, skipping all further processing

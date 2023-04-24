@@ -26,13 +26,16 @@ parser.add_argument('-a', '--admin-http-port',
                     dest="admin",
                     action='store',
                     default=3901,
-                    help="Admin port number the HTTP server listens on. Default is 5623.")
+                    help="Admin port number the HTTP server listens on. Default is 3901.")
 parser.add_argument('-H', '--http',
                     action='store',
                     default=3902,
-                    help="Local port number the HTTP server listens on. Default is 5631.")
-parser.add_argument('-c', '--controller', required=True,
-                    help="Identifier prefix of the controller of this agent.")
+                    help="Local port number the HTTP server listens on. Default is 3902.")
+parser.add_argument('-B', '--boot',
+                    action='store',
+                    default=3903,
+                    help="Boot port number the Boot HTTP server listens on.  This port needs to be secured."
+                         " Default is 3903.")
 parser.add_argument('-n', '--name',
                     action='store',
                     default="keria",
@@ -62,11 +65,12 @@ def launch(args):
     logger.info("******* Starting Agent for %s listening: admin/%s, http/%s "
                 ".******", args.name, args.admin, args.http)
 
-    runAgent(args.controller, name=args.name,
+    runAgent(name=args.name,
              base=args.base,
              bran=args.bran,
-             admin=args.admin,
+             admin=int(args.admin),
              http=int(args.http),
+             boot=int(args.boot),
              configFile=args.configFile,
              configDir=args.configDir)
 
@@ -74,7 +78,7 @@ def launch(args):
                 ".******", args.name, args.admin, args.http)
 
 
-def runAgent(ctrlAid, *, name="ahab", base="", bran="", admin=5623, http=5632, configFile=None,
+def runAgent(name="ahab", base="", bran="", admin=3901, http=3902, boot=3903, configFile=None,
              configDir=None, expire=0.0):
     """
     Setup and run one witness
@@ -82,9 +86,9 @@ def runAgent(ctrlAid, *, name="ahab", base="", bran="", admin=5623, http=5632, c
 
     doers = []
     doers.extend(agenting.setup(name=name, base=base, bran=bran,
-                                ctrlAid=ctrlAid,
                                 adminPort=admin,
                                 httpPort=http,
+                                bootPort=boot,
                                 configFile=configFile,
                                 configDir=configDir))
 

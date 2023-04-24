@@ -290,20 +290,12 @@ class OperationResourceEnd:
     """ Single Resource REST endpoint for long running operations
 
     Attributes:
-        mon(Monitor): long running operation monitor
+        monitor(Monitor): long running operation monitor
 
     """
 
-    def __init__(self, monitor):
-        """
-
-        Parameters:
-            monitor(Monitor): long running operation monitor
-
-        """
-        self.mon = monitor
-
-    def on_get(self, req, rep, name):
+    @staticmethod
+    def on_get(req, rep, name):
         """  GET single resource REST endpoint
 
         Parameters:
@@ -312,14 +304,16 @@ class OperationResourceEnd:
             name (str): Long running operation resource name to load
 
         """
-        if (operation := self.mon.get(name)) is None:
+        agent = req.context.agent
+        if (operation := agent.monitor.get(name)) is None:
             raise falcon.HTTPNotFound(title=f"long running operation '{name}' not found")
 
         rep.content_type = "application/json"
         rep.data = operation.to_json().encode("utf-8")
         rep.status = falcon.HTTP_200
 
-    def on_delete(self, req, rep, name):
+    @staticmethod
+    def on_delete(req, rep, name):
         """ DELETE single resource REST endpoint
 
         Args:
@@ -329,10 +323,11 @@ class OperationResourceEnd:
 
         """
 
-        if self.mon.get(name) is not None:
+        agent = req.context.agent
+        if agent.monitor.get(name) is not None:
             raise falcon.HTTPNotFound(f"long running operation '{name}' not found")
 
-        deleted = self.mon.rem(name)
+        deleted = agent.monitor.rem(name)
         if deleted:
             rep.status = falcon.HTTP_204
         else:

@@ -5,6 +5,8 @@ keria.app.agenting module
 
 """
 import json
+
+from keri import kering
 from ordered_set import OrderedSet as oset
 
 import falcon
@@ -15,446 +17,491 @@ from hio.help import decking
 from keri.app import configing, keeping, habbing, storing, signaling, notifying, oobiing, agenting, delegating, \
     forwarding, querying
 from keri.app.grouping import Counselor
-from keri.app.indirecting import HttpEnd
+from keria.app.indirecting import HttpEnd
 from keri.app.keeping import Algos
 from keri.core import coring, parsing, eventing, routing
 from keri.core.coring import Ilks, randomNonce
 from keri.db import dbing
 from keri.db.basing import OobiRecord
-from keri.end import ending
+from keria.end import ending
 from keri.help import helping, ogler
 from keri.peer import exchanging
 from keri.vc import protocoling
 from keri.vdr import verifying, credentialing
 from keri.vdr.eventing import Tevery
 
-from . import grouping, aiding
-from .keeping import RemoteManager
+from . import aiding
 from ..core import authing, longrunning, httping
 from ..core.authing import Authenticater
-from ..core.eventing import cloneAid
+from ..core.keeping import RemoteManager
+from ..db import basing
 
 logger = ogler.getLogger()
 
 
-def setup(name, base, bran, ctrlAid, adminPort, configFile=None, configDir=None, httpPort=None):
+def setup(name, base, bran, adminPort, bootPort, httpPort=None, configFile=None, configDir=None):
     """ Set up an ahab in Signify mode """
-    ks = keeping.Keeper(name=name,
-                        base=base,
-                        temp=False,
-                        reopen=True)
 
-    aeid = ks.gbls.get('aeid')
-
-    cf = None
-    if aeid is None and configFile is not None:  # Load config file if creating database
-        cf = configing.Configer(name=configFile,
-                                base="",
-                                headDirPath=configDir,
-                                temp=False,
-                                reopen=True,
-                                clear=False)
-
-    # Create the Hab for the Agent with only 2 AIDs
-    agentHby = habbing.Habery(name=name, base=base, bran=bran, ks=ks, cf=cf)
-
-    # Create the Hab for the Controller AIDs.
-    doers = [habbing.HaberyDoer(habery=agentHby)]
-
-    # Create Agent AID if it does not already exist
-    agentHab = agentHby.habByName(name, ns="agent")
-    if agentHab is None:
-        print(f"Creating agent...")
-        agentHab = agentHby.makeHab(name, ns="agent", transferable=True, data=[ctrlAid])
-    else:
-        print(f"Loading agent...")
-
-    rgy = credentialing.Regery(hby=agentHby, name=name, base=base)
-    swain = delegating.Boatswain(hby=agentHby)
-    counselor = Counselor(hby=agentHby)
-
-    mon = longrunning.Monitor(hby=agentHby, swain=swain, counselor=counselor)
+    agency = Agency(name=name, base=base, bran=bran, configFile=configFile, configDir=configDir)
+    bootApp = falcon.App(middleware=falcon.CORSMiddleware(
+        allow_origins='*', allow_credentials='*',
+        expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input']))
+    bootServer = http.Server(port=bootPort, app=bootApp)
+    bootServerDoer = http.ServerDoer(server=bootServer)
+    bootEnd = BootEnd(agency)
+    bootApp.add_route("/boot", bootEnd)
 
     # Create Authenticater for verifying signatures on all requests
-    authn = Authenticater(agent=agentHab, ctrlAid=ctrlAid)
+    authn = Authenticater(agency=agency)
 
     app = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*',
         expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input']))
-    app.add_middleware(authing.SignatureValidationComponent(authn=authn, allowed=["/boot"]))
+    app.add_middleware(authing.SignatureValidationComponent(agency=agency, authn=authn, allowed=["/agent"]))
     app.req_options.media_handlers.update(media.Handlers())
     app.resp_options.media_handlers.update(media.Handlers())
 
     adminServer = http.Server(port=adminPort, app=app)
     adminServerDoer = http.ServerDoer(server=adminServer)
-    oobiery = oobiing.Oobiery(hby=agentHby)
-    agentOobiery = oobiing.Oobiery(hby=agentHby)
 
-    agent = Agenter(hby=agentHby,
-                    hab=agentHab,
-                    rgy=rgy,
-                    counselor=counselor,
-                    swain=swain,
-                    httpPort=httpPort)
+    doers = [agency, bootServerDoer, adminServerDoer]
+    loadEnds(app=app)
+    aiding.loadEnds(app=app, agency=agency)
 
-    doers.extend([adminServerDoer, agent, swain, counselor, *oobiery.doers, *agentOobiery.doers])
-    loadEnds(app=app, agentHby=agentHby, agentHab=agentHab, ctrlAid=ctrlAid, monitor=mon, queries=agent.queries)
-    aiding.loadEnds(app=app, hby=agentHby, monitor=mon, groups=agent.groups, witners=agent.witners,
-                    anchors=agent.anchors)
-    grouping.loadEnds(app=app, agentHby=agentHby)
+    if httpPort:
+        happ = falcon.App(middleware=falcon.CORSMiddleware(
+            allow_origins='*', allow_credentials='*',
+            expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input']))
+        happ.req_options.media_handlers.update(media.Handlers())
+        happ.resp_options.media_handlers.update(media.Handlers())
 
+        ending.loadEnds(agency=agency, app=happ)
+        httpEnd = HttpEnd(agency=agency)
+        happ.add_route("/", httpEnd)
+
+        server = http.Server(port=httpPort, app=happ)
+        httpServerDoer = http.ServerDoer(server=server)
+        doers.append(httpServerDoer)
+
+    print("The Agency is loaded and waiting for requests...")
     return doers
 
 
-class Agenter(doing.DoDoer):
-    """ Doer to print witness prefix after initialization
+class Agency(doing.DoDoer):
+    def __init__(self, name, base, bran, configFile=None, configDir=None, adb=None, temp=False):
+        self.name = name
+        self.base = base
+        self.bran = bran
+        self.temp = temp
+        self.configFile = configFile
+        self.configDir = configDir
+        self.cf = None
+        if self.configFile is not None:  # Load config file if creating database
+            self.cf = configing.Configer(name=self.configFile,
+                                         base="",
+                                         headDirPath=self.configDir,
+                                         temp=False,
+                                         reopen=True,
+                                         clear=False)
+
+        self.agents = dict()
+
+        self.adb = adb if adb is not None else basing.AgencyBaser(name="TheAgency", reopen=True, temp=temp)
+        super(Agency, self).__init__(doers=[], always=True)
+
+    def create(self, caid):
+        ks = keeping.Keeper(name=caid,
+                            base=self.base,
+                            temp=self.temp,
+                            reopen=True)
+
+        cf = None
+        if self.cf is not None:  # Load config file if creating database
+            data = dict(self.cf.get())
+            curls = data["keria"]
+            data[caid] = curls
+            del data["keria"]
+
+            cf = configing.Configer(name=f"{caid}",
+                                    base="",
+                                    human=False,
+                                    temp=self.temp,
+                                    reopen=True,
+                                    clear=False)
+            cf.put(data)
+
+        # Create the Hab for the Agent with only 2 AIDs
+        agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, cf=cf, temp=self.temp)
+        agentHab = agentHby.makeHab(caid, ns="agent", transferable=True, data=[caid])
+        agentRgy = credentialing.Regery(hby=agentHby, name=agentHab.name, base=self.base, temp=self.temp)
+
+        agent = Agent(agentHby, agentRgy, agentHab,
+                      caid=caid,
+                      agency=self,
+                      configDir=self.configDir,
+                      configFile=self.configFile)
+
+        self.adb.agnt.pin(keys=(caid,),
+                          val=coring.Prefixer(qb64=agent.pre))
+
+        # add agent to cache
+        self.agents[caid] = agent
+        # start agents processes running
+        self.extend([agent])
+
+        return agent
+
+    def delete(self, agent):
+        self.adb.agnt.rem(key=agent.caid)
+        agent.hby.deleteHab(agent.caid)
+        agent.hby.ks.close(clear=True)
+        agent.hby.close(clear=True)
+
+        del self.agents[agent.caid]
+
+    def get(self, caid):
+        if caid in self.agents:
+            return self.agents[caid]
+
+        aaid = self.adb.agnt.get(keys=(caid,))
+        if aaid is None:
+            return None
+
+        ks = keeping.Keeper(name=caid,
+                            base=self.base,
+                            temp=False,
+                            reopen=True)
+
+        agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, temp=self.temp)
+        agentRgy = credentialing.Regery(hby=agentHby, name=caid, base=self.base, temp=self.temp)
+
+        agentHab = agentHby.habByName(caid, ns="agent")
+        if aaid.qb64 != agentHab.pre:
+            raise kering.ConfigurationError(f"invalid agent aid={aaid.qb64} to controller aid={caid}")
+
+        agent = Agent(hby=agentHby, rgy=agentRgy, agentHab=agentHab, agency=self, caid=caid)
+        self.agents[caid] = agent
+
+        return agent
+
+    def lookup(self, pre):
+        prefixer = self.adb.aids.get(keys=(pre,))
+        if prefixer is None:
+            return None
+
+        try:
+            return self.get(prefixer.qb64)
+        except kering.ConfigurationError as e:
+            return None
+
+    def incept(self, caid, pre):
+        self.adb.aids.pin(keys=(pre,), val=coring.Prefixer(qb64=caid))
+
+
+class Agent(doing.DoDoer):
+    """ 
+    
+    The top level object and DoDoer representing a Habery for a remote controller and all associated processing
 
     """
 
-    def __init__(self, hby, hab, rgy, swain, counselor, cues=None, httpPort=None, **opts):
-        self.agentHab = hab
+    def __init__(self, hby, rgy, agentHab, agency, caid, **opts):
+
         self.hby = hby
+        self.agentHab = agentHab
+        self.agency = agency
+        self.caid = caid
+
+        swain = delegating.Boatswain(hby=hby)
+        counselor = Counselor(hby=hby)
+
+        oobiery = oobiing.Oobiery(hby=hby)
+
+        self.monitor = longrunning.Monitor(hby=hby, swain=swain, counselor=counselor)
+        self.remoteMgr = RemoteManager(hby=hby)
+
         self.swain = swain
         self.counselor = counselor
-        self.cues = cues if cues is not None else decking.Deck()
+        self.cues = decking.Deck()
         self.groups = decking.Deck()
         self.anchors = decking.Deck()
         self.witners = decking.Deck()
         self.queries = decking.Deck()
-        self.receiptor = agenting.Receiptor(hby=hby)
+        receiptor = agenting.Receiptor(hby=hby)
         self.postman = forwarding.Poster(hby=hby)
         self.rep = storing.Respondant(hby=hby, cues=self.cues)
 
-        doers = [doing.doify(self.start), doing.doify(self.msgDo), doing.doify(self.escrowDo), doing.doify(self.witDo),
-                 doing.doify(self.anchorDo), doing.doify(self.groupDo), doing.doify(self.queryDo), self.receiptor,
-                 self.postman, self.rep]
+        doers = [habbing.HaberyDoer(habery=hby), receiptor, self.postman, self.rep, swain, counselor, *oobiery.doers]
 
-        if httpPort is not None:
-            verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
+        verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
 
-            signaler = signaling.Signaler()
-            notifier = notifying.Notifier(hby=hby, signaler=signaler)
-            issueHandler = protocoling.IssueHandler(hby=hby, rgy=rgy, notifier=notifier)
-            requestHandler = protocoling.PresentationRequestHandler(hby=hby, notifier=notifier)
-            applyHandler = protocoling.ApplyHandler(hby=hby, rgy=rgy, verifier=verifier, name=hab.name)
-            proofHandler = protocoling.PresentationProofHandler(notifier=notifier)
+        signaler = signaling.Signaler()
+        notifier = notifying.Notifier(hby=hby, signaler=signaler)
+        issueHandler = protocoling.IssueHandler(hby=hby, rgy=rgy, notifier=notifier)
+        requestHandler = protocoling.PresentationRequestHandler(hby=hby, notifier=notifier)
+        applyHandler = protocoling.ApplyHandler(hby=hby, rgy=rgy, verifier=verifier,
+                                                name=agentHab.name)
+        proofHandler = protocoling.PresentationProofHandler(notifier=notifier)
 
-            handlers = [issueHandler, requestHandler, proofHandler, applyHandler]
-            self.exc = exchanging.Exchanger(db=hby.db, handlers=handlers)
+        handlers = [issueHandler, requestHandler, proofHandler, applyHandler]
+        self.exc = exchanging.Exchanger(db=hby.db, handlers=handlers)
 
-            mbx = storing.Mailboxer(name=hby.name)
-            self.rvy = routing.Revery(db=hby.db, cues=self.cues)
-            self.kvy = eventing.Kevery(db=hby.db,
-                                       lax=True,
-                                       local=False,
-                                       rvy=self.rvy,
-                                       cues=self.cues)
-            self.kvy.registerReplyRoutes(router=self.rvy.rtr)
+        self.mbx = storing.Mailboxer(name=hby.name)
+        self.rvy = routing.Revery(db=hby.db, cues=self.cues)
+        self.kvy = eventing.Kevery(db=hby.db,
+                                   lax=True,
+                                   local=False,
+                                   rvy=self.rvy,
+                                   cues=self.cues)
+        self.kvy.registerReplyRoutes(router=self.rvy.rtr)
 
-            self.tvy = Tevery(reger=verifier.reger,
-                              db=hby.db,
-                              local=False,
-                              cues=self.cues)
+        self.tvy = Tevery(reger=verifier.reger,
+                          db=hby.db,
+                          local=False,
+                          cues=self.cues)
 
-            self.tvy.registerReplyRoutes(router=self.rvy.rtr)
-            self.parser = parsing.Parser(framed=True,
-                                         kvy=self.kvy,
-                                         tvy=self.tvy,
-                                         exc=self.exc,
-                                         rvy=self.rvy)
+        self.tvy.registerReplyRoutes(router=self.rvy.rtr)
+        self.parser = parsing.Parser(framed=True,
+                                     kvy=self.kvy,
+                                     tvy=self.tvy,
+                                     exc=self.exc,
+                                     rvy=self.rvy)
 
-            happ = falcon.App(middleware=falcon.CORSMiddleware(
-                allow_origins='*', allow_credentials='*',
-                expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input']))
-            happ.req_options.media_handlers.update(media.Handlers())
-            happ.resp_options.media_handlers.update(media.Handlers())
+        init = Initer(agentHab=agentHab)
+        qr = Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries)
+        er = Escrower(kvy=self.kvy, rvy=self.rvy, tvy=self.tvy, exc=self.exc)
+        mr = Messager(kvy=self.kvy, parser=self.parser)
+        wr = Witnesser(receiptor=receiptor, witners=self.witners)
+        dr = Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors)
+        doers.extend([init, qr, er, mr, wr, dr])
 
-            ending.loadEnds(app=happ, hby=self.hby, default=self.agentHab.pre)
-            httpEnd = HttpEnd(rxbs=self.parser.ims, mbx=mbx)
-            happ.add_route("/", httpEnd)
+        super().__init__(doers=doers, always=True, **opts)
 
-            server = http.Server(port=httpPort, app=happ)
-            httpServerDoer = http.ServerDoer(server=server)
-            doers.append(httpServerDoer)
+    @property
+    def pre(self):
+        return self.agentHab.pre
 
-        super().__init__(doers=doers, **opts)
+    def inceptSalty(self, pre, **kwargs):
+        keeper = self.remoteMgr.get(Algos.salty)
+        keeper.incept(pre=pre, **kwargs)
 
-    def start(self, tymth=None, tock=0.0):
-        """ Prints witness name and prefix
+        self.agency.incept(self.caid, pre)
 
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
+    def inceptRandy(self, pre, verfers, digers, **kwargs):
+        keeper = self.remoteMgr.get(Algos.randy)
+        keeper.incept(pre=pre, verfers=verfers, digers=digers, **kwargs)
 
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+        self.agency.incept(self.caid, pre)
 
-        while not self.agentHab.inited:
-            yield self.tock
+    def inceptGroup(self, pre, mpre, verfers, digers):
+        keeper = self.remoteMgr.get(Algos.group)
+        keeper.incept(pre=pre, mpre=mpre, verfers=verfers, digers=digers)
 
-        print("  Agent", self.agentHab.name, ":", self.agentHab.pre)
+        self.agency.incept(self.caid, pre)
 
-    def msgDo(self, tymth=None, tock=0.0):
-        """
-        Returns doifiable Doist compatibile generator method (doer dog) to process
-            incoming message stream of .kevery
 
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
+class Messager(doing.Doer):
 
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+    def __init__(self, kvy, parser):
+        self.kvy = kvy
+        self.parser = parser
+        super(Messager, self).__init__()
 
+    def recur(self, tyme=None):
         if self.parser.ims:
             logger.info("Agent %s received:\n%s\n...\n", self.kvy, self.parser.ims[:1024])
         done = yield from self.parser.parsator()  # process messages continuously
-        return done  # should nover get here except forced close
+        return done  # should never get here except forced close
 
-    def escrowDo(self, tymth=None, tock=0.0):
-        """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            .kevery and .tevery escrows.
 
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
+class Witnesser(doing.Doer):
 
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+    def __init__(self, receiptor, witners):
+        self.receiptor = receiptor
+        self.witners = witners
+        super(Witnesser, self).__init__()
 
+    def recur(self, tyme=None):
         while True:
-            self.kvy.processEscrows()
-            self.rvy.processEscrowReply()
-            if self.tvy is not None:
-                self.tvy.processEscrows()
-            self.exc.processEscrow()
-
-            yield
-
-    def witDo(self, tymth=None, tock=0.0):
-        """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            .kevery and .tevery escrows.
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
-
-        while True:
-            while self.witners:
+            if self.witners:
                 msg = self.witners.popleft()
                 serder = msg["serder"]
 
                 # If we are a rotation event, may need to catch new witnesses up to current key state
-                if serder.ked['t'] in (Ilks.rot,):
+                if serder.ked['t'] in (Ilks.rot, Ilks.drt):
                     adds = serder.ked["ba"]
                     for wit in adds:
-                        print(f"catching up {wit}")
                         yield from self.receiptor.catchup(serder.pre, wit)
 
                 yield from self.receiptor.receipt(serder.pre, serder.sn)
 
             yield self.tock
 
-    def anchorDo(self, tymth=None, tock=0.0):
-        """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            delegation anchor requests
 
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
+class Delegator(doing.Doer):
 
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+    def __init__(self, agentHab, swain, anchors):
+        self.agentHab = agentHab
+        self.swain = swain
+        self.anchors = anchors
+        super(Delegator, self).__init__()
 
-        while True:
-            while self.anchors:
-                msg = self.anchors.popleft()
-                sn = msg["sn"] if "sn" in msg else None
-                self.swain.delegation(pre=msg["pre"], sn=sn, proxy=self.agentHab)
+    def recur(self, tyme=None):
+        if self.anchors:
+            msg = self.anchors.popleft()
+            sn = msg["sn"] if "sn" in msg else None
+            self.swain.delegation(pre=msg["pre"], sn=sn, proxy=self.agentHab)
 
-            yield self.tock
-
-    def queryDo(self, tymth=None, tock=0.0):
-        """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            delegation anchor requests
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
-
-        while True:
-            while self.queries:
-                msg = self.queries.popleft()
-                pre = msg["pre"]
-
-                qryDo = querying.QueryDoer(hby=self.hby, hab=self.agentHab, pre=pre, kvy=self.kvy)
-                self.extend([qryDo])
-                while not qryDo.done:
-                    yield self.tock
-
-                self.remove([qryDo])
-
-            yield self.tock
-
-    def groupDo(self, tymth=None, tock=0.0):
-        """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            delegation anchor requests
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
-
-        while True:
-            while self.groups:
-                msg = self.groups.popleft()
-                serder = msg["serder"]
-                sigers = msg["sigers"]
-
-                ghab = self.hby.habs[serder.pre]
-                if "smids" in msg:
-                    smids = msg['smids']
-                else:
-                    smids = ghab.db.signingMembers(pre=ghab.pre)
-
-                if "rmids" in msg:
-                    rmids = msg['rmids']
-                else:
-                    rmids = ghab.db.rotationMembers(pre=ghab.pre)
-
-                atc = bytearray()  # attachment
-                atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
-                for siger in sigers:
-                    atc.extend(siger.qb64b)
-
-                others = list(oset(smids + (rmids or [])))
-                others.remove(ghab.mhab.pre)  # don't send to self
-                print(f"Sending multisig event to {len(others)} other participants")
-                for recpt in others:
-                    self.postman.send(hab=self.agentHab, dest=recpt, topic="multisig", serder=serder,
-                                      attachment=atc)
-
-                prefixer = coring.Prefixer(qb64=serder.pre)
-                seqner = coring.Seqner(sn=serder.sn)
-                saider = coring.Saider(qb64=serder.said)
-                self.counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=saider)
-
-            yield self.tock
+        return False
 
 
-def loadEnds(app, agentHby, agentHab, ctrlAid, monitor, queries):
-    bootEnd = BootEnd(agentHby, agentHab, ctrlAid)
-    app.add_route("/boot", bootEnd)
+class Initer(doing.Doer):
+    def __init__(self, agentHab):
+        self.agentHab = agentHab
+        super(Initer, self).__init__()
 
-    opEnd = longrunning.OperationResourceEnd(monitor=monitor)
+    def recur(self, tyme):
+        """ Prints Agent name and prefix """
+        if not self.agentHab.inited:
+            return False
+
+        print("  Agent", self.agentHab.name, ":", self.agentHab.pre)
+        return True
+
+
+class GroupRequester(doing.Doer):
+
+    def __init__(self, hby, agentHab, postman, counselor, groups):
+        self.hby = hby
+        self.agentHab = agentHab
+        self.postman = postman
+        self.counselor = counselor
+        self.groups = groups
+
+        super(GroupRequester, self).__init__()
+
+    def recur(self, tyme):
+        """ Checks cue for group proceccing requests and processes any with Counselor """
+        if self.groups:
+            msg = self.groups.popleft()
+            serder = msg["serder"]
+            sigers = msg["sigers"]
+
+            ghab = self.hby.habs[serder.pre]
+            if "smids" in msg:
+                smids = msg['smids']
+            else:
+                smids = ghab.db.signingMembers(pre=ghab.pre)
+
+            if "rmids" in msg:
+                rmids = msg['rmids']
+            else:
+                rmids = ghab.db.rotationMembers(pre=ghab.pre)
+
+            atc = bytearray()  # attachment
+            atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
+            for siger in sigers:
+                atc.extend(siger.qb64b)
+
+            others = list(oset(smids + (rmids or [])))
+            others.remove(ghab.mhab.pre)  # don't send to self
+            print(f"Sending multisig event to {len(others)} other participants")
+            for recpt in others:
+                self.postman.send(hab=self.agentHab, dest=recpt, topic="multisig", serder=serder,
+                                  attachment=atc)
+
+            prefixer = coring.Prefixer(qb64=serder.pre)
+            seqner = coring.Seqner(sn=serder.sn)
+            saider = coring.Saider(qb64=serder.said)
+            self.counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=saider)
+
+        return False
+
+
+class Querier(doing.DoDoer):
+
+    def __init__(self, hby, agentHab, queries, kvy):
+        self.hby = hby
+        self.agentHab = agentHab
+        self.queries = queries
+        self.kvy = kvy
+
+        super(Querier, self).__init__()
+
+    def recur(self, tyme, deeds=None):
+        """ Processes query reqests submitting any on the cue"""
+        if self.queries:
+            msg = self.queries.popleft()
+            pre = msg["pre"]
+
+            qryDo = querying.QueryDoer(hby=self.hby, hab=self.agentHab, pre=pre, kvy=self.kvy)
+            self.extend([qryDo])
+
+        return super(Querier, self).recur(tyme, deeds)
+
+
+class Escrower(doing.Doer):
+    def __init__(self, kvy, rvy, tvy, exc):
+        self.kvy = kvy
+        self.rvy = rvy
+        self.tvy = tvy
+        self.exc = exc
+
+        super(Escrower, self).__init__()
+
+    def recur(self, tyme):
+        """ Process all escrows once per loop. """
+        self.kvy.processEscrows()
+        self.rvy.processEscrowReply()
+        if self.tvy is not None:
+            self.tvy.processEscrows()
+        self.exc.processEscrow()
+
+        return False
+
+
+def loadEnds(app):
+    opEnd = longrunning.OperationResourceEnd()
     app.add_route("/operations/{name}", opEnd)
 
-    oobiEnd = OOBICollectionEnd(hby=agentHby, monitor=monitor, agent=agentHby)
+    oobiEnd = OOBICollectionEnd()
     app.add_route("/oobis", oobiEnd)
 
-    statesEnd = KeyStateCollectionEnd(hby=agentHby)
+    statesEnd = KeyStateCollectionEnd()
     app.add_route("/states", statesEnd)
 
-    eventsEnd = KeyEventCollectionEnd(hby=agentHby)
+    eventsEnd = KeyEventCollectionEnd()
     app.add_route("/events", eventsEnd)
 
-    queryEnd = QueryCollectionEnd(hby=agentHby, queries=queries, monitor=monitor)
+    queryEnd = QueryCollectionEnd()
     app.add_route("/queries", queryEnd)
 
 
 class BootEnd:
     """ Resource class for creating datastore in cloud ahab """
 
-    def __init__(self, agentHby, agentHab, ctrlAid, rm=None):
+    def __init__(self, agency):
         """ Provides endpoints for initializing and unlocking an agent
 
         Parameters:
-            agentHby (Habery): Habery for Signify Agent
-            agentHab (Hab): Hab for Signify Agent
-            ctrlAid (str): qb64 of ctrlAid AID
+            agency (Agency): Agency for managing agents
 
         """
-        self.authn = authing.Authenticater(agent=agentHab, ctrlAid=ctrlAid)
-        self.agentHby = agentHby
-        self.agent = agentHab
-        self.ctrlAid = ctrlAid
-        self.rm = rm if rm is not None else RemoteManager(hby=agentHby)
-
-    def on_get(self, _, rep):
-        """ GET endpoint for Keystores
-
-        Get keystore status
-
-        Args:
-            _: falcon.Request HTTP request
-            rep: falcon.Response HTTP response
-
-        """
-        kel = cloneAid(db=self.agent.db, pre=self.agent.pre)
-        pidx = self.agentHby.db.habs.cntAll()
-        body = dict(kel=kel, pidx=pidx)
-
-        if (ctrlHab := self.agentHby.habByName(self.ctrlAid, ns="agent")) is not None:
-            body["ridx"] = ctrlHab.kever.sn
-
-        rep.content_type = "application/json"
-        rep.data = json.dumps(body).encode("utf-8")
-        rep.status = falcon.HTTP_200
+        self.authn = authing.Authenticater(agency=agency)
+        self.agency = agency
 
     def on_post(self, req, rep):
         """ Inception event POST endpoint
+
+        Give me a new Agent.  Create Habery using ctrlPRE as database name, agentHab that anchors the caid and
+        returns the KEL of agentHAB Stores ControllerPRE -> AgentPRE in database
 
         Parameters:
             req (Request): falcon.Request HTTP request object
             rep (Response): falcon.Response HTTP response object
 
         """
+
         body = req.get_media()
         if "icp" not in body:
             raise falcon.HTTPBadRequest(title="invalid inception",
@@ -466,17 +513,21 @@ class BootEnd:
                                         description=f'required field "sig" missing from body')
         siger = coring.Siger(qb64=body["sig"])
 
-        ctrlHab = self.agentHby.makeSignifyHab(name=self.ctrlAid, ns="agent", serder=icp, sigers=[siger])
+        caid = icp.pre
 
-        if ctrlHab.pre != self.ctrlAid:
-            self.agentHby.deleteHab(self.ctrlAid)
-            raise falcon.HTTPBadRequest(title="invalid inception",
-                                        description=f'invalid icp event for ctrlAid {self.ctrlAid}')
+        agent = self.agency.create(caid=caid)
 
-        if not self.authn.verify(req):
-            self.agentHby.deleteHab(self.ctrlAid)
+        try:
+            ctrlHab = agent.hby.makeSignifyHab(name=agent.caid, ns="agent", serder=icp, sigers=[siger])
+        except Exception:
+            self.agency.delete(agent)
             raise falcon.HTTPBadRequest(title="invalid inception",
-                                        description=f'invalid signature on rquest')
+                                        description=f'invalid icp event for caid {agent.caid}')
+
+        if ctrlHab.pre != agent.caid:
+            self.agency.delete(agent)
+            raise falcon.HTTPBadRequest(title="invalid inception",
+                                        description=f'invalid icp event for caid {agent.caid}')
 
         # Client is requesting that the Agent track the Salty parameters
         if Algos.salty in body:
@@ -496,8 +547,10 @@ class BootEnd:
                                             description=f'required field "tier" missing from body.salt')
             tier = salt["tier"]
 
-            self.rm.incept(self.ctrlAid, algo=Algos.salty, verfers=ctrlHab.kever.verfers, digers=ctrlHab.kever.digers,
-                           pidx=pidx, ridx=0, kidx=0, stem=stem, tier=tier)
+            mgr = agent.remoteMgr.get(algo=Algos.salty)
+            mgr.incept(agent.caid, verfers=ctrlHab.kever.verfers,
+                       digers=ctrlHab.kever.digers,
+                       pidx=pidx, ridx=0, kidx=0, stem=stem, tier=tier)
 
         elif Algos.randy in body:
             rand = body[Algos.randy]
@@ -511,21 +564,21 @@ class BootEnd:
                                             description=f'required field "nxts" missing from body.rand')
             nxts = rand["nxts"]
 
-            self.rm.incept(self.ctrlAid, algo=Algos.randy, verfers=ctrlHab.kever.verfers, digers=ctrlHab.kever.digers,
-                           prxs=pris, nxts=nxts)
+            mgr = agent.remoteMgr.get(algo=Algos.randy)
+            mgr.incept(agent.caid, verfers=ctrlHab.kever.verfers,
+                       digers=ctrlHab.kever.digers,
+                       prxs=pris, nxts=nxts)
 
         elif Algos.group in body:
-            raise falcon.HTTPBadRequest("multisig groups not supported as agent controllers")
+            raise falcon.HTTPBadRequest("multisig groups not supported as agent controller")
 
         rep.status = falcon.HTTP_202
 
 
 class KeyStateCollectionEnd:
 
-    def __init__(self, hby):
-        self.hby = hby
-
-    def on_get(self, req, rep):
+    @staticmethod
+    def on_get(req, rep):
         """
 
         Parameters:
@@ -553,6 +606,7 @@ class KeyStateCollectionEnd:
 
 
         """
+        agent = req.context.agent
         if "pre" not in req.params:
             raise falcon.HTTPBadRequest("required parameter 'pre' missing")
 
@@ -561,10 +615,10 @@ class KeyStateCollectionEnd:
 
         states = []
         for pre in pres:
-            if pre not in self.hby.kevers:
+            if pre not in agent.hby.kevers:
                 continue
 
-            kever = self.hby.kevers[pre]
+            kever = agent.hby.kevers[pre]
             states.append(kever.state().ked)
 
         rep.status = falcon.HTTP_200
@@ -574,10 +628,8 @@ class KeyStateCollectionEnd:
 
 class KeyEventCollectionEnd:
 
-    def __init__(self, hby):
-        self.hby = hby
-
-    def on_get(self, req, rep):
+    @staticmethod
+    def on_get(req, rep):
         """
 
         Parameters:
@@ -605,15 +657,16 @@ class KeyEventCollectionEnd:
 
 
         """
+        agent = req.context.agent
         if "pre" not in req.params:
             raise falcon.HTTPBadRequest("required parameter 'pre' missing")
 
         pre = req.params.get("pre")
         preb = pre.encode("utf-8")
         events = []
-        for fn, dig in self.hby.db.getFelItemPreIter(preb, fn=0):
+        for fn, dig in agent.hby.db.getFelItemPreIter(preb, fn=0):
             dgkey = dbing.dgKey(preb, dig)  # get message
-            if not (raw := self.hby.db.getEvt(key=dgkey)):
+            if not (raw := agent.hby.db.getEvt(key=dgkey)):
                 raise falcon.HTTPInternalServerError(f"Missing event for dig={dig}.")
 
             serder = coring.Serder(raw=bytes(raw))
@@ -626,20 +679,12 @@ class KeyEventCollectionEnd:
 
 class OOBICollectionEnd:
 
-    def __init__(self, hby, agent, monitor):
+    def __init__(self):
         """ Create OOBI Collection endpoint instance
-
-        Parameters:
-            hby (Habery): Controller database and keystore environment
-            agent (Habery): Agent database and keystore environment
-            monitor (Monitor): Long running process monitor
         """
 
-        self.hby = hby
-        self.agent = agent
-        self.mon = monitor
-
-    def on_post(self, req, rep):
+    @staticmethod
+    def on_post(req, rep):
         """ Resolve OOBI endpoint.
 
         Parameters:
@@ -674,6 +719,7 @@ class OOBICollectionEnd:
               description: OOBI resolution to key state successful
 
         """
+        agent = req.context.agent
         body = req.get_media()
 
         if "url" in body:
@@ -684,8 +730,8 @@ class OOBICollectionEnd:
             if "oobialias" in body:
                 obr.oobialias = body["oobialias"]
 
-            self.hby.db.oobis.pin(keys=(oobi,), val=obr)
-            self.agent.db.oobis.pin(keys=(oobi,), val=obr)
+            agent.hby.db.oobis.pin(keys=(oobi,), val=obr)
+            agent.hby.db.oobis.pin(keys=(oobi,), val=obr)
 
         elif "rpy" in body:
             raise falcon.HTTPNotImplemented("'rpy' support not implemented yet")
@@ -694,7 +740,7 @@ class OOBICollectionEnd:
             raise falcon.HTTPBadRequest("invalid OOBI request body, either 'rpy' or 'url' is required")
 
         oid = randomNonce()
-        op = self.mon.submit(oid, longrunning.OpTypes.oobi, metadata=dict(oobi=oobi))
+        op = agent.monitor.submit(oid, longrunning.OpTypes.oobi, metadata=dict(oobi=oobi))
 
         rep.status = falcon.HTTP_202
         rep.content_type = "application/json"
@@ -703,12 +749,8 @@ class OOBICollectionEnd:
 
 class QueryCollectionEnd:
 
-    def __init__(self, hby, monitor, queries):
-        self.hby = hby
-        self.monitor = monitor
-        self.queries = queries
-
-    def on_post(self, req, rep):
+    @staticmethod
+    def on_post(req, rep):
         """
 
         Parameters:
@@ -736,6 +778,7 @@ class QueryCollectionEnd:
 
 
         """
+        agent = req.context.agent
         body = req.get_media()
         pre = httping.getRequiredParam(body, "pre")
         qry = dict(pre=pre)
@@ -746,16 +789,15 @@ class QueryCollectionEnd:
         elif "sn" in body:
             meta["sn"] = body["sn"]
         else:  # Must reset key state so we know when we have a new update.
-            for (keys, saider) in self.hby.db.knas.getItemIter(keys=(pre,)):
-                self.hby.db.knas.rem(keys)
-                self.hby.db.ksns.rem((saider.qb64,))
-                self.hby.db.ksns.rem((saider.qb64,))
+            for (keys, saider) in agent.hby.db.knas.getItemIter(keys=(pre,)):
+                agent.hby.db.knas.rem(keys)
+                agent.hby.db.ksns.rem((saider.qb64,))
+                agent.hby.db.ksns.rem((saider.qb64,))
 
         qry.update(meta)
-        self.queries.append(qry)
-        op = self.monitor.submit(pre, longrunning.OpTypes.query, metadata=meta)
+        agent.queries.append(qry)
+        op = agent.monitor.submit(pre, longrunning.OpTypes.query, metadata=meta)
 
         rep.status = falcon.HTTP_202
         rep.content_type = "application/json"
         rep.data = op.to_json().encode("utf-8")
-
