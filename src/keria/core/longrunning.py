@@ -88,7 +88,7 @@ class Monitor:
 
     """
 
-    def __init__(self, hby, swain, counselor, opr=None):
+    def __init__(self, hby, swain, counselor, opr=None, temp=False):
         """ Create long running operation monitor
 
         Parameters:
@@ -100,7 +100,7 @@ class Monitor:
         self.hby = hby
         self.swain = swain
         self.counselor = counselor
-        self.opr = opr if opr is not None else Operator(name=hby.name)
+        self.opr = opr if opr is not None else Operator(name=hby.name, temp=temp)
 
     def submit(self, oid, typ, metadata=None):
         """  Submit a new long running operation to track

@@ -7,6 +7,7 @@ keria.app.agenting module
 import json
 
 from keri import kering
+from keri.app.storing import Mailboxer
 from ordered_set import OrderedSet as oset
 
 import falcon
@@ -217,7 +218,7 @@ class Agent(doing.DoDoer):
 
         oobiery = oobiing.Oobiery(hby=hby)
 
-        self.monitor = longrunning.Monitor(hby=hby, swain=swain, counselor=counselor)
+        self.monitor = longrunning.Monitor(hby=hby, swain=swain, counselor=counselor, temp=hby.temp)
         self.remoteMgr = RemoteManager(hby=hby)
 
         self.swain = swain
@@ -229,7 +230,7 @@ class Agent(doing.DoDoer):
         self.queries = decking.Deck()
         receiptor = agenting.Receiptor(hby=hby)
         self.postman = forwarding.Poster(hby=hby)
-        self.rep = storing.Respondant(hby=hby, cues=self.cues)
+        self.rep = storing.Respondant(hby=hby, cues=self.cues, mbx=Mailboxer(name=self.hby.name, temp=self.hby.temp))
 
         doers = [habbing.HaberyDoer(habery=hby), receiptor, self.postman, self.rep, swain, counselor, *oobiery.doers]
 
@@ -246,7 +247,6 @@ class Agent(doing.DoDoer):
         handlers = [issueHandler, requestHandler, proofHandler, applyHandler]
         self.exc = exchanging.Exchanger(db=hby.db, handlers=handlers)
 
-        self.mbx = storing.Mailboxer(name=hby.name)
         self.rvy = routing.Revery(db=hby.db, cues=self.cues)
         self.kvy = eventing.Kevery(db=hby.db,
                                    lax=True,
