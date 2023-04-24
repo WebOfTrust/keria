@@ -104,10 +104,9 @@ class Agency(doing.DoDoer):
                                          clear=False)
 
         self.agents = dict()
-        self.always = True
 
         self.adb = adb if adb is not None else basing.AgencyBaser(name="TheAgency", reopen=True)
-        super(Agency, self).__init__(doers=[])
+        super(Agency, self).__init__(doers=[], always=True)
 
     def create(self, caid):
         ks = keeping.Keeper(name=caid,
@@ -187,13 +186,11 @@ class Agency(doing.DoDoer):
     def lookup(self, pre):
         prefixer = self.adb.aids.get(keys=(pre,))
         if prefixer is None:
-            print(f"not found {pre}")
             return None
 
         try:
             return self.get(prefixer.qb64)
         except kering.ConfigurationError as e:
-            print(e)
             return None
 
     def incept(self, caid, pre):
@@ -229,14 +226,11 @@ class Agent(doing.DoDoer):
         self.anchors = decking.Deck()
         self.witners = decking.Deck()
         self.queries = decking.Deck()
-        self.receiptor = agenting.Receiptor(hby=hby)
+        receiptor = agenting.Receiptor(hby=hby)
         self.postman = forwarding.Poster(hby=hby)
         self.rep = storing.Respondant(hby=hby, cues=self.cues)
-        gr = GroupRequester(hby, agentHab, self.postman, counselor, self.groups),
 
-        doers = [habbing.HaberyDoer(habery=hby), doing.doify(self.msgDo), doing.doify(self.escrowDo),
-                 doing.doify(self.witDo), doing.doify(self.anchorDo), gr,
-                 Initer(agentHab), self.receiptor, self.postman, self.rep, swain, counselor, *oobiery.doers]
+        doers = [habbing.HaberyDoer(habery=hby), receiptor, self.postman, self.rep, swain, counselor, *oobiery.doers]
 
         verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
 
@@ -272,10 +266,15 @@ class Agent(doing.DoDoer):
                                      exc=self.exc,
                                      rvy=self.rvy)
 
+        init = Initer(agentHab=agentHab)
         qr = Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries)
-        doers.append(qr)
+        er = Escrower(kvy=self.kvy, rvy=self.rvy, tvy=self.tvy, exc=self.exc)
+        mr = Messager(kvy=self.kvy, parser=self.parser)
+        wr = Witnesser(receiptor=receiptor, witners=self.witners)
+        dr = Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors)
+        doers.extend([init, qr, er, mr, wr, dr])
 
-        super().__init__(doers=doers, **opts)
+        super().__init__(doers=doers, always=True, **opts)
 
     @property
     def pre(self):
@@ -299,85 +298,60 @@ class Agent(doing.DoDoer):
 
         self.agency.incept(self.caid, pre)
 
-    def msgDo(self, tymth=None, tock=0.0):
-        """
-        Returns doifiable Doist compatibile generator method (doer dog) to process
-            incoming message stream of .kevery
 
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
+class Messager(doing.Doer):
 
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+    def __init__(self, kvy, parser):
+        self.kvy = kvy
+        self.parser = parser
+        super(Messager, self).__init__()
 
+    def recur(self, tyme=None):
         if self.parser.ims:
             logger.info("Agent %s received:\n%s\n...\n", self.kvy, self.parser.ims[:1024])
         done = yield from self.parser.parsator()  # process messages continuously
-        return done  # should nover get here except forced close
+        return done  # should never get here except forced close
 
-    def witDo(self, tymth=None, tock=0.0):
-        """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            .kevery and .tevery escrows.
 
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
+class Witnesser(doing.Doer):
 
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+    def __init__(self, receiptor, witners):
+        self.receiptor = receiptor
+        self.witners = witners
+        super(Witnesser, self).__init__()
 
+    def recur(self, tyme=None):
         while True:
-            while self.witners:
+            if self.witners:
                 msg = self.witners.popleft()
                 serder = msg["serder"]
 
                 # If we are a rotation event, may need to catch new witnesses up to current key state
-                if serder.ked['t'] in (Ilks.rot,):
+                if serder.ked['t'] in (Ilks.rot, Ilks.drt):
                     adds = serder.ked["ba"]
                     for wit in adds:
-                        print(f"catching up {wit}")
                         yield from self.receiptor.catchup(serder.pre, wit)
 
                 yield from self.receiptor.receipt(serder.pre, serder.sn)
 
             yield self.tock
 
-    def anchorDo(self, tymth=None, tock=0.0):
-        """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            delegation anchor requests
 
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
+class Delegator(doing.Doer):
 
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+    def __init__(self, agentHab, swain, anchors):
+        self.agentHab = agentHab
+        self.swain = swain
+        self.anchors = anchors
+        super(Delegator, self).__init__()
 
-        while True:
-            while self.anchors:
-                msg = self.anchors.popleft()
-                sn = msg["sn"] if "sn" in msg else None
-                self.swain.delegation(pre=msg["pre"], sn=sn, proxy=self.agentHab)
+    def recur(self, tyme=None):
+        if self.anchors:
+            msg = self.anchors.popleft()
+            sn = msg["sn"] if "sn" in msg else None
+            self.swain.delegation(pre=msg["pre"], sn=sn, proxy=self.agentHab)
 
-            yield self.tock
+        return False
 
 
 class Initer(doing.Doer):

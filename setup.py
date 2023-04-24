@@ -75,6 +75,7 @@ setup(
     ],
     python_requires='>=3.10.4',
     install_requires=[
+        'hio>=0.6.9',
         'keri>=0.6.9',
         'multicommand>=1.0.0',
         'falcon>=3.1.0',

@@ -9,13 +9,33 @@ import json
 
 import falcon
 from falcon import testing
+from hio.base import doing
 from hio.help import decking
 from keri.app import habbing, configing, delegating, grouping
+from keri.app.agenting import Receiptor
 from keri.app.keeping import Algos
 from keri.core import coring, eventing, parsing
 
 from keria.app import agenting
 from keria.core import longrunning
+
+
+def test_witnesser():
+    salt = b'0123456789abcdef'
+    salter = coring.Salter(raw=salt)
+
+    with habbing.openHby(name="keria", salt=salter.qb64, temp=True) as hby:
+        witners = decking.Deck()
+        receiptor = Receiptor(hby=hby)
+        wr = agenting.Witnesser(receiptor=receiptor, witners=witners)
+
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+
+        # doist.do(doers=doers)
+        deeds = doist.enter(doers=[wr])
+        doist.recur(deeds)
 
 
 def test_identifier_collection_end(helpers):

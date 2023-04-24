@@ -85,7 +85,7 @@ class HttpEnd:
             rep.status = falcon.HTTP_204
         elif ilk in (Ilks.qry,):
             if serder.ked["r"] in ("mbx",):
-                raise falcon.HTTPNotFound("no mailbox support on KERIA")
+                raise falcon.HTTPNotFound("no mailbox support in KERIA")
             else:
                 rep.set_header('Content-Type', "application/json")
                 rep.status = falcon.HTTP_204
