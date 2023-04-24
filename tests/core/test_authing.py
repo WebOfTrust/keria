@@ -5,7 +5,6 @@ keria.core.authing module
 
 Testing httping utils
 """
-import falcon
 import pytest
 from falcon import testing
 from hio.base import doing
