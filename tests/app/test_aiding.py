@@ -22,7 +22,7 @@ def test_identifier_collection_end(helpers):
     caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
     salt = b'0123456789abcdef'
     salter = coring.Salter(raw=salt)
-    cf = configing.Configer(name="keria", headDirPath="scripts", temp=False, reopen=True, clear=False)
+    cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
 
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby, \
             habbing.openHby(name="p1", temp=True) as p1hby, \
@@ -31,7 +31,7 @@ def test_identifier_collection_end(helpers):
         agency = agenting.Agency(name="agency", base=None, bran=None, temp=True)
         agentHab = hby.makeHab(caid, ns="agent", transferable=True, data=[caid])
 
-        rgy = credentialing.Regery(hby=hby, name=agentHab.name, base=hby.base)
+        rgy = credentialing.Regery(hby=hby, name=agentHab.name, base=hby.base, temp=True)
         agent = agenting.Agent(hby=hby, rgy=rgy, agentHab=agentHab, agency=agency, caid=caid)
 
         end = aiding.IdentifierCollectionEnd()
