@@ -77,6 +77,7 @@ setup(
     install_requires=[
         'hio>=0.6.9',
         'keri @ git+https://git@github.com/WebOfTrust/keripy.git',
+        'mnemonic>=0.20',
         'multicommand>=1.0.0',
         'falcon>=3.1.0',
         'http_sfv>=0.9.8',
