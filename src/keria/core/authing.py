@@ -146,6 +146,8 @@ class SignatureValidationComponent(object):
             authn (Authenticater): Authenticator to validate signature headers on request
             allowed (list[str]): Paths that are not protected.
         """
+        if allowed is None:
+            allowed = []
         self.agency = agency
         self.authn = authn
         self.allowed = allowed
