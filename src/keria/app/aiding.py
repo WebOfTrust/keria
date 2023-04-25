@@ -15,6 +15,8 @@ from keri.core import coring
 from keri.core.coring import Ilks
 from keri.db import dbing
 from keri.help import ogler
+from keri.peer import exchanging
+from mnemonic import mnemonic
 
 from ..core import longrunning, httping
 from ..core.eventing import cloneAid
@@ -39,6 +41,11 @@ def loadEnds(app, agency):
 
     endRoleEnd = EndRoleResourceEnd()
     app.add_route("/identifiers/{name}/endroles/{cid}/{role}/{eid}", endRoleEnd)
+
+    chaEnd = ChallengeEnd()
+    app.add_route("/challenges", chaEnd)
+    chaResEnd = ChallengeResourceEnd()
+    app.add_route("/challenges/{name}", chaResEnd)
 
 
 class AgentResourceEnd:
@@ -502,3 +509,170 @@ class EndRoleResourceEnd:
 
     def on_delete(self, req, rep):
         pass
+
+
+class ChallengeEnd:
+    """ Resource for Challenge/Response Endpoints """
+
+    @staticmethod
+    def on_get(req, rep):
+        """ Challenge GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        ---
+        summary:  Get list of agent identfiers
+        description:  Get the list of identfiers associated with this agent
+        tags:
+           - Challenge/Response
+        parameters:
+           - in: query
+             name: strength
+             schema:
+                type: int
+             description:  cryptographic strength of word list
+             required: false
+        responses:
+            200:
+              description: An array of Identifier key state information
+              content:
+                  application/json:
+                    schema:
+                        description: Randon word list
+                        type: object
+                        properties:
+                            words:
+                                type: array
+                                description: random challange word list
+                                items:
+                                    type: string
+
+        """
+        mnem = mnemonic.Mnemonic(language='english')
+        s = req.params.get("strength")
+        strength = int(s) if s is not None else 128
+
+        words = mnem.generate(strength=strength)
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        msg = dict(words=words.split(" "))
+        rep.data = json.dumps(msg).encode("utf-8")
+
+
+class ChallengeResourceEnd:
+    """ Resource for Challenge/Response Endpoints """
+
+    @staticmethod
+    def on_post(req, rep, name):
+        """ Challenge POST endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            name: human readable name of identifier to use to sign the challange/response
+
+        ---
+        summary:  Sign challange message and forward to peer identfiier
+        description:  Sign a challenge word list received out of bands and send `exn` peer to peer message
+                      to recipient
+        tags:
+           - Challenge/Response
+        parameters:
+          - in: path
+            name: name
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the identifier to create
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: Challenge response
+                    properties:
+                        recipient:
+                          type: string
+                          description: human readable alias recipient identifier to send signed challenge to
+                        words:
+                          type: array
+                          description:  challenge in form of word list
+                          items:
+                              type: string
+        responses:
+           202:
+              description: Success submission of signed challenge/response
+        """
+        agent = req.context.agent
+        hab = agent.hby.habByName(name)
+        if hab is None:
+            raise falcon.HTTPBadRequest(description="no matching Hab for alias {name}")
+
+        body = req.get_media()
+        if "exn" not in body or "sig" not in body or "recipient" not in body:
+            raise falcon.HTTPBadRequest(description="challenge response requires 'words', 'sig' and 'recipient'")
+
+        exn = body["exn"]
+        sig = body["sig"]
+        recpt = body["recipient"]
+        agent.postman.send(src=agent.agentHab.pre, dest=recpt, topic="challenge", serder=exn, attachment=sig)
+
+        rep.status = falcon.HTTP_202
+
+    @staticmethod
+    def on_put(req, rep, name):
+        """ Challenge PUT accept endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            name: human readable name of identifier to use to sign the challange/response
+
+        ---
+        summary:  Mark challenge response exn message as signed
+        description:  Mark challenge response exn message as signed
+        tags:
+           - Challenge/Response
+        parameters:
+          - in: path
+            name: name
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the identifier to create
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: Challenge response
+                    properties:
+                        aid:
+                          type: string
+                          description: aid of signer of accepted challenge response
+                        said:
+                          type: array
+                          description:  SAID of challenge message signed
+                          items:
+                              type: string
+        responses:
+           202:
+              description: Success submission of signed challenge/response
+        """
+        agent = req.context.agent
+        hab = agent.hby.habByName(name)
+        if hab is None:
+            raise falcon.HTTPBadRequest(description="no matching Hab for alias {name}")
+
+        body = req.get_media()
+        if "aid" not in body or "said" not in body:
+            raise falcon.HTTPBadRequest(description="challenge response acceptance requires 'aid' and 'said'")
+
+        aid = body["aid"]
+        said = body["said"]
+        saider = coring.Saider(qb64=said)
+        agent.hby.db.chas.add(keys=(aid,), val=saider)
+
+        rep.status = falcon.HTTP_202

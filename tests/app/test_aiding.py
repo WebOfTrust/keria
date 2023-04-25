@@ -13,9 +13,9 @@ from keri.app import habbing, configing
 from keri.app.keeping import Algos
 from keri.core import coring, eventing, parsing
 from keri.core.coring import MtrDex
-from keri.vdr import credentialing
+from keri.peer import exchanging
 
-from keria.app import aiding, agenting
+from keria.app import aiding
 
 
 def test_identifier_collection_end(helpers):
@@ -24,21 +24,12 @@ def test_identifier_collection_end(helpers):
     salter = coring.Salter(raw=salt)
     cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
 
-    with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby, \
+    with helpers.openKeria(caid, salter, temp=True, cf=cf) as (agency, agent, app, client), \
             habbing.openHby(name="p1", temp=True) as p1hby, \
             habbing.openHby(name="p2", temp=True) as p2hby:
 
-        agency = agenting.Agency(name="agency", base=None, bran=None, temp=True)
-        agentHab = hby.makeHab(caid, ns="agent", transferable=True, data=[caid])
-
-        rgy = credentialing.Regery(hby=hby, name=agentHab.name, base=hby.base, temp=True)
-        agent = agenting.Agent(hby=hby, rgy=rgy, agentHab=agentHab, agency=agency, caid=caid)
-
         end = aiding.IdentifierCollectionEnd()
         resend = aiding.IdentifierResourceEnd()
-
-        app = falcon.App()
-        app.add_middleware(helpers.middleware(agent))
         app.add_route("/identifiers", end)
         app.add_route("/identifiers/{name}", resend)
 
@@ -143,13 +134,13 @@ def test_identifier_collection_end(helpers):
         p2 = p2hby.makeHab(name="p2")
         assert p2.pre == "EMYBtOuBKVdp3KdW_QM__pi-UAWfrewlDyiqGcbIbopR"
 
-        agentKvy = eventing.Kevery(db=hby.db)
+        agentKvy = eventing.Kevery(db=agent.hby.db)
         psr = parsing.Parser(kvy=agentKvy)
         psr.parseOne(p1.makeOwnInception())
         psr.parseOne(p2.makeOwnInception())
 
-        assert p1.pre in hby.kevers
-        assert p2.pre in hby.kevers
+        assert p1.pre in agent.hby.kevers
+        assert p2.pre in agent.hby.kevers
 
         # Test Group Multisig
         keys = [signer0.verfer.qb64, p1.kever.verfers[0].qb64, p2.kever.verfers[0].qb64, ]
@@ -205,3 +196,73 @@ def test_identifier_collection_end(helpers):
                                 'ndigs': ['EHj7rmVHVkQKqnfeer068PiYvYm-WFSTVZZpFGsClfT-',
                                           'ECTS-VsMzox2NoMaLIei9Gb6361Z3u0fFFWmjEjEeD64',
                                           'ED7Jk3MscDy8IHtb2k1k6cs0Oe5rEb3_8XKD1Ut_gCo8']}
+
+
+def test_challenge_ends(helpers):
+    caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
+    salt = b'0123456789abcdef'
+    salter = coring.Salter(raw=salt)
+    cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
+    with helpers.openKeria(caid, salter, temp=True, cf=cf) as (agency, agent, app, client):
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+
+        chaEnd = aiding.ChallengeEnd()
+        app.add_route("/challenges", chaEnd)
+        chaResEnd = aiding.ChallengeResourceEnd()
+        app.add_route("/challenges/{name}", chaResEnd)
+
+        client = testing.TestClient(app)
+
+        result = client.simulate_get(path="/challenges?strength=256")
+        assert result.status == falcon.HTTP_200
+        assert "words" in result.json
+        words = result.json["words"]
+        assert len(words) == 24
+
+        result = client.simulate_get(path="/challenges")
+        assert result.status == falcon.HTTP_200
+        assert "words" in result.json
+        words = result.json["words"]
+        assert len(words) == 12
+
+        data = dict()
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path="/challenges/joe", body=b)
+        assert result.status == falcon.HTTP_400  # Bad allias
+        result = client.simulate_post(path="/challenges/pal", body=b)
+        assert result.status == falcon.HTTP_400  # Missing words
+
+        # Create an AID to test against
+        aid = helpers.createAid(client, "pal", salt)
+
+        payload = dict(i=aid['i'], words=words)
+        exn = exchanging.exchange(route="/challenge/response", payload=payload)
+        ims = agent.agentHab.endorse(serder=exn, last=True, pipelined=False)
+        del ims[:exn.size]
+
+        data["exn"] = exn.ked
+        data["sig"] = ims.decode("utf-8")
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path="/challenges/pal", body=b)
+        assert result.status == falcon.HTTP_400  # Missing recipient
+
+        data["recipient"] = "Eo6MekLECO_ZprzHwfi7wG2ubOt2DWKZQcMZvTbenBNU"
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path="/challenges/pal", body=b)
+        assert result.status == falcon.HTTP_202
+
+        data = dict()
+        data["aid"] = "Eo6MekLECO_ZprzHwfi7wG2ubOt2DWKZQcMZvTbenBNU"
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_put(path="/challenges/henk", body=b)
+        assert result.status == falcon.HTTP_400  # Missing recipient
+
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_put(path="/challenges/pal", body=b)
+        assert result.status == falcon.HTTP_400  # Missing said
+
+        data["said"] = exn.said
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_put(path="/challenges/pal", body=b)
+        assert result.status == falcon.HTTP_202

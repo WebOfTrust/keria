@@ -5,13 +5,21 @@ Use this module to configure pytest
 https://docs.pytest.org/en/latest/pythonpath.html
 
 """
+import json
 import os
 import shutil
+from contextlib import contextmanager
 
+import falcon
 import pytest
-from keri.app import keeping
+from falcon import testing
+from keri.app import keeping, habbing
 from keri.core import coring, eventing
+from keri.core.coring import MtrDex
 from keri.help import helping
+from keri.vdr import credentialing
+
+from keria.app import agenting
 
 WitnessUrls = {
     "wan:tcp": "tcp://127.0.0.1:5632/",
@@ -114,6 +122,25 @@ class Helpers:
         return serder, signers
 
     @staticmethod
+    def createAid(client, name, salt):
+        serder, signers = Helpers.incept(salt, "signify:aid", pidx=0)
+        assert len(signers) == 1
+
+        sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
+
+        body = {'name': name,
+                'icp': serder.ked,
+                'sigs': sigers,
+                "salty": {
+                    'stem': 'signify:aid', 'pidx': 0, 'tier': 'low',
+                    'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}
+                }
+
+        res = client.simulate_post(path="/identifiers", body=json.dumps(body))
+        assert res.status_code == 200
+        return res.json
+
+    @staticmethod
     def endrole(cid, eid):
         data = dict(cid=cid, role="agent", eid=eid)
         return eventing.reply(route="/end/role/add", data=data)
@@ -121,6 +148,22 @@ class Helpers:
     @staticmethod
     def middleware(agent):
         return MockAgentMiddleware(agent=agent)
+
+    @staticmethod
+    @contextmanager
+    def openKeria(caid, salter, cf, temp=True):
+        with habbing.openHby(name="keria", salt=salter.qb64, temp=temp, cf=cf) as hby:
+
+            agency = agenting.Agency(name="agency", base=None, bran=None, temp=True)
+            agentHab = hby.makeHab(caid, ns="agent", transferable=True, data=[caid])
+
+            rgy = credentialing.Regery(hby=hby, name=agentHab.name, base=hby.base, temp=True)
+            agent = agenting.Agent(hby=hby, rgy=rgy, agentHab=agentHab, agency=agency, caid=caid)
+
+            app = falcon.App()
+            app.add_middleware(Helpers.middleware(agent))
+            client = testing.TestClient(app)
+            yield agency, agent, app, client
 
 
 @pytest.fixture
