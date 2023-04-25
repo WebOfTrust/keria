@@ -5,6 +5,7 @@ keria.core.authing module
 
 Testing httping utils
 """
+import falcon
 import pytest
 from falcon import testing
 from hio.base import doing
@@ -70,3 +71,131 @@ def test_authenticater(mockHelpingNowUTC):
         assert controller.pre in agent.agentHab.kevers
 
         assert authn.verify(req)
+
+        headers = Hict([
+            ("Content-Type", "application/json"),
+            ("Content-Length", "256"),
+            ("Connection", "close"),
+            ("Signify-Resource", agent.agentHab.pre),
+            ("Signify-Timestamp", "2022-09-24T00:05:48.196795+00:00"),
+        ])
+
+        headers = authn.sign(agent, headers, method="POST", path="/oobis")
+        assert dict(headers) == {'Connection': 'close',
+                                 'Content-Length': '256',
+                                 'Content-Type': 'application/json',
+                                 'Signature': 'indexed="?0";signify="0BA-mbfv642Hgj48xyKPIkzAk0tJzb91w3LSzZTUz0xNxQVhyF'
+                                              'u35PNruPupDB2LcNUZAGkDo_tWOuQjNnatCXYC"',
+                                 'Signature-Input': 'signify=("signify-resource" "@method" "@path" '
+                                                    '"signify-timestamp");created=1609459200;keyid="EBAuP_pViVt0rpp9Jle'
+                                                    '0ympdhgbb125h3cpBFQ04Qwu7";alg="ed25519"',
+                                 'Signify-Resource': 'EBAuP_pViVt0rpp9Jle0ympdhgbb125h3cpBFQ04Qwu7',
+                                 'Signify-Timestamp': '2022-09-24T00:05:48.196795+00:00'}
+
+        req = testing.create_req(method="POST", path="/boot", headers=dict(headers))
+        with pytest.raises(kering.AuthNError):  # Should because the agent won't be found
+            authn.verify(req)
+
+
+class MockAgency:
+    def __init__(self, agent=None):
+        self.agent = agent
+
+    def get(self, caid=None):
+        return self.agent
+
+
+class MockAuthN:
+    def __init__(self, valid=False, error=None):
+        self.valid = valid
+        self.error = error
+
+    def verify(self, _):
+        if self.error is not None:
+            raise self.error
+
+        return self.valid
+
+    @staticmethod
+    def resource(_):
+        return ""
+
+
+def test_signature_validation():
+    vc = authing.SignatureValidationComponent(agency=MockAgency(), authn=MockAuthN(), allowed=["/test", "/reward"])
+
+    req = testing.create_req(method="GET", path="/boot")
+    rep = falcon.Response()
+
+    vc.process_request(req, rep)
+    assert rep.complete is True
+    assert rep.status == falcon.HTTP_401
+
+    req = testing.create_req(method="POST", path="/boot")
+    rep = falcon.Response()
+
+    vc.process_request(req, rep)
+    assert rep.complete is True
+    assert rep.status == falcon.HTTP_401
+
+    req = testing.create_req(method="POST", path="/test")
+    rep = falcon.Response()
+
+    vc.process_request(req, rep)
+    assert rep.complete is False
+    assert rep.status == falcon.HTTP_200
+
+    req = testing.create_req(method="POST", path="/reward")
+    rep = falcon.Response()
+
+    vc.process_request(req, rep)
+    assert rep.complete is False
+    assert rep.status == falcon.HTTP_200
+
+    agent = object()
+    vc = authing.SignatureValidationComponent(agency=MockAgency(agent=agent), authn=MockAuthN(valid=True),
+                                              allowed=["/test", "/reward"])
+
+    req = testing.create_req(method="POST", path="/test")
+    rep = falcon.Response()
+
+    vc.process_request(req, rep)
+    assert rep.complete is False
+    assert rep.status == falcon.HTTP_200
+
+    req = testing.create_req(method="POST", path="/reward")
+    rep = falcon.Response()
+
+    vc.process_request(req, rep)
+    assert rep.complete is False
+    assert rep.status == falcon.HTTP_200
+
+    req = testing.create_req(method="GET", path="/identifiers")
+    rep = falcon.Response()
+
+    vc.process_request(req, rep)
+    assert rep.complete is False
+    assert rep.status == falcon.HTTP_200
+
+    req = testing.create_req(method="POST", path="/identifiers")
+    rep = falcon.Response()
+
+    vc.process_request(req, rep)
+    assert rep.complete is False
+    assert rep.status == falcon.HTTP_200
+
+    vc = authing.SignatureValidationComponent(agency=MockAgency(), authn=MockAuthN(error=kering.AuthNError()))
+    req = testing.create_req(method="POST", path="/identifiers")
+    rep = falcon.Response()
+
+    vc.process_request(req, rep)
+    assert rep.complete is True
+    assert rep.status == falcon.HTTP_401
+
+    vc = authing.SignatureValidationComponent(agency=MockAgency(), authn=MockAuthN(error=ValueError()))
+    req = testing.create_req(method="POST", path="/identifiers")
+    rep = falcon.Response()
+
+    vc.process_request(req, rep)
+    assert rep.complete is True
+    assert rep.status == falcon.HTTP_401
