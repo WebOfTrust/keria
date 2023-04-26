@@ -16,7 +16,7 @@ from hio.base import doing
 from hio.core import http
 from hio.help import decking
 from keri.app import configing, keeping, habbing, storing, signaling, notifying, oobiing, agenting, delegating, \
-    forwarding, querying
+    forwarding, querying, connecting
 from keri.app.grouping import Counselor
 from keria.app.indirecting import HttpEnd
 from keri.app.keeping import Algos
@@ -213,16 +213,15 @@ class Agent(doing.DoDoer):
         self.agency = agency
         self.caid = caid
 
-        swain = delegating.Boatswain(hby=hby)
-        counselor = Counselor(hby=hby)
+        self.swain = delegating.Boatswain(hby=hby)
+        self.counselor = Counselor(hby=hby)
+        self.org = connecting.Organizer(hby=hby)
 
         oobiery = oobiing.Oobiery(hby=hby)
 
-        self.monitor = longrunning.Monitor(hby=hby, swain=swain, counselor=counselor, temp=hby.temp)
+        self.monitor = longrunning.Monitor(hby=hby, swain=self.swain, counselor=self.counselor, temp=hby.temp)
         self.remoteMgr = RemoteManager(hby=hby)
 
-        self.swain = swain
-        self.counselor = counselor
         self.cues = decking.Deck()
         self.groups = decking.Deck()
         self.anchors = decking.Deck()
@@ -232,7 +231,7 @@ class Agent(doing.DoDoer):
         self.postman = forwarding.Poster(hby=hby)
         self.rep = storing.Respondant(hby=hby, cues=self.cues, mbx=Mailboxer(name=self.hby.name, temp=self.hby.temp))
 
-        doers = [habbing.HaberyDoer(habery=hby), receiptor, self.postman, self.rep, swain, counselor, *oobiery.doers]
+        doers = [habbing.HaberyDoer(habery=hby), receiptor, self.postman, self.rep, self.swain, self.counselor, *oobiery.doers]
 
         verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
 

@@ -6,6 +6,8 @@ keria.app.agenting module
 Testing the Mark II Agent
 """
 import json
+import os
+from builtins import isinstance
 
 import falcon
 from falcon import testing
@@ -16,6 +18,42 @@ from keri.core.coring import MtrDex
 from keri.peer import exchanging
 
 from keria.app import aiding
+
+
+def test_load_ends(helpers):
+    caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
+    salt = b'0123456789abcdef'
+    salter = coring.Salter(raw=salt)
+    cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
+    with helpers.openKeria(caid=caid, salter=salter, cf=cf, temp=True) as (agency, agent, app, client):
+        aiding.loadEnds(app=app, agency=agency)
+        assert app._router is not None
+
+        res = app._router.find("/test")
+        assert res is None
+
+        (end, *_) = app._router.find("/agent/AEID")
+        assert isinstance(end, aiding.AgentResourceEnd)
+        (end, *_) = app._router.find("/identifiers")
+        assert isinstance(end, aiding.IdentifierCollectionEnd)
+        (end, *_) = app._router.find("/identifiers/AID")
+        assert isinstance(end, aiding.IdentifierResourceEnd)
+        (end, *_) = app._router.find("/identifiers/NAME/oobis")
+        assert isinstance(end, aiding.IdentifierOOBICollectionEnd)
+        (end, *_) = app._router.find("/identifiers/NAME/endroles")
+        assert isinstance(end, aiding.EndRoleCollectionEnd)
+        (end, *_) = app._router.find("/identifiers/NAME/endroles/CID/witness/EID")
+        assert isinstance(end, aiding.EndRoleResourceEnd)
+        (end, *_) = app._router.find("/challenges")
+        assert isinstance(end, aiding.ChallengeCollectionEnd)
+        (end, *_) = app._router.find("/challenges/NAME")
+        assert isinstance(end, aiding.ChallengeResourceEnd)
+        (end, *_) = app._router.find("/contacts")
+        assert isinstance(end, aiding.ContactCollectionEnd)
+        (end, *_) = app._router.find("/contacts/PREFIX")
+        assert isinstance(end, aiding.ContactResourceEnd)
+        (end, *_) = app._router.find("/contacts/PREFIX/img")
+        assert isinstance(end, aiding.ContactImageResourceEnd)
 
 
 def test_identifier_collection_end(helpers):
@@ -207,7 +245,7 @@ def test_challenge_ends(helpers):
         end = aiding.IdentifierCollectionEnd()
         app.add_route("/identifiers", end)
 
-        chaEnd = aiding.ChallengeEnd()
+        chaEnd = aiding.ChallengeCollectionEnd()
         app.add_route("/challenges", chaEnd)
         chaResEnd = aiding.ChallengeResourceEnd()
         app.add_route("/challenges/{name}", chaResEnd)
@@ -266,3 +304,222 @@ def test_challenge_ends(helpers):
         b = json.dumps(data).encode("utf-8")
         result = client.simulate_put(path="/challenges/pal", body=b)
         assert result.status == falcon.HTTP_202
+
+
+def test_contact_ends(helpers):
+    caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
+    salt = b'0123456789abcdef'
+    salter = coring.Salter(raw=salt)
+    cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
+    with helpers.openKeria(caid=caid, salter=salter, cf=cf, temp=True) as (agency, agent, app, client), \
+            habbing.openHby(name="ken", salt=coring.Salter(raw=b'0123456789ghijkl').qb64) as kenHby:
+
+        # Register the identifier endpoint so we can create an AID for the test
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+        aid = helpers.createAid(client, "pal", salt)
+        palPre = aid["i"]
+
+        msgs = bytearray()
+        aids = []
+        for i in range(5):
+            hab = kenHby.makeHab(name=f"ken{i}", icount=1, ncount=1, wits=[])
+            aids.append(hab.pre)
+            msgs.extend(hab.makeOwnInception())
+
+        hab = kenHby.makeHab(name="bad", icount=1, ncount=1, wits=[])
+        msgs.extend(hab.makeOwnInception())
+        parsing.Parser().parse(ims=msgs, kvy=agent.kvy)
+
+        for aid in aids:
+            assert aid in agent.hby.kevers
+
+        contactColEnd = aiding.ContactCollectionEnd()
+        app.add_route("/contacts", contactColEnd)
+        contactResEnd = aiding.ContactResourceEnd()
+        app.add_route("/contacts/{prefix}", contactResEnd)
+        contactImgEnd = aiding.ContactImageResourceEnd()
+        app.add_route("/contacts/{prefix}/img", contactImgEnd)
+
+        client = testing.TestClient(app)
+
+        response = client.simulate_get("/contacts")
+        assert response.status == falcon.HTTP_200
+        assert response.json == []
+
+        data = dict(
+            name="test"
+        )
+        b = json.dumps(data).encode("utf-8")
+        # POST to an identifier that is not in the Kever
+        response = client.simulate_post(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo/pal", body=b)
+        assert response.status == falcon.HTTP_404
+
+        # POST to a local identifier
+        response = client.simulate_post(f"/contacts/{palPre}", body=b)
+        assert response.status == falcon.HTTP_400
+
+        for i in range(5):
+            data = dict(
+                id=aid[i],
+                first=f"Ken{i}",
+                last=f"Burns{i}",
+                company="GLEIF"
+            )
+            b = json.dumps(data).encode("utf-8")
+            # POST to an identifier that is not in the Kever
+            response = client.simulate_post(f"/contacts/{aids[i]}", body=b)
+            assert response.status == falcon.HTTP_200
+
+        response = client.simulate_get(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
+        assert response.status == falcon.HTTP_404
+
+        response = client.simulate_get(f"/contacts/{hab.pre}")
+        assert response.status == falcon.HTTP_404
+
+        response = client.simulate_get(f"/contacts/{aids[3]}")
+        assert response.status == falcon.HTTP_200
+        assert response.json == {'company': 'GLEIF',
+                                 'first': 'Ken3',
+                                 'id': 'EAjKmvW6flpWJfdYYZ2Lu4pllPWKFjCBz0dcX-S86Nvg',
+                                 'last': 'Burns3'}
+
+        response = client.simulate_get(f"/contacts")
+        assert response.status == falcon.HTTP_200
+        assert len(response.json) == 5
+        data = {d["id"]: d for d in response.json}
+        for aid in aids:
+            assert aid in data
+
+        data = dict(id=hab.pre, company="ProSapien")
+        b = json.dumps(data).encode("utf-8")
+
+        response = client.simulate_put(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo", body=b)
+        assert response.status == falcon.HTTP_404
+
+        response = client.simulate_put(f"/contacts/{palPre}", body=b)
+        assert response.status == falcon.HTTP_400
+
+        response = client.simulate_put(f"/contacts/{aids[2]}", body=b)
+        assert response.status == falcon.HTTP_200
+        assert response.json == {'company': 'ProSapien',
+                                 'first': 'Ken2',
+                                 'id': 'ELTQ3tF3n7QS8LDpKMdJyCMhVyMdvNPTiisnqW5ZQP3C',
+                                 'last': 'Burns2'}
+        response = client.simulate_put(f"/contacts/{aids[4]}", body=b)
+        assert response.status == falcon.HTTP_200
+        assert response.json == {'company': 'ProSapien',
+                                 'first': 'Ken4',
+                                 'id': 'EGwcSt3uvK5-oHI7hVU7dKMvWt0vRfMW2demzBBMDnBG',
+                                 'last': 'Burns4'}
+
+        response = client.simulate_get("/contacts", query_string="group=company")
+        assert response.status == falcon.HTTP_200
+        assert len(response.json) == 2
+
+        gleif = response.json["GLEIF"]
+        data = {d["id"]: d for d in gleif}
+        assert aids[0] in data
+        assert aids[1] in data
+        assert aids[3] in data
+
+        pros = response.json["ProSapien"]
+        data = {d["id"]: d for d in pros}
+        assert aids[2] in data
+        assert aids[4] in data
+
+        # Begins with search on company name
+        response = client.simulate_get("/contacts", query_string="group=company&filter_value=Pro")
+        assert response.status == falcon.HTTP_200
+        assert len(response.json) == 1
+
+        pros = response.json["ProSapien"]
+        data = {d["id"]: d for d in pros}
+        assert aids[2] in data
+        assert aids[4] in data
+
+        response = client.simulate_get("/contacts", query_string="filter_field=last")
+        assert response.status == falcon.HTTP_400
+
+        response = client.simulate_get("/contacts", query_string="filter_field=last&filter_value=Burns3")
+        assert response.status == falcon.HTTP_200
+        assert response.json == [{'challenges': [],
+                                  'company': 'GLEIF',
+                                  'first': 'Ken3',
+                                  'id': 'EAjKmvW6flpWJfdYYZ2Lu4pllPWKFjCBz0dcX-S86Nvg',
+                                  'last': 'Burns3',
+                                  'wellKnowns': []}]
+
+        # Begins with search on last name
+        response = client.simulate_get("/contacts",
+                                       query_string="filter_field=last&filter_value=Burns")
+        assert response.status == falcon.HTTP_200
+        assert response.json == [{'challenges': [],
+                                  'company': 'GLEIF',
+                                  'first': 'Ken3',
+                                  'id': 'EAjKmvW6flpWJfdYYZ2Lu4pllPWKFjCBz0dcX-S86Nvg',
+                                  'last': 'Burns3',
+                                  'wellKnowns': []},
+                                 {'challenges': [],
+                                  'company': 'GLEIF',
+                                  'first': 'Ken1',
+                                  'id': 'EER-n23rDM2RQB8Kw4KRrm8SFpoid4Jnelhauo6KxQpz',
+                                  'last': 'Burns1',
+                                  'wellKnowns': []},
+                                 {'challenges': [],
+                                  'company': 'ProSapien',
+                                  'first': 'Ken4',
+                                  'id': 'EGwcSt3uvK5-oHI7hVU7dKMvWt0vRfMW2demzBBMDnBG',
+                                  'last': 'Burns4',
+                                  'wellKnowns': []},
+                                 {'challenges': [],
+                                  'company': 'ProSapien',
+                                  'first': 'Ken2',
+                                  'id': 'ELTQ3tF3n7QS8LDpKMdJyCMhVyMdvNPTiisnqW5ZQP3C',
+                                  'last': 'Burns2',
+                                  'wellKnowns': []},
+                                 {'challenges': [],
+                                  'company': 'GLEIF',
+                                  'first': 'Ken0',
+                                  'id': 'EPo8Wy1xpTa6ri25M4IlmWBBzs5y8v4Qn3Z8xP4kEjcK',
+                                  'last': 'Burns0',
+                                  'wellKnowns': []}]
+
+        response = client.simulate_delete(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
+        assert response.status == falcon.HTTP_404
+
+        response = client.simulate_delete(f"/contacts/{aids[3]}")
+        assert response.status == falcon.HTTP_202
+
+        response = client.simulate_get("/contacts", query_string="filter_field=last&filter_value=Burns3")
+        assert response.status == falcon.HTTP_200
+        assert response.json == []
+
+        data = bytearray(os.urandom(50))
+        headers = {"Content-Type": "image/png", "Content-Length": "50"}
+        response = client.simulate_post(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo/img", body=data,
+                                        headers=headers)
+        assert response.status == falcon.HTTP_404
+
+        data = bytearray(os.urandom(1000001))
+        headers = {"Content-Type": "image/png", "Content-Length": "1000001"}
+        response = client.simulate_post(f"/contacts/{aids[0]}/img", body=data, headers=headers)
+        assert response.status == falcon.HTTP_400
+
+        data = bytearray(os.urandom(10000))
+        headers = {"Content-Type": "image/png", "Content-Length": "10000"}
+        response = client.simulate_post(f"/contacts/{aids[0]}/img", body=data, headers=headers)
+        assert response.status == falcon.HTTP_202
+
+        response = client.simulate_get(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo/img")
+        assert response.status == falcon.HTTP_404
+
+        response = client.simulate_get(f"/contacts/{aids[2]}/img")
+        assert response.status == falcon.HTTP_404
+
+        response = client.simulate_get(f"/contacts/{aids[0]}/img")
+        assert response.status == falcon.HTTP_200
+        assert response.content == data
+        headers = response.headers
+        assert headers["Content-Type"] == "image/png"
+        assert headers["Content-Length"] == "10000"
