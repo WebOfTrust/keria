@@ -5,6 +5,7 @@ keria.app.agenting module
 
 """
 import json
+from urllib.parse import urlparse
 
 from keri import kering
 from keri.app.storing import Mailboxer
@@ -463,8 +464,10 @@ def loadEnds(app):
     opEnd = longrunning.OperationResourceEnd()
     app.add_route("/operations/{name}", opEnd)
 
-    oobiEnd = OOBICollectionEnd()
-    app.add_route("/oobis", oobiEnd)
+    oobiColEnd = OOBICollectionEnd()
+    app.add_route("/oobis", oobiColEnd)
+    oobiResEnd = OobiResourceEnd()
+    app.add_route("/oobi/{alias}", oobiResEnd)
 
     statesEnd = KeyStateCollectionEnd()
     app.add_route("/states", statesEnd)
@@ -733,10 +736,10 @@ class OOBICollectionEnd:
             agent.hby.db.oobis.pin(keys=(oobi,), val=obr)
 
         elif "rpy" in body:
-            raise falcon.HTTPNotImplemented("'rpy' support not implemented yet")
+            raise falcon.HTTPNotImplemented(description="'rpy' support not implemented yet")
 
         else:
-            raise falcon.HTTPBadRequest("invalid OOBI request body, either 'rpy' or 'url' is required")
+            raise falcon.HTTPBadRequest(description="invalid OOBI request body, either 'rpy' or 'url' is required")
 
         oid = randomNonce()
         op = agent.monitor.submit(oid, longrunning.OpTypes.oobi, metadata=dict(oobi=oobi))
@@ -744,6 +747,91 @@ class OOBICollectionEnd:
         rep.status = falcon.HTTP_202
         rep.content_type = "application/json"
         rep.data = op.to_json().encode("utf-8")
+
+
+class OobiResourceEnd:
+
+    @staticmethod
+    def on_get(req, rep, alias):
+        """ OOBI GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias: option route parameter for specific identifier to get
+
+        ---
+        summary:  Get OOBI for specific identifier
+        description:  Generate OOBI for the identifier of the specified alias and role
+        tags:
+           - OOBIs
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: human readable alias for the identifier generate OOBI for
+          - in: query
+            name: role
+            schema:
+              type: string
+            required: true
+            description: role for which to generate OOBI
+        responses:
+            200:
+              description: An array of Identifier key state information
+              content:
+                  application/json:
+                    schema:
+                        description: Key state information for current identifiers
+                        type: object
+        """
+        agent = req.context.agent
+
+        hab = agent.hby.habByName(alias)
+        if hab is None:
+            raise falcon.HTTPBadRequest(description="Invalid alias to generate OOBI")
+
+        role = req.params["role"]
+
+        res = dict(role=role)
+        if role in (kering.Roles.witness,):  # Fetch URL OOBIs for all witnesses
+            oobis = []
+            for wit in hab.kever.wits:
+                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+                if not urls:
+                    raise falcon.HTTPNotFound(description=f"unable to query witness {wit}, no http endpoint")
+
+                up = urlparse(urls[kering.Schemes.http])
+                oobis.append(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/witness/{wit}")
+            res["oobis"] = oobis
+        elif role in (kering.Roles.controller,):  # Fetch any controller URL OOBIs
+            oobis = []
+            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http)
+            if not urls:
+                raise falcon.HTTPNotFound(description=f"unable to query controller {hab.pre}, no http endpoint")
+
+            up = urlparse(urls[kering.Schemes.http])
+            oobis.append(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/controller")
+            res["oobis"] = oobis
+        elif role in (kering.Roles.agent,):
+            oobis = []
+            roleUrls = hab.fetchRoleUrls(hab.pre, scheme=kering.Schemes.http, role=kering.Roles.agent)
+            if not roleUrls:
+                raise falcon.HTTPNotFound(description=f"unable to query controller {hab.pre}, no http endpoint")
+
+            for eid, urls in roleUrls['agent'].items():
+                up = urlparse(urls[kering.Schemes.http])
+                oobis.append(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/agent/{eid}")
+                res["oobis"] = oobis
+        else:
+            rep.status = falcon.HTTP_404
+            return
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(res).encode("utf-8")
 
 
 class QueryCollectionEnd:

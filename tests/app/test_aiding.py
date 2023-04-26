@@ -11,7 +11,7 @@ from builtins import isinstance
 
 import falcon
 from falcon import testing
-from keri.app import habbing, configing
+from keri.app import habbing
 from keri.app.keeping import Algos
 from keri.core import coring, eventing, parsing
 from keri.core.coring import MtrDex
@@ -21,11 +21,7 @@ from keria.app import aiding
 
 
 def test_load_ends(helpers):
-    caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
-    salt = b'0123456789abcdef'
-    salter = coring.Salter(raw=salt)
-    cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
-    with helpers.openKeria(caid=caid, salter=salter, cf=cf, temp=True) as (agency, agent, app, client):
+    with helpers.openKeria() as (agency, agent, app, client):
         aiding.loadEnds(app=app, agency=agency)
         assert app._router is not None
 
@@ -57,12 +53,7 @@ def test_load_ends(helpers):
 
 
 def test_identifier_collection_end(helpers):
-    caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
-    salt = b'0123456789abcdef'
-    salter = coring.Salter(raw=salt)
-    cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
-
-    with helpers.openKeria(caid, salter, temp=True, cf=cf) as (agency, agent, app, client), \
+    with helpers.openKeria() as (agency, agent, app, client), \
             habbing.openHby(name="p1", temp=True) as p1hby, \
             habbing.openHby(name="p2", temp=True) as p2hby:
 
@@ -78,6 +69,7 @@ def test_identifier_collection_end(helpers):
         assert res.json == {'description': "required field 'icp' missing from request",
                             'title': '400 Bad Request'}
 
+        salt = b'0123456789abcdef'
         serder, signers = helpers.incept(salt, "signify:aid", pidx=0)
         assert len(signers) == 1
         signer0 = signers[0]
@@ -237,11 +229,7 @@ def test_identifier_collection_end(helpers):
 
 
 def test_challenge_ends(helpers):
-    caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
-    salt = b'0123456789abcdef'
-    salter = coring.Salter(raw=salt)
-    cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
-    with helpers.openKeria(caid, salter, temp=True, cf=cf) as (agency, agent, app, client):
+    with helpers.openKeria() as (agency, agent, app, client):
         end = aiding.IdentifierCollectionEnd()
         app.add_route("/identifiers", end)
 
@@ -272,6 +260,7 @@ def test_challenge_ends(helpers):
         assert result.status == falcon.HTTP_400  # Missing words
 
         # Create an AID to test against
+        salt = b'0123456789abcdef'
         aid = helpers.createAid(client, "pal", salt)
 
         payload = dict(i=aid['i'], words=words)
@@ -307,16 +296,13 @@ def test_challenge_ends(helpers):
 
 
 def test_contact_ends(helpers):
-    caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
-    salt = b'0123456789abcdef'
-    salter = coring.Salter(raw=salt)
-    cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
-    with helpers.openKeria(caid=caid, salter=salter, cf=cf, temp=True) as (agency, agent, app, client), \
+    with helpers.openKeria() as (agency, agent, app, client), \
             habbing.openHby(name="ken", salt=coring.Salter(raw=b'0123456789ghijkl').qb64) as kenHby:
 
         # Register the identifier endpoint so we can create an AID for the test
         end = aiding.IdentifierCollectionEnd()
         app.add_route("/identifiers", end)
+        salt = b'0123456789abcdef'
         aid = helpers.createAid(client, "pal", salt)
         palPre = aid["i"]
 
