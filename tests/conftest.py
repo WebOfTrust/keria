@@ -13,11 +13,13 @@ from contextlib import contextmanager
 import falcon
 import pytest
 from falcon import testing
-from keri.app import keeping, habbing
-from keri.core import coring, eventing
+from keri import kering
+from keri.app import keeping, habbing, configing
+from keri.core import coring, eventing, routing, parsing
 from keri.core.coring import MtrDex
-from keri.help import helping
 from keri.vdr import credentialing
+from keri.help import helping
+from keri import help
 
 from keria.app import agenting
 
@@ -61,6 +63,7 @@ def mockHelpingNowIso8601(monkeypatch):
         return "2021-06-27T21:26:21.233257+00:00"
 
     monkeypatch.setattr(helping, "nowIso8601", mockNowIso8601)
+
 
 @pytest.fixture()
 def mockCoringRandomNonce(monkeypatch):
@@ -122,8 +125,8 @@ class Helpers:
         return serder, signers
 
     @staticmethod
-    def createAid(client, name, salt):
-        serder, signers = Helpers.incept(salt, "signify:aid", pidx=0)
+    def createAid(client, name, salt, wits=None, toad="0"):
+        serder, signers = Helpers.incept(salt, "signify:aid", pidx=0, wits=wits, toad=toad)
         assert len(signers) == 1
 
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
@@ -137,7 +140,7 @@ class Helpers:
                 }
 
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
-        assert res.status_code == 200
+        assert res.status_code == 200 or res.status_code == 202
         return res.json
 
     @staticmethod
@@ -151,7 +154,16 @@ class Helpers:
 
     @staticmethod
     @contextmanager
-    def openKeria(caid, salter, cf, temp=True):
+    def openKeria(caid=None, salter=None, cf=None, temp=True):
+        caid = caid if caid is not None else "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
+
+        if salter is None:
+            salt = b'0123456789abcdef'
+            salter = coring.Salter(raw=salt)
+
+        if cf is None:
+            cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
+
         with habbing.openHby(name="keria", salt=salter.qb64, temp=temp, cf=cf) as hby:
 
             agency = agenting.Agency(name="agency", base=None, bran=None, temp=True)
@@ -176,13 +188,54 @@ class MockAgentMiddleware:
     def __init__(self, agent):
         self.agent = agent
 
-    def process_request(self, req, resp):
+    def process_request(self, req, _):
         """ Process request to ensure has a valid signature from caid
 
         Parameters:
             req: Http request object
-            resp: Http response object
+            _: placeholder for Http response object
 
 
         """
         req.context.agent = self.agent
+
+
+@pytest.fixture
+def seeder():
+    return DbSeed
+
+
+class DbSeed:
+    @staticmethod
+    def seedWitEnds(db, witHabs, protocols=None):
+        """ Add endpoint and location records for well known test witnesses
+
+        Args:
+            db (Baser): database to add records
+            witHabs (list): list of witness Habs for whom to create Ends
+            protocols (list) array of str protocol names to load URLs for.
+        Returns:
+
+        """
+
+        rtr = routing.Router()
+        rvy = routing.Revery(db=db, rtr=rtr)
+        kvy = eventing.Kevery(db=db, lax=False, local=True, rvy=rvy)
+        kvy.registerReplyRoutes(router=rtr)
+        psr = parsing.Parser(framed=True, kvy=kvy, rvy=rvy)
+
+        if protocols is None:
+            protocols = [kering.Schemes.tcp, kering.Schemes.http]
+
+        for scheme in protocols:
+            msgs = bytearray()
+            for hab in witHabs:
+                url = WitnessUrls[f"{hab.name}:{scheme}"]
+                msgs.extend(hab.makeEndRole(eid=hab.pre,
+                                            role=kering.Roles.controller,
+                                            stamp=help.nowIso8601()))
+
+                msgs.extend(hab.makeLocScheme(url=url,
+                                              scheme=scheme,
+                                              stamp=help.nowIso8601()))
+                psr.parse(ims=msgs)
