@@ -15,7 +15,6 @@ from keri.core import coring
 from keri.core.coring import Ilks
 from keri.db import dbing
 from keri.help import ogler
-from keri.peer import exchanging
 from mnemonic import mnemonic
 
 from ..core import longrunning, httping
@@ -42,10 +41,17 @@ def loadEnds(app, agency):
     endRoleEnd = EndRoleResourceEnd()
     app.add_route("/identifiers/{name}/endroles/{cid}/{role}/{eid}", endRoleEnd)
 
-    chaEnd = ChallengeEnd()
+    chaEnd = ChallengeCollectionEnd()
     app.add_route("/challenges", chaEnd)
     chaResEnd = ChallengeResourceEnd()
     app.add_route("/challenges/{name}", chaResEnd)
+
+    contactColEnd = ContactCollectionEnd()
+    app.add_route("/contacts", contactColEnd)
+    contactResEnd = ContactResourceEnd()
+    app.add_route("/contacts/{prefix}", contactResEnd)
+    contactImgEnd = ContactImageResourceEnd()
+    app.add_route("/contacts/{prefix}/img", contactImgEnd)
 
 
 class AgentResourceEnd:
@@ -511,7 +517,7 @@ class EndRoleResourceEnd:
         pass
 
 
-class ChallengeEnd:
+class ChallengeCollectionEnd:
     """ Resource for Challenge/Response Endpoints """
 
     @staticmethod
@@ -674,5 +680,392 @@ class ChallengeResourceEnd:
         said = body["said"]
         saider = coring.Saider(qb64=said)
         agent.hby.db.chas.add(keys=(aid,), val=saider)
+
+        rep.status = falcon.HTTP_202
+
+
+class ContactCollectionEnd:
+
+    def on_get(self, req, rep):
+        """ Contact plural GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+        ---
+        summary:  Get list of contact information associated with remote identfiers
+        description:  Get list of contact information associated with remote identfiers.  All
+                      information is metadata and kept in local storage only
+        tags:
+           - Contacts
+        parameters:
+          - in: query
+            name: group
+            schema:
+              type: string
+            required: false
+            description: field name to group results by
+          - in: query
+            name: filter_field
+            schema:
+               type: string
+            description: field name to search
+            required: false
+          - in: query
+            name: filter_value
+            schema:
+               type: string
+            description: value to search for
+            required: false
+        responses:
+           200:
+              description: List of contact information for remote identifiers
+        """
+        # TODO:  Add support for sorting
+        agent = req.context.agent
+        group = req.params.get("group")
+        field = req.params.get("filter_field")
+        val = req.params.get("filter_value")
+
+        if group is not None:
+            data = dict()
+            values = agent.org.values(group, val)
+            for value in values:
+                contacts = agent.org.find(group, value)
+                self.authn(agent, contacts)
+                data[value] = contacts
+
+            rep.status = falcon.HTTP_200
+            rep.data = json.dumps(data).encode("utf-8")
+
+        elif field is not None:
+            val = req.params.get("filter_value")
+            if val is None:
+                raise falcon.HTTPBadRequest(description="filter_value if required if field_field is specified")
+
+            contacts = agent.org.find(field=field, val=val)
+            self.authn(agent, contacts)
+            rep.status = falcon.HTTP_200
+            rep.data = json.dumps(contacts).encode("utf-8")
+
+        else:
+            data = []
+            contacts = agent.org.list()
+
+            for contact in contacts:
+                aid = contact["id"]
+                if aid in agent.hby.kevers and aid not in agent.hby.prefixes:
+                    data.append(contact)
+
+            self.authn(agent, data)
+            rep.status = falcon.HTTP_200
+            rep.data = json.dumps(data).encode("utf-8")
+
+    @staticmethod
+    def authn(agent, contacts):
+        for contact in contacts:
+            aid = contact['id']
+            accepted = [saider.qb64 for saider in agent.hby.db.chas.get(keys=(aid,))]
+            received = [saider.qb64 for saider in agent.hby.db.reps.get(keys=(aid,))]
+
+            challenges = []
+            for said in received:
+                exn = agent.hby.db.exns.get(keys=(said,))
+                challenges.append(dict(dt=exn.ked['dt'], words=exn.ked['a']['words'], said=said,
+                                       authenticated=said in accepted))
+
+            contact["challenges"] = challenges
+
+            wellKnowns = []
+            wkans = agent.hby.db.wkas.get(keys=(aid,))
+            for wkan in wkans:
+                wellKnowns.append(dict(url=wkan.url, dt=wkan.dt))
+
+            contact["wellKnowns"] = wellKnowns
+
+
+class ContactImageResourceEnd:
+
+    @staticmethod
+    def on_post(req, rep, prefix):
+        """
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            prefix: qb64 identifier prefix of contact to associate with image
+
+        ---
+         summary: Uploads an image to associate with identfier.
+         description: Uploads an image to associate with identfier.
+         tags:
+            - Contacts
+         parameters:
+           - in: path
+             name: prefix
+             schema:
+                type: string
+             description: identifier prefix to associate image to
+         requestBody:
+             required: true
+             content:
+                image/jpg:
+                  schema:
+                    type: string
+                    format: binary
+                image/png:
+                  schema:
+                    type: string
+                    format: binary
+         responses:
+           200:
+              description: Image successfully uploaded
+
+        """
+        agent = req.context.agent
+        if prefix not in agent.hby.kevers:
+            raise falcon.HTTPNotFound(description=f"{prefix} is not a known identifier.")
+
+        if req.content_length > 1000000:
+            raise falcon.HTTPBadRequest(description="image too big to save")
+
+        agent.org.setImg(pre=prefix, typ=req.content_type, stream=req.bounded_stream)
+        rep.status = falcon.HTTP_202
+
+    @staticmethod
+    def on_get(req, rep, prefix):
+        """ Contact image GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            prefix: qb64 identifier prefix of contact information to get
+
+       ---
+        summary:  Get contact image for identifer prefix
+        description:  Get contact image for identifer prefix
+        tags:
+           - Contacts
+        parameters:
+          - in: path
+            name: prefix
+            schema:
+              type: string
+            required: true
+            description: qb64 identifier prefix of contact image to get
+        responses:
+           200:
+              description: Contact information successfully retrieved for prefix
+              content:
+                  image/jpg:
+                    schema:
+                        description: Image
+                        type: binary
+           404:
+              description: No contact information found for prefix
+        """
+        agent = req.context.agent
+        if prefix not in agent.hby.kevers:
+            raise falcon.HTTPNotFound(description=f"{prefix} is not a known identifier.")
+
+        data = agent.org.getImgData(pre=prefix)
+        if data is None:
+            raise falcon.HTTPNotFound(description=f"no image available for {prefix}.")
+
+        rep.status = falcon.HTTP_200
+        rep.set_header('Content-Type', data["type"])
+        rep.set_header('Content-Length', data["length"])
+        rep.stream = agent.org.getImg(pre=prefix)
+
+
+class ContactResourceEnd:
+
+    @staticmethod
+    def on_get(req, rep, prefix):
+        """ Contact GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            prefix: qb64 identifier prefix of contact information to get
+
+       ---
+        summary:  Get contact information associated with single remote identfier
+        description:  Get contact information associated with single remote identfier.  All
+                      information is meta-data and kept in local storage only
+        tags:
+           - Contacts
+        parameters:
+          - in: path
+            name: prefix
+            schema:
+              type: string
+            required: true
+            description: qb64 identifier prefix of contact to get
+        responses:
+           200:
+              description: Contact information successfully retrieved for prefix
+           404:
+              description: No contact information found for prefix
+        """
+        agent = req.context.agent
+        if prefix not in agent.hby.kevers:
+            raise falcon.HTTPNotFound(description=f"{prefix} is not a known identifier.")
+
+        contact = agent.org.get(prefix)
+        if contact is None:
+            raise falcon.HTTPNotFound(description="NOT FOUND")
+
+        rep.status = falcon.HTTP_200
+        rep.data = json.dumps(contact).encode("utf-8")
+
+    @staticmethod
+    def on_post(req, rep, prefix):
+        """ Contact plural GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            prefix: human readable name of identifier to replace contact information
+
+       ---
+        summary:  Create new contact information for an identifier
+        description:  Creates new information for an identifier, overwriting all existing
+                      information for that identifier
+        tags:
+           - Contacts
+        parameters:
+          - in: path
+            name: prefix
+            schema:
+              type: string
+            required: true
+            description: qb64 identifier prefix to add contact metadata to
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: Contact information
+                    type: object
+
+        responses:
+           200:
+              description: Updated contact information for remote identifier
+           400:
+              description: Invalid identfier used to update contact information
+           404:
+              description: Prefix not found in identifier contact information
+        """
+        agent = req.context.agent
+        body = req.get_media()
+        if prefix not in agent.hby.kevers:
+            raise falcon.HTTPNotFound(description="{prefix} is not a known identifier.  oobi required before contact "
+                                                  "information")
+
+        if prefix in agent.hby.prefixes:
+            raise falcon.HTTPBadRequest(description=f"{prefix} is a local identifier, contact information only for "
+                                                    f"remote identifiers")
+
+        if "id" in body:
+            del body["id"]
+
+        if agent.org.get(prefix):
+            raise falcon.HTTPBadRequest(description=f"contact data for {prefix} already exists")
+
+        agent.org.replace(prefix, body)
+        contact = agent.org.get(prefix)
+
+        rep.status = falcon.HTTP_200
+        rep.data = json.dumps(contact).encode("utf-8")
+
+    @staticmethod
+    def on_put(req, rep, prefix):
+        """ Contact PUT endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            prefix: qb64 identifier to update contact information
+
+        ---
+        summary:  Update provided fields in contact information associated with remote identfier prefix
+        description:  Update provided fields in contact information associated with remote identfier prefix.  All
+                      information is metadata and kept in local storage only
+        tags:
+           - Contacts
+        parameters:
+          - in: path
+            name: prefix
+            schema:
+              type: string
+            required: true
+            description: qb64 identifier prefix to add contact metadata to
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: Contact information
+                    type: object
+
+        responses:
+           200:
+              description: Updated contact information for remote identifier
+           400:
+              description: Invalid identfier used to update contact information
+           404:
+              description: Prefix not found in identifier contact information
+        """
+        agent = req.context.agent
+        body = req.get_media()
+        if prefix not in agent.hby.kevers:
+            raise falcon.HTTPNotFound(
+                description=f"{prefix} is not a known identifier.  oobi required before contact information")
+
+        if prefix in agent.hby.prefixes:
+            raise falcon.HTTPBadRequest(
+                description=f"{prefix} is a local identifier, contact information only for remote identifiers")
+
+        if "id" in body:
+            del body["id"]
+
+        agent.org.update(prefix, body)
+        contact = agent.org.get(prefix)
+
+        rep.status = falcon.HTTP_200
+        rep.data = json.dumps(contact).encode("utf-8")
+
+    @staticmethod
+    def on_delete(req, rep, prefix):
+        """ Contact plural GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            prefix: qb64 identifier prefix to delete contact information
+
+        ---
+        summary:  Delete contact information associated with remote identfier
+        description:  Delete contact information associated with remote identfier
+        tags:
+           - Contacts
+        parameters:
+          - in: path
+            name: prefix
+            schema:
+              type: string
+            required: true
+            description: qb64 identifier prefix of contact to delete
+        responses:
+           202:
+              description: Contact information successfully deleted for prefix
+           404:
+              description: No contact information found for prefix
+        """
+        agent = req.context.agent
+        deleted = agent.org.rem(prefix)
+        if not deleted:
+            raise falcon.HTTPNotFound(description=f"no contact information to delete for {prefix}")
 
         rep.status = falcon.HTTP_202
