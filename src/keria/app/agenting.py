@@ -210,12 +210,14 @@ class Agent(doing.DoDoer):
     def __init__(self, hby, rgy, agentHab, agency, caid, **opts):
 
         self.hby = hby
+        self.rgy = rgy
         self.agentHab = agentHab
         self.agency = agency
         self.caid = caid
 
         self.swain = delegating.Boatswain(hby=hby)
         self.counselor = Counselor(hby=hby)
+        self.registrar = credentialing.Registrar(hby=hby, rgy=rgy, counselor=self.counselor)
         self.org = connecting.Organizer(hby=hby)
 
         oobiery = oobiing.Oobiery(hby=hby)
@@ -467,7 +469,7 @@ def loadEnds(app):
     oobiColEnd = OOBICollectionEnd()
     app.add_route("/oobis", oobiColEnd)
     oobiResEnd = OobiResourceEnd()
-    app.add_route("/oobi/{alias}", oobiResEnd)
+    app.add_route("/oobis/{alias}", oobiResEnd)
 
     statesEnd = KeyStateCollectionEnd()
     app.add_route("/states", statesEnd)

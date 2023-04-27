@@ -6,7 +6,6 @@ keria.app.indirecting module
 simple indirect mode demo support classes
 """
 import falcon
-from hio.help import decking
 from keri.app import httping
 from keri.core import eventing
 from keri.core.coring import Ilks

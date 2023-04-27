@@ -15,7 +15,7 @@ import pytest
 from falcon import testing
 from keri import kering
 from keri.app import keeping, habbing, configing
-from keri.core import coring, eventing, routing, parsing
+from keri.core import coring, eventing, routing, parsing, scheming
 from keri.core.coring import MtrDex
 from keri.vdr import credentialing
 from keri.help import helping
@@ -239,3 +239,149 @@ class DbSeed:
                                               scheme=scheme,
                                               stamp=help.nowIso8601()))
                 psr.parse(ims=msgs)
+
+    @staticmethod
+    def seedSchema(db):
+        # OLD: "E1MCiPag0EWlqeJGzDA9xxr1bUSUR4fZXtqHDrwdXgbk"
+        sad = {'$id': '',
+               '$schema': 'http://json-schema.org/draft-07/schema#', 'title': 'Legal Entity vLEI Credential',
+               'description': 'A vLEI Credential issued by a Qualified vLEI issuer to a Legal Entity',
+               'credentialType': 'LegalEntityvLEICredential',
+               'properties': {'v': {'type': 'string'}, 'd': {'type': 'string'}, 'i': {'type': 'string'},
+                              'ri': {'description': 'credential status registry', 'type': 'string'},
+                              's': {'description': 'schema SAID', 'type': 'string'}, 'a': {'description': 'data block',
+                                                                                           'properties': {
+                                                                                               'd': {'type': 'string'},
+                                                                                               'i': {'type': 'string'},
+                                                                                               'dt': {
+                                                                                                   'description':
+                                                                                                       'issuance date '
+                                                                                                       'time',
+                                                                                                   'format':
+                                                                                                       'date-time',
+                                                                                                   'type': 'string'},
+                                                                                               'LEI': {
+                                                                                                   'type': 'string'}},
+                                                                                           'additionalProperties':
+                                                                                               False,
+                                                                                           'required': ['i', 'dt',
+                                                                                                        'LEI'],
+                                                                                           'type': 'object'},
+                              'e': {'description': 'edges block', 'type': 'object'},
+                              'r': {'type': 'object', 'description': 'rules block'}}, 'additionalProperties': False,
+               'required': ['i', 'ri', 's', 'd', 'e', 'r'], 'type': 'object'}
+
+        _, sad = coring.Saider.saidify(sad, label=coring.Saids.dollar)
+        schemer = scheming.Schemer(sed=sad)
+        # NEW: "ENTAoj2oNBFpaniRswwPcca9W1ElEeH2V7ahw68HV4G5
+        db.schema.pin(schemer.said, schemer)
+
+        # OLD: "ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI"
+        sad = {'$id': '',
+               '$schema': 'http://json-schema.org/draft-07/schema#', 'title': 'GLEIF vLEI Credential',
+               'description': 'The vLEI Credential issued to GLEIF', 'credentialType': 'GLEIFvLEICredential',
+               'type': 'object',
+               'properties': {'v': {'type': 'string'}, 'd': {'type': 'string'}, 'i': {'type': 'string'},
+                              'ri': {'description': 'credential status registry', 'type': 'string'},
+                              's': {'description': 'schema SAID', 'type': 'string'}, 'a': {'description': 'data block',
+                                                                                           'properties': {
+                                                                                               'd': {'type': 'string'},
+                                                                                               'i': {'type': 'string'},
+                                                                                               'dt': {
+                                                                                                   'description':
+                                                                                                       'issuance date '
+                                                                                                       'time',
+                                                                                                   'format':
+                                                                                                       'date-time',
+                                                                                                   'type': 'string'},
+                                                                                               'LEI': {
+                                                                                                   'type': 'string'}},
+                                                                                           'additionalProperties':
+                                                                                               False,
+                                                                                           'required': ['d', 'dt',
+                                                                                                        'LEI'],
+                                                                                           'type': 'object'},
+                              'e': {'type': 'object'}}, 'additionalProperties': False, 'required': ['d', 'i', 'ri']}
+        _, sad = coring.Saider.saidify(sad, label=coring.Saids.dollar)
+        schemer = scheming.Schemer(sed=sad)
+        # NEW: EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC
+        db.schema.pin(schemer.said, schemer)
+
+        # OLD: EPz3ZvjQ_8ZwRKzfA5xzbMW8v8ZWLZhvOn2Kw1Nkqo_Q
+        sad = {'$id': '', '$schema':
+               'http://json-schema.org/draft-07/schema#', 'title': 'Legal Entity vLEI Credential',
+               'description': 'A vLEI Credential issued by a Qualified vLEI issuer to a Legal Entity',
+               'credentialType': 'LegalEntityvLEICredential',
+               'properties': {'v': {'type': 'string'}, 'd': {'type': 'string'}, 'i': {'type': 'string'},
+                              'ri': {'description': 'credential status registry', 'type': 'string'},
+                              's': {'description': 'schema SAID', 'type': 'string'}, 'a': {'description': 'data block',
+                                                                                           'properties': {
+                                                                                               'd': {'type': 'string'},
+                                                                                               'i': {'type': 'string'},
+                                                                                               'dt': {
+                                                                                                   'description':
+                                                                                                       'issuance date '
+                                                                                                       'time',
+                                                                                                   'format':
+                                                                                                       'date-time',
+                                                                                                   'type': 'string'},
+                                                                                               'LEI': {
+                                                                                                   'type': 'string'}},
+                                                                                           'additionalProperties':
+                                                                                               False,
+                                                                                           'required': ['i', 'dt',
+                                                                                                        'LEI'],
+                                                                                           'type': 'object'},
+                              'e': {'description': 'edges block',
+                                    'properties': {'d': {'description': 'SAID of edges block', 'type': 'string'},
+                                                   'qualifiedvLEIIssuervLEICredential': {
+                                                       'description': 'node SAID of issuer credential',
+                                                       'properties': {'n': {'type': 'string'}},
+                                                       'additionalProperties': False, 'required': ['n'],
+                                                       'type': 'object'}}, 'additionalProperties': False,
+                                    'required': ['d', 'qualifiedvLEIIssuervLEICredential'], 'type': 'object'},
+                              'r': {'type': 'array', 'items': {'type': 'object'}, 'description': 'rules block',
+                                    'minItems': 0}}, 'additionalProperties': False,
+               'required': ['i', 'ri', 's', 'd', 'e', 'r'], 'type': 'object'}
+        _, sad = coring.Saider.saidify(sad, label=coring.Saids.dollar)
+        schemer = scheming.Schemer(sed=sad)
+        # NEW: ED892b40P_GcESs3wOcc2zFvL_GVi2Ybzp9isNTZKqP0
+        db.schema.pin(schemer.said, schemer)
+
+        # OLD: EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao
+        sad = {'$id': '',
+               '$schema': 'http://json-schema.org/draft-07/schema#', 'title': 'Qualified vLEI Issuer Credential',
+               'description': 'A vLEI Credential issued by GLEIF to Qualified vLEI Issuers which allows the Qualified '
+                              'vLEI Issuers to issue, verify and revoke Legal Entity vLEI Credentials and Legal '
+                              'Entity Official Organizational Role vLEI Credentials',
+               'credentialType': 'QualifiedvLEIIssuervLEICredential',
+               'properties': {'v': {'type': 'string'}, 'd': {'type': 'string'}, 'i': {'type': 'string'},
+                              'ri': {'description': 'credential status registry', 'type': 'string'},
+                              's': {'description': 'schema SAID', 'type': 'string'}, 'a': {'description': 'data block',
+                                                                                           'properties': {
+                                                                                               'd': {'type': 'string'},
+                                                                                               'i': {'type': 'string'},
+                                                                                               'dt': {
+                                                                                                   'description':
+                                                                                                       'issuance date '
+                                                                                                       'time',
+                                                                                                   'format':
+                                                                                                       'date-time',
+                                                                                                   'type': 'string'},
+                                                                                               'LEI': {
+                                                                                                   'type': 'string'},
+                                                                                               'gracePeriod': {
+                                                                                                   'default': 90,
+                                                                                                   'type': 'integer'}},
+                                                                                           'additionalProperties':
+                                                                                               False,
+                                                                                           'required': ['i', 'dt',
+                                                                                                        'LEI'],
+                                                                                           'type': 'object'},
+                              'e': {'type': 'object'}}, 'additionalProperties': False,
+               'required': ['i', 'ri', 's', 'd'], 'type': 'object'}
+
+        _, sad = coring.Saider.saidify(sad, label=coring.Saids.dollar)
+        schemer = scheming.Schemer(sed=sad)
+        # NEW: EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs
+        db.schema.pin(schemer.said, schemer)
