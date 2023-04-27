@@ -14,12 +14,34 @@ from hio.help import decking
 from keri import kering
 from keri.app import habbing, configing, oobiing
 from keri.app.agenting import Receiptor
-from keri.core import coring, parsing
+from keri.core import coring
 from keri.db import basing
 from keri.vdr import credentialing
-from keri import help
 
 from keria.app import agenting, aiding
+from keria.core import longrunning
+
+
+def test_load_ends(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        agenting.loadEnds(app=app)
+        assert app._router is not None
+
+        res = app._router.find("/test")
+        assert res is None
+
+        (end, *_) = app._router.find("/operations/NAME")
+        assert isinstance(end, longrunning.OperationResourceEnd)
+        (end, *_) = app._router.find("/oobis")
+        assert isinstance(end, agenting.OOBICollectionEnd)
+        (end, *_) = app._router.find("/oobis/ALIAS")
+        assert isinstance(end, agenting.OobiResourceEnd)
+        (end, *_) = app._router.find("/states")
+        assert isinstance(end, agenting.KeyStateCollectionEnd)
+        (end, *_) = app._router.find("/events")
+        assert isinstance(end, agenting.KeyEventCollectionEnd)
+        (end, *_) = app._router.find("/queries")
+        assert isinstance(end, agenting.QueryCollectionEnd)
 
 
 def test_witnesser(helpers):
