@@ -241,8 +241,7 @@ class IdentifierResourceEnd:
         agent = req.context.agent
         hab = agent.hby.habByName(name)
         if hab is None:
-            rep.status = falcon.HTTP_400
-            return
+            raise falcon.HTTPNotFound(description=f"{name} is not a valid identifier name")
 
         data = info(hab, agent.remoteMgr, full=True)
         rep.status = falcon.HTTP_200
