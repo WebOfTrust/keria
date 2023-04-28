@@ -101,7 +101,7 @@ class Helpers:
             shutil.rmtree(f'~/.keri/cf/{name}')
 
     @staticmethod
-    def incept(bran, stem, pidx, count=1, sith="1", wits=None, toad="0"):
+    def incept(bran, stem, pidx, count=1, sith="1", wits=None, toad="0", delpre=None):
         if wits is None:
             wits = []
 
@@ -114,6 +114,45 @@ class Helpers:
         keys = [signer.verfer.qb64 for signer in signers]
         ndigs = [coring.Diger(ser=nsigner.verfer.qb64b) for nsigner in nsigners]
 
+        if delpre is not None:
+            serder = eventing.delcept(delpre=delpre,
+                                      keys=keys,
+                                      isith=sith,
+                                      nsith=sith,
+                                      ndigs=[diger.qb64 for diger in ndigs],
+                                      code=coring.MtrDex.Blake3_256,
+                                      toad=toad,
+                                      wits=wits)
+        else:
+            serder = eventing.incept(keys=keys,
+                                     isith=sith,
+                                     nsith=sith,
+                                     ndigs=[diger.qb64 for diger in ndigs],
+                                     code=coring.MtrDex.Blake3_256,
+                                     toad=toad,
+                                     wits=wits)
+
+        return serder, signers
+
+    @staticmethod
+    def inceptRandy(bran, count=1, sith="1", wits=None, toad="0"):
+        if wits is None:
+            wits = []
+
+        salter = coring.Salter(raw=bran)
+        signer = salter.signer(transferable=False)
+        aeid = signer.verfer.qb64
+        encrypter = coring.Encrypter(verkey=aeid)
+
+        creator = keeping.RandyCreator()
+        signers = creator.create(count=count)
+        prxs = [encrypter.encrypt(matter=signer).qb64 for signer in signers]
+        nsigners = creator.create(count=count)
+        nxts = [encrypter.encrypt(matter=signer).qb64 for signer in nsigners]
+
+        keys = [signer.verfer.qb64 for signer in signers]
+        ndigs = [coring.Diger(ser=nsigner.verfer.qb64b) for nsigner in nsigners]
+
         serder = eventing.incept(keys=keys,
                                  isith=sith,
                                  nsith=sith,
@@ -122,11 +161,11 @@ class Helpers:
                                  toad=toad,
                                  wits=wits)
 
-        return serder, signers
+        return serder, signers, prxs, nxts
 
     @staticmethod
-    def createAid(client, name, salt, wits=None, toad="0"):
-        serder, signers = Helpers.incept(salt, "signify:aid", pidx=0, wits=wits, toad=toad)
+    def createAid(client, name, salt, wits=None, toad="0", delpre=None):
+        serder, signers = Helpers.incept(salt, "signify:aid", pidx=0, wits=wits, toad=toad, delpre=delpre)
         assert len(signers) == 1
 
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
@@ -171,6 +210,7 @@ class Helpers:
 
             rgy = credentialing.Regery(hby=hby, name=agentHab.name, base=hby.base, temp=True)
             agent = agenting.Agent(hby=hby, rgy=rgy, agentHab=agentHab, agency=agency, caid=caid)
+            agency.agents[caid] = agent
 
             app = falcon.App()
             app.add_middleware(Helpers.middleware(agent))
@@ -309,7 +349,7 @@ class DbSeed:
 
         # OLD: EPz3ZvjQ_8ZwRKzfA5xzbMW8v8ZWLZhvOn2Kw1Nkqo_Q
         sad = {'$id': '', '$schema':
-               'http://json-schema.org/draft-07/schema#', 'title': 'Legal Entity vLEI Credential',
+            'http://json-schema.org/draft-07/schema#', 'title': 'Legal Entity vLEI Credential',
                'description': 'A vLEI Credential issued by a Qualified vLEI issuer to a Legal Entity',
                'credentialType': 'LegalEntityvLEICredential',
                'properties': {'v': {'type': 'string'}, 'd': {'type': 'string'}, 'i': {'type': 'string'},
