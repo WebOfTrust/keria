@@ -465,6 +465,29 @@ def test_identifier_collection_end(helpers):
         op = helpers.createAid(client, "delegatee", salt, delpre=delpre)
         assert op['name'] == "delegation.EFt8G8gkCJ71e4amQaRUYss0BDK4pUpzKelEIr3yZ1D0"
 
+    # Test extern keys for HSM integration, only initial tests, work still needed
+    with helpers.openKeria() as (agency, agent, app, client):
+        end = aiding.IdentifierCollectionEnd()
+        resend = aiding.IdentifierResourceEnd()
+        app.add_route("/identifiers", end)
+        app.add_route("/identifiers/{name}", resend)
+
+        client = testing.TestClient(app)
+
+        # Test with randy
+        serder, signers = helpers.inceptExtern(count=1)
+        sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
+
+        body = {'name': 'randy1',
+                'icp': serder.ked,
+                'sigs': sigers,
+                'extern': {
+                    "stem": "test-fake-stem",
+                    "transferable": True,
+                }
+                }
+        res = client.simulate_post(path="/identifiers", body=json.dumps(body))
+        assert res.status_code == 200
 
 def test_challenge_ends(helpers):
     with helpers.openKeria() as (agency, agent, app, client):
