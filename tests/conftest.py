@@ -164,6 +164,28 @@ class Helpers:
         return serder, signers, prxs, nxts
 
     @staticmethod
+    def inceptExtern(count=1, sith="1", wits=None, toad="0"):
+        if wits is None:
+            wits = []
+
+        creator = keeping.RandyCreator()
+        signers = creator.create(count=count)
+        nsigners = creator.create(count=count)
+
+        keys = [signer.verfer.qb64 for signer in signers]
+        ndigs = [coring.Diger(ser=nsigner.verfer.qb64b) for nsigner in nsigners]
+
+        serder = eventing.incept(keys=keys,
+                                 isith=sith,
+                                 nsith=sith,
+                                 ndigs=[diger.qb64 for diger in ndigs],
+                                 code=coring.MtrDex.Blake3_256,
+                                 toad=toad,
+                                 wits=wits)
+
+        return serder, signers
+
+    @staticmethod
     def createAid(client, name, salt, wits=None, toad="0", delpre=None):
         serder, signers = Helpers.incept(salt, "signify:aid", pidx=0, wits=wits, toad=toad, delpre=delpre)
         assert len(signers) == 1

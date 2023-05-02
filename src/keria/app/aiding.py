@@ -195,6 +195,15 @@ class IdentifierCollectionEnd:
                         agent.hby.deleteHab(name=name)
                         raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
 
+                elif Algos.extern in body:
+                    extern = body[Algos.extern]
+                    hab = agent.hby.makeSignifyHab(name, serder=serder, sigers=sigers)
+                    try:
+                        agent.inceptExtern(pre=serder.pre, verfers=serder.verfers, digers=serder.digers, **extern)
+                    except ValueError as e:
+                        agent.hby.deleteHab(name=name)
+                        raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
+
                 else:
                     raise falcon.HTTPBadRequest(
                         description="invalid request: one of group, rand or salt field required")

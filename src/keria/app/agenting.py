@@ -301,6 +301,12 @@ class Agent(doing.DoDoer):
 
         self.agency.incept(self.caid, pre)
 
+    def inceptExtern(self, pre, verfers, digers, **kwargs):
+        keeper = self.remoteMgr.get(Algos.extern)
+        keeper.incept(pre=pre, verfers=verfers, digers=digers, **kwargs)
+
+        self.agency.incept(self.caid, pre)
+
 
 class Messager(doing.Doer):
 

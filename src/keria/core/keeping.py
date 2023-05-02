@@ -383,3 +383,6 @@ class ExternKeeper:
 
     def __init__(self, rb: RemoteKeeper):
         self.rb = rb
+
+    def incept(self, **kwargs):
+        pass
