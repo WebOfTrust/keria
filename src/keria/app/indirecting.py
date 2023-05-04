@@ -88,3 +88,9 @@ class HttpEnd:
             else:
                 rep.set_header('Content-Type', "application/json")
                 rep.status = falcon.HTTP_204
+
+
+def loadEnds(app, agency):
+    '''Add Falcon HTTP server endpoints for the HTTP endpoint class HttpEnd'''
+    httpEnd = HttpEnd(agency=agency)
+    app.add_route("/", httpEnd)
