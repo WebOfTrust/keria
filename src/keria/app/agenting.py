@@ -33,7 +33,8 @@ from keri.vc import protocoling
 from keri.vdr import verifying, credentialing
 from keri.vdr.eventing import Tevery
 
-from . import aiding, notifying
+from . import aiding, notifying, indirecting
+from .specing import AgentSpecResource
 from ..core import authing, longrunning, httping
 from ..core.authing import Authenticater
 from ..core.keeping import RemoteManager
@@ -80,12 +81,21 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
         happ.resp_options.media_handlers.update(media.Handlers())
 
         ending.loadEnds(agency=agency, app=happ)
-        httpEnd = HttpEnd(agency=agency)
-        happ.add_route("/", httpEnd)
+        indirecting.loadEnds(agency=agency, app=happ)
 
         server = http.Server(port=httpPort, app=happ)
         httpServerDoer = http.ServerDoer(server=server)
         doers.append(httpServerDoer)
+
+        swagsink = http.serving.StaticSink(staticDirPath="./static")
+        happ.add_sink(swagsink, prefix="/swaggerui")
+
+        specEnd = AgentSpecResource(app=app, title='KERIA Interactive Web Interface API')
+        specEnd.addRoutes(happ)
+        js = json.dumps(specEnd.spec.to_dict())
+        print('json for spec', js)
+        happ.add_route("/spec.yaml", specEnd)
+
 
     print("The Agency is loaded and waiting for requests...")
     return doers
@@ -604,7 +614,7 @@ class KeyStateCollectionEnd:
         description:  If provided qb64 identifier prefix is in Kevers, return the current state of the
                       identifier along with the KEL and all associated signatures and receipts
         tags:
-           - Ket Event Log
+           - Key Event Log
         parameters:
           - in: path
             name: prefix
@@ -655,7 +665,7 @@ class KeyEventCollectionEnd:
         description:  If provided qb64 identifier prefix is in Kevers, return the current state of the
                       identifier along with the KEL and all associated signatures and receipts
         tags:
-           - Ket Event Log
+           - Key Event Log
         parameters:
           - in: path
             name: prefix
