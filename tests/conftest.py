@@ -227,7 +227,7 @@ class Helpers:
 
         with habbing.openHby(name="keria", salt=salter.qb64, temp=temp, cf=cf) as hby:
 
-            agency = agenting.Agency(name="agency", base=None, bran=None, temp=True)
+            agency = agenting.Agency(name="agency", bran=None, temp=True)
             agentHab = hby.makeHab(caid, ns="agent", transferable=True, data=[caid])
 
             rgy = credentialing.Regery(hby=hby, name=agentHab.name, base=hby.base, temp=True)
