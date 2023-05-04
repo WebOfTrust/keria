@@ -8,6 +8,7 @@ import json
 from urllib.parse import urlparse
 
 from keri import kering
+from keri.app.notifying import Notifier
 from keri.app.storing import Mailboxer
 from ordered_set import OrderedSet as oset
 
@@ -16,7 +17,7 @@ from falcon import media
 from hio.base import doing
 from hio.core import http
 from hio.help import decking
-from keri.app import configing, keeping, habbing, storing, signaling, notifying, oobiing, agenting, delegating, \
+from keri.app import configing, keeping, habbing, storing, signaling, oobiing, agenting, delegating, \
     forwarding, querying, connecting
 from keri.app.grouping import Counselor
 from keria.app.indirecting import HttpEnd
@@ -32,7 +33,7 @@ from keri.vc import protocoling
 from keri.vdr import verifying, credentialing
 from keri.vdr.eventing import Tevery
 
-from . import aiding
+from . import aiding, notifying
 from ..core import authing, longrunning, httping
 from ..core.authing import Authenticater
 from ..core.keeping import RemoteManager
@@ -69,6 +70,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
     doers = [agency, bootServerDoer, adminServerDoer]
     loadEnds(app=app)
     aiding.loadEnds(app=app, agency=agency)
+    notifying.loadEnds(app=app)
 
     if httpPort:
         happ = falcon.App(middleware=falcon.CORSMiddleware(
@@ -194,7 +196,7 @@ class Agency(doing.DoDoer):
 
         try:
             return self.get(prefixer.qb64)
-        except kering.ConfigurationError as e:
+        except kering.ConfigurationError:
             return None
 
     def incept(self, caid, pre):
@@ -235,17 +237,18 @@ class Agent(doing.DoDoer):
         self.postman = forwarding.Poster(hby=hby)
         self.rep = storing.Respondant(hby=hby, cues=self.cues, mbx=Mailboxer(name=self.hby.name, temp=self.hby.temp))
 
-        doers = [habbing.HaberyDoer(habery=hby), receiptor, self.postman, self.rep, self.swain, self.counselor, *oobiery.doers]
+        doers = [habbing.HaberyDoer(habery=hby), receiptor, self.postman, self.rep, self.swain, self.counselor,
+                 *oobiery.doers]
 
         verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
 
         signaler = signaling.Signaler()
-        notifier = notifying.Notifier(hby=hby, signaler=signaler)
-        issueHandler = protocoling.IssueHandler(hby=hby, rgy=rgy, notifier=notifier)
-        requestHandler = protocoling.PresentationRequestHandler(hby=hby, notifier=notifier)
+        self.notifier = Notifier(hby=hby, signaler=signaler)
+        issueHandler = protocoling.IssueHandler(hby=hby, rgy=rgy, notifier=self.notifier)
+        requestHandler = protocoling.PresentationRequestHandler(hby=hby, notifier=self.notifier)
         applyHandler = protocoling.ApplyHandler(hby=hby, rgy=rgy, verifier=verifier,
                                                 name=agentHab.name)
-        proofHandler = protocoling.PresentationProofHandler(notifier=notifier)
+        proofHandler = protocoling.PresentationProofHandler(notifier=self.notifier)
 
         handlers = [issueHandler, requestHandler, proofHandler, applyHandler]
         self.exc = exchanging.Exchanger(db=hby.db, handlers=handlers)
