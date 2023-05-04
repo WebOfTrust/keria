@@ -41,7 +41,7 @@ from ..db import basing
 logger = ogler.getLogger()
 
 
-def setup(name, base, bran, adminPort, bootPort, httpPort=None, configFile=None, configDir=None):
+def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=None, configDir=None):
     """ Set up an ahab in Signify mode """
 
     agency = Agency(name=name, base=base, bran=bran, configFile=configFile, configDir=configDir)
@@ -90,7 +90,7 @@ def setup(name, base, bran, adminPort, bootPort, httpPort=None, configFile=None,
 
 
 class Agency(doing.DoDoer):
-    def __init__(self, name, base, bran, configFile=None, configDir=None, adb=None, temp=False):
+    def __init__(self, name, bran, base="", configFile=None, configDir=None, adb=None, temp=False):
         self.name = name
         self.base = base
         self.bran = bran
@@ -108,7 +108,7 @@ class Agency(doing.DoDoer):
 
         self.agents = dict()
 
-        self.adb = adb if adb is not None else basing.AgencyBaser(name="TheAgency", reopen=True, temp=temp)
+        self.adb = adb if adb is not None else basing.AgencyBaser(name="TheAgency", base=base, reopen=True, temp=temp)
         super(Agency, self).__init__(doers=[], always=True)
 
     def create(self, caid):
@@ -120,9 +120,10 @@ class Agency(doing.DoDoer):
         cf = None
         if self.cf is not None:  # Load config file if creating database
             data = dict(self.cf.get())
-            curls = data["keria"]
-            data[caid] = curls
-            del data["keria"]
+            if "keria" in data:
+                curls = data["keria"]
+                data[caid] = curls
+                del data["keria"]
 
             cf = configing.Configer(name=f"{caid}",
                                     base="",

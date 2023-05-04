@@ -6,6 +6,8 @@ keria.app.agenting module
 Testing the Mark II Agent
 """
 import json
+import os
+import shutil
 
 import falcon
 from falcon import testing
@@ -20,6 +22,15 @@ from keri.vdr import credentialing
 
 from keria.app import agenting, aiding
 from keria.core import longrunning
+
+
+def test_setup():
+    doers = agenting.setup(name="test", bran=None, adminPort=1234, bootPort=5678)
+    assert len(doers) == 3
+    assert isinstance(doers[0], agenting.Agency) is True
+
+    doers = agenting.setup("test", bran=None, adminPort=1234, bootPort=5678, httpPort=9999)
+    assert len(doers) == 4
 
 
 def test_load_ends(helpers):
@@ -42,6 +53,87 @@ def test_load_ends(helpers):
         assert isinstance(end, agenting.KeyEventCollectionEnd)
         (end, *_) = app._router.find("/queries")
         assert isinstance(end, agenting.QueryCollectionEnd)
+
+
+def test_agency():
+    salt = b'0123456789abcdef'
+    salter = coring.Salter(raw=salt)
+    cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
+
+    with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
+        hab = hby.makeHab(name="test")
+
+        agency = agenting.Agency(name="agency", base="", bran=None, temp=True, configFile="keria",
+                                 configDir="scripts")
+        assert agency.cf is not None
+        assert agency.cf.path.endswith("scripts/keri/cf/keria.json") is True
+
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+        doist.enter(doers=[agency])
+
+        caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
+        agent = agency.create(caid)
+        assert agent.pre == "EHl58elhtNBWS0Nb2J0vsXwIILo1Al4ieSnhBvmX1WHq"
+
+        badcaid = "E987eerAdhmvrjDeam2eAO2SR5niCgnjAJXJHtJoe"
+        agent = agency.get(badcaid)
+        assert agent is None
+
+        agent = agency.get(caid)
+        assert agent.pre == "EHl58elhtNBWS0Nb2J0vsXwIILo1Al4ieSnhBvmX1WHq"
+
+        agency.incept(caid, hab.pre)
+
+        agent = agency.lookup(badcaid)
+        assert agent is None
+
+        agent = agency.lookup(hab.pre)
+        assert agent.pre == "EHl58elhtNBWS0Nb2J0vsXwIILo1Al4ieSnhBvmX1WHq"
+
+        # Create non-temp Agency and test reload of agent from disk
+        base = "keria-temp"
+
+        # Clean up afterwards
+        if os.path.exists(f'/usr/local/var/keri/db/{base}'):
+            shutil.rmtree(f'/usr/local/var/keri/db/{base}')
+        if os.path.exists(f'/usr/local/var/keri/ks/{base}'):
+            shutil.rmtree(f'/usr/local/var/keri/ks/{base}')
+        if os.path.exists(f'/usr/local/var/keri/ks/{base}'):
+            shutil.rmtree(f'/usr/local/var/keri/ks/{base}')
+        if os.path.exists(f'/usr/local/var/keri/adb/{base}'):
+            shutil.rmtree(f'/usr/local/var/keri/adb/{base}')
+
+        agency = agenting.Agency(name="agency", base=base, bran=None, configFile="keria",
+                                 configDir="scripts")
+        assert agency.cf is not None
+        assert agency.cf.path.endswith("scripts/keri/cf/keria.json") is True
+
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+        doist.enter(doers=[agency])
+
+        caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
+        agent = agency.create(caid)
+        assert agent.pre == "EJoqUMpQAfqsJhBqv02ehR-9BJYBTCrW8h5JlLdMTWBg"
+
+        # Rcreate the agency to see if agent is reloaded from disk
+        agency = agenting.Agency(name="agency", base=base, bran=None, configFile="keria",
+                                 configDir="scripts")
+        agent = agency.get(caid)
+        assert agent.pre == "EJoqUMpQAfqsJhBqv02ehR-9BJYBTCrW8h5JlLdMTWBg"
+
+        # Clean up afterwards
+        if os.path.exists(f'/usr/local/var/keri/db/{base}'):
+            shutil.rmtree(f'/usr/local/var/keri/db/{base}')
+        if os.path.exists(f'/usr/local/var/keri/ks/{base}'):
+            shutil.rmtree(f'/usr/local/var/keri/ks/{base}')
+        if os.path.exists(f'/usr/local/var/keri/ks/{base}'):
+            shutil.rmtree(f'/usr/local/var/keri/ks/{base}')
+        if os.path.exists(f'/usr/local/var/keri/adb/{base}'):
+            shutil.rmtree(f'/usr/local/var/keri/adb/{base}')
 
 
 def test_witnesser(helpers):
@@ -70,7 +162,7 @@ def test_keystate_ends(helpers):
 
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
         hab = hby.makeHab(name="test")
-        agency = agenting.Agency(name="agency", base=None, bran=None, temp=True)
+        agency = agenting.Agency(name="agency", bran=None, temp=True)
         agentHab = hby.makeHab(caid, ns="agent", transferable=True, data=[caid])
 
         rgy = credentialing.Regery(hby=hby, name=agentHab.name, base=hby.base, temp=True)
