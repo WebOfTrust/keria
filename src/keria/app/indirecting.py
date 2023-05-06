@@ -10,6 +10,8 @@ from keri.app import httping
 from keri.core import eventing
 from keri.core.coring import Ilks
 
+CESR_DESTINATION_HEADER = "CESR-DESTINATION"
+
 
 class HttpEnd:
     """
@@ -63,8 +65,14 @@ class HttpEnd:
             rep.status = falcon.HTTP_200
             return
 
-        # TODO, figure out how we load the agent
-        agent = self.agency.lookup("??")
+        if CESR_DESTINATION_HEADER not in req.headers:
+            raise falcon.HTTPBadRequest(title="CESR request destination header missing")
+
+        aid = req.headers[CESR_DESTINATION_HEADER]
+        agent = self.agency.lookup(aid)
+        if agent is None:
+            raise falcon.HTTPNotFound(title=f"unknown destination AID {aid}")
+
         rep.set_header('Cache-Control', "no-cache")
         rep.set_header('connection', "close")
 
@@ -77,16 +85,13 @@ class HttpEnd:
 
         ilk = serder.ked["t"]
         if ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.exn, Ilks.rpy):
-            rep.set_header('Content-Type', "application/json")
             rep.status = falcon.HTTP_204
         elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
-            rep.set_header('Content-Type', "application/json")
             rep.status = falcon.HTTP_204
         elif ilk in (Ilks.qry,):
             if serder.ked["r"] in ("mbx",):
-                raise falcon.HTTPNotFound("no mailbox support in KERIA")
+                raise falcon.HTTPNotFound(title="no mailbox support in KERIA")
             else:
-                rep.set_header('Content-Type', "application/json")
                 rep.status = falcon.HTTP_204
 
 
