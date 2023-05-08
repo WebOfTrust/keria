@@ -1,4 +1,4 @@
-import {createHash} from "blake3"
+import {createHash} from "blake3/browser"
 
 import {Matter, MatterArgs, MtrDex} from './matter';
 

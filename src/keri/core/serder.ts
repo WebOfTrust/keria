@@ -27,6 +27,10 @@ export class Serder {
         this._version = version
     }
 
+    get pre(): string {
+        return this._ked['i']
+    }
+
     get ked(): Dict<any> {
         return this._ked
     }
