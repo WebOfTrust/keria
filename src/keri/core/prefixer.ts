@@ -4,7 +4,7 @@ import {Dict, Ilks} from "./core";
 import {sizeify} from "./serder";
 import {Verfer} from "./verfer";
 
-import {createHash} from "blake3"
+import {createHash} from "blake3/browser"
 
 const Dummy: string = "#"
 

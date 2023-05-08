@@ -1,4 +1,4 @@
-import {TextEncoder, TextDecoder} from 'util'
+// import {TextEncoder, TextDecoder} from 'util'
 
 export enum Serials {
     JSON = "JSON",
@@ -151,7 +151,7 @@ export function b64ToInt(s: string): number {
     }
 
     let i = 0
-    let rev =  [...s].reverse()
+    let rev =  s.split("").reverse()
     rev.forEach((c: string, e: number) => {
         i |= B64IdxByChr.get(c)! << (e * 6)
     })

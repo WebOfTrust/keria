@@ -29,7 +29,7 @@
   },
   "name": "signify-ts",
   "author": "Phil Feairheller",
-  "module": "dist/signify-ts.js",
+  "module": "dist/signify-ts.esm.js",
   "size-limit": [
     {
       "path": "dist/signify-ts.cjs.production.min.js",
@@ -56,6 +56,7 @@
   "dependencies": {
     "@types/libsodium-wrappers-sumo": "^0.7.5",
     "blake3": "^2.1.7",
+    "buffer": "^6.0.3",
     "cbor": "^8.0.0",
     "collections": "^5.1.12",
     "libsodium-wrappers-sumo": "^0.7.9",

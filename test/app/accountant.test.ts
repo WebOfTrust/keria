@@ -1,4 +1,4 @@
-import {Accountant} from "../../src/keri/app/accountant";
+import {Controller} from "../../src/keri/app/controller";
 import {strict as assert} from "assert";
 import libsodium from "libsodium-wrappers-sumo";
 import {openManager} from "../../src/keri/core/manager";
@@ -21,7 +21,7 @@ describe('Accountant', () => {
         // New account needed.  Send to remote my name and encryption pubk and get back
         // their pubk and and my encrypted account package
         // let pkg = {}
-        let accountant = new Accountant(mgr, agentKey)
+        let accountant = new Controller(mgr, agentKey)
         assert.notEqual(accountant, undefined)
     })
 })
