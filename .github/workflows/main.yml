@@ -31,5 +31,5 @@ jobs:
         run: |
           npm ci
           npm i tsdx
-          npm test
+          npm test -- --coverage=true
           npm run build
