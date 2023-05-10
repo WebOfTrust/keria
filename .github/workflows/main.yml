@@ -29,7 +29,8 @@ jobs:
 
       - name: build
         run: |
-          npm cache clean
+          npm cache clean --force
+          npm set registry https://registry.npmjs.org/
           npm i
           npm test -- --coverage=true
           npm run build
