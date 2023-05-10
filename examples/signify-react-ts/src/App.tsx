@@ -1,42 +1,43 @@
-import {useState} from 'react'
+import {useState, useEffect, useRef} from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import {SignifyClient, ready} from "signify-ts";
+import { Signify } from './Signify';
+function generateRandomKey() {
+  const characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const length = 21;
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+}
 
 function App() {
-    const [pre, setPre] = useState("")
-    const [icp, setICP] = useState("")
 
-    let data = ""
-    ready().then(() => {
-        const client = new SignifyClient("http://localhost:3902", "0123456789abcdefghijk")
-        console.log("we have a signify client", client.controller?.pre)
-        setPre(client.controller?.pre)
-        data = client.controller?.event
-    })
+    useEffect(() => {
+        ready().then(() => {
+            console.log("signify client is ready")
+        })
+    }, [])
+
+
 
     return (
         <>
             <div>
-                <a href="https://vitejs.dev" target="_blank">
-                    <img src={viteLogo} className="logo" alt="Vite logo"/>
+                <a href="https://vitejs.dev" target="_blank" rel="noopener noreferrer">
+                    <img src={viteLogo} className="logo " alt="Vite logo"/>
                 </a>
-                <a href="https://react.dev" target="_blank">
+                <a href="https://reactjs.org" target="_blank" rel="noopener noreferrer">
                     <img src={reactLogo} className="logo react" alt="React logo"/>
                 </a>
             </div>
             <h1>Vite + React + Signify</h1>
-            <div className="card">
-                <button onClick={() => setICP(JSON.stringify(data[0]))}>
-                    AID is {pre}
-                </button>
-                <p>
-                    {icp}
-                </p>
-            </div>
+            <Signify/>
             <p className="read-the-docs">
                 Click on the Vite and React logos to learn more
             </p>
