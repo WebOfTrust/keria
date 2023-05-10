@@ -29,6 +29,6 @@ jobs:
 
       - name: build
         run: |
-          npm ci
+          npm i
           npm test -- --coverage=true
           npm run build
