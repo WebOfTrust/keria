@@ -29,6 +29,7 @@ jobs:
 
       - name: build
         run: |
+          npm cache clean --force
           npm i
           npm test -- --coverage=true
           npm run build
