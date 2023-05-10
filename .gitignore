@@ -6,3 +6,4 @@ dist
 
 # IntelliJ Project Files
 .idea
+coverage/*
