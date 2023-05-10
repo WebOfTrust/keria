@@ -4,8 +4,9 @@ import libsodium from "libsodium-wrappers-sumo";
 import {openManager} from "../../src/keri/core/manager";
 import {Signer} from "../../src/keri/core/signer";
 import {MtrDex} from "../../src/keri/core/matter";
+import {Tier} from "../../src";
 
-describe('Accountant', () => {
+describe('Controller', () => {
     it('manage account AID signing and agent verification', async () => {
         await libsodium.ready;
         let passcode = "0123456789abcdefghijk"
@@ -16,12 +17,15 @@ describe('Accountant', () => {
             59, 160, 152, 2, 72, 122, 87, 143, 109, 39, 98, 153, 192, 148])
         let agentSigner = new Signer({raw: raw, code: MtrDex.Ed25519_Seed, transferable: false})
         assert.equal(agentSigner.verfer.qb64, "BHptu91ecGv_mxO8T3b98vNQUCghT8nfYkWRkVqOZark")
-        let agentKey = agentSigner.verfer.qb64
 
         // New account needed.  Send to remote my name and encryption pubk and get back
         // their pubk and and my encrypted account package
         // let pkg = {}
-        let accountant = new Controller(mgr, agentKey)
-        assert.notEqual(accountant, undefined)
+        let controller = new Controller(passcode, Tier.low)
+        assert.equal(controller.pre, "EH47SaIWwMbBh3P39AFP-qe-J87-Z-gcj-ZUJ7uyplHF")
+
+        passcode = "abcdefghijk0123456789"
+        controller = new Controller(passcode, Tier.low)
+        assert.equal(controller.pre, "EG0DNL7t6FYCeFHZ6L9iXy2LXhAQAjg1ac9qlrS31-sh")
     })
 })

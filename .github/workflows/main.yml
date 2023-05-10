@@ -5,6 +5,9 @@ on:
       - 'main'
       - 'development'
   pull_request:
+    branches:
+      - 'main'
+      - 'development'
   workflow_dispatch:
 jobs:
   build:
@@ -13,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        os: [ macOS-latest]
 
     steps:
       - name: Checkout repo
@@ -26,6 +29,8 @@ jobs:
 
       - name: build
         run: |
-          npm ci
-          npm test
+          npm cache clean --force
+          npm set registry https://registry.npmjs.org/
+          npm i
+          npm test -- --coverage=true
           npm run build

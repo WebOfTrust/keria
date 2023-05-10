@@ -4,8 +4,6 @@ import {MtrDex} from "../core/matter";
 import {Diger} from "../core/diger";
 import {incept} from "../core/eventing";
 import {Serder} from "../core/serder";
-import {Signer} from "../core/signer";
-import {Verfer} from "../core/verfer";
 
 
 export class Controller {
@@ -31,12 +29,8 @@ export class Controller {
 
         this.signer = creator.create(undefined, 1, MtrDex.Ed25519_Seed, true, 0, ridx, 0, false).signers.pop()
         this.nsigner = creator.create(undefined, 1, MtrDex.Ed25519_Seed, true, 0, ridx+1, 0, false).signers.pop()
-
-        let verfers = Array.from(this.signer, (signer: Signer) => signer.verfer)
-        let digers = Array.from(this.nsigner, (signer: Signer) => new Diger({code: MtrDex.Blake3_256}, signer.verfer.qb64b))
-
-        let keys = Array.from(verfers, (verfer: Verfer) => verfer.qb64)
-        let ndigs = Array.from(digers, (diger: Diger) => diger.qb64)
+        let keys = [this.signer.verfer.qb64]
+        let ndigs = [new Diger({code: MtrDex.Blake3_256}, this.nsigner.verfer.qb64b).qb64]
 
         this.serder = incept({
             keys: keys,
@@ -46,7 +40,6 @@ export class Controller {
             code: MtrDex.Blake3_256,
             toad: "0",
             wits: []})
-        console.log(this.serder.ked)
 
     }
 
