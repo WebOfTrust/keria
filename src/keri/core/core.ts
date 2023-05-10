@@ -1,5 +1,5 @@
- import {TextEncoder, TextDecoder} from 'util'
-
+//  import {TextEncoder, TextDecoder} from 'util'
+import { TextEncoder, TextDecoder } from 'text-encoding';
 export enum Serials {
     JSON = "JSON",
 }

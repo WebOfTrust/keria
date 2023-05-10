@@ -44,6 +44,7 @@
     "@size-limit/preset-small-lib": "^5.0.4",
     "@types/lodash": "^4.14.185",
     "@types/node": "^18.11.18",
+    "@types/text-encoding": "^0.0.36",
     "@types/urlsafe-base64": "^1.0.28",
     "husky": "^7.0.2",
     "jest": "^29.3.1",
@@ -63,6 +64,7 @@
     "lodash": "^4.17.21",
     "msgpack5": "^5.3.2",
     "structured-headers": "^0.5.0",
+    "text-encoding": "^0.7.0",
     "urlsafe-base64": "^1.0.0",
     "xregexp": "^5.1.0"
   }
