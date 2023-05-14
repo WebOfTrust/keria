@@ -84,12 +84,12 @@ def test_authenticater(mockHelpingNowUTC):
         assert dict(headers) == {'Connection': 'close',
                                  'Content-Length': '256',
                                  'Content-Type': 'application/json',
-                                 'Signature': 'indexed="?0";signify="0BA-mbfv642Hgj48xyKPIkzAk0tJzb91w3LSzZTUz0xNxQVhyF'
-                                              'u35PNruPupDB2LcNUZAGkDo_tWOuQjNnatCXYC"',
+                                 'Signature': 'indexed="?0";signify="0BBMtZXbDnueGAiNiNxHpZKrtBwdA7fPVz-dHiXOeSjkSu45C7'
+                                              'EwCGgpAhnKX8Agz_yjJjAehyyz9Zc7ivtd_MkL"',
                                  'Signature-Input': 'signify=("signify-resource" "@method" "@path" '
-                                                    '"signify-timestamp");created=1609459200;keyid="EBAuP_pViVt0rpp9Jle'
-                                                    '0ympdhgbb125h3cpBFQ04Qwu7";alg="ed25519"',
-                                 'Signify-Resource': 'EBAuP_pViVt0rpp9Jle0ympdhgbb125h3cpBFQ04Qwu7',
+                                                    '"signify-timestamp");created=1609459200;keyid="EDqDrGuzned0HOKFTLq'
+                                                    'd7m7O7WGE5zYIOHrlCq4EnWxy";alg="ed25519"',
+                                 'Signify-Resource': 'EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy',
                                  'Signify-Timestamp': '2022-09-24T00:05:48.196795+00:00'}
 
         req = testing.create_req(method="POST", path="/boot", headers=dict(headers))

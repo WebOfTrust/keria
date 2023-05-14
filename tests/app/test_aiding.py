@@ -22,7 +22,7 @@ from keria.app import aiding, agenting
 
 def test_load_ends(helpers):
     with helpers.openKeria() as (agency, agent, app, client):
-        aiding.loadEnds(app=app, agency=agency)
+        aiding.loadEnds(app=app, agency=agency, authn=None)
         assert app._router is not None
 
         res = app._router.find("/test")
@@ -52,9 +52,9 @@ def test_load_ends(helpers):
         assert isinstance(end, aiding.ContactImageResourceEnd)
 
 
-def test_agent_resource(helpers):
+def test_agent_resource(helpers, mockHelpingNowUTC):
     with helpers.openKeria() as (agency, agent, app, client):
-        agentEnd = aiding.AgentResourceEnd(agency=agency)
+        agentEnd = aiding.AgentResourceEnd(agency=agency, authn=None)
         app.add_route("/agent/{caid}", agentEnd)
 
         client = testing.TestClient(app=app)
@@ -64,15 +64,60 @@ def test_agent_resource(helpers):
 
         res = client.simulate_get(path=f"/agent/{agent.caid}")
         assert res.status_code == 200
-        assert res.json == {'kel': [{'ked': {'v': 'KERI10JSON000159_', 't': 'icp',
-                                             'd': 'EHl58elhtNBWS0Nb2J0vsXwIILo1Al4ieSnhBvmX1WHq',
-                                             'i': 'EHl58elhtNBWS0Nb2J0vsXwIILo1Al4ieSnhBvmX1WHq', 's': '0', 'kt': '1',
-                                             'k': ['DPE8qYUDCAlzGO9Ojb4UKXR-Jak5_32tjm_G07uYMNsr'], 'nt': '1',
-                                             'n': ['EJfOyyXttFeAg8e6j4oQecqMNEDDQT0xAxWxU6BZM2Gp'], 'bt': '0', 'b': [],
-                                             'c': [], 'a': ['ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose']},
-                                     'sig': 'AACX5Dd-xNv3_k3Gk5F2Y4Pc48mvBf4x1eablc0JQVBWgAlUF5rNTPGwrhP6Ly3UFKyWIFMF-'
-                                            '56QsX6ezELI9WIP'}],
-                            'pidx': 0, 'ridx': 0}
+        assert res.json == {'agent': {'b': [],
+                                      'bt': '0',
+                                      'c': [],
+                                      'd': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9',
+                                      'di': 'EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx',
+                                      'dt': '2021-01-01T00:00:00.000000+00:00',
+                                      'ee': {'ba': [],
+                                             'br': [],
+                                             'd': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9',
+                                             's': '0'},
+                                      'et': 'dip',
+                                      'f': '0',
+                                      'i': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9',
+                                      'k': ['DKDAV2tanHP1NpxGrdMRwF0ALPfzr0E87XUB4lnIaGad'],
+                                      'kt': '1',
+                                      'n': ['EKcqCVGNZIsKnPP9UwtENc8U0hygWZWCMrg0NNpNmwLe'],
+                                      'nt': '1',
+                                      'p': '',
+                                      's': '0',
+                                      'v': 'KERI10JSON0001e2_'},
+                            'controller': {'ee': {'a': [],
+                                                  'b': [],
+                                                  'bt': '0',
+                                                  'c': [],
+                                                  'd': 'EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx',
+                                                  'i': 'EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx',
+                                                  'k': ['DMVCX7CtEX7KgHtNLKQdSuqZhAs0m-tt9KSVI1kv1sYV'],
+                                                  'kt': '1',
+                                                  'n': ['EJ_E97qRUDPOKbQmpuIgG-0G_-AO0obz7KSidyblcGC8'],
+                                                  'nt': '1',
+                                                  's': '0',
+                                                  't': 'icp',
+                                                  'v': 'KERI10JSON00012b_'},
+                                           'state': {'b': [],
+                                                     'bt': '0',
+                                                     'c': [],
+                                                     'd': 'EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx',
+                                                     'di': '',
+                                                     'dt': '2021-01-01T00:00:00.000000+00:00',
+                                                     'ee': {'ba': [],
+                                                            'br': [],
+                                                            'd': 'EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx',
+                                                            's': '0'},
+                                                     'et': 'icp',
+                                                     'f': '0',
+                                                     'i': 'EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx',
+                                                     'k': ['DMVCX7CtEX7KgHtNLKQdSuqZhAs0m-tt9KSVI1kv1sYV'],
+                                                     'kt': '1',
+                                                     'n': ['EJ_E97qRUDPOKbQmpuIgG-0G_-AO0obz7KSidyblcGC8'],
+                                                     'nt': '1',
+                                                     'p': '',
+                                                     's': '0',
+                                                     'v': 'KERI10JSON0001b6_'}},
+                            'pidx': 0}
 
 
 def test_identifier_collection_end(helpers):
@@ -109,11 +154,15 @@ def test_identifier_collection_end(helpers):
         assert res.json == {'description': 'invalid request: one of group, rand or salt field required',
                             'title': '400 Bad Request'}
 
+        salter = coring.Salter(raw=salt)
+        encrypter = coring.Encrypter(verkey=signers[0].verfer.qb64)
+        sxlt = encrypter.encrypt(salter.qb64).qb64
+
         body = {'name': 'aid1',
                 'icp': serder.ked,
                 'sigs': sigers,
                 "salty": {
-                    'stem': 'signify:aid', 'pidx': 0, 'tier': 'low',
+                    'stem': 'signify:aid', 'pidx': 0, 'tier': 'low', 'sxlt': sxlt,
                     'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}
                 }
 
@@ -129,16 +178,10 @@ def test_identifier_collection_end(helpers):
 
         res = client.simulate_get(path="/identifiers")
         assert res.status_code == 200
-        assert res.json == [{'name': 'aid1',
-                             'prefix': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
-                             'salty': {'dcode': 'E',
-                                       'icodes': ['A'],
-                                       'kidx': 0,
-                                       'ncodes': ['A'],
-                                       'pidx': 0,
-                                       'stem': 'signify:aid',
-                                       'tier': 'low',
-                                       'transferable': False}}]
+        assert len(res.json) == 1
+        aid = res.json[0]
+        assert aid["name"] == "aid1"
+        assert aid["prefix"] == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
 
         serder, signer = helpers.incept(salt, "signify:aid", pidx=1, count=3)
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
@@ -146,7 +189,7 @@ def test_identifier_collection_end(helpers):
         body = {'name': 'aid2',
                 'icp': serder.ked,
                 'sigs': sigers,
-                'salty': {'stem': 'signify:aid', 'pidx': 1, 'tier': 'low',
+                'salty': {'stem': 'signify:aid', 'pidx': 1, 'tier': 'low', 'sxlt': sxlt,
                           'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}}
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
         assert res.status_code == 200
@@ -177,7 +220,7 @@ def test_identifier_collection_end(helpers):
         body = {'name': 'aid3',
                 'icp': serder.ked,
                 'sigs': sigers,
-                'salty': {'stem': 'signify:aid', 'pidx': 3, 'tier': 'low',
+                'salty': {'stem': 'signify:aid', 'pidx': 3, 'tier': 'low', 'sxlt': sxlt,
                           'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}}
 
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
@@ -329,22 +372,14 @@ def test_identifier_collection_end(helpers):
         aid = res.json[3]
         assert aid["name"] == "multisig"
         assert aid["prefix"] == serder.pre
-        assert aid["group"] == {'keys': ['DDNGgXzEO4LD8G1z1uD7eIDF2pDj6Y7hVx-nqhYZmU_8',
-                                         'DAOF6DRwWDphP8F2r87uxTS9xwIehonmTBE1agJrPklA',
-                                         'DPZ-k6HXUhiS5dPy8awuitFpwojGOQJ6DMZiatPjhXKC'],
-                                'mhab': {'name': 'aid1',
-                                         'prefix': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
-                                         'salty': {'dcode': 'E',
-                                                   'icodes': ['A'],
-                                                   'kidx': 0,
-                                                   'ncodes': ['A'],
-                                                   'pidx': 0,
-                                                   'stem': 'signify:aid',
-                                                   'tier': 'low',
-                                                   'transferable': False}},
-                                'ndigs': ['EHj7rmVHVkQKqnfeer068PiYvYm-WFSTVZZpFGsClfT-',
-                                          'ECTS-VsMzox2NoMaLIei9Gb6361Z3u0fFFWmjEjEeD64',
-                                          'ED7Jk3MscDy8IHtb2k1k6cs0Oe5rEb3_8XKD1Ut_gCo8']}
+        group = aid["group"]
+
+        assert group["keys"] == ['DDNGgXzEO4LD8G1z1uD7eIDF2pDj6Y7hVx-nqhYZmU_8',
+                                 'DAOF6DRwWDphP8F2r87uxTS9xwIehonmTBE1agJrPklA',
+                                 'DPZ-k6HXUhiS5dPy8awuitFpwojGOQJ6DMZiatPjhXKC']
+        assert group["ndigs"] == ['EHj7rmVHVkQKqnfeer068PiYvYm-WFSTVZZpFGsClfT-',
+                                  'ECTS-VsMzox2NoMaLIei9Gb6361Z3u0fFFWmjEjEeD64',
+                                  'ED7Jk3MscDy8IHtb2k1k6cs0Oe5rEb3_8XKD1Ut_gCo8']
 
     # Lets test randy with some key rotations and interaction events
     with helpers.openKeria() as (agency, agent, app, client):
@@ -785,12 +820,15 @@ def test_identifier_resource_end(helpers):
         salt = b'0123456789abcdef'
         serder, signers = helpers.incept(salt, "signify:aid", pidx=0)
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
+        salter = coring.Salter(raw=salt)
+        encrypter = coring.Encrypter(verkey=signers[0].verfer.qb64)
+        sxlt = encrypter.encrypt(salter.qb64).qb64
 
         body = {'name': 'aid1',
                 'icp': serder.ked,
                 'sigs': sigers,
                 "salty": {
-                    'stem': 'signify:aid', 'pidx': 0, 'tier': 'low',
+                    'stem': 'signify:aid', 'pidx': 0, 'tier': 'low', 'sxlt': sxlt,
                     'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}
                 }
 

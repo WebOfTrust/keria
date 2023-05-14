@@ -75,14 +75,14 @@ def test_agency():
 
         caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
         agent = agency.create(caid)
-        assert agent.pre == "EHl58elhtNBWS0Nb2J0vsXwIILo1Al4ieSnhBvmX1WHq"
+        assert agent.pre == "EIAEKYpTygdBtFHBrHKWeh0aYCdx0ZJqZtzQLFnaDB2b"
 
         badcaid = "E987eerAdhmvrjDeam2eAO2SR5niCgnjAJXJHtJoe"
         agent = agency.get(badcaid)
         assert agent is None
 
         agent = agency.get(caid)
-        assert agent.pre == "EHl58elhtNBWS0Nb2J0vsXwIILo1Al4ieSnhBvmX1WHq"
+        assert agent.pre == "EIAEKYpTygdBtFHBrHKWeh0aYCdx0ZJqZtzQLFnaDB2b"
 
         agency.incept(caid, hab.pre)
 
@@ -90,7 +90,7 @@ def test_agency():
         assert agent is None
 
         agent = agency.lookup(hab.pre)
-        assert agent.pre == "EHl58elhtNBWS0Nb2J0vsXwIILo1Al4ieSnhBvmX1WHq"
+        assert agent.pre == "EIAEKYpTygdBtFHBrHKWeh0aYCdx0ZJqZtzQLFnaDB2b"
 
         # Create non-temp Agency and test reload of agent from disk
         base = "keria-temp"
@@ -117,13 +117,13 @@ def test_agency():
 
         caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
         agent = agency.create(caid)
-        assert agent.pre == "EJoqUMpQAfqsJhBqv02ehR-9BJYBTCrW8h5JlLdMTWBg"
+        assert agent.pre == "EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei"
 
         # Rcreate the agency to see if agent is reloaded from disk
         agency = agenting.Agency(name="agency", base=base, bran=None, configFile="keria",
                                  configDir="scripts")
         agent = agency.get(caid)
-        assert agent.pre == "EJoqUMpQAfqsJhBqv02ehR-9BJYBTCrW8h5JlLdMTWBg"
+        assert agent.pre == "EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei"
 
         # Clean up afterwards
         if os.path.exists(f'/usr/local/var/keri/db/{base}'):
@@ -306,8 +306,6 @@ def test_oobi_ends(seeder, helpers):
 
         result = client.simulate_get(path="/oobi/aggie?role=agent")
         assert result.status == falcon.HTTP_200
-        assert result.json == {
-            'oobis': [
-                'http://127.0.0.1:3902/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/agent/EHl58elhtNBWS0Nb2J0vsXw'
-                'IILo1Al4ieSnhBvmX1WHq'],
-            'role': 'agent'}
+        assert result.json == {'oobis': ['http://127.0.0.1:3902/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/agent'
+                                         '/EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9'],
+                               'role': 'agent'}

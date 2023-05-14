@@ -24,6 +24,7 @@ class SaltyPrm:
     """
     Salty prefix's parameters for creating new key pairs
     """
+    sxlt: str = ''  # qualified b64 encoded AID salt
     pidx: int = 0  # prefix index for this keypair sequence
     kidx: int = 0  # key index for this keypair sequence
     stem: str = ''  # default unique path stem for salty algo
@@ -156,13 +157,24 @@ class RemoteManager:
             case _:
                 return ExternKeeper(rb=self.rb)
 
+    @property
+    def sxlt(self):
+        return self.rb.gbls.get("sxlt")
+
+    @sxlt.setter
+    def sxlt(self, sxlt):
+        self.rb.gbls.pin("sxlt", sxlt)
+
+    def delete_sxlt(self):
+        return self.rb.gbls.rem("sxlt")
+
 
 class SaltyManager:
 
     def __init__(self, rb: RemoteKeeper):
         self.rb = rb
 
-    def incept(self, pre, *, icodes, ncodes, dcode=MtrDex.Blake3_256, pidx=0, kidx=0, stem="", tier=Tiers.low,
+    def incept(self, pre, *, icodes, ncodes, sxlt, dcode=MtrDex.Blake3_256, pidx=0, kidx=0, stem="", tier=Tiers.low,
                transferable=False):
 
         pp = Prefix(
@@ -170,7 +182,8 @@ class SaltyManager:
             algo=Algos.salty
         )
 
-        sp = SaltyPrm(pidx=pidx,
+        sp = SaltyPrm(sxlt=sxlt,
+                      pidx=pidx,
                       kidx=kidx,
                       stem=stem,
                       tier=tier,
@@ -186,14 +199,15 @@ class SaltyManager:
         if not self.rb.sprms.put(pre, val=sp):
             raise ValueError("Already incepted prm for pre={}.".format(pre))
 
-    def rotate(self, pre, ncodes, pidx, kidx, stem, icodes, tier, transferable, dcode=MtrDex.Blake3_256):
+    def rotate(self, pre, ncodes, pidx, kidx, stem, sxlt, icodes, tier, transferable, dcode=MtrDex.Blake3_256):
         if (pp := self.rb.pres.get(pre)) is None or pp.algo != Algos.salty:
             raise ValueError("Attempt to rotate nonexistent or invalid pre={}.".format(pre))
 
-        if (sp := self.rb.sprms.get(pre)) is None or pp.algo != Algos.salty:
+        if (sp := self.rb.sprms.get(pre)) is None:
             raise ValueError("Attempt to rotate nonexistent or invalid pre={}.".format(pre))
 
         sp = SaltyPrm(pidx=pidx,
+                      sxlt=sxlt,
                       kidx=kidx,
                       stem=stem,
                       tier=sp.tier,
@@ -254,7 +268,7 @@ class RandyManager:
 
         if nxts is not None:
             if len(nxts) != len(digers):
-                raise ValueError("If encrypted private keys are provided, must match verfers")
+                raise ValueError("If encrypted private next keys are provided, must match digers")
 
             for idx, prx in enumerate(nxts):
                 cipher = coring.Cipher(qb64=prx)
