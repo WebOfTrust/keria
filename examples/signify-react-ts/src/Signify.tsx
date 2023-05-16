@@ -17,6 +17,7 @@ export function Signify() {
     const [pre, setPre] = useState("")
     const [icp, setICP] = useState("")
     const [key, setKey] = useState(generateRandomKey())
+    
 
     useEffect(() => {
         ready().then(() => {
@@ -24,7 +25,7 @@ export function Signify() {
         })
     }, [])
 
-    const handleComputePre = () => {
+    const handleComputePre = async () => {
         if (!key) {
             alert("Please enter a valid key.")
             return
@@ -34,8 +35,11 @@ export function Signify() {
             alert("Invalid key lenght " + key.length)
             return
         }
-        const client = new SignifyClient("http://localhost:3902", key)
+        const client = new SignifyClient("http://localhost:3901", key)
         setPre(client.controller?.pre)
+        console.log("here")
+        let res  = await client.boot()
+        console.log(res)
     }
 
     const handleButtonClick = () => {
@@ -62,9 +66,9 @@ export function Signify() {
                     <label htmlFor="key">Enter 21 character passcode:</label>
                     <input type="text" id="key" value={key} onChange={(e) => setKey(e.target.value)} ref={inputRef} className="button" />
                     <button 
-                    onClick={handleComputePre} 
+                    onClick={async () => {await handleComputePre()}}
                     className="button"
-                    >Compute Client Pre</button>
+                    >Boot Keria</button>
                 </div>
                 <button onClick={handleButtonClick} className="button">
                     AID is {pre}

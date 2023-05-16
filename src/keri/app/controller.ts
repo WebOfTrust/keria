@@ -13,7 +13,8 @@ export class Controller {
     *
     */
     private bran: string;
-    private stem: string;
+    public stem: string;
+    public tier: Tier;
     private salter: any;
     private signer: any;
     private nsigner: any;
@@ -22,6 +23,7 @@ export class Controller {
     constructor(bran: string, tier: Tier, ridx: number = 0) {
         this.bran = MtrDex.Salt_128 + 'A' + bran.substring(0, 21)  // qb64 salt for seed
         this.stem = "signify:controller"
+        this.tier = tier
 
         this.salter = new Salter({qb64: this.bran})
 
