@@ -17,6 +17,8 @@ export function Signify() {
     const [pre, setPre] = useState("")
     const [icp, setICP] = useState("")
     const [key, setKey] = useState(generateRandomKey())
+    const [response, setResponse] = useState("")
+
     
 
     useEffect(() => {
@@ -41,6 +43,13 @@ export function Signify() {
         let res  = await client.boot()
         console.log(res)
     }
+    const getAgentState = async () => {
+        const client = new SignifyClient("http://localhost:3901", key)
+        let res = await client.state()
+        console.log(res)
+        setResponse(JSON.stringify(res, null, 2))
+    }
+
 
     const handleButtonClick = () => {
         if (!pre) {
@@ -68,14 +77,30 @@ export function Signify() {
                     <button 
                     onClick={async () => {await handleComputePre()}}
                     className="button"
-                    >Boot Keria</button>
+                    >Boot Keria </button>
                 </div>
                 <button onClick={handleButtonClick} className="button">
                     AID is {pre}
                 </button>
-                <p>
-                    {icp}
-                </p>
+                <button onClick={async () => {await getAgentState()}} className="button">
+                    Agent Kel State
+                </button>
+                <div
+                    style={{
+                            whiteSpace: "pre-wrap",
+                            wordWrap: "break-word",
+                            width: "100%",
+                            height: "auto",
+                            textAlign: "left",
+                            padding: "1rem",
+                            backgroundColor: "#eee",
+                            borderRadius: "0.5rem",
+                            marginTop: "1rem",
+                            border: "1px solid black"
+                    }}
+                    >
+                    {response}
+                </div>
             </div>
         </>
     )
