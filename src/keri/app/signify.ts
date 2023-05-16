@@ -1,4 +1,4 @@
-import { Controller } from "./controller";
+import { Controller, Agent } from "./controller";
 import { Tier } from "../core/salter";
 import { Authenticater } from "../core/authing";
 
@@ -43,7 +43,7 @@ export class SignifyClient {
         this.ctrl.ridx = state.ridx != undefined ? state.ridx : 0
 
         // Create agent representing the AID of the cloud agent
-        // this.agent = Agent(kel=state.kel)
+        this.agent = new Agent({kel:state.kel})
 
         if (this.agent.anchor != this.ctrl.pre) {
             throw Error("commitment to controller AID missing in agent inception event")
