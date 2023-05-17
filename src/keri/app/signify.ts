@@ -16,13 +16,12 @@ class State {
 }
 
 export class SignifyClient {
-    private readonly _ctrl?: Controller
+    private _ctrl: Controller
     private url: string;
     private bran: string;
     private pidx: number;
     private agent: any;
     private authn: any;
-    private ctrl: any;
 
     constructor(url: string, bran: string) {
         this.url = url;
@@ -40,16 +39,15 @@ export class SignifyClient {
         let state = await this.state()
         this.pidx = state.pidx
         //Create controller representing local auth AID
-        this.ctrl.ridx = state.ridx != undefined ? state.ridx : 0
-
+        this.controller.ridx = state.ridx !== undefined ? state.ridx : 0
         // Create agent representing the AID of the cloud agent
         this.agent = new Agent({kel:state.kel})
 
-        if (this.agent.anchor != this.ctrl.pre) {
+        if (this.agent.anchor != this.controller?.pre) {
             throw Error("commitment to controller AID missing in agent inception event")
         }
 
-        this.authn = new Authenticater(this.agent, this.ctrl)
+        this.authn = new Authenticater(this.agent, this.controller.pre)
         // this.session.auth = new SignifyAuth(this.authn)
 
     }
@@ -84,7 +82,7 @@ export class SignifyClient {
         console.log(data);
         let state = new State();
         state.kel = data["kel"]?? {};
-        state.ridx = data["ridx"] ?? null;
+        state.ridx = data["ridx"] ?? 0;
         state.pidx = data["pidx"] ?? 0;
         return state;
     }

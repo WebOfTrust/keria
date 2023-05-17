@@ -25,8 +25,7 @@ export class Agent {
         if (kel.length < 1) {
             throw new Error("invalid empty KEL");
         }
-
-        let [serder, verfer, diger] = this.event(kel[0]);
+        let [serder, verfer, diger] = this.event(kel.kel[0]);
         if (serder.ked['t'] !== Ilks.icp) {
             throw new Error(`invalid inception event type ${serder.ked['t']}`);
         }
@@ -56,7 +55,7 @@ export class Agent {
     }
 
     event(evt: any): [Serder, Verfer, Diger] {
-        let serder = new Serder({ ked: evt["ked"] });
+        let serder = new Serder(evt["ked"]);
         let siger = new Signer({ qb64: evt["sig"] });
 
         if (serder.verfers.length !== 1) {
@@ -84,7 +83,6 @@ export class Agent {
         if (ntholder.num !== 1) {
             throw new Error(`invalid next threshold ${ntholder.num}, must be 1`);
         }
-
         return [serder, verfer, diger];
     }
 }
@@ -97,6 +95,7 @@ export class Controller {
     private bran: string;
     public stem: string;
     public tier: Tier;
+    public ridx: number;
     private salter: any;
     private signer: any;
     private nsigner: any;
@@ -106,13 +105,14 @@ export class Controller {
         this.bran = MtrDex.Salt_128 + 'A' + bran.substring(0, 21)  // qb64 salt for seed
         this.stem = "signify:controller"
         this.tier = tier
+        this.ridx = ridx
 
         this.salter = new Salter({ qb64: this.bran })
 
         let creator = new SaltyCreator(this.salter.qb64, tier, this.stem)
 
-        this.signer = creator.create(undefined, 1, MtrDex.Ed25519_Seed, true, 0, ridx, 0, false).signers.pop()
-        this.nsigner = creator.create(undefined, 1, MtrDex.Ed25519_Seed, true, 0, ridx + 1, 0, false).signers.pop()
+        this.signer = creator.create(undefined, 1, MtrDex.Ed25519_Seed, true, 0, this.ridx, 0, false).signers.pop()
+        this.nsigner = creator.create(undefined, 1, MtrDex.Ed25519_Seed, true, 0, this.ridx + 1, 0, false).signers.pop()
         let keys = [this.signer.verfer.qb64]
         let ndigs = [new Diger({ code: MtrDex.Blake3_256 }, this.nsigner.verfer.qb64b).qb64]
 
