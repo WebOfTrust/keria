@@ -117,19 +117,24 @@ class AgentResourceEnd:
         if agent is None:
             raise falcon.HTTPNotFound(f"no agent for {caid}")
 
+        typ = req.params.get("type")
+        if typ == "ixn":
+            self.interact(req, rep, agent, caid)
+            return
+
         body = req.get_media()
 
         if "rot" not in body:
             raise falcon.HTTPBadRequest(description="required field 'rot' missing from body")
 
         if "sigs" not in body:
-            raise falcon.HTTPBadRequest(description="required field 'rot' missing from body")
+            raise falcon.HTTPBadRequest(description="required field 'sigs' missing from body")
 
         if "sxlt" not in body:
-            raise falcon.HTTPBadRequest(description="required field 'rot' missing from body")
+            raise falcon.HTTPBadRequest(description="required field 'sxlt' missing from body")
 
         if "keys" not in body:
-            raise falcon.HTTPBadRequest(description="required field 'rot' missing from body")
+            raise falcon.HTTPBadRequest(description="required field 'keys' missing from body")
 
         rot = coring.Serder(ked=body["rot"])
         sigs = body["sigs"]
@@ -175,6 +180,28 @@ class AgentResourceEnd:
 
         print(f"deleting {sxlt}")
         agent.mgr.delete_sxlt()
+
+        rep.status = falcon.HTTP_204
+
+    @staticmethod
+    def interact(req, rep, agent, caid):
+        body = req.get_media()
+
+        if "ixn" not in body:
+            raise falcon.HTTPBadRequest(description="required field 'ixn' missing from body")
+
+        if "sigs" not in body:
+            raise falcon.HTTPBadRequest(description="required field 'sigs' missing from body")
+
+        ked = body['ixn']
+        sigs = body['sigs']
+        ixn = coring.Serder(ked=ked)
+        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+
+        ctrlHab = agent.hby.habByName(caid, ns="agent")
+
+        ctrlHab.interact(serder=ixn, sigers=sigers)
+        agent.agentHab.kvy.processEvent(serder=ixn, sigers=sigers)
 
         rep.status = falcon.HTTP_204
 
@@ -317,7 +344,7 @@ class IdentifierCollectionEnd:
                 if hab.kever.delegator:
                     agent.anchors.append(dict(pre=hab.pre, sn=0))
                     op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
-                                              metadata=dict(sn=0))
+                                              metadata=dict(pre=hab.pre, sn=0))
                     rep.status = falcon.HTTP_202
                     rep.data = op.to_json().encode("utf-8")
 
@@ -439,7 +466,7 @@ class IdentifierResourceEnd:
         if hab.kever.delegator:
             agent.anchors.append(dict(alias=name, pre=hab.pre, sn=0))
             op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
-                                      metadata=dict(sn=hab.kever.sn))
+                                      metadata=dict(pre=hab.pre, sn=hab.kever.sn))
             return op.to_json().encode("utf-8")
 
         if hab.kever.wits:
@@ -479,7 +506,7 @@ class IdentifierResourceEnd:
 
         if hab.kever.wits:
             agent.witners.append(dict(serder=serder))
-            op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
+            op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.witness,
                                       metadata=dict(sn=hab.kever.sn))
             return op.to_json().encode("utf-8")
 
