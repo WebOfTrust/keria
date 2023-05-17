@@ -20,7 +20,6 @@ from hio.help import decking
 from keri.app import configing, keeping, habbing, storing, signaling, oobiing, agenting, delegating, \
     forwarding, querying, connecting
 from keri.app.grouping import Counselor
-from keria.app.indirecting import HttpEnd
 from keri.app.keeping import Algos
 from keri.core import coring, parsing, eventing, routing
 from keri.core.coring import Ilks, randomNonce
@@ -70,7 +69,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
 
     doers = [agency, bootServerDoer, adminServerDoer]
     loadEnds(app=app)
-    aiding.loadEnds(app=app, agency=agency)
+    aiding.loadEnds(app=app, agency=agency, authn=authn)
     notifying.loadEnds(app=app)
 
     if httpPort:
@@ -92,10 +91,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
 
         specEnd = AgentSpecResource(app=app, title='KERIA Interactive Web Interface API')
         specEnd.addRoutes(happ)
-        js = json.dumps(specEnd.spec.to_dict())
-        print('json for spec', js)
         happ.add_route("/spec.yaml", specEnd)
-
 
     print("The Agency is loaded and waiting for requests...")
     return doers
@@ -147,7 +143,7 @@ class Agency(doing.DoDoer):
 
         # Create the Hab for the Agent with only 2 AIDs
         agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, cf=cf, temp=self.temp)
-        agentHab = agentHby.makeHab(caid, ns="agent", transferable=True, data=[caid])
+        agentHab = agentHby.makeHab(f"agent-{caid}", ns="agent", transferable=True, delpre=caid)
         agentRgy = credentialing.Regery(hby=agentHby, name=agentHab.name, base=self.base, temp=self.temp)
 
         agent = Agent(agentHby, agentRgy, agentHab,
@@ -190,9 +186,9 @@ class Agency(doing.DoDoer):
         agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, temp=self.temp)
         agentRgy = credentialing.Regery(hby=agentHby, name=caid, base=self.base, temp=self.temp)
 
-        agentHab = agentHby.habByName(caid, ns="agent")
+        agentHab = agentHby.habByName(f"agent-{caid}", ns="agent")
         if aaid.qb64 != agentHab.pre:
-            raise kering.ConfigurationError(f"invalid agent aid={aaid.qb64} to controller aid={caid}")
+            raise kering.ConfigurationError(f"invalid agent aid={aaid.qb64}/{agentHab.pre} to controller aid={caid}")
 
         agent = Agent(hby=agentHby, rgy=agentRgy, agentHab=agentHab, agency=self, caid=caid)
         self.agents[caid] = agent
@@ -236,7 +232,7 @@ class Agent(doing.DoDoer):
         oobiery = oobiing.Oobiery(hby=hby)
 
         self.monitor = longrunning.Monitor(hby=hby, swain=self.swain, counselor=self.counselor, temp=hby.temp)
-        self.remoteMgr = RemoteManager(hby=hby)
+        self.mgr = RemoteManager(hby=hby)
 
         self.cues = decking.Deck()
         self.groups = decking.Deck()
@@ -298,25 +294,25 @@ class Agent(doing.DoDoer):
         return self.agentHab.pre
 
     def inceptSalty(self, pre, **kwargs):
-        keeper = self.remoteMgr.get(Algos.salty)
+        keeper = self.mgr.get(Algos.salty)
         keeper.incept(pre=pre, **kwargs)
 
         self.agency.incept(self.caid, pre)
 
     def inceptRandy(self, pre, verfers, digers, **kwargs):
-        keeper = self.remoteMgr.get(Algos.randy)
+        keeper = self.mgr.get(Algos.randy)
         keeper.incept(pre=pre, verfers=verfers, digers=digers, **kwargs)
 
         self.agency.incept(self.caid, pre)
 
     def inceptGroup(self, pre, mpre, verfers, digers):
-        keeper = self.remoteMgr.get(Algos.group)
+        keeper = self.mgr.get(Algos.group)
         keeper.incept(pre=pre, mpre=mpre, verfers=verfers, digers=digers)
 
         self.agency.incept(self.caid, pre)
 
     def inceptExtern(self, pre, verfers, digers, **kwargs):
-        keeper = self.remoteMgr.get(Algos.extern)
+        keeper = self.mgr.get(Algos.extern)
         keeper.incept(pre=pre, verfers=verfers, digers=digers, **kwargs)
 
         self.agency.incept(self.caid, pre)
@@ -571,7 +567,7 @@ class BootEnd:
                                             description=f'required field "tier" missing from body.salt')
             tier = salt["tier"]
 
-            mgr = agent.remoteMgr.get(algo=Algos.salty)
+            mgr = agent.mgr.get(algo=Algos.salty)
             mgr.incept(agent.caid, verfers=ctrlHab.kever.verfers,
                        digers=ctrlHab.kever.digers,
                        pidx=pidx, ridx=0, kidx=0, stem=stem, tier=tier)
@@ -588,7 +584,7 @@ class BootEnd:
                                             description=f'required field "nxts" missing from body.rand')
             nxts = rand["nxts"]
 
-            mgr = agent.remoteMgr.get(algo=Algos.randy)
+            mgr = agent.mgr.get(algo=Algos.randy)
             mgr.incept(agent.caid, verfers=ctrlHab.kever.verfers,
                        digers=ctrlHab.kever.digers,
                        prxs=pris, nxts=nxts)

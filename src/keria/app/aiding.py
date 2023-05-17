@@ -18,13 +18,12 @@ from keri.help import ogler
 from mnemonic import mnemonic
 
 from ..core import longrunning, httping
-from ..core.eventing import cloneAid
 
 logger = ogler.getLogger()
 
 
-def loadEnds(app, agency):
-    agentEnd = AgentResourceEnd(agency=agency)
+def loadEnds(app, agency, authn):
+    agentEnd = AgentResourceEnd(agency=agency, authn=authn)
     app.add_route("/agent/{caid}", agentEnd)
 
     aidsEnd = IdentifierCollectionEnd()
@@ -57,8 +56,9 @@ def loadEnds(app, agency):
 class AgentResourceEnd:
     """ Resource class for getting agent specific launch information """
 
-    def __init__(self, agency):
+    def __init__(self, agency, authn):
         self.agency = agency
+        self.authn = authn
 
     def on_get(self, _, rep, caid):
         """ GET endpoint for Keystores
@@ -75,16 +75,108 @@ class AgentResourceEnd:
         if agent is None:
             raise falcon.HTTPNotFound(description=f"not agent found for controller {caid}")
 
-        kel = cloneAid(db=agent.hby.db, pre=agent.pre)
-        pidx = agent.hby.db.habs.cntAll()
-        body = dict(kel=kel, pidx=pidx)
+        if agent.pre not in agent.hby.kevers:
+            raise falcon.HTTPBadRequest(description=f"invalid agent configuration, {agent.pre} not found")
 
-        if (ctrlHab := agent.hby.habByName(agent.caid, ns="agent")) is not None:
-            body["ridx"] = ctrlHab.kever.sn
+        if agent.caid not in agent.hby.kevers:
+            raise falcon.HTTPBadRequest(description=f"invalid controller configuration, {agent.caid} not found")
+
+        pidx = agent.hby.db.habs.cntAll()
+
+        state = agent.hby.kevers[agent.caid].state().ked
+        key = dbing.dgKey(state['i'], state['ee']['d'])  # digest key
+        msg = agent.hby.db.getEvt(key)
+        eserder = coring.Serder(raw=bytes(msg))
+
+        body = dict(
+            agent=agent.hby.kevers[agent.pre].state().ked,
+            controller=dict(
+                state=state,
+                ee=eserder.ked
+            ),
+            pidx=pidx
+        )
+
+        if (sxlt := agent.mgr.sxlt) is not None:
+            body["sxlt"] = sxlt
 
         rep.content_type = "application/json"
         rep.data = json.dumps(body).encode("utf-8")
         rep.status = falcon.HTTP_200
+
+    def on_put(self, req, rep, caid):
+        """
+
+        Parameters:
+            req (Request): falcon.Request HTTP request
+            rep (Response): falcon.Response HTTP response
+            caid(str): qb64 identifier prefix of Controller
+
+        """
+        agent = self.agency.get(caid)
+        if agent is None:
+            raise falcon.HTTPNotFound(f"no agent for {caid}")
+
+        body = req.get_media()
+
+        if "rot" not in body:
+            raise falcon.HTTPBadRequest(description="required field 'rot' missing from body")
+
+        if "sigs" not in body:
+            raise falcon.HTTPBadRequest(description="required field 'rot' missing from body")
+
+        if "sxlt" not in body:
+            raise falcon.HTTPBadRequest(description="required field 'rot' missing from body")
+
+        if "keys" not in body:
+            raise falcon.HTTPBadRequest(description="required field 'rot' missing from body")
+
+        rot = coring.Serder(ked=body["rot"])
+        sigs = body["sigs"]
+
+        ctrlHab = agent.hby.habByName(caid, ns="agent")
+        ctrlHab.rotate(serder=rot, sigers=[coring.Siger(qb64=sig) for sig in sigs])
+
+        if not self.authn.verify(req):
+            raise falcon.HTTPForbidden(description="invalid signature on request")
+
+        sxlt = body["sxlt"]
+        agent.mgr.sxlt = sxlt
+
+        keys = body["keys"]
+        for pre, val in keys.items():
+            if "sxlt" in val:
+                if (sp := agent.mgr.rb.sprms.get(pre)) is None:
+                    raise ValueError("Attempt to update sxlt for nonexistent or invalid pre={}.".format(pre))
+
+                sp.sxlt = val["sxlt"]
+
+                if not agent.mgr.rb.sprms.pin(pre, val=sp):
+                    raise ValueError("Unable to update sxlt prms for pre={}.".format(pre))
+
+            elif "prxs" in val:
+                hab = agent.hby.habs[pre]
+                verfers = hab.kever.verfers
+                digers = hab.kever.digers
+                prxs = val["prxs"]
+
+                for idx, prx in enumerate(prxs):
+                    cipher = coring.Cipher(qb64=prx)
+                    agent.mgr.rb.prxs.put(keys=verfers[idx].qb64b, val=cipher)
+
+                if "nxts" in val:
+                    nxts = val["nxts"]
+                    if len(nxts) != len(digers):
+                        raise ValueError("If encrypted private next keys are provided, must match digers")
+
+                    for idx, prx in enumerate(nxts):
+                        cipher = coring.Cipher(qb64=prx)
+                        agent.mgr.rb.nxts.put(keys=digers[idx].qb64b, val=cipher)
+
+        print(f"deleting {sxlt}")
+        agent.mgr.delete_sxlt()
+
+        rep.status = falcon.HTTP_204
 
 
 class IdentifierCollectionEnd:
@@ -102,8 +194,19 @@ class IdentifierCollectionEnd:
         agent = req.context.agent
         res = []
 
-        for pre, hab in agent.hby.habs.items():
-            data = info(hab, agent.remoteMgr)
+        last = req.params.get("last")
+        limit = req.params.get("limit")
+
+        limit = limit if not limit is None else "25"
+        last = last if last is not None else ""
+
+        for name, habord in agent.hby.db.habs.getItemIter(keys=(last,)):
+            name = ".".join(name)  # detupleize the database key name
+            if len(res) == int(limit, 10):
+                break
+
+            hab = agent.hby.habByName(name)
+            data = info(hab, agent.mgr)
             res.append(data)
 
         rep.status = falcon.HTTP_200
@@ -252,7 +355,7 @@ class IdentifierResourceEnd:
         if hab is None:
             raise falcon.HTTPNotFound(description=f"{name} is not a valid identifier name")
 
-        data = info(hab, agent.remoteMgr, full=True)
+        data = info(hab, agent.mgr, full=True)
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(data).encode("utf-8")
@@ -306,7 +409,7 @@ class IdentifierResourceEnd:
 
         if Algos.salty in body:
             salt = body[Algos.salty]
-            keeper = agent.remoteMgr.get(Algos.salty)
+            keeper = agent.mgr.get(Algos.salty)
 
             try:
                 keeper.rotate(pre=serder.pre, **salt)
@@ -316,12 +419,12 @@ class IdentifierResourceEnd:
 
         elif Algos.randy in body:
             rand = body[Algos.randy]
-            keeper = agent.remoteMgr.get(Algos.randy)
+            keeper = agent.mgr.get(Algos.randy)
 
             keeper.rotate(pre=serder.pre, verfers=serder.verfers, digers=serder.digers, **rand)
 
         elif Algos.group in body:
-            keeper = agent.remoteMgr.get(Algos.group)
+            keeper = agent.mgr.get(Algos.group)
 
             keeper.rotate(pre=serder.pre, verfers=serder.verfers, digers=serder.digers)
 

@@ -77,6 +77,8 @@ def mockCoringRandomNonce(monkeypatch):
 
 class Helpers:
 
+    controllerAID = "EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx"
+
     @staticmethod
     def remove_test_dirs(name):
         if os.path.exists(f'/usr/local/var/keri/db/{name}'):
@@ -99,6 +101,12 @@ class Helpers:
             os.remove(f'~/.keri/cf/{name}.json')
         if os.path.exists(f'~/.keri/cf/{name}'):
             shutil.rmtree(f'~/.keri/cf/{name}')
+
+    @staticmethod
+    def controller():
+        serder, signers = Helpers.incept(bran=b'0123456789abcdefghijk', stem="signify:controller", pidx=0)
+        sigers = [signers[0].sign(ser=serder.raw, index=0)]
+        return serder, sigers
 
     @staticmethod
     def incept(bran, stem, pidx, count=1, sith="1", wits=None, toad="0", delpre=None):
@@ -190,13 +198,17 @@ class Helpers:
         serder, signers = Helpers.incept(salt, "signify:aid", pidx=0, wits=wits, toad=toad, delpre=delpre)
         assert len(signers) == 1
 
+        salter = coring.Salter(raw=salt)
+        encrypter = coring.Encrypter(verkey=signers[0].verfer.qb64)
+        sxlt = encrypter.encrypt(salter.qb64).qb64
+
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
 
         body = {'name': name,
                 'icp': serder.ked,
                 'sigs': sigers,
                 "salty": {
-                    'stem': 'signify:aid', 'pidx': 0, 'tier': 'low',
+                    'stem': 'signify:aid', 'pidx': 0, 'tier': 'low', 'sxlt': sxlt,
                     'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}
                 }
 
@@ -215,8 +227,10 @@ class Helpers:
 
     @staticmethod
     @contextmanager
-    def openKeria(caid=None, salter=None, cf=None, temp=True):
-        caid = caid if caid is not None else "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
+    def openKeria(salter=None, cf=None, temp=True):
+
+        serder, sigers = Helpers.controller()
+        assert serder.pre == Helpers.controllerAID
 
         if salter is None:
             salt = b'0123456789abcdef'
@@ -226,13 +240,15 @@ class Helpers:
             cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
 
         with habbing.openHby(name="keria", salt=salter.qb64, temp=temp, cf=cf) as hby:
+            ims = eventing.messagize(serder, sigers=sigers)
+            parsing.Parser(kvy=hby.kvy).parseOne(ims=ims)
 
             agency = agenting.Agency(name="agency", bran=None, temp=True)
-            agentHab = hby.makeHab(caid, ns="agent", transferable=True, data=[caid])
+            agentHab = hby.makeHab(serder.pre, ns="agent", transferable=True, delpre=serder.pre)
 
             rgy = credentialing.Regery(hby=hby, name=agentHab.name, base=hby.base, temp=True)
-            agent = agenting.Agent(hby=hby, rgy=rgy, agentHab=agentHab, agency=agency, caid=caid)
-            agency.agents[caid] = agent
+            agent = agenting.Agent(hby=hby, rgy=rgy, agentHab=agentHab, agency=agency, caid=serder.pre)
+            agency.agents[serder.pre] = agent
 
             app = falcon.App()
             app.add_middleware(Helpers.middleware(agent))
