@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import { SignifyClient, ready } from "signify-ts";
+import {SignifyDemo } from './SignifyDemo';
 
 function generateRandomKey() {
     const characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -48,7 +49,9 @@ export function Signify() {
         let res = await client.state()
         console.log(res)
         setResponse(JSON.stringify(res, null, 2))
+        console.log(client)
     }
+
 
 
     const handleButtonClick = () => {
@@ -71,6 +74,8 @@ export function Signify() {
     return (
         <>
             <div className="card">
+                <SignifyDemo keypassed={key} />
+                {/* show kel*/}
                 <div className="form">
                     <label htmlFor="key">Enter 21 character passcode:</label>
                     <input type="text" id="key" value={key} onChange={(e) => setKey(e.target.value)} ref={inputRef} className="button" />
@@ -79,9 +84,13 @@ export function Signify() {
                     className="button"
                     >Boot Keria </button>
                 </div>
-                <button onClick={handleButtonClick} className="button">
+                <p >
                     AID is {pre}
+                </p>
+                <button onClick={async () => {await connectAgent()}} className="button">
+                    Agent conenct
                 </button>
+                {/* show kel*/}
                 <button onClick={async () => {await getAgentState()}} className="button">
                     Agent Kel State
                 </button>
