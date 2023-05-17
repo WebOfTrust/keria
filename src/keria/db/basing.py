@@ -56,6 +56,7 @@ class AgencyBaser(dbing.LMDBer):
             perm = self.Perm  # defaults to restricted permissions for non temp
 
         self.agnt = None
+        self.ctrl = None
         self.aids = None
 
         super(AgencyBaser, self).__init__(headDirPath=headDirPath, perm=perm,
@@ -72,6 +73,7 @@ class AgencyBaser(dbing.LMDBer):
         # to avoid namespace collisions with Base64 identifier prefixes.
 
         self.agnt = subing.CesrSuber(db=self, subkey='agnt.', klas=coring.Prefixer)
+        self.ctrl = subing.CesrSuber(db=self, subkey='ctrl.', klas=coring.Prefixer)
         self.aids = subing.CesrSuber(db=self,
                                      subkey='aids.',
                                      klas=coring.Prefixer)

@@ -130,7 +130,7 @@ class Agency(doing.DoDoer):
             data = dict(self.cf.get())
             if "keria" in data:
                 curls = data["keria"]
-                data[caid] = curls
+                data[f"agent-{caid}"] = curls
                 del data["keria"]
 
             cf = configing.Configer(name=f"{caid}",
@@ -154,6 +154,8 @@ class Agency(doing.DoDoer):
 
         self.adb.agnt.pin(keys=(caid,),
                           val=coring.Prefixer(qb64=agent.pre))
+        self.adb.ctrl.pin(keys=(agent.pre,),
+                          val=coring.Prefixer(qb64=caid))
 
         # add agent to cache
         self.agents[caid] = agent
@@ -180,7 +182,7 @@ class Agency(doing.DoDoer):
 
         ks = keeping.Keeper(name=caid,
                             base=self.base,
-                            temp=False,
+                            temp=self.temp,
                             reopen=True)
 
         agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, temp=self.temp)
@@ -196,12 +198,17 @@ class Agency(doing.DoDoer):
         return agent
 
     def lookup(self, pre):
-        prefixer = self.adb.aids.get(keys=(pre,))
-        if prefixer is None:
+        # Check to see if this is a managed AID
+        if (prefixer := self.adb.aids.get(keys=(pre,))) is not None:
+            caid = prefixer.qb64
+        # Or if its an agent AID
+        elif (prefixer := self.adb.ctrl.get(keys=(pre,))) is not None:
+            caid = prefixer.qb64
+        else:
             return None
 
         try:
-            return self.get(prefixer.qb64)
+            return self.get(caid)
         except kering.ConfigurationError:
             return None
 
@@ -279,7 +286,7 @@ class Agent(doing.DoDoer):
                                      exc=self.exc,
                                      rvy=self.rvy)
 
-        init = Initer(agentHab=agentHab)
+        init = Initer(agentHab=agentHab, caid=caid)
         qr = Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries)
         er = Escrower(kvy=self.kvy, rvy=self.rvy, tvy=self.tvy, exc=self.exc)
         mr = Messager(kvy=self.kvy, parser=self.parser)
@@ -374,8 +381,9 @@ class Delegator(doing.Doer):
 
 
 class Initer(doing.Doer):
-    def __init__(self, agentHab):
+    def __init__(self, agentHab, caid):
         self.agentHab = agentHab
+        self.caid = caid
         super(Initer, self).__init__()
 
     def recur(self, tyme):
@@ -383,7 +391,7 @@ class Initer(doing.Doer):
         if not self.agentHab.inited:
             return False
 
-        print("  Agent", self.agentHab.name, ":", self.agentHab.pre)
+        print("  Agent:", self.agentHab.pre, "  Controller:", self.caid)
         return True
 
 
