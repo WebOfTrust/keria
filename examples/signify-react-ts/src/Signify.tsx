@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import { SignifyClient, ready } from "signify-ts";
-import {SignifyDemo } from './SignifyDemo';
+import { SignifyDemo } from './SignifyDemo';
 
 function generateRandomKey() {
     const characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -20,7 +20,7 @@ export function Signify() {
     const [key, setKey] = useState(generateRandomKey())
     const [response, setResponse] = useState("")
 
-    
+
 
     useEffect(() => {
         ready().then(() => {
@@ -28,7 +28,7 @@ export function Signify() {
         })
     }, [])
 
-    const handleComputePre = async () => {
+    const bootAgent = async () => {
         if (!key) {
             alert("Please enter a valid key.")
             return
@@ -39,27 +39,9 @@ export function Signify() {
             return
         }
         const client = new SignifyClient("http://localhost:3901", key)
-        setPre(client.controller?.pre)
-        console.log("here")
-        let res  = await client.boot()
+        setPre(client.controller.pre)
+        let res = await client.boot()
         console.log(res)
-    }
-    const getAgentState = async () => {
-        const client = new SignifyClient("http://localhost:3901", key)
-        let res = await client.state()
-        console.log(res)
-        setResponse(JSON.stringify(res, null, 2))
-        console.log(client)
-    }
-
-
-
-    const handleButtonClick = () => {
-        if (!pre) {
-            alert("Please compute pre first.")
-            return
-        }
-        setICP(JSON.stringify(client.controller?.event[0]))
     }
 
     const inputRef = useRef(null)
@@ -74,42 +56,56 @@ export function Signify() {
     return (
         <>
             <div className="card">
-                <SignifyDemo keypassed={key} />
                 {/* show kel*/}
                 <div className="form">
                     <label htmlFor="key">Enter 21 character passcode:</label>
                     <input type="text" id="key" value={key} onChange={(e) => setKey(e.target.value)} ref={inputRef} className="button" />
-                    <button 
-                    onClick={async () => {await handleComputePre()}}
-                    className="button"
+                    <button
+                        onClick={async () => { await bootAgent() }}
+                        className="button"
                     >Boot Keria </button>
                 </div>
                 <p >
                     AID is {pre}
                 </p>
-                <button onClick={async () => {await connectAgent()}} className="button">
-                    Agent conenct
-                </button>
                 {/* show kel*/}
-                <button onClick={async () => {await getAgentState()}} className="button">
-                    Agent Kel State
-                </button>
-                <div
-                    style={{
-                            whiteSpace: "pre-wrap",
-                            wordWrap: "break-word",
-                            width: "100%",
-                            height: "auto",
-                            textAlign: "left",
-                            padding: "1rem",
-                            backgroundColor: "#eee",
-                            borderRadius: "0.5rem",
-                            marginTop: "1rem",
-                            border: "1px solid black"
-                    }}
-                    >
-                    {response}
-                </div>
+                <SignifyDemo text={'Agent State'}
+                    onClick={async () => {
+                        const client = new SignifyClient("http://localhost:3901", key)
+                        let res = await client.state()
+
+                        let resp = JSON.stringify(res, null, 2)
+                        console.log(resp)
+                        return resp
+                    }} />
+                <SignifyDemo text={'Agent Connect'}
+                    onClick={async () => {
+                        try {
+                            const client = new SignifyClient("http://localhost:3901", key)
+                            await client.boot()
+                            let res = await client.connect()
+                            console.log('connected res, ', res)
+                            let res1 = await client.get_identifiers()
+
+                            return 'Connected to agent'
+                        }
+                        catch (e) {
+                            console.log(e)
+                            return 'Error connecting to agent'
+                        }
+                    }} />
+                <SignifyDemo text={'Get identifiers'}
+                    onClick={async () => {
+                        try {
+                            const client = new SignifyClient("http://localhost:3901", key)
+                            let res = await client.get_identifiers()
+                            return res
+                        }
+                        catch (e) {
+                            console.log(e)
+                            return 'Error getting identifiers'
+                        }
+                    }} />
             </div>
         </>
     )

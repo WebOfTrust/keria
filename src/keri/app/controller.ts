@@ -4,7 +4,7 @@ import { MtrDex } from "../core/matter";
 import { Diger } from "../core/diger";
 import { incept } from "../core/eventing";
 import { Serder } from "../core/serder";
-import { Signer } from "../core/signer";
+import { Siger } from "../core/siger";
 import { Tholder } from "../core/tholder";
 import { Ilks } from "../core/core";
 import { Verfer } from "../core/verfer";
@@ -36,8 +36,10 @@ export class Agent {
         }
 
         this.anchor = serder.ked['a'][0];
+        console.log(kel)
 
-        for (let evt of kel.slice(1)) {
+        for (let evt of kel.kel.slice(1)) {
+            console.log(evt)
             let [rot, nverfer, ndiger] = this.event(evt);
             if (rot.ked['t'] !== Ilks.rot) {
                 throw new Error(`invalid rotation event type ${serder.ked['t']}`);
@@ -56,7 +58,8 @@ export class Agent {
 
     event(evt: any): [Serder, Verfer, Diger] {
         let serder = new Serder(evt["ked"]);
-        let siger = new Signer({ qb64: evt["sig"] });
+        console.log(evt["sig"])
+        let siger = new Siger({ qb64: evt["sig"] });
 
         if (serder.verfers.length !== 1) {
             throw new Error(`agent inception event can only have one key`);
@@ -97,7 +100,7 @@ export class Controller {
     public tier: Tier;
     public ridx: number;
     private salter: any;
-    private signer: any;
+    public signer: any;
     private nsigner: any;
     private serder: Serder;
 

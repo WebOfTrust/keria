@@ -20,9 +20,9 @@ export class Authenticater {
     private _verfer: Verfer;
     private readonly _csig: Signer;
 
-    constructor(csig: Signer, aaid: string) {
+    constructor(csig: Signer, verfer: Verfer) {
         this._csig = csig
-        this._verfer = new Verfer({qb64: aaid})
+        this._verfer = verfer
     }
 
     verify(headers: Headers, method: string, path: string): boolean {

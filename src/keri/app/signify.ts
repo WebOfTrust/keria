@@ -21,7 +21,8 @@ export class SignifyClient {
     private bran: string;
     private pidx: number;
     private agent: any;
-    private authn: any;
+    public authn: any;
+    public session: any;
 
     constructor(url: string, bran: string) {
         this.url = url;
@@ -29,46 +30,37 @@ export class SignifyClient {
             throw Error("bran must be 21 characters")
         }
         this.bran = bran;
-
         this.pidx = 0;
         this._ctrl = new Controller(bran, Tier.low)
+        this.authn = null;
 
     }
-
-    async connect() {
-        let state = await this.state()
-        this.pidx = state.pidx
-        //Create controller representing local auth AID
-        this.controller.ridx = state.ridx !== undefined ? state.ridx : 0
-        // Create agent representing the AID of the cloud agent
-        this.agent = new Agent({kel:state.kel})
-
-        if (this.agent.anchor != this.controller?.pre) {
-            throw Error("commitment to controller AID missing in agent inception event")
-        }
-
-        this.authn = new Authenticater(this.agent, this.controller.pre)
-        // this.session.auth = new SignifyAuth(this.authn)
-
+    get controller() {
+        return this._ctrl
     }
+
+    get data() {
+        return [this.url, this.bran, this.pidx, this.authn]
+    }
+
     async boot() {
         const [evt, sign] = this.controller?.event ?? [];
         const data = {
-          icp: evt.ked,
-          sig: sign.qb64,
-          stem: this.controller?.stem,
-          pidx: 1,
-          tier: this.controller?.tier
+            icp: evt.ked,
+            sig: sign.qb64,
+            stem: this.controller?.stem,
+            pidx: 1,
+            tier: this.controller?.tier
         };
         let _url = this.url.includes("3903") ? this.url : "http://localhost:3903";
         const res = await fetch(_url + "/boot", {
-          method: "POST",
-          body: JSON.stringify(data),
-          headers: {
-            "Content-Type": "application/json"
-          }
+            method: "POST",
+            body: JSON.stringify(data),
+            headers: {
+                "Content-Type": "application/json"
+            }
         });
-      
+
         return res;
     }
 
@@ -81,16 +73,89 @@ export class SignifyClient {
         let data = await res.json();
         console.log(data);
         let state = new State();
-        state.kel = data["kel"]?? {};
+        state.kel = data["kel"] ?? {};
         state.ridx = data["ridx"] ?? 0;
         state.pidx = data["pidx"] ?? 0;
         return state;
     }
-    get controller() {
-        return this._ctrl
+
+    async connect() {
+        let state = await this.state()
+        this.pidx = state.pidx
+        //Create controller representing local auth AID
+        this.controller.ridx = state.ridx !== undefined ? state.ridx : 0
+        // Create agent representing the AID of the cloud agent
+        this.agent = new Agent({ kel: state.kel })
+
+        if (this.agent.anchor != this.controller?.pre) {
+            throw Error("commitment to controller AID missing in agent inception event")
+        }
+        this.authn = new Authenticater(this.controller.signer, this.agent.verfer)
+        // this.session.auth = new SignifyAuth(this.authn)
+    }
+    async fetch(path: string, method: string, data: any) {
+        //BEGIN Headers
+        let headers = new Headers()
+        // let _h = [{    "accept": "*/*"},
+        // {    "accept-language": "en-US},en"},
+        // {    "sec-fetch-dest": "empty"},
+        // {    "sec-fetch-mode": "no-cors"},
+        // {    "sec-fetch-site": "same-site"},
+        // {    "sec-gpc": "1"},
+        // {    "Referer": "http://localhost:5173/"},
+        // {    "Referrer-Policy": "strict-origin-when-cross-origin"}]
+        // _h.forEach(h => {
+        //     let [k, v] = Object.entries(h)[0]
+        //     headers.set(k, v??"")
+        // })
+
+        headers.set('Signify-Resource', this.controller.pre)
+        headers.set('Signify-Timestamp', new Date().toISOString())
+        //Access-Control-Allow-Origin: https://localhost:3000
+        // headers.set('Access-Control-Allow-Origin', '*')
+        if (data !== null) {
+            headers.set('Content-Length', data.length )
+        }
+        else {
+            headers.set('Content-Length', '0' )
+        }
+        let signed_headers = this.authn.sign(headers, method, path)
+        console.log(signed_headers.values())
+        //END Headers
+        //body is empty if method is GET else is data
+        let _body = method == 'GET' ? null : JSON.stringify(data)
+        let res = await fetch(this.url + path, {
+            // mode: 'no-cors',
+            method: method,
+            body: _body,
+            headers: signed_headers
+        });
+
+    
+
+        //BEGIN Verification
+        if (res.status == 200) {
+            console.log(res)
+        }
+        else {
+            throw Error('response status not 200')
+        }
+        let verification = this.authn.verify(res.headers, res.body, "GET", path)
+        if (verification) {
+            return res
+        }
+        else {
+            throw Error('response verification failed')
+        }
+        //END Verification
+
+    }
+    async get_identifiers() {
+        let path = `/identifiers`
+        let data = null
+        let method = 'GET'
+        let res = await this.fetch(path, method, data)
+        return res
     }
 
-    get data() {
-        return [this.url, this.bran, this.pidx, this.authn]
-    }
 }
