@@ -36,10 +36,8 @@ export class Agent {
         }
 
         this.anchor = serder.ked['a'][0];
-        console.log(kel)
 
         for (let evt of kel.kel.slice(1)) {
-            console.log(evt)
             let [rot, nverfer, ndiger] = this.event(evt);
             if (rot.ked['t'] !== Ilks.rot) {
                 throw new Error(`invalid rotation event type ${serder.ked['t']}`);
@@ -58,7 +56,6 @@ export class Agent {
 
     event(evt: any): [Serder, Verfer, Diger] {
         let serder = new Serder(evt["ked"]);
-        console.log(evt["sig"])
         let siger = new Siger({ qb64: evt["sig"] });
 
         if (serder.verfers.length !== 1) {

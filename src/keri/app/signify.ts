@@ -1,6 +1,7 @@
 import { Controller, Agent } from "./controller";
 import { Tier } from "../core/salter";
 import { Authenticater } from "../core/authing";
+// import {Signage, signature} from "../end/ending";
 
 class State {
     kel?: any;
@@ -12,7 +13,6 @@ class State {
         this.pidx = 0
         this.ridx = 0
     }
-
 }
 
 export class SignifyClient {
@@ -26,7 +26,7 @@ export class SignifyClient {
 
     constructor(url: string, bran: string) {
         this.url = url;
-        if (bran.length != 21) {
+        if (bran.length < 21) {
             throw Error("bran must be 21 characters")
         }
         this.bran = bran;
@@ -71,7 +71,6 @@ export class SignifyClient {
             throw new Error(`agent does not exist for controller ${caid}`);
         }
         let data = await res.json();
-        console.log(data);
         let state = new State();
         state.kel = data["kel"] ?? {};
         state.ridx = data["ridx"] ?? 0;
@@ -93,6 +92,7 @@ export class SignifyClient {
         this.authn = new Authenticater(this.controller.signer, this.agent)
         // this.session.auth = new SignifyAuth(this.authn)
     }
+
     async fetch(path: string, method: string, data: any) {
         //BEGIN Headers
         let headers = new Headers()
@@ -114,13 +114,12 @@ export class SignifyClient {
         //Access-Control-Allow-Origin: https://localhost:3000
         // headers.set('Access-Control-Allow-Origin', '*')
         if (data !== null) {
-            headers.set('Content-Length', data.length )
+            headers.set('Content-Length', data.length)
         }
         else {
-            headers.set('Content-Length', '0' )
+            headers.set('Content-Length', '0')
         }
         let signed_headers = this.authn.sign(headers, method, path)
-        console.log(signed_headers.values())
         //END Headers
         //body is empty if method is GET else is data
         let _body = method == 'GET' ? null : JSON.stringify(data)
@@ -131,31 +130,211 @@ export class SignifyClient {
             headers: signed_headers
         });
 
-    
+
 
         //BEGIN Verification
-        if (res.status == 200) {
-            console.log(res)
-        }
-        else {
-            throw Error('response status not 200')
-        }
-        let verification = this.authn.verify(res.headers, res.body, "GET", path)
-        if (verification) {
-            return res
-        }
-        else {
-            throw Error('response verification failed')
-        }
+        // if (res.status == 200) {
+        //     console.log(res)
+        // }
+        // else {
+        //     throw Error('response status not 200')
+        // }
+        // let verification = this.authn.verify(res.headers, res.body, "GET", path)
+        // if (verification) {
+        //     return res
+        // }
+        // else {
+        //     throw Error('response verification failed')
+        // }
         //END Verification
+        return res
 
     }
-    async get_identifiers() {
+
+    identifiers() {
+        return new Identifier(this)
+    }
+}
+
+class Identifier {
+    public client: SignifyClient
+    constructor(client: SignifyClient) {
+        this.client = client
+    }
+
+    async list_identifiers() {
         let path = `/identifiers`
         let data = null
         let method = 'GET'
-        let res = await this.fetch(path, method, data)
-        return res
+        console.log('this.client', this.client)
+        let res = await this.client.fetch(path, method, data)
+        return await res.json()
     }
 
+    async get_identifier(name: string) {
+        let path = `/identifiers/${name}`
+        let data = null
+        let method = 'GET'
+        console.log('this.client', this.client)
+        let res = await this.client.fetch(path, method, data)
+        return await res.json()
+    }
+
+    // def create(self, name, transferable=True, isith="1", nsith="1", wits=None, toad="0", proxy=None, delpre=None,
+    //            dcode=MtrDex.Blake3_256, data=None, algo=Algos.salty, **kwargs):
+
+    //     # Get the algo specific key params
+    //     keeper = self.client.manager.new(algo, self.client.pidx, **kwargs)
+
+    //     keys, ndigs = keeper.incept(transferable=transferable)
+
+    //     wits = wits if wits is not None else []
+    //     data = [data] if data is not None else []
+    //     if delpre is not None:
+    //         serder = eventing.delcept(delpre=delpre,
+    //                                   keys=keys,
+    //                                   isith=isith,
+    //                                   nsith=nsith,
+    //                                   ndigs=ndigs,
+    //                                   code=dcode,
+    //                                   wits=wits,
+    //                                   toad=toad,
+    //                                   data=data)
+    //     else:
+    //         serder = eventing.incept(keys=keys,
+    //                                  isith=isith,
+    //                                  nsith=nsith,
+    //                                  ndigs=ndigs,
+    //                                  code=dcode,
+    //                                  wits=wits,
+    //                                  toad=toad,
+    //                                  data=data)
+
+    //     sigs = keeper.sign(serder.raw)
+
+    //     json = dict(
+    //         name=name,
+    //         icp=serder.ked,
+    //         sigs=sigs,
+    //         proxy=proxy)
+    //     json[algo] = keeper.params()
+
+    //     if 'states' in kwargs:
+    //         json['smids'] = [state['i'] for state in kwargs['states']]
+
+    //     if 'rstates' in kwargs:
+    //         json['rmids'] = [state['i'] for state in kwargs['rstates']]
+
+    //     self.client.pidx = self.client.pidx + 1
+
+    //     res = self.client.post("/identifiers", json=json)
+    //     return res.json()
+
+
+
+}
+class Oobis {
+    public client: SignifyClient
+    constructor(client: SignifyClient) {
+        this.client = client
+    }
+
+    async get(name: string, role: string = 'agent') {
+        let path = `/identifiers/${name}/oobis?role=${role}`
+        let data = null
+        let method = 'GET'
+        console.log('this.client', this.client)
+        let res = await this.client.fetch(path, method, data)
+        return await res.json()
+
+    }
+
+    async resolve(oobi: string, alias?: string) {
+        let path = `/oobis`
+        let data: any = {
+            oobi: oobi
+        }
+        if (alias !== undefined) {
+            data['alias'] = alias
+        }
+        let method = 'POST'
+        let res = await this.client.fetch(path, method, data)
+        return await res.json()
+
+    }
+}
+
+class Operations {
+    public client: SignifyClient
+    constructor(client: SignifyClient) {
+        this.client = client
+    }
+
+    async get(name: string) {
+        let path = `/operations/${name}`
+        let data = null
+        let method = 'GET'
+        let res = await this.client.fetch(path, method, data)
+        return await res.json()
+
+    }
+}
+
+class KeyEvents {
+    public client: SignifyClient
+    constructor(client: SignifyClient) {
+        this.client = client
+    }
+
+    async get(pre: string) {
+        let path = `/events?pre=${pre}`
+        let data = null
+        let method = 'GET'
+        let res = await this.client.fetch(path, method, data)
+        return await res.json()
+
+    }
+}
+
+class KeyStates {
+    public client: SignifyClient
+    constructor(client: SignifyClient) {
+        this.client = client
+    }
+
+    async get(pre: string) {
+        let path = `/states?pre=${pre}`
+        let data = null
+        let method = 'GET'
+        let res = await this.client.fetch(path, method, data)
+        return await res.json()
+
+    }
+
+    async list(pres: [string]) {
+        let path = `/states?${pres.map(pre => `pre=${pre}`).join('&')}`
+        let data = null
+        let method = 'GET'
+        let res = await this.client.fetch(path, method, data)
+        return await res.json()
+
+    }
+
+    async query(pre: string, sn?: string, anchor?: string) {
+        let path = `/oobis`
+        let data: any = {
+            pre: pre
+        }
+        if (sn !== undefined) {
+            data['sn'] = sn
+        }
+        if (anchor !== undefined) {
+            data['anchor'] = anchor
+        }
+
+        let method = 'POST'
+        let res = await this.client.fetch(path, method, data)
+        return await res.json()
+
+    }
 }

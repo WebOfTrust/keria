@@ -41,7 +41,7 @@ export function Signify() {
         const client = new SignifyClient("http://localhost:3901", key)
         setPre(client.controller.pre)
         let res = await client.boot()
-        console.log(res)
+
     }
 
     const inputRef = useRef(null)
@@ -75,7 +75,6 @@ export function Signify() {
                         let res = await client.state()
 
                         let resp = JSON.stringify(res, null, 2)
-                        console.log(resp)
                         return resp
                     }} />
                 <SignifyDemo text={'Agent Connect'}
@@ -84,8 +83,8 @@ export function Signify() {
                             const client = new SignifyClient("http://localhost:3901", key)
                             await client.boot()
                             let res = await client.connect()
-                            console.log('connected res, ', res)
-                            let res1 = await client.get_identifiers()
+                            let res1 = await client.get_identifiers_old()
+                            console.log('identifiers res, ', res1)
 
                             return 'Connected to agent'
                         }
@@ -98,8 +97,12 @@ export function Signify() {
                     onClick={async () => {
                         try {
                             const client = new SignifyClient("http://localhost:3901", key)
-                            let res = await client.get_identifiers()
-                            return res
+                            await client.connect()
+                            let res = await client.identifiers()
+                            console.log("IDENTIFIER CLASS", res)
+                            let resp = await res.list_identifiers()
+                            console.log("IDENTIFIER response", JSON.stringify(resp))
+                            return JSON.stringify(resp)
                         }
                         catch (e) {
                             console.log(e)
