@@ -543,7 +543,11 @@ class BootEnd:
 
         caid = icp.pre
 
-        agent = self.agency.create(caid=caid)
+        try:
+            agent = self.agency.create(caid=caid)
+        except Exception as exc:
+            raise falcon.HTTPBadRequest(title=f'{exc}',
+                                        description=f'{exc}')
 
         try:
             ctrlHab = agent.hby.makeSignifyHab(name=agent.caid, ns="agent", serder=icp, sigers=[siger])
