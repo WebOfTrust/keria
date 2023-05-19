@@ -168,6 +168,9 @@ class Identifier {
         let method = 'GET'
         console.log('this.client', this.client)
         let res = await this.client.fetch(path, method, data)
+        res.headers.forEach((v, k) => {
+            console.log(k, v)
+        })
         return await res.json()
     }
 
@@ -232,109 +235,4 @@ class Identifier {
 
 
 
-}
-class Oobis {
-    public client: SignifyClient
-    constructor(client: SignifyClient) {
-        this.client = client
-    }
-
-    async get(name: string, role: string = 'agent') {
-        let path = `/identifiers/${name}/oobis?role=${role}`
-        let data = null
-        let method = 'GET'
-        console.log('this.client', this.client)
-        let res = await this.client.fetch(path, method, data)
-        return await res.json()
-
-    }
-
-    async resolve(oobi: string, alias?: string) {
-        let path = `/oobis`
-        let data: any = {
-            oobi: oobi
-        }
-        if (alias !== undefined) {
-            data['alias'] = alias
-        }
-        let method = 'POST'
-        let res = await this.client.fetch(path, method, data)
-        return await res.json()
-
-    }
-}
-
-class Operations {
-    public client: SignifyClient
-    constructor(client: SignifyClient) {
-        this.client = client
-    }
-
-    async get(name: string) {
-        let path = `/operations/${name}`
-        let data = null
-        let method = 'GET'
-        let res = await this.client.fetch(path, method, data)
-        return await res.json()
-
-    }
-}
-
-class KeyEvents {
-    public client: SignifyClient
-    constructor(client: SignifyClient) {
-        this.client = client
-    }
-
-    async get(pre: string) {
-        let path = `/events?pre=${pre}`
-        let data = null
-        let method = 'GET'
-        let res = await this.client.fetch(path, method, data)
-        return await res.json()
-
-    }
-}
-
-class KeyStates {
-    public client: SignifyClient
-    constructor(client: SignifyClient) {
-        this.client = client
-    }
-
-    async get(pre: string) {
-        let path = `/states?pre=${pre}`
-        let data = null
-        let method = 'GET'
-        let res = await this.client.fetch(path, method, data)
-        return await res.json()
-
-    }
-
-    async list(pres: [string]) {
-        let path = `/states?${pres.map(pre => `pre=${pre}`).join('&')}`
-        let data = null
-        let method = 'GET'
-        let res = await this.client.fetch(path, method, data)
-        return await res.json()
-
-    }
-
-    async query(pre: string, sn?: string, anchor?: string) {
-        let path = `/oobis`
-        let data: any = {
-            pre: pre
-        }
-        if (sn !== undefined) {
-            data['sn'] = sn
-        }
-        if (anchor !== undefined) {
-            data['anchor'] = anchor
-        }
-
-        let method = 'POST'
-        let res = await this.client.fetch(path, method, data)
-        return await res.json()
-
-    }
 }

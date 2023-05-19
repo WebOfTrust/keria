@@ -28,22 +28,6 @@ export function Signify() {
         })
     }, [])
 
-    const bootAgent = async () => {
-        if (!key) {
-            alert("Please enter a valid key.")
-            return
-        }
-        //check len of key is 21
-        if (key.length !== 21) {
-            alert("Invalid key lenght " + key.length)
-            return
-        }
-        const client = new SignifyClient("http://localhost:3901", key)
-        setPre(client.controller.pre)
-        let res = await client.boot()
-
-    }
-
     const inputRef = useRef(null)
 
     useEffect(() => {
@@ -60,44 +44,41 @@ export function Signify() {
                 <div className="form">
                     <label htmlFor="key">Enter 21 character passcode:</label>
                     <input type="text" id="key" value={key} onChange={(e) => setKey(e.target.value)} ref={inputRef} className="button" />
-                    <button
-                        onClick={async () => { await bootAgent() }}
-                        className="button"
-                    >Boot Keria </button>
                 </div>
                 <p >
-                    AID is {pre}
+                    Client AID is {pre}
                 </p>
                 {/* show kel*/}
                 <SignifyDemo text={'Agent State'}
                     onClick={async () => {
                         const client = new SignifyClient("http://localhost:3901", key)
-                        let res = await client.state()
-
-                        let resp = JSON.stringify(res, null, 2)
-                        return resp
-                    }} />
-                <SignifyDemo text={'Agent Connect'}
-                    onClick={async () => {
+                        setPre(client.controller.pre)
                         try {
-                            const client = new SignifyClient("http://localhost:3901", key)
-                            await client.boot()
-                            let res = await client.connect()
-                            let res1 = await client.get_identifiers_old()
-                            console.log('identifiers res, ', res1)
-
-                            return 'Connected to agent'
+                            await client.state()
                         }
                         catch (e) {
                             console.log(e)
-                            return 'Error connecting to agent'
+                            await client.boot()
                         }
+                        let res = await client.state()
+                        let resp = JSON.stringify(res, null, 2)
+                        return resp
                     }} />
                 <SignifyDemo text={'Get identifiers'}
                     onClick={async () => {
                         try {
                             const client = new SignifyClient("http://localhost:3901", key)
-                            await client.connect()
+                            setPre(client.controller.pre)
+                            try{
+                                await client.connect()
+                            }
+                            catch(e){
+                                console.log('error connecting', e)
+                                console.log('booting up')
+                                await client.boot()
+                                await client.connect()
+                                console.log('booted and connected up')
+                            }
                             let res = await client.identifiers()
                             console.log("IDENTIFIER CLASS", res)
                             let resp = await res.list_identifiers()
