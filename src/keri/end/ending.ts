@@ -69,9 +69,7 @@ export function signature(signages: Array<Signage>): Headers {
             let tag: string
             if (tags != undefined) {
                 tag = tags[idx]
-            }
-
-            if (marker instanceof Siger) {
+            } else if (marker instanceof Siger) {
                 if (!indexed)
                     throw new Error(`Indexed signature marker ${marker} when indexed False.`)
 

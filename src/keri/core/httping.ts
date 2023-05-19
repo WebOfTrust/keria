@@ -57,7 +57,7 @@ export function siginput(signer: Signer,
     let now = Math.floor(nowUTC().getTime() / 1000)
     nameParams.set("created", now)
 
-    let values = [`(${ifields.join(" ")})`, `created=${now}`]
+    let values = [`(${ifields.map((field) => field[0]).join(" ")})`, `created=${now}`]
     if (expires != undefined) {
         values.push(`expires=${expires}`)
         nameParams.set('expires', expires)

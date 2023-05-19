@@ -90,7 +90,7 @@ export class SignifyClient {
         if (this.agent.anchor != this.controller?.pre) {
             throw Error("commitment to controller AID missing in agent inception event")
         }
-        this.authn = new Authenticater(this.controller.signer, this.agent.verfer)
+        this.authn = new Authenticater(this.controller.signer, this.agent)
         // this.session.auth = new SignifyAuth(this.authn)
     }
     async fetch(path: string, method: string, data: any) {
