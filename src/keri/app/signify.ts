@@ -4,12 +4,14 @@ import { Authenticater } from "../core/authing";
 // import {Signage, signature} from "../end/ending";
 
 class State {
-    kel?: any;
+    agent?: any;
+    controller?: any;
     ridx?: number;
     pidx: number;
 
     constructor() {
-        this.kel = {}
+        this.agent = {}
+        this.controller = {}
         this.pidx = 0
         this.ridx = 0
     }
@@ -72,7 +74,8 @@ export class SignifyClient {
         }
         let data = await res.json();
         let state = new State();
-        state.kel = data["kel"] ?? {};
+        state.agent = data["agent"] ?? {};
+        state.controller = data["controller"] ?? {};
         state.ridx = data["ridx"] ?? 0;
         state.pidx = data["pidx"] ?? 0;
         return state;
@@ -84,12 +87,12 @@ export class SignifyClient {
         //Create controller representing local auth AID
         this.controller.ridx = state.ridx !== undefined ? state.ridx : 0
         // Create agent representing the AID of the cloud agent
-        this.agent = new Agent({ kel: state.kel })
+        this.agent = new Agent(state.agent)
 
         if (this.agent.anchor != this.controller?.pre) {
             throw Error("commitment to controller AID missing in agent inception event")
         }
-        this.authn = new Authenticater(this.controller.signer, this.agent)
+        this.authn = new Authenticater(this.controller.signer, this.agent.verfer)
         // this.session.auth = new SignifyAuth(this.authn)
     }
 
@@ -166,11 +169,7 @@ class Identifier {
         let path = `/identifiers`
         let data = null
         let method = 'GET'
-        console.log('this.client', this.client)
         let res = await this.client.fetch(path, method, data)
-        res.headers.forEach((v, k) => {
-            console.log(k, v)
-        })
         return await res.json()
     }
 

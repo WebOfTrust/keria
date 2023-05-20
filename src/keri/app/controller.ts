@@ -4,7 +4,7 @@ import { MtrDex } from "../core/matter";
 import { Diger } from "../core/diger";
 import { incept } from "../core/eventing";
 import { Serder } from "../core/serder";
-import { Siger } from "../core/siger";
+// import { Siger } from "../core/siger";
 import { Tholder } from "../core/tholder";
 import { Ilks } from "../core/core";
 import { Verfer } from "../core/verfer";
@@ -14,57 +14,58 @@ export class Agent {
     anchor: string;
     verfer: any | null;
 
-    constructor(kel: any) {
+    constructor(agent: any) {
         this.pre = "";
         this.anchor = "";
         this.verfer = null;
-        this.parse(kel);
+        this.parse(agent);
     }
 
-    parse(kel: any) {
-        if (kel.length < 1) {
-            throw new Error("invalid empty KEL");
-        }
-        let [serder, verfer, diger] = this.event(kel.kel[0]);
-        if (serder.ked['t'] !== Ilks.icp) {
-            throw new Error(`invalid inception event type ${serder.ked['t']}`);
+    parse(agent: any) {
+        // if (kel.length < 1) {
+        //     throw new Error("invalid empty KEL");
+        // }
+        // let [serder, verfer, diger] = this.event(agent);
+        let [serder, verfer, ] = this.event(agent);
+        if (serder.ked['et'] !== Ilks.dip) {
+            throw new Error(`invalid inception event type ${serder.ked['et']}`);
         }
 
         this.pre = serder.pre;
-        if (!serder.ked['a']) {
+        if (!serder.ked['di']) {
             throw new Error("no anchor to controller AID");
         }
 
-        this.anchor = serder.ked['a'][0];
+        this.anchor = serder.ked['di'];
+        // for (let evt of kel.kel.slice(1)) {
+        // for (let evt of state.controller.slice(1)) {
+        //     let [rot, nverfer, ndiger] = this.event(evt);
+        //     if (rot.ked['t'] !== Ilks.rot) {
+        //         throw new Error(`invalid rotation event type ${serder.ked['t']}`);
+        //     }
 
-        for (let evt of kel.kel.slice(1)) {
-            let [rot, nverfer, ndiger] = this.event(evt);
-            if (rot.ked['t'] !== Ilks.rot) {
-                throw new Error(`invalid rotation event type ${serder.ked['t']}`);
-            }
+        //     if (new Diger({ qb64b: nverfer.qb64b }).qb64b !== diger.qb64b) {
+        //         throw new Error(`next key mismatch error on rotation event ${serder}`);
+        //     }
 
-            if (new Diger({ qb64b: nverfer.qb64b }).qb64b !== diger.qb64b) {
-                throw new Error(`next key mismatch error on rotation event ${serder}`);
-            }
-
-            verfer = nverfer;
-            diger = ndiger;
-        }
+        //     verfer = nverfer;
+        //     diger = ndiger;
+        // }
 
         this.verfer = verfer;
     }
 
     event(evt: any): [Serder, Verfer, Diger] {
-        let serder = new Serder(evt["ked"]);
-        let siger = new Siger({ qb64: evt["sig"] });
+        let serder = new Serder(evt);
+        // let siger = new Siger({ qb64: evt["sig"] });
 
         if (serder.verfers.length !== 1) {
             throw new Error(`agent inception event can only have one key`);
         }
 
-        if (!serder.verfers[0].verify(siger.raw, serder.raw)) {
-            throw new Error(`invalid signature on evt ${serder.ked['d']}`);
-        }
+        // if (!serder.verfers[0].verify(siger.raw, serder.raw)) {
+        //     throw new Error(`invalid signature on evt ${serder.ked['d']}`);
+        // }
 
         let verfer = serder.verfers[0];
 

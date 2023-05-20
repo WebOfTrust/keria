@@ -6,7 +6,6 @@ import {parseDictionary} from "structured-headers";
 import {Signage, signature} from "../end/ending";
 import {Cigar} from "./cigar";
 import {Siger} from "./siger";
-import { Agent } from "../app/controller";
 
 import Base64 from "urlsafe-base64"
 
@@ -19,13 +18,11 @@ export class Authenticater {
         "signify-timestamp",
     ]
     private _verfer: Verfer;
-    private _agent: Agent;
     private readonly _csig: Signer;
 
-    constructor(csig: Signer, agent: Agent) {
+    constructor(csig: Signer, verfer: Verfer) {
         this._csig = csig
-        this._verfer = agent.verfer
-        this._agent = agent
+        this._verfer = verfer
     }
 
     verify(headers: Headers, method: string, path: string): boolean {
@@ -110,7 +107,7 @@ export class Authenticater {
 
         let [header, sig] = siginput(this._csig, {
             name: "signify", method, path, headers, fields, alg: "ed25519",
-            keyid: this._agent.pre
+            keyid: this._csig.verfer.qb64
         })
 
         header.forEach((value, key) => {

@@ -80,9 +80,7 @@ export function Signify() {
                                 console.log('booted and connected up')
                             }
                             let res = await client.identifiers()
-                            console.log("IDENTIFIER CLASS", res)
                             let resp = await res.list_identifiers()
-                            console.log("IDENTIFIER response", JSON.stringify(resp))
                             return JSON.stringify(resp)
                         }
                         catch (e) {
