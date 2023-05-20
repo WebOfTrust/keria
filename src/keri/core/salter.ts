@@ -49,30 +49,31 @@ export class Salter extends Matter {
 
         let opslimit: number, memlimit: number
 
+        // Harcoded values based on keripy
         if (temp) {
-            opslimit = libsodium.crypto_pwhash_OPSLIMIT_MIN
-            memlimit = libsodium.crypto_pwhash_MEMLIMIT_MIN
+            opslimit = 1 //libsodium.crypto_pwhash_OPSLIMIT_MIN
+            memlimit = 8192 //libsodium.crypto_pwhash_MEMLIMIT_MIN
 
         } else {
             switch (tier) {
                 case Tier.low:
-                    opslimit = libsodium.crypto_pwhash_OPSLIMIT_INTERACTIVE
-                    memlimit = libsodium.crypto_pwhash_MEMLIMIT_INTERACTIVE
+                    opslimit = 2 //libsodium.crypto_pwhash_OPSLIMIT_INTERACTIVE
+                    memlimit = 67108864 //libsodium.crypto_pwhash_MEMLIMIT_INTERACTIVE
                     break;
                 case Tier.med:
-                    opslimit = libsodium.crypto_pwhash_OPSLIMIT_MODERATE
-                    memlimit = libsodium.crypto_pwhash_MEMLIMIT_MODERATE
+                    opslimit = 3 //libsodium.crypto_pwhash_OPSLIMIT_MODERATE
+                    memlimit = 268435456 //libsodium.crypto_pwhash_MEMLIMIT_MODERATE
                     break;
                 case Tier.high:
-                    opslimit = libsodium.crypto_pwhash_OPSLIMIT_SENSITIVE
-                    memlimit = libsodium.crypto_pwhash_MEMLIMIT_SENSITIVE
+                    opslimit = 4 //libsodium.crypto_pwhash_OPSLIMIT_SENSITIVE
+                    memlimit = 1073741824 //libsodium.crypto_pwhash_MEMLIMIT_SENSITIVE
                     break;
                 default:
                     throw new Error(`Unsupported security tier = ${tier}.`)
             }
         }
 
-        return libsodium.crypto_pwhash(size, path, this.raw, opslimit, memlimit, libsodium.crypto_pwhash_ALG_DEFAULT)
+        return libsodium.crypto_pwhash(size, path, this.raw, opslimit, memlimit, libsodium.crypto_pwhash_ALG_ARGON2ID13)
     }
 
     signer(code: string=MtrDex.Ed25519_Seed, transferable: boolean=true, path: string = "",
