@@ -9,6 +9,7 @@ import falcon
 from hio.help import Hict
 from keri import kering
 from keri.end import ending
+from keri.help import helping
 
 
 class Authenticater:
@@ -183,3 +184,24 @@ class SignatureValidationComponent(object):
         resp.complete = True  # This short-circuits Falcon, skipping all further processing
         resp.status = falcon.HTTP_401
         return
+
+    def process_response(self, req, rep, resource, req_succeeded):
+        """  Process every falcon response by adding signature headers signed by the Agent AID.
+
+        Parameters:
+            req (Request): Falcon request object
+            rep (Response): Falcon response object
+            resource (End): endpoint object the request was routed to
+            req_succeeded (boot): True means the request was successfully handled
+
+
+        """
+
+        if hasattr(req.context, "agent"):
+            agent = req.context.agent
+            rep.set_header('Signify-Resource', agent.agentHab.pre)
+            rep.set_header('Signify-Timestamp', helping.nowIso8601())
+            headers = self.authn.sign(agent, Hict(rep.headers), req.method, req.path)
+            for key, val in headers.items():
+                rep.set_header(key, val)
+
