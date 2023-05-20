@@ -1,5 +1,7 @@
 import {MtrDex} from "./matter";
 import {deversify, Dict, Ident, Serials, versify, Version, Versionage} from "./core";
+import { Verfer } from "./verfer";
+import { Diger } from "./diger";
 
 export class Serder {
     private _kind: Serials;
@@ -61,6 +63,35 @@ export class Serder {
 
     get version(): Version {
         return this._version
+    }
+    get verfers(): Verfer[] {
+        let keys: any = []
+        if ("k" in this._ked) {  // establishment event
+            keys = this._ked["k"];
+        } else {  // non-establishment event
+            keys = [];
+        }
+        // create a new Verfer for each key
+        let verfers = []
+        for (let key of keys) {
+            verfers.push(new Verfer({ qb64: key }))
+        }
+        return verfers
+    }
+
+    get digers(): Diger[] {
+        let keys: any = []
+        if ("n" in this._ked) {  // establishment event
+            keys = this._ked["n"];
+        } else {  // non-establishment event
+            keys = [];
+        }
+        // create a new Verfer for each key
+        let digers = []
+        for (let key of keys) {
+            digers.push(new Diger({ qb64: key }))
+        }
+        return digers
     }
 
     pretty() {
