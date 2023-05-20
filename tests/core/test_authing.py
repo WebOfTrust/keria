@@ -92,6 +92,8 @@ def test_authenticater(mockHelpingNowUTC):
                                  'Signify-Resource': 'EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy',
                                  'Signify-Timestamp': '2022-09-24T00:05:48.196795+00:00'}
 
+
+
         req = testing.create_req(method="POST", path="/boot", headers=dict(headers))
         with pytest.raises(kering.AuthNError):  # Should because the agent won't be found
             authn.verify(req)
@@ -121,7 +123,7 @@ class MockAuthN:
         return ""
 
 
-def test_signature_validation():
+def test_signature_validation(mockHelpingNowUTC):
     vc = authing.SignatureValidationComponent(agency=MockAgency(), authn=MockAuthN(), allowed=["/test", "/reward"])
 
     req = testing.create_req(method="GET", path="/boot")
@@ -199,3 +201,28 @@ def test_signature_validation():
     vc.process_request(req, rep)
     assert rep.complete is True
     assert rep.status == falcon.HTTP_401
+
+    salt = b'0123456789abcdef'
+    with habbing.openHab(name="caid", salt=salt, temp=True) as (controllerHby, controller):
+
+        agency = agenting.Agency(name="agency", base='', bran=None, temp=True)
+        authn = authing.Authenticater(agency=agency)
+
+        # Initialize Hio so it will allow for the addition of an Agent hierarchy
+        doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+        doist.enter(doers=[agency])
+
+        agent = agency.create(caid=controller.pre)
+        req = testing.create_req(method="POST", path="/reward")
+        req.context.agent = agent
+        rep = falcon.Response()
+
+        vc = authing.SignatureValidationComponent(agency=agency, authn=authn)
+        vc.process_response(req, rep, None, True)
+        assert rep.headers == {'signature': 'indexed="?0";signify="0BA6rPilZo3Fv3e3lIRxoZncbrn0RpPdDcQqxN3Jolsvl4WBkpXl'
+                                            'rmFJ5NmLbQNikChIzUiDn1XEMU-ecCTnSmYD"',
+                               'signature-input': 'signify=("signify-resource" "@method" "@path" '
+                                                  '"signify-timestamp");created=1609459200;keyid="EDqDrGuzned0HOKFTLqd7'
+                                                  'm7O7WGE5zYIOHrlCq4EnWxy";alg="ed25519"',
+                               'signify-resource': 'EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy',
+                               'signify-timestamp': '2021-01-01T00:00:00.000000+00:00'}
