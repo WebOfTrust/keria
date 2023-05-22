@@ -136,22 +136,21 @@ export class SignifyClient {
 
 
         //BEGIN Verification
-        // if (res.status == 200) {
-        //     console.log(res)
-        // }
-        // else {
-        //     throw Error('response status not 200')
-        // }
-        // let verification = this.authn.verify(res.headers, res.body, "GET", path)
-        // if (verification) {
-        //     return res
-        // }
-        // else {
-        //     throw Error('response verification failed')
-        // }
-        //END Verification
-        return res
+        if (res.status !== 200) {
+            throw new Error('Response status is not 200');
+        }
 
+        const isSameAgent = this.agent.pre === res.headers.get('signify-resource');
+        if (!isSameAgent) {
+            throw new Error('Message from a different remote agent');
+        }
+
+        const verification = this.authn.verify(res.headers, 'GET', path);
+        if (verification) {
+            return res;
+        } else {
+            throw new Error('Response verification failed');
+        }
     }
 
     identifiers() {

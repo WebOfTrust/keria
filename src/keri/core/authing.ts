@@ -4,7 +4,6 @@ import {desiginput, normalize, siginput} from "./httping";
 import {Signage, signature, designature} from "../end/ending";
 import {Cigar} from "./cigar";
 import {Siger} from "./siger";
-import {b} from "./core";
 export class Authenticater {
 
     static DefaultFields = [
@@ -51,9 +50,6 @@ export class Authenticater {
                     }
                 }
             })
-            items.push(`signify-resource: ${input.keyid}`)
-            let created = new Date(input.created * 1000).toISOString()
-            items.push(`signify-timestamp: ${created}`)
             let values = new Array<string>()
             values.push(`(${input.fields!.join(" ")})`)
             values.push(`created=${input.created}`)
@@ -74,7 +70,7 @@ export class Authenticater {
             }
             let params = values.join(";")
             items.push(`"@signature-params: ${params}"`)
-            let ser = b(items.join("\n"))
+            let ser = items.join("\n")
             let signage = designature(signature!)
             let cig = signage[0].markers.get(input.name)
             if (!this._verfer.verify(cig.raw, ser)) {
