@@ -12,12 +12,14 @@ import { Verfer } from "../core/verfer";
 export class Agent {
     pre: string;
     anchor: string;
-    verfer: any | null;
+    verfer: Verfer | null;
+    serder: Serder | null;
 
     constructor(agent: any) {
         this.pre = "";
         this.anchor = "";
         this.verfer = null;
+        this.serder = null;
         this.parse(agent);
     }
 
@@ -25,7 +27,7 @@ export class Agent {
         // if (kel.length < 1) {
         //     throw new Error("invalid empty KEL");
         // }
-        // let [serder, verfer, diger] = this.event(agent);
+
         let [serder, verfer, ] = this.event(agent);
         if (serder.ked['et'] !== Ilks.dip) {
             throw new Error(`invalid inception event type ${serder.ked['et']}`);
@@ -52,7 +54,8 @@ export class Agent {
         //     diger = ndiger;
         // }
 
-        this.verfer = verfer;
+        this.verfer = verfer
+        this.serder = serder
     }
 
     event(evt: any): [Serder, Verfer, Diger] {
@@ -100,9 +103,9 @@ export class Controller {
     private salter: any;
     public signer: any;
     private nsigner: any;
-    private serder: Serder;
+    public serder: Serder;
 
-    constructor(bran: string, tier: Tier, ridx: number = 0) {
+    constructor(bran: string, tier: Tier, ridx: number = 0, state: any|null = null) {
         this.bran = MtrDex.Salt_128 + 'A' + bran.substring(0, 21)  // qb64 salt for seed
         this.stem = "signify:controller"
         this.tier = tier
@@ -117,16 +120,33 @@ export class Controller {
         let keys = [this.signer.verfer.qb64]
         let ndigs = [new Diger({ code: MtrDex.Blake3_256 }, this.nsigner.verfer.qb64b).qb64]
 
-        this.serder = incept({
-            keys: keys,
-            isith: "1",
-            nsith: "1",
-            ndigs: ndigs,
-            code: MtrDex.Blake3_256,
-            toad: "0",
-            wits: []
-        })
+        if (state == null || state['ee']['s'] == 0){
+            this.serder = incept({
+                keys: keys,
+                isith: "1",
+                nsith: "1",
+                ndigs: ndigs,
+                code: MtrDex.Blake3_256,
+                toad: "0",
+                wits: []
+            })
+        } else {
+            this.serder = new Serder(state['ee'])
+        }
+    }
 
+    approveDelegation(agent: Agent) {
+        console.log(agent.pre)
+        // TODO implement interact in eventing and seqner
+
+        // seqner = coring.Seqner(sn=agent.sn)
+        // anchor = dict(i=agent.pre, s=seqner.snh, d=agent.said)
+
+        // self.serder = eventing.interact(pre=self.serder.pre, dig=self.serder.said, sn=self.serder.sn+1, data=[anchor])
+        // return self.serder, [self.signer.sign(self.serder.raw, index=0).qb64]
+
+        // FAKE SIGNATURE
+        return ["AAD6nSSSGy_uO41clzL-g3czC8W0Ax-2M87NXA_Iu50ZdEhbekuv2k7dY0fjoO3su3aBRBx4EXryPc8x4uGfbVYG"]
     }
 
     get pre(): string {

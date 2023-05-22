@@ -1,30 +1,30 @@
-import { Controller, Agent } from "./controller";
-import { Tier } from "../core/salter";
-import { Authenticater } from "../core/authing";
+import { Controller, Agent } from "./controller"
+import { Tier } from "../core/salter"
+import { Authenticater } from "../core/authing"
 // import {Signage, signature} from "../end/ending";
 
 class State {
-    agent?: any;
-    controller?: any;
-    ridx?: number;
-    pidx: number;
+    agent: any | null
+    controller: any | null
+    ridx: number
+    pidx: number
 
     constructor() {
-        this.agent = {}
-        this.controller = {}
+        this.agent = null
+        this.controller = null
         this.pidx = 0
         this.ridx = 0
     }
 }
 
 export class SignifyClient {
-    private _ctrl: Controller
-    private url: string;
-    private bran: string;
-    private pidx: number;
-    private agent: any;
-    public authn: any;
-    public session: any;
+    private controller: Controller
+    private url: string
+    private bran: string
+    private pidx: number
+    private agent: Agent | null
+    public authn: any
+    public session: any
 
     constructor(url: string, bran: string) {
         this.url = url;
@@ -33,12 +33,10 @@ export class SignifyClient {
         }
         this.bran = bran;
         this.pidx = 0;
-        this._ctrl = new Controller(bran, Tier.low)
-        this.authn = null;
+        this.controller = new Controller(bran, Tier.low)
+        this.authn = null
+        this.agent = null
 
-    }
-    get controller() {
-        return this._ctrl
     }
 
     get data() {
@@ -85,15 +83,19 @@ export class SignifyClient {
         let state = await this.state()
         this.pidx = state.pidx
         //Create controller representing local auth AID
+        this.controller = new Controller(this.bran, Tier.low, 0, state.controller)
         this.controller.ridx = state.ridx !== undefined ? state.ridx : 0
         // Create agent representing the AID of the cloud agent
         this.agent = new Agent(state.agent)
-
-        if (this.agent.anchor != this.controller?.pre) {
+        if (this.agent.anchor != this.controller.pre) {
             throw Error("commitment to controller AID missing in agent inception event")
         }
-        this.authn = new Authenticater(this.controller.signer, this.agent.verfer)
-        // this.session.auth = new SignifyAuth(this.authn)
+
+        if (this.controller.serder.ked.s == 0 ) {
+            await this.approveDelegation()
+        }
+
+        this.authn = new Authenticater(this.controller.signer, this.agent.verfer!)
     }
 
     async fetch(path: string, method: string, data: any) {
@@ -120,7 +122,7 @@ export class SignifyClient {
         if (res.status !== 200) {
             throw new Error('Response status is not 200');
         }
-        const isSameAgent = this.agent.anchor === res.headers.get('signify-resource');
+        const isSameAgent = this.agent?.pre === res.headers.get('signify-resource');
         if (!isSameAgent) {
             throw new Error('Message from a different remote agent');
         }
@@ -131,6 +133,27 @@ export class SignifyClient {
         } else {
             throw new Error('Response verification failed');
         }
+    }
+
+    async approveDelegation(){
+        // {
+        // "ixn": {"v": "KERI10JSON00013a_", "t": "ixn", "d": "EA4YpgJavlrjDRIE5UdkM44wiGTcCTfsTayrAViCDV4s", "i": "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose", "s": "1", "p": "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose", "a": [{"i": "EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei", "s": "0", "d": "EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei"}]}, 
+        // "sigs": ["AAD6nSSSGy_uO41clzL-g3czC8W0Ax-2M87NXA_Iu50ZdEhbekuv2k7dY0fjoO3su3aBRBx4EXryPc8x4uGfbVYG"]
+        // }
+        let sigs = this.controller.approveDelegation(this.agent!)
+
+        let data = {
+            ixn: this.controller.serder.ked,
+            sigs: sigs
+        }
+        
+        await fetch(this.url + "/agent/"+ this.controller.pre+"?type=ixn", {
+            method: "PUT",
+            body: JSON.stringify(data),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        })
     }
 
     identifiers() {
