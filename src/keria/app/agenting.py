@@ -5,6 +5,7 @@ keria.app.agenting module
 
 """
 import json
+import os
 from urllib.parse import urlparse
 
 from keri import kering
@@ -59,13 +60,10 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
 
     app = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*',
-<<<<<<< Updated upstream
-        expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input']))
-    app.add_middleware(httping.HandleCORS())
-=======
         expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input','signify-resource','signify-timestamp']))
-    app.add_middleware(middleware=httping.HandleCORS())
->>>>>>> Stashed changes
+    if os.getenv("KERI_AGENT_CORS", "false").lower() in ("true", "1"):
+        app.add_middleware(middleware=httping.HandleCORS())
+        print("CORS  enabled")
     app.add_middleware(authing.SignatureValidationComponent(agency=agency, authn=authn, allowed=["/agent"]))
     app.req_options.media_handlers.update(media.Handlers())
     app.resp_options.media_handlers.update(media.Handlers())
