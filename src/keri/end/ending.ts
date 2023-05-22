@@ -67,7 +67,7 @@ export function signature(signages: Array<Signage>): Headers {
 
         markers.forEach((marker, idx) => {
             let tag: string
-            if (tags != undefined) {
+            if (tags != undefined && tags.length > idx) {
                 tag = tags[idx]
             } else if (marker instanceof Siger) {
                 if (!indexed)
