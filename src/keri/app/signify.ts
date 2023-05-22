@@ -120,8 +120,7 @@ export class SignifyClient {
         if (res.status !== 200) {
             throw new Error('Response status is not 200');
         }
-
-        const isSameAgent = this.agent.pre === res.headers.get('signify-resource');
+        const isSameAgent = this.agent.anchor === res.headers.get('signify-resource');
         if (!isSameAgent) {
             throw new Error('Message from a different remote agent');
         }
