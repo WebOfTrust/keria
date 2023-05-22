@@ -99,23 +99,9 @@ export class SignifyClient {
     async fetch(path: string, method: string, data: any) {
         //BEGIN Headers
         let headers = new Headers()
-        // let _h = [{    "accept": "*/*"},
-        // {    "accept-language": "en-US},en"},
-        // {    "sec-fetch-dest": "empty"},
-        // {    "sec-fetch-mode": "no-cors"},
-        // {    "sec-fetch-site": "same-site"},
-        // {    "sec-gpc": "1"},
-        // {    "Referer": "http://localhost:5173/"},
-        // {    "Referrer-Policy": "strict-origin-when-cross-origin"}]
-        // _h.forEach(h => {
-        //     let [k, v] = Object.entries(h)[0]
-        //     headers.set(k, v??"")
-        // })
-
         headers.set('Signify-Resource', this.controller.pre)
-        headers.set('Signify-Timestamp', new Date().toISOString())
-        //Access-Control-Allow-Origin: https://localhost:3000
-        // headers.set('Access-Control-Allow-Origin', '*')
+        headers.set('Signify-Timestamp', new Date().toISOString().replace('Z','000+00:00'))
+
         if (data !== null) {
             headers.set('Content-Length', data.length)
         }
@@ -124,34 +110,27 @@ export class SignifyClient {
         }
         let signed_headers = this.authn.sign(headers, method, path)
         //END Headers
-        //body is empty if method is GET else is data
         let _body = method == 'GET' ? null : JSON.stringify(data)
         let res = await fetch(this.url + path, {
-            // mode: 'no-cors',
             method: method,
             body: _body,
             headers: signed_headers
         });
-
-
-
         //BEGIN Verification
-        // if (res.status == 200) {
-        //     console.log(res)
-        // }
-        // else {
-        //     throw Error('response status not 200')
-        // }
-        // let verification = this.authn.verify(res.headers, res.body, "GET", path)
-        // if (verification) {
-        //     return res
-        // }
-        // else {
-        //     throw Error('response verification failed')
-        // }
-        //END Verification
-        return res
+        if (res.status !== 200) {
+            throw new Error('Response status is not 200');
+        }
+        const isSameAgent = this.agent.anchor === res.headers.get('signify-resource');
+        if (!isSameAgent) {
+            throw new Error('Message from a different remote agent');
+        }
 
+        const verification = this.authn.verify(res.headers, 'GET', path);
+        if (verification) {
+            return res;
+        } else {
+            throw new Error('Response verification failed');
+        }
     }
 
     identifiers() {
