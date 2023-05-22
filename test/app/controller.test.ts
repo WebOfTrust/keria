@@ -22,10 +22,10 @@ describe('Controller', () => {
         // their pubk and and my encrypted account package
         // let pkg = {}
         let controller = new Controller(passcode, Tier.low)
-        assert.equal(controller.pre, "EH47SaIWwMbBh3P39AFP-qe-J87-Z-gcj-ZUJ7uyplHF")
+        assert.equal(controller.pre, "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose")
 
         passcode = "abcdefghijk0123456789"
         controller = new Controller(passcode, Tier.low)
-        assert.equal(controller.pre, "EG0DNL7t6FYCeFHZ6L9iXy2LXhAQAjg1ac9qlrS31-sh")
+        assert.equal(controller.pre, "EIIY2SgE_bqKLl2MlnREUawJ79jTuucvWwh-S6zsSUFo")
     })
 })

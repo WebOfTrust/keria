@@ -37,7 +37,7 @@ describe('siginput', () => {
         assert.equal(header.has("Signature-Input"), true)
         let sigipt = header.get("Signature-Input")
         assert.equal(sigipt, 'sig0=("Signify-Resource" "@method" "@path" "Signify-Timestamp");created=1609459200;keyid="DN54yRad_BTqgZYUSi_NthRBQrxSnqQdJXWI5UHcGOQt";alg="ed25519"')
-        assert.equal(sig.qb64, "0BAU6RvYeiudxVDADCeG2I4S2Y0HVdu97lleiGtUt_swYgSKflVzrqAQJBfrt6vaIO7-dvnPhxfNGTLhONBnqFMJ")
+        assert.equal(sig.qb64, "0BAJWoDvZXYKnq_9rFTy_mucctxk3rVK6szopNi1rq5WQcJSNIw-_PocSQNoQGD1Ow_s2mDI5-Qqm34Y56gUKQcF")
     })
 })
 

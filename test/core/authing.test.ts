@@ -4,6 +4,7 @@ import {Salter} from "../../src/keri/core/salter";
 import {b} from "../../src/keri/core/core";
 import {Authenticater} from "../../src/keri/core/authing";
 import * as utilApi from "../../src/keri/core/utils";
+import { Verfer } from "../../src/keri/core/verfer";
 
 
 describe('Authenticater.verify', () => {
@@ -13,6 +14,7 @@ describe('Authenticater.verify', () => {
         let salter = new Salter({raw: b(salt)})
         let signer = salter.signer()
         let aaid = "DDK2N5_fVCWIEO9d8JLhk7hKrkft6MbtkUhaHQsmABHY"
+        let verfer = new Verfer({qb64: aaid})
 
         let headers = new Headers([
             ['Connection', 'close'],
@@ -24,7 +26,7 @@ describe('Authenticater.verify', () => {
             ['Signify-Timestamp', '2022-09-24T00:05:48.196795+00:00'],
         ])
 
-        let authn = new Authenticater(signer, aaid)
+        let authn = new Authenticater(signer, verfer)
         assert.notEqual(authn, undefined)
 
         assert.equal(authn.verify(new Headers(headers), "POST", "/boot"), true)
@@ -38,6 +40,7 @@ describe("Authenticater.sign", () => {
         let salter = new Salter({raw: b(salt)})
         let signer = salter.signer()
         let aaid = "DDK2N5_fVCWIEO9d8JLhk7hKrkft6MbtkUhaHQsmABHY"
+        let verfer = new Verfer({qb64: aaid})
 
         let headers = new Headers([
             ["Content-Type", "application/json"],
@@ -48,12 +51,12 @@ describe("Authenticater.sign", () => {
         ])
         jest.spyOn(utilApi, "nowUTC").mockReturnValue(new Date("2021-01-01T00:00:00.000000+00:00"))
 
-        let authn = new Authenticater(signer, aaid)
+        let authn = new Authenticater(signer, verfer)
         headers = authn.sign(headers, "POST", "/boot")
 
         assert.equal(headers.has("Signature-Input"), true)
         assert.equal(headers.has("Signature"), true)
-        assert.equal(headers.get("Signature-Input"), 'signify=("Signify-Resource" "@method" "@path" "Signify-Timestamp");created=1609459200;keyid="DN54yRad_BTqgZYUSi_NthRBQrxSnqQdJXWI5UHcGOQt";alg="ed25519"')
-        assert.equal(headers.get("Signature"), 'indexed="?0";DN54yRad_BTqgZYUSi_NthRBQrxSnqQdJXWI5UHcGOQt="0BDLBHkG4X37TLcNkb-ZORKfez-rWy-d5C1n1i9wFN8Ho8Wh8buKmZ-AHKt97-MzGYXZ18mVDy4Y3Xi75iiwtmMG"')
+        assert.equal(headers.get("Signature-Input"), 'signify=("@method" "@path" "signify-resource" "signify-timestamp");created=1609459200;keyid="DN54yRad_BTqgZYUSi_NthRBQrxSnqQdJXWI5UHcGOQt";alg="ed25519"')
+        assert.equal(headers.get("Signature"), 'indexed="?0";signify="0BChvN_BWAf-mgEuTnWfNnktgHdWOuOh9cWc4o0GFWuZOwra3DyJT5dJ_6BX7AANDOTnIlAKh5Sg_9qGQXHjj5oJ"')
     })
 })

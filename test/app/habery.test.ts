@@ -15,8 +15,8 @@ describe('Habery', () => {
 
         let hab = hby.makeHab("test", {})
 
-        assert.deepStrictEqual(hab.serder.ked["k"], ["DC7Zg7BasK65MdK1hgVd8nB9_2Dj_i1DruqNN9VBsrRd"])
-        assert.deepStrictEqual(hab.serder.ked["n"], ["EBRJBDoLKcD9s5tGg0uXLgt79iClVnlceMJHi1qdwRdC"])
+        assert.deepStrictEqual(hab.serder.ked["k"], ["DAQVURvW74OJH1Q0C6YLim_tdBYoXABwg6GsAlPaUJXE"])
+        assert.deepStrictEqual(hab.serder.ked["n"], ["ENBWnU8wNHqq9oqJIimWhxUtNDHReUXtiCwwtjg9zKY0"])
     })
 
     it('should use passcode as salt', async () => {
@@ -35,7 +35,7 @@ describe('Habery', () => {
         let hby = new Habery({name: "test", salt: salter.qb64})
         let hab = hby.makeHab("test", {transferable: true})
 
-        assert.equal(hab.pre, "EOaOgA0FX6zQ8mU_LHt3JiaFOhkpLBh1ID8ZS8nA9Cac")
+        assert.equal(hab.pre, "EMRbh7mWJTijcWiQKT3uxozncpa9_gEX1IU0fM1wnKxi")
 
     })
 })
