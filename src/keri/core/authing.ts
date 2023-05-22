@@ -1,14 +1,10 @@
 import {Signer} from "./signer";
 import {Verfer} from "./verfer";
 import {desiginput, normalize, siginput} from "./httping";
-import {b} from "./core";
-import {parseDictionary} from "structured-headers";
-import {Signage, signature} from "../end/ending";
+import {Signage, signature, designature} from "../end/ending";
 import {Cigar} from "./cigar";
 import {Siger} from "./siger";
-
-import Base64 from "urlsafe-base64"
-
+import {b} from "./core";
 export class Authenticater {
 
     static DefaultFields = [
@@ -34,14 +30,11 @@ export class Authenticater {
         if (signature == null) {
             return false
         }
-
         let inputs = desiginput(siginput)
         inputs = inputs.filter((input) => input.name == "signify")
-
         if (inputs.length == 0) {
             return false
         }
-
         inputs.forEach((input) => {
             let items = new Array<string>()
             input.fields!.forEach((field: string) => {
@@ -58,11 +51,12 @@ export class Authenticater {
                     }
                 }
             })
-
+            items.push(`signify-resource: ${input.keyid}`)
+            let created = new Date(input.created * 1000).toISOString()
+            items.push(`signify-timestamp: ${created}`)
             let values = new Array<string>()
             values.push(`(${input.fields!.join(" ")})`)
             values.push(`created=${input.created}`)
-
             if (input.expires != undefined) {
                 values.push(`expires=${input.expires}`)
             }
@@ -78,22 +72,13 @@ export class Authenticater {
             if (input.alg != undefined) {
                 values.push(`alg=${input.alg}`)
             }
-
             let params = values.join(";")
-
             items.push(`"@signature-params: ${params}"`)
             let ser = b(items.join("\n"))
-
-            let signage = parseDictionary(signature!)
-            if (!signage.has("indexed")) {
-                throw new Error(`invalid signate ${signage}`)
-            }
-
-            let item = signage.get("indexed")!
-            let raw = Base64.decode(item[1].get(input.name) as string)
-
-            if (!this._verfer.verify(raw, ser)) {
-                throw new Error(`Signature for {inputage} invalid.`)
+            let signage = designature(signature!)
+            let cig = signage[0].markers.get(input.name)
+            if (!this._verfer.verify(cig.raw, ser)) {
+                throw new Error(`Signature for ${input.keyid} invalid.`)
             }
         })
 
