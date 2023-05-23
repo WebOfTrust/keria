@@ -172,7 +172,7 @@ export class SignifyClient {
         return resp.status == 204
     }
 
-    async _delete_old_salt(salt: string){
+    async _delete_old_salt(){
         let caid = this.controller?.pre;
         let resp = await this.fetch(`/agent/${caid}/salt`, 'DELETE', null)
         return resp.status == 204

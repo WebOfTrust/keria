@@ -195,10 +195,9 @@ export function rotate({
         ba: adds,
         a: data ? data !== undefined : []
     }
-    let _, ked = Saider.saidify(_ked)
+    let[ , ked] = Saider.saidify(_ked)
     return new Serder({ ked: ked })
 }
-
 
 function ample(n: number, f?: number, weak = true) {
     n = Math.max(0, n)  // no negatives
@@ -354,7 +353,6 @@ export function incept({ keys, isith, ndigs, nsith, toad, wits, cnfg, data, vers
 
     return new Serder(ked)
 }
-
 
 export function messagize(serder: Serder, sigers?: Array<Siger>, seal?: any, wigers?: Array<Cigar>, cigars?: Array<Cigar>,
     pipelined: boolean = false): Uint8Array {

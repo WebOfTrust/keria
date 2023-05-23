@@ -1,6 +1,6 @@
 import { SaltyCreator } from "../core/manager";
 import { Salter, Tier } from "../core/salter";
-import { Matter, MtrDex } from "../core/matter";
+import { MtrDex } from "../core/matter";
 import { Diger } from "../core/diger";
 import { incept, rotate } from "../core/eventing";
 import { Serder } from "../core/serder";
