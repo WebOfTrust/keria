@@ -2,12 +2,15 @@ import { SaltyCreator } from "../core/manager";
 import { Salter, Tier } from "../core/salter";
 import { MtrDex } from "../core/matter";
 import { Diger } from "../core/diger";
-import { incept } from "../core/eventing";
+import { incept, rotate } from "../core/eventing";
 import { Serder } from "../core/serder";
 // import { Siger } from "../core/siger";
 import { Tholder } from "../core/tholder";
-import { Ilks } from "../core/core";
+import { Ilks, b } from "../core/core";
 import { Verfer } from "../core/verfer";
+import { Encrypter } from "../core/encrypter";
+import { Decrypter } from "../core/decrypter";
+import { Cipher } from "../core/cipher";
 
 export class Agent {
     pre: string;
@@ -27,8 +30,8 @@ export class Agent {
         // if (kel.length < 1) {
         //     throw new Error("invalid empty KEL");
         // }
-
         let [serder, verfer, ] = this.event(agent);
+
         if (serder.ked['et'] !== Ilks.dip) {
             throw new Error(`invalid inception event type ${serder.ked['et']}`);
         }
@@ -104,6 +107,8 @@ export class Controller {
     public signer: any;
     private nsigner: any;
     public serder: Serder;
+    private keys: string[];
+    public ndigs: string[];
 
     constructor(bran: string, tier: Tier, ridx: number = 0, state: any|null = null) {
         this.bran = MtrDex.Salt_128 + 'A' + bran.substring(0, 21)  // qb64 salt for seed
@@ -117,15 +122,15 @@ export class Controller {
 
         this.signer = creator.create(undefined, 1, MtrDex.Ed25519_Seed, true, 0, this.ridx, 0, false).signers.pop()
         this.nsigner = creator.create(undefined, 1, MtrDex.Ed25519_Seed, true, 0, this.ridx + 1, 0, false).signers.pop()
-        let keys = [this.signer.verfer.qb64]
-        let ndigs = [new Diger({ code: MtrDex.Blake3_256 }, this.nsigner.verfer.qb64b).qb64]
+        this.keys = [this.signer.verfer.qb64]
+        this.ndigs = [new Diger({ code: MtrDex.Blake3_256 }, this.nsigner.verfer.qb64b).qb64]
 
         if (state == null || state['ee']['s'] == 0){
             this.serder = incept({
-                keys: keys,
+                keys: this.keys,
                 isith: "1",
                 nsith: "1",
-                ndigs: ndigs,
+                ndigs: this.ndigs,
                 code: MtrDex.Blake3_256,
                 toad: "0",
                 wits: []
@@ -134,7 +139,6 @@ export class Controller {
             this.serder = new Serder(state['ee'])
         }
     }
-
     approveDelegation(agent: Agent) {
         console.log(agent.pre)
         // TODO implement interact in eventing and seqner
@@ -161,4 +165,127 @@ export class Controller {
     get verfers(): [] {
         return this.signer.verfer()
     }
+
+    derive(state: any) {
+        if (state != undefined && state['ee']['s'] === '0') {
+            return incept({
+                keys: this.keys,
+                isith: "1",
+                nsith: "1",
+                ndigs: this.ndigs,
+                code: MtrDex.Blake3_256,
+                toad: "0",
+                wits: []
+            })
+        }
+        else {
+            return new Serder({ ked: state.controller['ee'] })
+        }
+    }
+
+    rotate(bran: string, aids: Array<any>) {
+        let nbran = MtrDex.Salt_128 + 'A' + bran.substring(21)  // qb64 salt for seed
+        let nsalter = new Salter({ qb64: nbran })
+        let nsigner = this.salter.signer({ transferable: false })
+
+        let creator = new SaltyCreator(this.salter.qb64, this.tier, this.stem)
+        let signer = creator.create(undefined, 1, MtrDex.Ed25519_Seed, true, 0, this.ridx + 1, 0, false).signers.pop()
+
+        let ncreator = new SaltyCreator(nsalter.qb64, this.tier, this.stem)
+        this.signer = ncreator.create(undefined, 1, MtrDex.Ed25519_Seed, true, 0, this.ridx, 0, false).signers.pop()
+        this.nsigner = ncreator.create(undefined, 1, MtrDex.Ed25519_Seed, true, 0, this.ridx + 1, 0, false).signers.pop()
+
+        this.keys = [this.signer.verfer.qb64, signer?.verfer.qb64]
+        this.ndigs = [new Diger({ qb64: this.nsigner.verfer.qb64b }).qb64]
+
+        let rot = rotate(
+            {
+                pre: this.pre,
+                keys: this.keys,
+                dig: this.serder.ked['d'],
+                isith: ["1", "0"],
+                nsith: "1",
+                ndigs: this.ndigs
+            })
+
+        let sigs = [signer?.sign(b(rot.raw), 1, false, 0).qb64, this.signer.sign(rot.raw, 0).qb64]
+
+        let encrypter = new Encrypter({ qb64: nsigner.verfer.qb64 })
+        let decrypter = new Decrypter({ qb64: nsigner.qb64 })
+
+        let sxlt = encrypter.encrypt(b(this.bran)).qb64
+
+
+        let keys : Record<any, any> = {}
+
+        for (let aid of aids) {
+            let pre: string = aid["prefix"] as string 
+            if ("salty" in aid) {
+                let salty: any = aid["salty"]
+                let cipher = new Cipher({ qb64: salty["sxlt"] })
+                let dnxt = decrypter.decrypt(null, cipher).qb64
+
+                // Now we have the AID salt, use it to verify against the current public keys
+                let acreator = new SaltyCreator(dnxt, salty["stem"], salty["tier"])
+                let signers = acreator.create(salty["icodes"], salty["pidx"], salty["kidx"], salty["transferable"])
+                let pubs = aid["state"]["k"]
+
+                if (pubs != signers.signers.forEach((signer) => { return signer.verfer.qb64 })) {
+                    throw new Error(`unable to rotate, validation of salt to public keys ${pubs} failed`)
+                }
+
+                let asxlt = encrypter.encrypt(b(dnxt)).qb64
+                keys[pre] = {
+                    sxlt: asxlt
+                }
+            }
+            else if ("randy" in aid) {
+                let randy = aid["randy"]
+                let prxs = randy["prxs"]
+                let nxts = randy["nxts"]
+
+                let nprxs = []
+                let signers = []
+                for (let prx of prxs) {
+                    let cipher = new Cipher({ qb64: prx })
+                    let dsigner = decrypter.decrypt(null,cipher,true)
+                    signers.push(dsigner)
+                    nprxs.push(encrypter.encrypt(b(dsigner.qb64)).qb64)
+                }
+                let pubs = aid["state"]["k"]
+                if (pubs != signers.forEach((signer) => { return signer.verfer.qb64 })) {
+                    throw new Error(`unable to rotate, validation of encrypted public keys ${pubs} failed`)
+                }
+
+                let nnxts = []
+                for (let nxt of nxts) {
+                    nnxts.push(this.recrypt(nxt, decrypter, encrypter))
+                }
+
+                keys[pre] = {
+                    prxs: nprxs,
+                    nxts: nnxts
+                }
+            }
+            else {
+                throw new Error("invalid aid type ")
+            }
+
+        }
+
+        let data = {
+            rot: rot.ked,
+            sigs: sigs,
+            sxlt: sxlt,
+            keys: keys
+        }        
+        return data
+    }
+
+    recrypt(enc: string, decrypter: Decrypter, encrypter: Encrypter) {
+        let cipher = new Cipher({ qb64: enc })
+        let dnxt = decrypter.decrypt(null, cipher).qb64
+        return encrypter.encrypt(b(dnxt)).qb64
+    }
+
 }

@@ -1,14 +1,203 @@
-import {b, concat, Dict, Ident, Ilks, Serials, versify, Version, Versionage} from "./core";
-import {Tholder} from "./tholder";
-import {PNumber} from "./number";
-import {Prefixer} from "./prefixer";
-import {Serder} from "./serder";
-import {MtrDex, NonTransDex} from "./matter";
-import {Saider} from "./saider";
-import {Siger} from "./siger";
-import {Cigar} from "./cigar";
-import {Counter, CtrDex} from "./counter";
+import { b, concat, Dict, Ident, Ilks, Serials, versify, Version, Versionage } from "./core";
+import { Tholder } from "./tholder";
+import { PNumber } from "./number";
+import { Prefixer } from "./prefixer";
+import { Serder } from "./serder";
+import { MtrDex, NonTransDex } from "./matter";
+import { Saider } from "./saider";
+import { Siger } from "./siger";
+import { Cigar } from "./cigar";
+import { Counter, CtrDex } from "./counter";
 
+let MaxIntThold = 2 ** 32 - 1
+
+export interface RotateArgs {
+    pre?: string
+    keys: Array<string>,
+    dig?: string,
+    ilk?: string,
+    sn?: number,
+    isith?: number | string | Array<string>,
+    ndigs?: Array<string>,
+    nsith?: number | string | Array<string>,
+    toad?: number,
+    wits?: Array<string>,
+    cuts?: Array<string>,
+    adds?: Array<string>,
+    cnfg?: Array<string>,
+    data?: Array<object>,
+    version?: Version,
+    kind?: Serials,
+    size?: number,
+    intive?: boolean
+}
+
+export function rotate({
+    pre = undefined,
+    keys,
+    dig = undefined,
+    ilk = Ilks.rot,
+    sn = undefined,
+    isith = undefined,
+    ndigs = undefined,
+    nsith = undefined,
+    wits = undefined,
+    cuts = undefined,
+    adds = undefined,
+    toad = undefined,
+    data = undefined,
+    version = undefined,
+    kind = undefined,
+    size,
+    intive = true }: RotateArgs) {
+    let vs = versify(Ident.KERI, version, kind, size)
+
+    let _ilk = ilk
+    if (_ilk != Ilks.rot && _ilk != Ilks.drt) {
+        throw new Error(`Invalid ilk = ${ilk} for rot or drt.`)
+    }
+
+    let sner = Number(sn)
+    if (sner < 1) {
+        throw new Error(`Invalid sn = 0x${sner.toString()} for rot or drt.`)
+    }
+    let _isit: number
+
+    if (isith == undefined) {
+        _isit = Math.max(1, Math.ceil(keys.length / 2))
+    }
+    else {
+        _isit = isith as number
+    }
+
+    let tholder = new Tholder(_isit)
+    if (tholder.num != undefined && tholder.num < 1) {
+        throw new Error(`Invalid sith = ${tholder.num} less than 1.`)
+    }
+    if (tholder.size > keys.length) {
+        throw new Error(`Invalid sith = ${tholder.num} for keys = ${keys}`)
+    }
+
+    let _ndigs: Array<string>
+
+    if (ndigs === undefined) {
+        _ndigs = []
+    }
+    else {
+        _ndigs = ndigs
+    }
+
+    let _nsith
+    if (nsith === undefined) {
+        _nsith = Math.max(1, Math.ceil(_ndigs.length / 2))
+    }
+    else {
+        _nsith = nsith
+    }
+
+    let ntholder = new Tholder(_nsith)
+    if (ntholder.num != undefined && ntholder.num < 1) {
+        throw new Error(`Invalid sith = ${ntholder.num} less than 1.`)
+    }
+    if (ntholder.size > _ndigs.length) {
+        throw new Error(`Invalid sith = ${ntholder.num} for ndigs = ${ndigs}`)
+    }
+
+    let _wits: Array<string>
+    if (wits === undefined) {
+        _wits = []
+    }
+    else {
+        _wits = wits
+    }
+    let witset = new Set(_wits)
+    if (witset.size != _wits.length) {
+        throw new Error(`Invalid wits = ${wits}, has duplicates.`)
+    }
+
+    let _cuts: Array<string>
+    if (cuts === undefined) {
+        _cuts = []
+    }
+    else {
+        _cuts = cuts
+    }
+    let cutset = new Set(_cuts)
+    if (cutset.size != _cuts.length) {
+        throw new Error(`Invalid cuts = ${cuts}, has duplicates.`)
+    }
+
+    let _adds: Array<string>
+    if (adds === undefined) {
+        _adds = []
+    }
+    else {
+        _adds = adds
+    }
+    let addset = new Set(_adds)
+
+    //non empty intersection of witset and addset
+    let witaddset = new Set([...witset].filter(x => addset.has(x)))
+    if (witaddset.size > 0) {
+        throw new Error(`Invalid member combination among wits = ${wits}, and adds = ${adds}.`)
+    }
+
+    // non empty intersection of cutset and addset
+    let cutaddset = new Set([...cutset].filter(x => addset.has(x)))
+    if (cutaddset.size > 0) {
+        throw new Error(`Invalid member combination among cuts = ${cuts}, and adds = ${adds}.`)
+    }
+
+    let newitset = new Set([...witset].filter(x => cutset.has(x)).concat([...addset]))
+
+    if (newitset.size != (witset.size - cutset.size + addset.size)) {
+        throw new Error(`Invalid member combination among wits = ${wits}, cuts = ${cuts}, and adds = ${adds}.`)
+    }
+
+    let _toad: number
+
+    if (toad === undefined) {
+        if (newitset.size == 0) {
+            _toad = 0
+        }
+        else {
+            _toad = ample(newitset.size)
+        }
+    }
+    else {
+        _toad = toad
+    }
+
+    if (newitset.size > 0) {
+        if (_toad < 1 || _toad > newitset.size) {
+            throw new Error(`Invalid toad = ${_toad} for wit = ${wits}`)
+        }
+    }
+    else {
+        if (_toad != 0) {
+            throw new Error(`Invalid toad = ${_toad} for wit = ${wits}`)
+        }
+    }
+
+    let _ked = {
+        v: vs,
+        t: _ilk,
+        d: "",
+        i: pre,
+        s: sner.toString(16),
+        p: dig,
+        kt: tholder.num && intive && tholder.num !== undefined && tholder.num <= MaxIntThold ? tholder.num : tholder.sith,
+        k: keys,
+        nkt: ntholder.num && intive && ntholder.num !== undefined && ntholder.num <= MaxIntThold ? ntholder.num : ntholder.sith,
+        nk: _ndigs,
+        bt: _toad && intive && _toad !== undefined && _toad <= MaxIntThold ? _toad : _toad.toString(16),
+        br: cuts,
+        ba: adds,
+        a: data ? data !== undefined : []
+    }
+    let[ , ked] = Saider.saidify(_ked)
+    return new Serder({ ked: ked })
+}
 
 function ample(n: number, f?: number, weak = true) {
     n = Math.max(0, n)  // no negatives
@@ -53,8 +242,8 @@ export interface InceptArgs {
     delpre?: string
 }
 
-export function incept({keys, isith, ndigs, nsith, toad, wits, cnfg, data, version=Versionage, kind=Serials.JSON, code,
-                       intive = false, delpre}: InceptArgs) {
+export function incept({ keys, isith, ndigs, nsith, toad, wits, cnfg, data, version = Versionage, kind = Serials.JSON, code,
+    intive = false, delpre }: InceptArgs) {
 
 
     let vs = versify(Ident.KERI, version, kind, 0)
@@ -124,7 +313,7 @@ export function incept({keys, isith, ndigs, nsith, toad, wits, cnfg, data, versi
         s: sner.numh,
         kt: (intive && tholder.num != undefined) ? tholder.num : tholder.sith,
         k: keys,
-        nt: (intive && tholder.num != undefined) ? ntholder.num: ntholder.sith,
+        nt: (intive && tholder.num != undefined) ? ntholder.num : ntholder.sith,
         n: ndigs,
         bt: intive ? toader.num : toader.numh,
         b: wits,
@@ -141,14 +330,14 @@ export function incept({keys, isith, ndigs, nsith, toad, wits, cnfg, data, versi
 
     let prefixer
     if (delpre == undefined && code == undefined && keys.length == 1) {
-        prefixer = new Prefixer({qb64: keys[0]})
+        prefixer = new Prefixer({ qb64: keys[0] })
         if (prefixer.digestive) {
             throw new Error(`Invalid code, digestive=${prefixer.code}, must be derived from ked.`)
         }
     } else {
-        prefixer = new Prefixer({code: code}, ked)
+        prefixer = new Prefixer({ code: code }, ked)
         if (delpre != undefined) {
-            if(!prefixer.digestive) {
+            if (!prefixer.digestive) {
                 throw new Error(`Invalid derivation code = ${prefixer.code} for delegation. Must be digestive`)
             }
         }
@@ -165,8 +354,8 @@ export function incept({keys, isith, ndigs, nsith, toad, wits, cnfg, data, versi
     return new Serder(ked)
 }
 
-export function messagize(serder: Serder, sigers?: Array<Siger>, seal?: any, wigers?:Array<Cigar>, cigars?:Array<Cigar>,
-                          pipelined:boolean = false): Uint8Array {
+export function messagize(serder: Serder, sigers?: Array<Siger>, seal?: any, wigers?: Array<Cigar>, cigars?: Array<Cigar>,
+    pipelined: boolean = false): Uint8Array {
     let msg = new Uint8Array(b(serder.raw))
     let atc = new Uint8Array()
 
@@ -179,14 +368,14 @@ export function messagize(serder: Serder, sigers?: Array<Siger>, seal?: any, wig
             throw new Error(`Index sig group seals not yet supported`)
         }
 
-        atc = concat(atc, new Counter({code: CtrDex.ControllerIdxSigs, count: sigers.length}).qb64b)
+        atc = concat(atc, new Counter({ code: CtrDex.ControllerIdxSigs, count: sigers.length }).qb64b)
         sigers.forEach((siger) => {
             atc = concat(atc, siger.qb64b)
         })
     }
 
     if (wigers != undefined) {
-        atc = concat(atc, new Counter({code: CtrDex.ControllerIdxSigs, count: wigers.length}).qb64b)
+        atc = concat(atc, new Counter({ code: CtrDex.ControllerIdxSigs, count: wigers.length }).qb64b)
 
         wigers.forEach((wiger) => {
             if (wiger.verfer && !(wiger.verfer.code in NonTransDex)) {
@@ -197,7 +386,7 @@ export function messagize(serder: Serder, sigers?: Array<Siger>, seal?: any, wig
     }
 
     if (cigars != undefined) {
-        atc = concat(atc, new Counter({code: CtrDex.ControllerIdxSigs, count: cigars.length}).qb64b)
+        atc = concat(atc, new Counter({ code: CtrDex.ControllerIdxSigs, count: cigars.length }).qb64b)
 
         cigars.forEach((cigar) => {
             if (cigar.verfer && !(cigar.verfer.code in NonTransDex)) {
@@ -211,7 +400,7 @@ export function messagize(serder: Serder, sigers?: Array<Siger>, seal?: any, wig
         if (atc.length % 4 != 0) {
             throw new Error(`Invalid attachments size=${atc.length}, nonintegral quadlets.`)
         }
-        msg = concat(msg, new Counter({code: CtrDex.AttachedMaterialQuadlets, count: (Math.floor(atc.length / 4))}).qb64b)
+        msg = concat(msg, new Counter({ code: CtrDex.AttachedMaterialQuadlets, count: (Math.floor(atc.length / 4)) }).qb64b)
     }
     msg = concat(msg, atc)
 
