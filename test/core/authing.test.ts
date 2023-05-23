@@ -13,23 +13,22 @@ describe('Authenticater.verify', () => {
         let salt = '0123456789abcdef'
         let salter = new Salter({raw: b(salt)})
         let signer = salter.signer()
-        let aaid = "DDK2N5_fVCWIEO9d8JLhk7hKrkft6MbtkUhaHQsmABHY"
+        let aaid = "DMZh_y-H5C3cSbZZST-fqnsmdNTReZxIh0t2xSTOJQ8a"
         let verfer = new Verfer({qb64: aaid})
 
         let headers = new Headers([
-            ['Connection', 'close'],
-            ['Content-Length', '256'],
+            ['Content-Length', '898'],
             ['Content-Type', 'application/json'],
-            ['Signature', ('indexed="?0";signify="bipHos8-XTOzLq0He4tz8mIeZGq4h5WdIndNVCSX2H5eYCqwYOQT7EysiMkgp0HwYBIgmg7wuTQgtJKJ__EBCA=="')],
-            ['Signature-Input', ('signify=("signify-resource" "@method" "@path" "signify-timestamp");created=1609459200;keyid="EAM6vT0VYoaEWxRTgr24g0nZHmPSUBgs19WB43zEKHnz";alg="ed25519"')],
-            ['Signify-Resource', 'EWJkQCFvKuyxZi582yJPb0wcwuW3VXmFNuvbQuBpgmIs'],
-            ['Signify-Timestamp', '2022-09-24T00:05:48.196795+00:00'],
+            ['Signature', ('indexed="?0";signify="0BDLh8QCytVBx1YMam4Vt8s4b9HAW1dwfE4yU5H_w1V6gUvPBoVGWQlIMdC16T3WFWHDHCbMcuceQzrr6n9OULsK"')],
+            ['Signature-Input', ('signify=("signify-resource" "@method" "@path" "signify-timestamp");created=1684715820;keyid="EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei";alg="ed25519"')],
+            ['Signify-Resource', 'EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei'],
+            ['Signify-Timestamp', '2023-05-22T00:37:00.248708+00:00'],
         ])
 
         let authn = new Authenticater(signer, verfer)
         assert.notEqual(authn, undefined)
 
-        assert.equal(authn.verify(new Headers(headers), "POST", "/boot"), true)
+        assert.equal(authn.verify(new Headers(headers), "GET", "/identifiers/aid1"), true)
     })
 })
 
