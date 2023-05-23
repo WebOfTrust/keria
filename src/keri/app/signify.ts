@@ -156,6 +156,28 @@ export class SignifyClient {
         })
     }
 
+    async rotate(new_bran : string, aids: any[]){
+        let data = this.controller.rotate(new_bran, aids)
+        let caid = this.controller?.pre;
+        let resp = await this.fetch(`/agent/${caid}`, 'PUT', data)
+        return resp.status == 204
+    }
+
+    async _save_old_salt(salt: string){
+        let caid = this.controller?.pre;
+        let data = {
+            salt: salt
+        }
+        let resp = await this.fetch(`/agent/${caid}/salt`, 'PUT', data)
+        return resp.status == 204
+    }
+
+    async _delete_old_salt(salt: string){
+        let caid = this.controller?.pre;
+        let resp = await this.fetch(`/agent/${caid}/salt`, 'DELETE', null)
+        return resp.status == 204
+    }
+    
     identifiers() {
         return new Identifier(this)
     }
