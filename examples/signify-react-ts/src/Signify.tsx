@@ -60,8 +60,8 @@ export function Signify() {
                             console.log(e)
                             await client.boot()
                         }
-                        let res = await client.state()
-                        let resp = JSON.stringify(res, null, 2)
+                        const res = await client.state()
+                        const resp = JSON.stringify(res, null, 2)
                         return resp
                     }} />
                 <SignifyDemo text={'Get identifiers'}
@@ -79,13 +79,37 @@ export function Signify() {
                                 await client.connect()
                                 console.log('booted and connected up')
                             }
-                            let res = await client.identifiers()
-                            let resp = await res.list_identifiers()
-                            return JSON.stringify(resp)
+                            const identifiers = client.identifiers()
+                            const resp = await identifiers.list_identifiers()
+                            return JSON.stringify(resp, null, 2)
                         }
                         catch (e) {
                             console.log(e)
                             return 'Error getting identifiers'
+                        }
+                    }} />
+                <SignifyDemo text={'Create identifier'}
+                    onClick={async () => {
+                        try {
+                            const client = new SignifyClient("http://localhost:3901", key)
+                            setPre(client.controller.pre)
+                            try{
+                                await client.connect()
+                            }
+                            catch(e){
+                                console.log('error connecting', e)
+                                console.log('booting up')
+                                await client.boot()
+                                await client.connect()
+                                console.log('booted and connected up')
+                            }
+                            const identifiers = client.identifiers()
+                            const resp = await identifiers.create('aid'+generateRandomKey().slice(1,3), true, "1", "1", [], "1", "", undefined, "E", [], "salty", undefined)
+                            return JSON.stringify(resp, null, 2)
+                        }
+                        catch (e) {
+                            console.log(e)
+                            return 'Error creating identifiers'
                         }
                     }} />
             </div>

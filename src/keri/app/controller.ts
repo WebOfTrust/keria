@@ -103,7 +103,7 @@ export class Controller {
     public stem: string;
     public tier: Tier;
     public ridx: number;
-    private salter: any;
+    public salter: any;
     public signer: any;
     private nsigner: any;
     public serder: Serder;

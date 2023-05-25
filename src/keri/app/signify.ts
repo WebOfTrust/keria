@@ -1,7 +1,10 @@
 import { Controller, Agent } from "./controller"
 import { Tier } from "../core/salter"
 import { Authenticater } from "../core/authing"
-// import {Signage, signature} from "../end/ending";
+import { Manager } from "../core/keeping"
+import { Algos } from '../core/manager';
+import { incept } from "../core/eventing"
+import { b, Serials, Versionage } from "../core/core";
 
 class State {
     agent: any | null
@@ -18,24 +21,28 @@ class State {
 }
 
 export class SignifyClient {
-    private controller: Controller
-    private url: string
-    private bran: string
-    private pidx: number
-    private agent: Agent | null
+    public controller: Controller
+    public url: string
+    public bran: string
+    public pidx: number
+    public agent: Agent | null
     public authn: any
     public session: any
+    public manager: Manager | null
+    public tier: Tier
 
-    constructor(url: string, bran: string) {
+    constructor(url: string, bran: string, tier: Tier = Tier.low) {
         this.url = url;
         if (bran.length < 21) {
             throw Error("bran must be 21 characters")
         }
         this.bran = bran;
         this.pidx = 0;
-        this.controller = new Controller(bran, Tier.low)
+        this.controller = new Controller(bran, tier)
         this.authn = null
         this.agent = null
+        this.manager = null
+        this.tier = tier
 
     }
 
@@ -83,7 +90,7 @@ export class SignifyClient {
         let state = await this.state()
         this.pidx = state.pidx
         //Create controller representing local auth AID
-        this.controller = new Controller(this.bran, Tier.low, 0, state.controller)
+        this.controller = new Controller(this.bran, this.tier, 0, state.controller)
         this.controller.ridx = state.ridx !== undefined ? state.ridx : 0
         // Create agent representing the AID of the cloud agent
         this.agent = new Agent(state.agent)
@@ -94,7 +101,7 @@ export class SignifyClient {
         if (this.controller.serder.ked.s == 0 ) {
             await this.approveDelegation()
         }
-
+        this.manager = new Manager(this.controller.salter, null)
         this.authn = new Authenticater(this.controller.signer, this.agent.verfer!)
     }
 
@@ -103,6 +110,7 @@ export class SignifyClient {
         let headers = new Headers()
         headers.set('Signify-Resource', this.controller.pre)
         headers.set('Signify-Timestamp', new Date().toISOString().replace('Z','000+00:00'))
+        headers.set('Content-Type', 'application/json')
 
         if (data !== null) {
             headers.set('Content-Length', data.length)
@@ -127,7 +135,7 @@ export class SignifyClient {
             throw new Error('Message from a different remote agent');
         }
 
-        const verification = this.authn.verify(res.headers, 'GET', path);
+        const verification = this.authn.verify(res.headers, method, path);
         if (verification) {
             return res;
         } else {
@@ -156,28 +164,6 @@ export class SignifyClient {
         })
     }
 
-    async rotate(new_bran : string, aids: any[]){
-        let data = this.controller.rotate(new_bran, aids)
-        let caid = this.controller?.pre;
-        let resp = await this.fetch(`/agent/${caid}`, 'PUT', data)
-        return resp.status == 204
-    }
-
-    async _save_old_salt(salt: string){
-        let caid = this.controller?.pre;
-        let data = {
-            salt: salt
-        }
-        let resp = await this.fetch(`/agent/${caid}/salt`, 'PUT', data)
-        return resp.status == 204
-    }
-
-    async _delete_old_salt(){
-        let caid = this.controller?.pre;
-        let resp = await this.fetch(`/agent/${caid}/salt`, 'DELETE', null)
-        return resp.status == 204
-    }
-    
     identifiers() {
         return new Identifier(this)
     }
@@ -206,44 +192,70 @@ class Identifier {
         return await res.json()
     }
 
-    // def create(self, name, transferable=True, isith="1", nsith="1", wits=None, toad="0", proxy=None, delpre=None,
-    //            dcode=MtrDex.Blake3_256, data=None, algo=Algos.salty, **kwargs):
+    async create(
+                name: string, 
+                transferable:boolean, 
+                isith:string, 
+                nsith:string, 
+                wits:string[], 
+                toad:string, 
+                proxy:string, 
+                delpre:string| undefined, 
+                dcode:string, 
+                data:Array<object>, 
+                algo:Algos,
+                ...kargs:any) {
 
-    //     # Get the algo specific key params
-    //     keeper = self.client.manager.new(algo, self.client.pidx, **kwargs)
+        let keeper = this.client.manager!.new( algo, this.client.pidx,kargs)
+        let [keys, ndigs] = keeper!.incept(transferable)
+        wits = wits !== undefined ? wits : []
+        let _data = data !== undefined ? [data] : []
+        if (delpre == undefined){
+            var serder = incept({ 
+                keys: keys, 
+                isith: isith, 
+                ndigs: ndigs, 
+                nsith: nsith, 
+                toad: toad, 
+                wits: wits, 
+                cnfg: [], 
+                data: _data, 
+                version: Versionage, 
+                kind: Serials.JSON, 
+                code: dcode,
+                intive: false, 
+                delpre})
+            
+        } else {
+            var serder = incept({ 
+                keys: keys, 
+                isith: isith, 
+                ndigs: ndigs, 
+                nsith: nsith, 
+                toad: toad, 
+                wits: wits, 
+                cnfg: [], 
+                data: _data, 
+                version: Versionage, 
+                kind: Serials.JSON, 
+                code: dcode,
+                intive: false, 
+                delpre})
+        }
 
-    //     keys, ndigs = keeper.incept(transferable=transferable)
+        let sigs = keeper!.sign(b(serder.raw))
+        var jsondata = {
+            name: name,
+            icp: serder.ked,
+            sigs: sigs,
+            proxy: proxy,
+            salty: keeper.params()
+            }
+        // jsondata[algo.toString()] = keeper.params()
 
-    //     wits = wits if wits is not None else []
-    //     data = [data] if data is not None else []
-    //     if delpre is not None:
-    //         serder = eventing.delcept(delpre=delpre,
-    //                                   keys=keys,
-    //                                   isith=isith,
-    //                                   nsith=nsith,
-    //                                   ndigs=ndigs,
-    //                                   code=dcode,
-    //                                   wits=wits,
-    //                                   toad=toad,
-    //                                   data=data)
-    //     else:
-    //         serder = eventing.incept(keys=keys,
-    //                                  isith=isith,
-    //                                  nsith=nsith,
-    //                                  ndigs=ndigs,
-    //                                  code=dcode,
-    //                                  wits=wits,
-    //                                  toad=toad,
-    //                                  data=data)
-
-    //     sigs = keeper.sign(serder.raw)
-
-    //     json = dict(
-    //         name=name,
-    //         icp=serder.ked,
-    //         sigs=sigs,
-    //         proxy=proxy)
-    //     json[algo] = keeper.params()
+        this.client.pidx = this.client.pidx + 1
+        let res = await this.client.fetch("/identifiers", "POST", jsondata)
+        return res.json()
 
     //     if 'states' in kwargs:
     //         json['smids'] = [state['i'] for state in kwargs['states']]
@@ -256,6 +268,6 @@ class Identifier {
     //     res = self.client.post("/identifiers", json=json)
     //     return res.json()
 
-
+        }
 
 }
