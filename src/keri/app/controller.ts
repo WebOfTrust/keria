@@ -2,27 +2,33 @@ import { SaltyCreator } from "../core/manager";
 import { Salter, Tier } from "../core/salter";
 import { MtrDex } from "../core/matter";
 import { Diger } from "../core/diger";
-import { incept, rotate } from "../core/eventing";
+import { incept, rotate, interact } from "../core/eventing";
 import { Serder } from "../core/serder";
 // import { Siger } from "../core/siger";
 import { Tholder } from "../core/tholder";
-import { Ilks, b } from "../core/core";
+import { Ilks, b, Serials, Versionage } from "../core/core";
 import { Verfer } from "../core/verfer";
 import { Encrypter } from "../core/encrypter";
 import { Decrypter } from "../core/decrypter";
 import { Cipher } from "../core/cipher";
+import {Seqner } from "../core/seqner";
+import { PNumber } from "../core/number";
 
 export class Agent {
     pre: string;
     anchor: string;
     verfer: Verfer | null;
     serder: Serder | null;
+    sn : number | undefined;
+    said : string | undefined;
 
     constructor(agent: any) {
         this.pre = "";
         this.anchor = "";
         this.verfer = null;
         this.serder = null;
+        this.sn = 0;
+        this.said = "";
         this.parse(agent);
     }
 
@@ -31,6 +37,9 @@ export class Agent {
         //     throw new Error("invalid empty KEL");
         // }
         let [serder, verfer, ] = this.event(agent);
+
+        this.sn = new PNumber(serder.ked['s']).num
+        this.said = serder.ked['d']
 
         if (serder.ked['et'] !== Ilks.dip) {
             throw new Error(`invalid inception event type ${serder.ked['et']}`);
@@ -140,16 +149,18 @@ export class Controller {
         }
     }
     approveDelegation(_agent: Agent) {
-        // TODO implement interact in eventing and seqner
 
-        // seqner = coring.Seqner(sn=agent.sn)
-        // anchor = dict(i=agent.pre, s=seqner.snh, d=agent.said)
-
-        // self.serder = eventing.interact(pre=self.serder.pre, dig=self.serder.said, sn=self.serder.sn+1, data=[anchor])
-        // return self.serder, [self.signer.sign(self.serder.raw, index=0).qb64]
-
-        // FAKE SIGNATURE
-        return ["AAD6nSSSGy_uO41clzL-g3czC8W0Ax-2M87NXA_Iu50ZdEhbekuv2k7dY0fjoO3su3aBRBx4EXryPc8x4uGfbVYG"]
+        let seqner = new Seqner({sn: _agent.sn})
+        let anchor = {i: _agent.pre, s: seqner.snh, d: _agent.said}
+        console.log(this.serder.ked["d"])
+        this.serder = interact({
+            pre:this.serder.pre, 
+            dig: this.serder.ked["d"], 
+            sn: new PNumber(this.serder.ked["s"]).num + 1,
+            data:[anchor],
+            version: Versionage,
+            kind: Serials.JSON})
+        return [this.serder, [this.signer.sign(this.serder.raw, 0).qb64]]
     }
 
     get pre(): string {
