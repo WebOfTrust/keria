@@ -1,5 +1,5 @@
 import { Salter } from './salter'
-import { Algos, SaltyCreator } from './manager';
+import { Algos, SaltyCreator, RandyCreator } from './manager';
 import { MtrDex } from './matter';
 import { Tier } from './salter';
 import { Encrypter } from "../core/encrypter";
@@ -7,7 +7,7 @@ import { Decrypter } from './decrypter';
 import { b } from "./core";
 import { Cipher } from './cipher';
 import { Diger } from './diger';
-// import { Prefixer } from './prefixer';
+import { Prefixer } from './prefixer';
 
 export {};
 
@@ -25,11 +25,10 @@ export class KeyManager {
         switch (algo) {
             case Algos.salty:
                 return new SaltyKeeper(this.salter!, pidx, kargs["kidx"], kargs["tier"], kargs["transferable"], kargs["stem"], kargs["code"], kargs["count"], kargs["icodes"], kargs["ncode"], kargs["ncount"], kargs["ncodes"], kargs["dcode"], kargs["bran"], kargs["sxlt"])
-                break
             case Algos.randy:
-                throw new Error('Randy not allowed yet')
-            case Algos.extern:
-                throw new Error(`External modules not allowed yet` + this.externalModulees)
+                return new RandyKeeper(this.salter!, kargs["code"], kargs["count"], kargs["icodes"], kargs["transferable"], kargs["ncode"], kargs["ncount"], kargs["ncodes"], kargs["dcode"], kargs["prxs"], kargs["nxts"])
+            case Algos.group:
+                throw new Error(`Group not allowed yet` + this.externalModulees)
                 break
             default:
                 throw new Error('Unknown algo')
@@ -37,11 +36,18 @@ export class KeyManager {
     }
 
     get(aid:any) {
-        // TODO IMPLEMENT OTHER ALGOS
-        // let pre = new Prefixer({qb64: aid["prefix"]})
-        let kargs = aid[Algos.salty]
-        return new SaltyKeeper(this.salter!, kargs["pidx"], kargs["kidx"], kargs["tier"], kargs["transferable"], kargs["stem"], kargs["code"], kargs["count"], kargs["icodes"], kargs["ncode"], kargs["ncount"], kargs["ncodes"], kargs["dcode"], kargs["bran"], kargs["sxlt"])
-
+        let pre = new Prefixer({qb64: aid["prefix"]})
+        if (Algos.salty in aid){
+            let kargs = aid[Algos.salty]
+            return new SaltyKeeper(this.salter!, kargs["pidx"], kargs["kidx"], kargs["tier"], kargs["transferable"], kargs["stem"], kargs["code"], kargs["count"], kargs["icodes"], kargs["ncode"], kargs["ncount"], kargs["ncodes"], kargs["dcode"], kargs["bran"], kargs["sxlt"])
+        } else if (Algos.randy in aid) {
+            let kargs = aid[Algos.randy]
+            return new RandyKeeper(this.salter!, kargs["code"], kargs["count"], kargs["icodes"], pre.transferable, kargs["ncode"], kargs["ncount"], kargs["ncodes"], kargs["dcode"], kargs["prxs"],  kargs["nxts"])
+        } else if (Algos.group in aid) {
+            throw new Error(`Group Keeper not allowed yet`)
+        } else{
+            throw new Error(`Algo not allowed yet`)
+        }
     }
 
 }
@@ -66,6 +72,7 @@ export class SaltyKeeper {
     private sxlt:string | undefined
     private bran:string | undefined
     private creator: SaltyCreator
+    public algo:Algos = Algos.salty
 
     constructor(salter:Salter, pidx:number, kidx:number=0, tier=Tier.low, transferable=false, stem=undefined,
         code=MtrDex.Ed25519_Seed, count=1, icodes:string[]|undefined=undefined, ncode=MtrDex.Ed25519_Seed,
@@ -206,4 +213,137 @@ export class SaltyKeeper {
             return cigars.map(cigar => cigar.qb64);
         }
     }
+}
+
+
+export class RandyKeeper {
+    private salter: Salter
+    private code:string
+    private count:number
+    private icodes:string[] | undefined
+    private transferable:boolean
+    private ncount:number
+    private ncodes:string[] | undefined
+    private ncode:string
+    private dcode:string | undefined
+    private prxs:string[] | undefined
+    private nxts:string[] | undefined
+    private aeid:string
+    private encrypter:Encrypter
+    private decrypter:Decrypter
+    private creator: RandyCreator
+    public algo:Algos = Algos.randy
+
+
+
+    constructor(salter:Salter, code=MtrDex.Ed25519_Seed, count=1, icodes:string[]|undefined=undefined, transferable=false, 
+        ncode=MtrDex.Ed25519_Seed, ncount=1, ncodes:string[], dcode=MtrDex.Blake3_256, prxs:string[]|undefined=undefined, nxts:string[]|undefined=undefined){
+
+        this.salter = salter
+        this.icodes = icodes==undefined? new Array<string>(count).fill(code) : icodes
+        this.ncodes = ncodes==undefined? new Array<string>(ncount).fill(ncode) : ncodes
+
+        this.code = code
+        this.ncode = ncode
+        this.count = count
+        this.ncount = ncount    
+
+        let signer = this.salter.signer(undefined, transferable=false)
+        this.aeid = signer.verfer.qb64
+
+        this.encrypter = new Encrypter({}, b(this.aeid))
+        this.decrypter = new Decrypter({}, signer.qb64b)
+
+        this.nxts = nxts
+        this.prxs = prxs
+        this.transferable = transferable
+
+        this.icodes = icodes
+        this.ncodes = ncodes
+        this.dcode = dcode
+        
+        this.creator = new RandyCreator()
+        
+
+    }
+
+    params() {
+
+        return {
+            nxts: this.nxts,
+            prxs: this.prxs,
+            transferable: this.transferable
+        }
+    }
+
+    incept(transferable:boolean) {
+        this.transferable = transferable
+
+        let signers = this.creator.create(this.icodes, this.count, this.code, this.transferable) 
+        this.prxs = signers.signers.map(signer => this.encrypter.encrypt(undefined,signer).qb64);
+
+        let verfers = signers.signers.map(signer => signer.verfer.qb64);
+        
+        let nsigners = this.creator.create(this.ncodes, this.ncount, this.ncode, this.transferable)  
+        
+        this.nxts = nsigners.signers.map(signer => this.encrypter.encrypt(undefined,signer).qb64);
+
+        let digers = nsigners.signers.map(nsigner => new Diger({code: this.dcode},nsigner.verfer.qb64b ).qb64);
+
+        return [verfers, digers]
+    }
+
+    rotate(ncodes:string[], transferable:boolean, ..._:any[]){
+    
+            this.ncodes = ncodes
+            this.transferable = transferable
+            this.prxs = this.nxts
+
+            let signers = this.nxts!.map(nxt => this.decrypter.decrypt(undefined, new Cipher({qb64:nxt}), this.transferable))
+            let verfers = signers.map(signer => signer.verfer.qb64)
+            let nsigners = this.creator.create(this.ncodes, this.ncount, this.ncode, this.transferable)    
+
+            this.nxts = nsigners.signers.map(signer => this.encrypter.encrypt(undefined, signer).qb64);
+    
+            let digers = nsigners.signers.map(nsigner => new Diger({code: this.dcode},nsigner.verfer.qb64b ).qb64);
+    
+            return [verfers, digers]
+        }
+
+    sign(ser: Uint8Array, indexed=true, indices=null, ondices=null){
+        let signers = this.prxs!.map(prx => this.decrypter.decrypt(new Cipher({qb64:prx}).qb64b, undefined, this.transferable))
+
+        if (indexed){
+            let sigers = []
+            let i = 0
+            for (const [j, signer] of signers.entries()) {
+                if (indices!= null){
+                    i = indices![j]
+                    if (typeof i != "number" || i < 0){
+                        throw new Error(`Invalid signing index = ${i}, not whole number.`)
+                    }
+                } else {
+                    i = j
+                }
+                let o = 0
+                if (ondices!=null){
+                    o = ondices![j]
+                    if ((o == null || typeof o == "number" && typeof o != "number" && o>=0)!) {
+                        throw new Error(`Invalid ondex = ${o}, not whole number.`)
+                    }
+                } else {
+                    o = i
+                }
+                sigers.push(signer.sign(ser, i, o==null?true:false, o))
+            } 
+            return sigers.map(siger => siger.qb64);
+        } else {
+            let cigars = []
+            for (const [_, signer] of signers.entries()) {
+                cigars.push(signer.sign(ser))
+            }
+            return cigars.map(cigar => cigar.qb64);
+        }
+    }
+
 }

@@ -3,7 +3,7 @@ import { Tier } from "../core/salter"
 import { Authenticater } from "../core/authing"
 import { KeyManager } from "../core/keeping"
 import { Algos } from '../core/manager';
-import { incept, rotate } from "../core/eventing"
+import { incept, rotate, interact } from "../core/eventing"
 import { b, Serials, Versionage } from "../core/core";
 import { Tholder } from "../core/tholder";
 import { MtrDex } from "../core/matter";
@@ -99,7 +99,6 @@ export class SignifyClient {
         if (this.agent.anchor != this.controller.pre) {
             throw Error("commitment to controller AID missing in agent inception event")
         }
-        console.log(this.controller.serder)
         if (this.controller.serder.ked.s == 0 ) {
             console.log('approving delegation')
             await this.approveDelegation()
@@ -147,10 +146,6 @@ export class SignifyClient {
     }
 
     async approveDelegation(){
-        // {
-        // "ixn": {"v": "KERI10JSON00013a_", "t": "ixn", "d": "EA4YpgJavlrjDRIE5UdkM44wiGTcCTfsTayrAViCDV4s", "i": "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose", "s": "1", "p": "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose", "a": [{"i": "EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei", "s": "0", "d": "EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei"}]}, 
-        // "sigs": ["AAD6nSSSGy_uO41clzL-g3czC8W0Ax-2M87NXA_Iu50ZdEhbekuv2k7dY0fjoO3su3aBRBx4EXryPc8x4uGfbVYG"]
-        // }
         let sigs = this.controller.approveDelegation(this.agent!)
 
         let data = {
@@ -205,12 +200,26 @@ class Identifier {
                     delpre:string, 
                     dcode:string, 
                     data:any, 
-                    algo:Algos,
+                    algo:string,
                     pre:string,
                     states:any[],
-                    rstates:any[]}) {
-
-        let algo = kargs["algo"] ?? Algos.salty
+                    rstates:any[]
+                    prxs:any[],
+                    nxts:any[]}) {
+        
+        let algo = Algos.salty
+        switch (kargs["algo"]) {
+            case "salty":
+                algo  = Algos.salty
+                break;
+            case "randy":
+                algo  = Algos.randy
+                break;
+            default:
+                algo  = Algos.salty
+                break;
+        }
+        
         let transferable = kargs["transferable"] ?? true
         let isith = kargs["isith"] ?? "1"
         let nsith = kargs["nsith"] ?? "1"
@@ -223,6 +232,8 @@ class Identifier {
         let pre = kargs["pre"]
         let states = kargs["states"]
         let rstates = kargs["rstates"]
+        let prxs = kargs["prxs"]
+        let nxts = kargs["nxts"]
 
         let xargs = {
             transferable:transferable, 
@@ -235,10 +246,10 @@ class Identifier {
             dcode:dcode, 
             data:data, 
             algo:algo,
-            pre:pre
-
+            pre:pre,
+            prxs:prxs,
+            nxts:nxts
         }
-
 
         let keeper = this.client.manager!.new( algo, this.client.pidx, xargs)
         let [keys, ndigs] = keeper!.incept(transferable)
@@ -277,17 +288,15 @@ class Identifier {
         }
 
         let sigs = keeper!.sign(b(serder.raw))
-        var jsondata = {
+        var jsondata:any = {
             name: name,
             icp: serder.ked,
             sigs: sigs,
             proxy: proxy,
-            salty: keeper.params(),
             smids: states != undefined ? states.map(state => state['i']) : undefined,
             rmids: rstates != undefined ? rstates.map(state => state['i']) : undefined
             }
-        // TODO FIX TO other algos    
-        // jsondata[algo.toString()] = keeper.params()
+        jsondata[algo] = keeper.params(),
 
         this.client.pidx = this.client.pidx + 1
         let res = await this.client.fetch("/identifiers", "POST", jsondata)
@@ -296,31 +305,32 @@ class Identifier {
     }
 
 
-    // async interact(name:string, data:Array<object>|undefined=undefined){
+    async interact(name:string, data:any|undefined=undefined){
 
-    //     let hab = await this.get_identifier(name)
-    //     let pre:string = hab["prefix"]
+        let hab = await this.get_identifier(name)
+        let pre:string = hab["prefix"]
 
-    //     let  state = hab["state"]
-    //     let sn = state["s"].toString(16)
-    //     let dig = state["d"]
+        let  state = hab["state"]
+        let sn = state["s"].toString(16)
+        let dig = state["d"]
         
-    //     let _data = Array.isArray(data) ? data : [data]
+        data = Array.isArray(data) ? data : [data]
 
-    //     let serder = interact(pre, sn=sn + 1, data=data, dig=dig)
-    //     let keeper = this.client!.manager!.get(hab)
-    //     let  sigs = keeper.sign(b(serder.raw))
+        let serder = interact({pre:pre, sn:sn + 1, data:data, dig:dig, version:undefined, kind: undefined})
+        let keeper = this.client!.manager!.get(hab)
+        let  sigs = keeper.sign(b(serder.raw))
 
-    //     // FIX TO OTHER ALGOS
-    //     let jsondata = {
-    //         ixn: serder.ked,
-    //         sigs: sigs,
-    //         salty: keeper.params()
-    //     }
-    //     let res = await this.client.fetch("/identifiers/"+name+"?type=ixn", "PUT", jsondata)
-    //     return res.json()
+        // FIX TO OTHER ALGOS
+        let jsondata:any = {
+            ixn: serder.ked,
+            sigs: sigs,
+        }
+        jsondata[keeper.algo] = keeper.params()
 
-    // }
+        let res = await this.client.fetch("/identifiers/"+name+"?type=ixn", "PUT", jsondata)
+        return res.json()
+
+    }
 
 
     async rotate(
@@ -395,13 +405,13 @@ class Identifier {
         let  sigs = keeper.sign(b(serder.raw))
 
         // FIX TO ADD OTHER ALGOS
-        var jsondata = {
+        var jsondata:any = {
             rot: serder.ked,
             sigs: sigs,
-            salty: keeper.params(),
             smids: states != undefined ? states.map(state => state['i']) : undefined,
             rmids: rstates != undefined ? rstates.map(state => state['i']) : undefined
         }
+        jsondata[keeper.algo] = keeper.params()
 
         let res = await this.client.fetch("/identifiers/"+name, "PUT", jsondata)
         return res.json()

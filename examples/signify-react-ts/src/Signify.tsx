@@ -102,7 +102,7 @@ export function Signify() {
                             return 'Error getting identifiers'
                         }
                     }} />
-                <SignifyDemo text={'Create identifier'}
+                <SignifyDemo text={'Create salty identifier'}
                     onClick={async () => {
                         try {
                             const client = new SignifyClient("http://localhost:3901", key)
@@ -119,6 +119,30 @@ export function Signify() {
                             }
                             const identifiers = client.identifiers()
                             const resp = await identifiers.create('aid_' + generateRandomKey().slice(1, 3), {})
+                            return JSON.stringify(resp, null, 2)
+                        }
+                        catch (e) {
+                            console.log(e)
+                            return 'Error creating identifiers'
+                        }
+                    }} />
+                <SignifyDemo text={'Create randy identifier'}
+                    onClick={async () => {
+                        try {
+                            const client = new SignifyClient("http://localhost:3901", key)
+                            setPre(client.controller.pre)
+                            try {
+                                await client.connect()
+                            }
+                            catch (e) {
+                                console.log('error connecting', e)
+                                console.log('booting up')
+                                await client.boot()
+                                await client.connect()
+                                console.log('booted and connected up')
+                            }
+                            const identifiers = client.identifiers()
+                            const resp = await identifiers.create('aid_' + generateRandomKey().slice(1, 3), {algo: "randy"})
                             return JSON.stringify(resp, null, 2)
                         }
                         catch (e) {

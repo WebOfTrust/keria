@@ -408,47 +408,6 @@ export function messagize(serder: Serder, sigers?: Array<Siger>, seal?: any, wig
     return msg
 }
 
-
-// def interact(pre,
-//     dig,
-//     sn=1,
-//     data=None,
-//     version=Version,
-//     kind=Serials.json,
-//     ):
-// """
-// Returns serder of interaction event message.
-// Utility function to automate creation of interaction events.
-
-// Parameters:
-// pre is identifier prefix qb64
-// dig is said digest of previous event qb64
-// sn is int sequence number
-// data is list of dicts of comitted data such as seals
-// version is Version instance
-// kind is serialization kind
-// """
-// vs = versify(version=version, kind=kind, size=0)
-// ilk = Ilks.ixn
-// sner = Number(num=sn)
-// if sner.num < 1:  # sn for interact must be >= 1
-// raise ValueError(f"Invalid sn = 0x{sner.numh} for ixn.")
-
-
-// data = data if data is not None else []
-
-// ked = dict(v=vs,  # version string
-//       t=ilk,
-//       d="",
-//       i=pre,  # qb64 prefix
-//       s=sner.numh,  # hex string no leading zeros lowercase
-//       p=dig,  # qb64 digest of prior event
-//       a=data,  # list of seals
-//       )
-// _, ked = coring.Saider.saidify(sad=ked)
-
-// return Serder(ked=ked)  # return serialized ked
-
 interface InteractArgs  {
     pre: String,
     dig: String,
