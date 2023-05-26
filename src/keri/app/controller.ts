@@ -103,7 +103,7 @@ export class Controller {
     public stem: string;
     public tier: Tier;
     public ridx: number;
-    private salter: any;
+    public salter: any;
     public signer: any;
     private nsigner: any;
     public serder: Serder;
@@ -139,8 +139,7 @@ export class Controller {
             this.serder = new Serder(state['ee'])
         }
     }
-    approveDelegation(agent: Agent) {
-        console.log(agent.pre)
+    approveDelegation(_agent: Agent) {
         // TODO implement interact in eventing and seqner
 
         // seqner = coring.Seqner(sn=agent.sn)

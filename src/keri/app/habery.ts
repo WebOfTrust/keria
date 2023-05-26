@@ -75,15 +75,14 @@ export class Habery {
             }
         }
         let algo;
-
+        let salter = salt != undefined ? new Salter({qb64: salt}) : undefined
         if (salt != undefined) {
             algo = Algos.salty
-            salt = new Salter({qb64: salt}).qb64
         } else {
             algo = Algos.randy
         }
 
-        this._mgr = new Manager({seed: seed, aeid: aeid, pidx: pidx, algo: algo, salt: salt})
+        this._mgr = new Manager({seed: seed, aeid: aeid, pidx: pidx, algo: algo, salter: salter})
     }
 
     get mgr(): Manager {

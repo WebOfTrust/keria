@@ -12,7 +12,8 @@ import {b} from "./core";
 
 export enum Algos {
     randy = "randy",
-    salty = "salty"
+    salty = "salty",
+    extern = "extern"
 }
 
 class PubLot {
@@ -195,15 +196,16 @@ export function openManager(passcode: string, salt?: string) {
     let aeid = signer.verfer.qb64  // lest it remove encryption
 
     let algo;
-
+    
+    let salter = salt!=undefined?new Salter({qb64: salt}):undefined
     if (salt != undefined) {
         algo = Algos.salty
-        salt = new Salter({qb64: salt}).qb64
+        
     } else {
         algo = Algos.randy
     }
 
-    return new Manager({seed: seed, aeid: aeid, algo: algo, salt: salt})
+    return new Manager({seed: seed, aeid: aeid, algo: algo, salter: salter})
 }
 
 export interface ManagerArgs {
@@ -212,7 +214,7 @@ export interface ManagerArgs {
     aeid?: string | undefined
     pidx?: number | undefined
     algo?: Algos | undefined
-    salt?: string | undefined
+    salter?: Salter | undefined
     tier?: string | undefined
 }
 
@@ -260,7 +262,7 @@ export class Manager {
     private _decrypter: Decrypter | undefined
     private readonly _ks: KeyStore
 
-    constructor({ks, seed, aeid, pidx, algo, salt, tier}: ManagerArgs) {
+    constructor({ks, seed, aeid, pidx, algo, salter, tier}: ManagerArgs) {
 
         this._ks = ks == undefined ? new Keeper() : ks
         this._seed = seed
@@ -271,13 +273,14 @@ export class Manager {
         pidx = pidx == undefined ? 0 : pidx
         algo = algo == undefined ? Algos.salty : algo
 
-        if (salt == undefined) {
-            salt = new Salter({}).qb64
-        } else {
-            if (new Salter({qb64: salt}).qb64 != salt) {
-                throw new Error(`Invalid qb64 for salt=${salt}.`)
-            }
-        }
+        // if (salt == undefined) {
+        //     salt = new Salter({}).qb64
+        // } else {
+        //     if (new Salter({qb64: salt}).qb64 != salt) {
+        //         throw new Error(`Invalid qb64 for salt=${salt}.`)
+        //     }
+        // }
+        let salt = salter?.qb64
 
         tier = tier == undefined ? Tier.low : tier
 

@@ -168,7 +168,7 @@ describe('Manager', () => {
         let encrypter1 = new Encrypter({}, b(aeid1))
         assert.equal(encrypter1.verifySeed(seed1), true)
 
-        let manager = new Manager({seed: seed0, salt: salt, aeid: aeid0})
+        let manager = new Manager({seed: seed0, salter: salter, aeid: aeid0})
         assert.equal(manager.encrypter!.qb64, encrypter0.qb64)
         assert.equal(manager.decrypter!.qb64, decrypter0.qb64)
         assert.equal(manager.seed, seed0)
@@ -459,7 +459,7 @@ describe('Manager', () => {
         let salter = new Salter({raw: b(passcode)})
         let salt = salter.qb64
 
-        let manager = new Manager({salt: salt})
+        let manager = new Manager({salter: salter})
         assert.equal(manager.encrypter, undefined)
 
         let [verfers, digers] = manager.incept({salt: salt, temp: true})

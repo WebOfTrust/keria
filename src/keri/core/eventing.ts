@@ -148,7 +148,8 @@ export function rotate({
         throw new Error(`Invalid member combination among cuts = ${cuts}, and adds = ${adds}.`)
     }
 
-    let newitset = new Set([...witset].filter(x => cutset.has(x)).concat([...addset]))
+    let newitsetdiff = [...witset].filter(x => cutset.has(x))
+    let newitset = new Set([...newitsetdiff, ..._adds])
 
     if (newitset.size != (witset.size - cutset.size + addset.size)) {
         throw new Error(`Invalid member combination among wits = ${wits}, cuts = ${cuts}, and adds = ${adds}.`)
@@ -178,7 +179,6 @@ export function rotate({
             throw new Error(`Invalid toad = ${_toad} for wit = ${wits}`)
         }
     }
-
     let _ked = {
         v: vs,
         t: _ilk,
@@ -188,15 +188,15 @@ export function rotate({
         p: dig,
         kt: tholder.num && intive && tholder.num !== undefined && tholder.num <= MaxIntThold ? tholder.num : tholder.sith,
         k: keys,
-        nkt: ntholder.num && intive && ntholder.num !== undefined && ntholder.num <= MaxIntThold ? ntholder.num : ntholder.sith,
-        nk: _ndigs,
+        nt: ntholder.num && intive && ntholder.num !== undefined && ntholder.num <= MaxIntThold ? ntholder.num : ntholder.sith,
+        n: _ndigs,
         bt: _toad && intive && _toad !== undefined && _toad <= MaxIntThold ? _toad : _toad.toString(16),
         br: cuts,
         ba: adds,
-        a: data ? data !== undefined : []
+        a: data!= undefined ? data  : []
     }
     let[ , ked] = Saider.saidify(_ked)
-    return new Serder({ ked: ked })
+    return new Serder(ked)
 }
 
 function ample(n: number, f?: number, weak = true) {
