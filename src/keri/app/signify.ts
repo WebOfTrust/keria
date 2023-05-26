@@ -99,8 +99,9 @@ export class SignifyClient {
         if (this.agent.anchor != this.controller.pre) {
             throw Error("commitment to controller AID missing in agent inception event")
         }
-
+        console.log(this.controller.serder)
         if (this.controller.serder.ked.s == 0 ) {
+            console.log('approving delegation')
             await this.approveDelegation()
         }
         this.manager = new KeyManager(this.controller.salter, null)

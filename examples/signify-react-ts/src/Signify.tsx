@@ -64,15 +64,29 @@ export function Signify() {
                         const resp = JSON.stringify(res, null, 2)
                         return resp
                     }} />
+
+                <SignifyDemo text={'Connect'}
+                    onClick={async () => {
+                            const client = new SignifyClient("http://localhost:3901", key)
+                            console.log('error connecting')
+                            console.log('booting up')
+                            await client.boot()
+                            await client.connect()
+                            console.log('booted and connected up')
+                            setPre(client.controller.pre)
+                            // const resp = await client.state()
+                            // return JSON.stringify(resp, null, 2)
+                        }
+                    } />
                 <SignifyDemo text={'Get identifiers'}
                     onClick={async () => {
                         try {
                             const client = new SignifyClient("http://localhost:3901", key)
                             setPre(client.controller.pre)
-                            try{
+                            try {
                                 await client.connect()
                             }
-                            catch(e){
+                            catch (e) {
                                 console.log('error connecting', e)
                                 console.log('booting up')
                                 await client.boot()
@@ -93,10 +107,10 @@ export function Signify() {
                         try {
                             const client = new SignifyClient("http://localhost:3901", key)
                             setPre(client.controller.pre)
-                            try{
+                            try {
                                 await client.connect()
                             }
-                            catch(e){
+                            catch (e) {
                                 console.log('error connecting', e)
                                 console.log('booting up')
                                 await client.boot()
@@ -104,7 +118,7 @@ export function Signify() {
                                 console.log('booted and connected up')
                             }
                             const identifiers = client.identifiers()
-                            const resp = await identifiers.create('aid_'+generateRandomKey().slice(1,3),{})
+                            const resp = await identifiers.create('aid_' + generateRandomKey().slice(1, 3), {})
                             return JSON.stringify(resp, null, 2)
                         }
                         catch (e) {
@@ -117,10 +131,10 @@ export function Signify() {
                         try {
                             const client = new SignifyClient("http://localhost:3901", key)
                             setPre(client.controller.pre)
-                            try{
+                            try {
                                 await client.connect()
                             }
-                            catch(e){
+                            catch (e) {
                                 console.log('error connecting', e)
                                 console.log('booting up')
                                 await client.boot()
@@ -129,7 +143,7 @@ export function Signify() {
                             }
                             const identifiers = client.identifiers()
                             const aids = await identifiers.list_identifiers()
-                            const resp = await identifiers.rotate(aids[0]["name"],{})
+                            const resp = await identifiers.rotate(aids[0]["name"], {})
                             return JSON.stringify(resp, null, 2)
                         }
                         catch (e) {
@@ -137,15 +151,15 @@ export function Signify() {
                             return 'Error creating identifiers'
                         }
                     }} />
-                    <SignifyDemo text={'Get first identifier'}
+                <SignifyDemo text={'Get first identifier'}
                     onClick={async () => {
                         try {
                             const client = new SignifyClient("http://localhost:3901", key)
                             setPre(client.controller.pre)
-                            try{
+                            try {
                                 await client.connect()
                             }
-                            catch(e){
+                            catch (e) {
                                 console.log('error connecting', e)
                                 console.log('booting up')
                                 await client.boot()

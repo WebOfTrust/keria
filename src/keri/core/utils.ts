@@ -96,3 +96,17 @@ export function range(start: number, stop: number, step: number) {
 
   return result;
 }
+
+export function intToBytes(value: number, length: number): Uint8Array {
+  const byteArray = new Uint8Array(length); // Assuming a 4-byte integer (32 bits)
+  
+  for (let i = 0; i < length; i++) {
+    byteArray[i] = (value >> (i * 8)) & 0xff;
+  }
+  
+  return byteArray;
+}
+
+export function bytesToInt(buffer: Buffer): number {
+  return buffer.readInt32BE(0);
+}
