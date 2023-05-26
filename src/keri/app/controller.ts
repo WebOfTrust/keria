@@ -139,8 +139,7 @@ export class Controller {
             this.serder = new Serder(state['ee'])
         }
     }
-    approveDelegation(agent: Agent) {
-        console.log(agent.pre)
+    approveDelegation(_agent: Agent) {
         // TODO implement interact in eventing and seqner
 
         // seqner = coring.Seqner(sn=agent.sn)

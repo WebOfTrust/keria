@@ -4,13 +4,14 @@ import { MtrDex } from './matter';
 import { Tier } from './salter';
 import { Encrypter } from "../core/encrypter";
 import { Decrypter } from './decrypter';
-import {b} from "./core";
+import { b } from "./core";
 import { Cipher } from './cipher';
 import { Diger } from './diger';
+// import { Prefixer } from './prefixer';
 
 export {};
 
-export class Manager {
+export class KeyManager {
     private salter?: Salter
     private externalModulees?: any
 
@@ -23,7 +24,7 @@ export class Manager {
     new(algo: Algos, pidx: number, kargs: any){
         switch (algo) {
             case Algos.salty:
-                return new SaltyKeeper(this.salter!, pidx, kargs)
+                return new SaltyKeeper(this.salter!, pidx, kargs["kidx"], kargs["tier"], kargs["transferable"], kargs["stem"], kargs["code"], kargs["count"], kargs["icodes"], kargs["ncode"], kargs["ncount"], kargs["ncodes"], kargs["dcode"], kargs["bran"], kargs["sxlt"])
                 break
             case Algos.randy:
                 throw new Error('Randy not allowed yet')
@@ -35,13 +36,21 @@ export class Manager {
         }
     }
 
+    get(aid:any) {
+        // TODO IMPLEMENT OTHER ALGOS
+        // let pre = new Prefixer({qb64: aid["prefix"]})
+        let kargs = aid[Algos.salty]
+        return new SaltyKeeper(this.salter!, kargs["pidx"], kargs["kidx"], kargs["tier"], kargs["transferable"], kargs["stem"], kargs["code"], kargs["count"], kargs["icodes"], kargs["ncode"], kargs["ncount"], kargs["ncodes"], kargs["dcode"], kargs["bran"], kargs["sxlt"])
+
+    }
+
 }
 
 export class SaltyKeeper {
     private aeid:string
     private encrypter:Encrypter
     private decrypter:Decrypter
-    // private salter: Salter
+    private salter: Salter
     private pidx:number
     private kidx:number
     private tier:Tier
@@ -63,7 +72,8 @@ export class SaltyKeeper {
         ncount=1, ncodes:string[]|undefined=undefined, dcode=MtrDex.Blake3_256, bran:string|undefined = undefined, sxlt=undefined){
 
         // # Salter is the entered passcode and used for enc/dec of salts for each AID
-        let signer = salter.signer(undefined, transferable=false)
+        this.salter = salter
+        let signer = this.salter.signer(undefined, transferable=false)
 
         this.aeid = signer.verfer.qb64
 
@@ -87,10 +97,10 @@ export class SaltyKeeper {
             this.bran = MtrDex.Salt_128 + 'A' + bran!.slice(0, 21)
             this.creator = new SaltyCreator(this.bran, this.tier, this.stem)
             this.sxlt = this.encrypter.encrypt(b(this.creator.salt)).qb64
-        } else if (this.sxlt == undefined) {
+        } else if (sxlt == undefined) {
             this.creator = new SaltyCreator(undefined, this.tier, this.stem)
             this.sxlt = this.encrypter.encrypt(b(this.creator.salt)).qb64
-        } else {            
+        } else {      
             this.sxlt = sxlt
             let ciph = new Cipher({qb64:this.sxlt})
             this.creator = new SaltyCreator(this.decrypter.decrypt(null, ciph).qb64, tier=tier, this.stem)
@@ -127,14 +137,38 @@ export class SaltyKeeper {
         this.transferable = transferable
         this.kidx = 0
 
-        let signers = this.creator.create(this.icodes, this.ncount, this.ncode, this.transferable, this.pidx, 0, this.kidx,false)                          
+        let signers = this.creator.create(this.icodes, this.count, this.code, this.transferable, this.pidx, 0, this.kidx,false)                          
         let verfers = signers.signers.map(signer => signer.verfer.qb64);
 
-        let nsigners = this.creator.create(this.ncodes, this.count, this.code, this.transferable, this.pidx, 0, this.icodes?.length,false)    
+        let nsigners = this.creator.create(this.ncodes, this.ncount, this.ncode, this.transferable, this.pidx, 0, this.icodes?.length,false)    
         let digers = nsigners.signers.map(nsigner => new Diger({code: this.dcode},nsigner.verfer.qb64b ).qb64);
 
         return [verfers, digers]
 
+    }
+
+    rotate(ncodes:string[], transferable:boolean, ..._:any[]){
+    // Rotate and return verfers and digers for next rotation event for AID represented by this Keeper
+
+    // Args:
+    //     ncodes (list):
+    //     transferable (bool): derivation codes for rotation key creation
+
+    // Returns:
+    //     verfers(list): qualified base64 of signing public keys
+    //     digers(list): qualified base64 of hash of rotation public keys
+
+
+        this.ncodes = ncodes
+        this.transferable = transferable
+        let signers = this.creator.create(this.ncodes, this.ncount, this.ncode, this.transferable, this.pidx, 0, this.kidx+this.icodes!.length,false)                          
+        let verfers = signers.signers.map(signer => signer.verfer.qb64);
+
+        this.kidx = this.kidx! + this.icodes!.length
+        let nsigners = this.creator.create(this.ncodes, this.ncount, this.ncode, this.transferable, this.pidx, 0, this.kidx+this.icodes!.length,false)    
+        let digers = nsigners.signers.map(nsigner => new Diger({code: this.dcode},nsigner.verfer.qb64b ).qb64);
+
+        return [verfers, digers]
     }
 
     sign(ser: Uint8Array, indexed=true, indices=null, ondices=null){

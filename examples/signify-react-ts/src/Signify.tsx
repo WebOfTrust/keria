@@ -104,7 +104,57 @@ export function Signify() {
                                 console.log('booted and connected up')
                             }
                             const identifiers = client.identifiers()
-                            const resp = await identifiers.create('aid'+generateRandomKey().slice(1,3), true, "1", "1", [], "1", "", undefined, "E", [], "salty", undefined)
+                            const resp = await identifiers.create('aid_'+generateRandomKey().slice(1,3),{})
+                            return JSON.stringify(resp, null, 2)
+                        }
+                        catch (e) {
+                            console.log(e)
+                            return 'Error creating identifiers'
+                        }
+                    }} />
+                <SignifyDemo text={'Rotate first identifier'}
+                    onClick={async () => {
+                        try {
+                            const client = new SignifyClient("http://localhost:3901", key)
+                            setPre(client.controller.pre)
+                            try{
+                                await client.connect()
+                            }
+                            catch(e){
+                                console.log('error connecting', e)
+                                console.log('booting up')
+                                await client.boot()
+                                await client.connect()
+                                console.log('booted and connected up')
+                            }
+                            const identifiers = client.identifiers()
+                            const aids = await identifiers.list_identifiers()
+                            const resp = await identifiers.rotate(aids[0]["name"],{})
+                            return JSON.stringify(resp, null, 2)
+                        }
+                        catch (e) {
+                            console.log(e)
+                            return 'Error creating identifiers'
+                        }
+                    }} />
+                    <SignifyDemo text={'Get first identifier'}
+                    onClick={async () => {
+                        try {
+                            const client = new SignifyClient("http://localhost:3901", key)
+                            setPre(client.controller.pre)
+                            try{
+                                await client.connect()
+                            }
+                            catch(e){
+                                console.log('error connecting', e)
+                                console.log('booting up')
+                                await client.boot()
+                                await client.connect()
+                                console.log('booted and connected up')
+                            }
+                            const identifiers = client.identifiers()
+                            const aids = await identifiers.list_identifiers()
+                            const resp = await identifiers.get_identifier(aids[0]["name"])
                             return JSON.stringify(resp, null, 2)
                         }
                         catch (e) {
