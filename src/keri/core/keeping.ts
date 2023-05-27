@@ -13,12 +13,12 @@ export {};
 
 export class KeyManager {
     private salter?: Salter
-    private externalModulees?: any
+    // private externalModulees?: any
 
-    constructor(salter: Salter, externalModules: any = null ) {
+    constructor(salter: Salter, _externalModules: any = undefined ) {
 
         this.salter = salter
-        this.externalModulees = externalModules
+        // this.externalModulees = _externalModules
     }
 
     new(algo: Algos, pidx: number, kargs: any){
@@ -28,8 +28,7 @@ export class KeyManager {
             case Algos.randy:
                 return new RandyKeeper(this.salter!, kargs["code"], kargs["count"], kargs["icodes"], kargs["transferable"], kargs["ncode"], kargs["ncount"], kargs["ncodes"], kargs["dcode"], kargs["prxs"], kargs["nxts"])
             case Algos.group:
-                throw new Error(`Group not allowed yet` + this.externalModulees)
-                break
+                return new GroupKeeper(this, kargs["mhab"], kargs["states"], kargs["rstates"],kargs["keys"],kargs["ndigs"])
             default:
                 throw new Error('Unknown algo')
         }
@@ -178,14 +177,14 @@ export class SaltyKeeper {
         return [verfers, digers]
     }
 
-    sign(ser: Uint8Array, indexed=true, indices=null, ondices=null){
+    sign(ser: Uint8Array, indexed=true, indices:number[]|undefined=undefined, ondices:number[]|undefined=undefined){
         let signers = this.creator.create(this.icodes, this.ncount, this.ncode, this.transferable, this.pidx, 0, this.kidx,false)
 
         if (indexed){
             let sigers = []
             let i = 0
             for (const [j, signer] of signers.signers.entries()) {
-                if (indices!= null){
+                if (indices!= undefined){
                     i = indices![j]
                     if (typeof i != "number" || i < 0){
                         throw new Error(`Invalid signing index = ${i}, not whole number.`)
@@ -194,15 +193,15 @@ export class SaltyKeeper {
                     i = j
                 }
                 let o = 0
-                if (ondices!=null){
+                if (ondices!=undefined){
                     o = ondices![j]
-                    if ((o == null || typeof o == "number" && typeof o != "number" && o>=0)!) {
+                    if ((o == undefined || typeof o == "number" && typeof o != "number" && o>=0)!) {
                         throw new Error(`Invalid ondex = ${o}, not whole number.`)
                     }
                 } else {
                     o = i
                 }
-                sigers.push(signer.sign(ser, i, o==null?true:false, o))
+                sigers.push(signer.sign(ser, i, o==undefined?true:false, o))
             } 
             return sigers.map(siger => siger.qb64);
         } else {
@@ -310,14 +309,14 @@ export class RandyKeeper {
             return [verfers, digers]
         }
 
-    sign(ser: Uint8Array, indexed=true, indices=null, ondices=null){
+    sign(ser: Uint8Array, indexed=true, indices:number[]|undefined=undefined, ondices:number[]|undefined=undefined){
         let signers = this.prxs!.map(prx => this.decrypter.decrypt(new Cipher({qb64:prx}).qb64b, undefined, this.transferable))
 
         if (indexed){
             let sigers = []
             let i = 0
             for (const [j, signer] of signers.entries()) {
-                if (indices!= null){
+                if (indices!= undefined){
                     i = indices![j]
                     if (typeof i != "number" || i < 0){
                         throw new Error(`Invalid signing index = ${i}, not whole number.`)
@@ -326,15 +325,15 @@ export class RandyKeeper {
                     i = j
                 }
                 let o = 0
-                if (ondices!=null){
+                if (ondices!=undefined){
                     o = ondices![j]
-                    if ((o == null || typeof o == "number" && typeof o != "number" && o>=0)!) {
+                    if ((o == undefined || typeof o == "number" && typeof o != "number" && o>=0)!) {
                         throw new Error(`Invalid ondex = ${o}, not whole number.`)
                     }
                 } else {
                     o = i
                 }
-                sigers.push(signer.sign(ser, i, o==null?true:false, o))
+                sigers.push(signer.sign(ser, i, o==undefined?true:false, o))
             } 
             return sigers.map(siger => siger.qb64);
         } else {
@@ -345,5 +344,55 @@ export class RandyKeeper {
             return cigars.map(cigar => cigar.qb64);
         }
     }
+}
+    export class GroupKeeper {
+        private manager: KeyManager
+        private mhab:any
+        private gkeys:string[] | undefined
+        private gdigs:string[] | undefined
+        public algo:Algos = Algos.group
+    
+        constructor(manager:KeyManager, mhab=undefined, states:any[]|undefined=undefined, rstates:any[]|undefined=undefined, keys:any[]|undefined=undefined, ndigs:any[]|undefined=undefined){
+        
+        this.manager = manager
+        if (states !=undefined) {
+            keys = states.map(state => state['k'][0])
+        }
 
+        if (rstates !=undefined) {
+            ndigs = rstates.map(state => state['n'][0])
+        }
+
+        this.gkeys = keys
+        this.gdigs = ndigs
+        this.mhab = mhab
+    }
+    incept(..._:any){
+        return [this.gkeys, this.gdigs]
+    }
+
+    rotate(states:any[], rstates:any[],..._:any){
+        this.gkeys = states.map(state => state['k'][0])
+        this.gdigs = rstates.map(state => state['n'][0])
+        return [this.gkeys, this.gdigs]
+    }
+    sign(ser:Uint8Array, indexed:boolean=true, _rotate:boolean=false, ..._:any){
+        let key = this.mhab['state']['k'][0]
+        let ndig = this.mhab['state']['n'][0]
+
+        let csi = this.gkeys!.indexOf(key)
+        let pni = this.gdigs!.indexOf(ndig)
+        let mkeeper = this.manager.get(this.mhab)
+
+        return mkeeper.sign(ser, indexed, [csi], [pni])
+    }
+
+    params(){
+        return {
+            mhab: this.mhab,
+            keys: this.gkeys,
+            ndigs: this.gdigs
+        }
+
+    }
 }

@@ -205,7 +205,11 @@ class Identifier {
                     states:any[],
                     rstates:any[]
                     prxs:any[],
-                    nxts:any[]}) {
+                    nxts:any[],
+                    mhab:any,
+                    keys:any[],
+                    ndigs:any[]
+                }) {
         
         let algo = Algos.salty
         switch (kargs["algo"]) {
@@ -214,6 +218,9 @@ class Identifier {
                 break;
             case "randy":
                 algo  = Algos.randy
+                break;
+            case "group":
+                algo  = Algos.group
                 break;
             default:
                 algo  = Algos.salty
@@ -234,6 +241,9 @@ class Identifier {
         let rstates = kargs["rstates"]
         let prxs = kargs["prxs"]
         let nxts = kargs["nxts"]
+        let mhab= kargs["mhab"]
+        let _keys = kargs["keys"]
+        let _ndigs = kargs["ndigs"]
 
         let xargs = {
             transferable:transferable, 
@@ -248,7 +258,12 @@ class Identifier {
             algo:algo,
             pre:pre,
             prxs:prxs,
-            nxts:nxts
+            nxts:nxts,
+            mhab:mhab,
+            states:states,
+            rstates:rstates,
+            keys:_keys,
+            ndigs:_ndigs
         }
 
         let keeper = this.client.manager!.new( algo, this.client.pidx, xargs)
@@ -256,7 +271,7 @@ class Identifier {
         wits = wits !== undefined ? wits : []
         if (delpre == undefined){
             var serder = incept({ 
-                keys: keys, 
+                keys: keys!, 
                 isith: isith, 
                 ndigs: ndigs, 
                 nsith: nsith, 
@@ -272,7 +287,7 @@ class Identifier {
             
         } else {
             var serder = incept({ 
-                keys: keys, 
+                keys: keys!, 
                 isith: isith, 
                 ndigs: ndigs, 
                 nsith: nsith, 
@@ -301,9 +316,7 @@ class Identifier {
         this.client.pidx = this.client.pidx + 1
         let res = await this.client.fetch("/identifiers", "POST", jsondata)
         return res.json()
-
     }
-
 
     async interact(name:string, data:any|undefined=undefined){
 
@@ -320,7 +333,6 @@ class Identifier {
         let keeper = this.client!.manager!.get(hab)
         let  sigs = keeper.sign(b(serder.raw))
 
-        // FIX TO OTHER ALGOS
         let jsondata:any = {
             ixn: serder.ked,
             sigs: sigs,
@@ -331,7 +343,6 @@ class Identifier {
         return res.json()
 
     }
-
 
     async rotate(
         name: string,
@@ -404,7 +415,6 @@ class Identifier {
 
         let  sigs = keeper.sign(b(serder.raw))
 
-        // FIX TO ADD OTHER ALGOS
         var jsondata:any = {
             rot: serder.ked,
             sigs: sigs,
