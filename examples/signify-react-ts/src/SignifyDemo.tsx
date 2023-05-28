@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
-export function SignifyDemo({ text, onClick }) {
+export function SignifyDemo(args:{ text:string, onClick }) {
   const [response, setResponse] = useState('');
+  const text = args.text;
+  const onClick = args.onClick;
 
   useEffect(() => {
     // Additional initialization or setup code can be added here
@@ -16,15 +18,6 @@ export function SignifyDemo({ text, onClick }) {
       setResponse('Error executing function');
     }
   };
-
-  const inputRef = useRef(null);
-
-  useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.style.width = 'auto';
-      inputRef.current.style.width = `${inputRef.current.scrollWidth}px`;
-    }
-  }, []);
 
   return (
     <div className="card">

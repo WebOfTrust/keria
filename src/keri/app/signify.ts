@@ -8,6 +8,8 @@ import { b, Serials, Versionage } from "../core/core";
 import { Tholder } from "../core/tholder";
 import { MtrDex } from "../core/matter";
 
+const KERIA_BOOT_URL = "http://localhost:3903"
+
 class State {
     agent: any | null
     controller: any | null
@@ -61,7 +63,7 @@ export class SignifyClient {
             pidx: 1,
             tier: this.controller?.tier
         };
-        let _url = this.url.includes("3903") ? this.url : "http://localhost:3903";
+        let _url = this.url.includes("3903") ? this.url : KERIA_BOOT_URL;
         const res = await fetch(_url + "/boot", {
             method: "POST",
             body: JSON.stringify(data),
