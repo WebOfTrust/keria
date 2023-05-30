@@ -35,13 +35,13 @@ class RegistryEnd:
             rep: falcon.Response HTTP response
 
         ---
-        summary: List credential issuance and revocation registies
-        description: List credential issuance and revocation registies
+        summary: List credential issuance and revocation registries
+        description: List credential issuance and revocation registries
         tags:
            - Registries
         responses:
            200:
-              description:  array of current credential issuance and revocation registies
+              description:  array of current credential issuance and revocation registries
 
         """
         agent = req.context.agent
@@ -95,12 +95,12 @@ class RegistryEnd:
                     noBackers:
                       type: boolean
                       required: False
-                      description: True means to not allow seperate backers from identifier's witnesses.
+                      description: True means to not allow separate backers from identifier's witnesses.
                     baks:
                       type: array
                       items:
                          type: string
-                      description: List of qb64 AIDs of witnesses to be used for the new group identfier.
+                      description: List of qb64 AIDs of witnesses to be used for the new group identifier.
                     estOnly:
                       type: boolean
                       required: false
@@ -125,7 +125,7 @@ class RegistryEnd:
         alias = body["alias"]
         hab = agent.hby.habByName(alias)
         if hab is None:
-            raise falcon.HTTPNotFound(description="alias is not a valid reference to an identfier")
+            raise falcon.HTTPNotFound(description="alias is not a valid reference to an identifier")
 
         c = dict()
         if "noBackers" in body:

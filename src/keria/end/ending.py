@@ -38,7 +38,7 @@ class OOBIEnd:
         self.default = default
 
     def on_get(self, _, rep, aid=None, role=None, eid=None):
-        """  GET endoint for OOBI resource
+        """  GET endpoint for OOBI resource
 
         Parameters:
             _: Falcon request object

@@ -16,7 +16,7 @@ from keri.core import eventing, coring
 from keri.db import dbing, koming
 from keri.help import helping
 
-# long running operationt types
+# long running operation types
 Typeage = namedtuple("Tierage", 'oobi witness delegation group query')
 
 OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation', group='group', query='query')
@@ -143,7 +143,7 @@ class Monitor:
         """  Calculate the status of an operation.
 
         Base on the type of an operation, determine the current status of the operation, including loading
-        any availabie error messages if the operation failed of the sucessful result of the operation which
+        any available error messages if the operation failed of the successful result of the operation which
         will be the same that would be returned by the original endpoint if the operation were not long running
 
         Parameters:
@@ -164,7 +164,7 @@ class Monitor:
                 raise kering.ValidationError(f"long running {op.type} operation identifier {op.oid} not found")
 
             if "sn" not in op.metadata:
-                raise kering.ValidationError(f"invalid long running {op.type} operaiton, metadata missing 'sn' field")
+                raise kering.ValidationError(f"invalid long running {op.type} operation, metadata missing 'sn' field")
 
             sn = op.metadata["sn"]
             kever = self.hby.kevers[op.oid]
@@ -214,7 +214,7 @@ class Monitor:
                 raise kering.ValidationError(f"long running {op.type} operation identifier {op.oid} not found")
 
             if "sn" not in op.metadata:
-                raise kering.ValidationError(f"invalid long running {op.type} operaiton, metadata missing 'sn' field")
+                raise kering.ValidationError(f"invalid long running {op.type} operation, metadata missing 'sn' field")
 
             kever = self.hby.kevers[op.oid]
             sn = op.metadata["sn"]
@@ -232,7 +232,7 @@ class Monitor:
 
         elif op.type in (OpTypes.group, ):
             if "sn" not in op.metadata:
-                raise kering.ValidationError(f"invalid long running {op.type} operaiton, metadata missing 'sn' field")
+                raise kering.ValidationError(f"invalid long running {op.type} operation, metadata missing 'sn' field")
 
             prefixer = coring.Prefixer(qb64=op.oid)
             seqner = coring.Seqner(sn=op.metadata["sn"])

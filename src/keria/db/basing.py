@@ -30,10 +30,10 @@ class AgencyBaser(dbing.LMDBer):
                 default name='main'
             temp is boolean, assign to .temp
                 True then open in temporary directory, clear on close
-                Othewise then open persistent directory, do not clear on close
+                Otherwise then open persistent directory, do not clear on close
                 default temp=False
             headDirPath is optional str head directory pathname for main database
-                If not provided use default .HeadDirpath
+                If not provided use default .HeadDirPath
                 default headDirPath=None so uses self.HeadDirPath
             perm is numeric optional os dir permissions mode
                 default perm=None so do not set mode
@@ -49,7 +49,7 @@ class AgencyBaser(dbing.LMDBer):
         Attempting to put the same (key,value) pair a second time does
         not add another copy.
 
-        Duplicates are inserted in lexocographic order by value, insertion order.
+        Duplicates are inserted in lexicographic order by value, insertion order.
 
         """
         if perm is None:

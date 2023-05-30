@@ -29,7 +29,7 @@ class SaltyPrm:
     kidx: int = 0  # key index for this keypair sequence
     stem: str = ''  # default unique path stem for salty algo
     tier: str = ''  # security tier for stretch index salty algo
-    dcode: str = ''  # next digest hasing code
+    dcode: str = ''  # next digest hashing code
     icodes: list = field(default_factory=list)  # current signing key seed codes
     ncodes: list = field(default_factory=list)  # next key seed codes
     transferable: bool = False
@@ -60,10 +60,10 @@ class RemoteKeeper(dbing.LMDBer):
                 default name='main'
             temp is boolean, assign to .temp
                 True then open in temporary directory, clear on close
-                Othewise then open persistent directory, do not clear on close
+                Otherwise then open persistent directory, do not clear on close
                 default temp=False
             headDirPath is optional str head directory pathname for main database
-                If not provided use default .HeadDirpath
+                If not provided use default .HeadDirPath
                 default headDirPath=None so uses self.HeadDirPath
             perm is numeric optional os dir permissions mode
                 default perm=None so do not set mode
@@ -79,7 +79,7 @@ class RemoteKeeper(dbing.LMDBer):
         Attempting to put the same (key,value) pair a second time does
         not add another copy.
 
-        Duplicates are inserted in lexocographic order by value, insertion order.
+        Duplicates are inserted in lexicographic order by value, insertion order.
 
         """
         self.pubs = None
@@ -276,7 +276,7 @@ class RandyManager:
 
     def rotate(self, pre, verfers, digers, prxs, nxts, transferable):
         if (pp := self.rb.pres.get(pre)) is None or pp.algo != Algos.randy:
-            raise ValueError("Attempt to rotate non-existant or invalid pre={}.".format(pre))
+            raise ValueError("Attempt to rotate non-existent or invalid pre={}.".format(pre))
 
         dt = helping.nowIso8601()
         ps = PreSit(
@@ -360,7 +360,7 @@ class GroupManager:
 
     def rotate(self, pre, verfers, digers):
         if (pp := self.rb.pres.get(pre)) is None or pp.algo != Algos.group:
-            raise ValueError(f"Attempt to rotate nonexistant or invalid  pre={pre}, algo={pp.algo}.")
+            raise ValueError(f"Attempt to rotate nonexistent or invalid  pre={pre}, algo={pp.algo}.")
 
         dt = helping.nowIso8601()
         ps = PreSit(

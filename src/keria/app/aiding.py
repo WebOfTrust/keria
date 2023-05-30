@@ -296,7 +296,7 @@ class IdentifierCollectionEnd:
                     agent.hby.deleteHab(name=name)
                     raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
 
-                # Generate response, a long running operaton indicator for the type
+                # Generate response, a long-running operation indicator for the type
                 agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
                 op = agent.monitor.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=0))
 
@@ -339,7 +339,7 @@ class IdentifierCollectionEnd:
                         description="invalid request: one of group, rand or salt field required")
 
                 # create Hab and incept the key store (if any)
-                # Generate response, either the serder or a long running operaton indicator for the type
+                # Generate response, either the serder or a long-running operation indicator for the type
                 rep.content_type = "application/json"
                 if hab.kever.delegator:
                     agent.anchors.append(dict(pre=hab.pre, sn=0))
@@ -540,7 +540,7 @@ def info(hab, rm, full=False):
 
 class IdentifierOOBICollectionEnd:
     """
-      This class represents the OOBI subresource collection endpoint for Identfiiers
+      This class represents the OOBI subresource collection endpoint for Identifiers
 
     """
 
@@ -598,7 +598,7 @@ class IdentifierOOBICollectionEnd:
 
             res["oobis"] = oobis
         else:
-            raise falcon.HTTPBadRequest(description=f"unsupport role type {role} for oobi request")
+            raise falcon.HTTPBadRequest(description=f"unsupported role type {role} for oobi request")
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
@@ -667,8 +667,8 @@ class ChallengeCollectionEnd:
             rep: falcon.Response HTTP response
 
         ---
-        summary:  Get list of agent identfiers
-        description:  Get the list of identfiers associated with this agent
+        summary:  Get list of agent identifiers
+        description:  Get the list of identifiers associated with this agent
         tags:
            - Challenge/Response
         parameters:
@@ -689,7 +689,7 @@ class ChallengeCollectionEnd:
                         properties:
                             words:
                                 type: array
-                                description: random challange word list
+                                description: random challenge word list
                                 items:
                                     type: string
 
@@ -715,10 +715,10 @@ class ChallengeResourceEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name: human readable name of identifier to use to sign the challange/response
+            name: human-readable name of identifier to use to sign the challenge/response
 
         ---
-        summary:  Sign challange message and forward to peer identfiier
+        summary:  Sign challenge message and forward to peer identifier
         description:  Sign a challenge word list received out of bands and send `exn` peer to peer message
                       to recipient
         tags:
@@ -772,7 +772,7 @@ class ChallengeResourceEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name: human readable name of identifier to use to sign the challange/response
+            name: human readable name of identifier to use to sign the challenge/response
 
         ---
         summary:  Mark challenge response exn message as signed
@@ -831,8 +831,8 @@ class ContactCollectionEnd:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
         ---
-        summary:  Get list of contact information associated with remote identfiers
-        description:  Get list of contact information associated with remote identfiers.  All
+        summary:  Get list of contact information associated with remote identifiers
+        description:  Get list of contact information associated with remote identifiers.  All
                       information is metadata and kept in local storage only
         tags:
            - Contacts
@@ -934,8 +934,8 @@ class ContactImageResourceEnd:
             prefix: qb64 identifier prefix of contact to associate with image
 
         ---
-         summary: Uploads an image to associate with identfier.
-         description: Uploads an image to associate with identfier.
+         summary: Uploads an image to associate with identifier.
+         description: Uploads an image to associate with identifier.
          tags:
             - Contacts
          parameters:
@@ -1028,8 +1028,8 @@ class ContactResourceEnd:
             prefix: qb64 identifier prefix of contact information to get
 
        ---
-        summary:  Get contact information associated with single remote identfier
-        description:  Get contact information associated with single remote identfier.  All
+        summary:  Get contact information associated with single remote identifier
+        description:  Get contact information associated with single remote identifier.  All
                       information is meta-data and kept in local storage only
         tags:
            - Contacts
@@ -1091,7 +1091,7 @@ class ContactResourceEnd:
            200:
               description: Updated contact information for remote identifier
            400:
-              description: Invalid identfier used to update contact information
+              description: Invalid identifier used to update contact information
            404:
               description: Prefix not found in identifier contact information
         """
@@ -1127,8 +1127,8 @@ class ContactResourceEnd:
             prefix: qb64 identifier to update contact information
 
         ---
-        summary:  Update provided fields in contact information associated with remote identfier prefix
-        description:  Update provided fields in contact information associated with remote identfier prefix.  All
+        summary:  Update provided fields in contact information associated with remote identifier prefix
+        description:  Update provided fields in contact information associated with remote identifier prefix.  All
                       information is metadata and kept in local storage only
         tags:
            - Contacts
@@ -1151,7 +1151,7 @@ class ContactResourceEnd:
            200:
               description: Updated contact information for remote identifier
            400:
-              description: Invalid identfier used to update contact information
+              description: Invalid identifier used to update contact information
            404:
               description: Prefix not found in identifier contact information
         """
@@ -1184,8 +1184,8 @@ class ContactResourceEnd:
             prefix: qb64 identifier prefix to delete contact information
 
         ---
-        summary:  Delete contact information associated with remote identfier
-        description:  Delete contact information associated with remote identfier
+        summary:  Delete contact information associated with remote identifier
+        description:  Delete contact information associated with remote identifier
         tags:
            - Contacts
         parameters:

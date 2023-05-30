@@ -26,8 +26,8 @@ class NotificationCollectionEnd:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
         ---
-        summary:  Get list of notifcations for the controller of the agent
-        description:  Get list of notifcations for the controller of the agent.  Notifications will
+        summary:  Get list of notifications for the controller of the agent
+        description:  Get list of notifications for the controller of the agent.  Notifications will
                        be sorted by creation date/time
         parameters:
           - in: query

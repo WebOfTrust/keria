@@ -407,7 +407,7 @@ class GroupRequester(doing.Doer):
         super(GroupRequester, self).__init__()
 
     def recur(self, tyme):
-        """ Checks cue for group proceccing requests and processes any with Counselor """
+        """ Checks cue for group processing requests and processes any with Counselor """
         if self.groups:
             msg = self.groups.popleft()
             serder = msg["serder"]
@@ -455,7 +455,7 @@ class Querier(doing.DoDoer):
         super(Querier, self).__init__()
 
     def recur(self, tyme, deeds=None):
-        """ Processes query reqests submitting any on the cue"""
+        """ Processes query requests submitting any on the cue"""
         if self.queries:
             msg = self.queries.popleft()
             pre = msg["pre"]
