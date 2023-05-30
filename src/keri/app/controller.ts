@@ -160,7 +160,7 @@ export class Controller {
             data:[anchor],
             version: Versionage,
             kind: Serials.JSON})
-        return [this.serder, [this.signer.sign(this.serder.raw, 0).qb64]]
+        return [this.signer.sign(this.serder.raw, 0).qb64]
     }
 
     get pre(): string {

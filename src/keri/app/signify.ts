@@ -3,10 +3,12 @@ import { Tier } from "../core/salter"
 import { Authenticater } from "../core/authing"
 import { KeyManager } from "../core/keeping"
 import { Algos } from '../core/manager';
-import { incept, rotate } from "../core/eventing"
+import { incept, rotate, interact } from "../core/eventing"
 import { b, Serials, Versionage } from "../core/core";
 import { Tholder } from "../core/tholder";
 import { MtrDex } from "../core/matter";
+
+const KERIA_BOOT_URL = "http://localhost:3903"
 
 class State {
     agent: any | null
@@ -61,7 +63,7 @@ export class SignifyClient {
             pidx: 1,
             tier: this.controller?.tier
         };
-        let _url = this.url.includes("3903") ? this.url : "http://localhost:3903";
+        let _url = this.url.includes("3903") ? this.url : KERIA_BOOT_URL;
         const res = await fetch(_url + "/boot", {
             method: "POST",
             body: JSON.stringify(data),
@@ -99,7 +101,6 @@ export class SignifyClient {
         if (this.agent.anchor != this.controller.pre) {
             throw Error("commitment to controller AID missing in agent inception event")
         }
-        console.log(this.controller.serder)
         if (this.controller.serder.ked.s == 0 ) {
             console.log('approving delegation')
             await this.approveDelegation()
@@ -147,10 +148,6 @@ export class SignifyClient {
     }
 
     async approveDelegation(){
-        // {
-        // "ixn": {"v": "KERI10JSON00013a_", "t": "ixn", "d": "EA4YpgJavlrjDRIE5UdkM44wiGTcCTfsTayrAViCDV4s", "i": "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose", "s": "1", "p": "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose", "a": [{"i": "EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei", "s": "0", "d": "EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei"}]}, 
-        // "sigs": ["AAD6nSSSGy_uO41clzL-g3czC8W0Ax-2M87NXA_Iu50ZdEhbekuv2k7dY0fjoO3su3aBRBx4EXryPc8x4uGfbVYG"]
-        // }
         let sigs = this.controller.approveDelegation(this.agent!)
 
         let data = {
@@ -205,12 +202,33 @@ class Identifier {
                     delpre:string, 
                     dcode:string, 
                     data:any, 
-                    algo:Algos,
+                    algo:string,
                     pre:string,
                     states:any[],
-                    rstates:any[]}) {
-
-        let algo = kargs["algo"] ?? Algos.salty
+                    rstates:any[]
+                    prxs:any[],
+                    nxts:any[],
+                    mhab:any,
+                    keys:any[],
+                    ndigs:any[]
+                }) {
+        
+        let algo = Algos.salty
+        switch (kargs["algo"]) {
+            case "salty":
+                algo  = Algos.salty
+                break;
+            case "randy":
+                algo  = Algos.randy
+                break;
+            case "group":
+                algo  = Algos.group
+                break;
+            default:
+                algo  = Algos.salty
+                break;
+        }
+        
         let transferable = kargs["transferable"] ?? true
         let isith = kargs["isith"] ?? "1"
         let nsith = kargs["nsith"] ?? "1"
@@ -223,6 +241,11 @@ class Identifier {
         let pre = kargs["pre"]
         let states = kargs["states"]
         let rstates = kargs["rstates"]
+        let prxs = kargs["prxs"]
+        let nxts = kargs["nxts"]
+        let mhab= kargs["mhab"]
+        let _keys = kargs["keys"]
+        let _ndigs = kargs["ndigs"]
 
         let xargs = {
             transferable:transferable, 
@@ -235,17 +258,22 @@ class Identifier {
             dcode:dcode, 
             data:data, 
             algo:algo,
-            pre:pre
-
+            pre:pre,
+            prxs:prxs,
+            nxts:nxts,
+            mhab:mhab,
+            states:states,
+            rstates:rstates,
+            keys:_keys,
+            ndigs:_ndigs
         }
-
 
         let keeper = this.client.manager!.new( algo, this.client.pidx, xargs)
         let [keys, ndigs] = keeper!.incept(transferable)
         wits = wits !== undefined ? wits : []
         if (delpre == undefined){
             var serder = incept({ 
-                keys: keys, 
+                keys: keys!, 
                 isith: isith, 
                 ndigs: ndigs, 
                 nsith: nsith, 
@@ -261,7 +289,7 @@ class Identifier {
             
         } else {
             var serder = incept({ 
-                keys: keys, 
+                keys: keys!, 
                 isith: isith, 
                 ndigs: ndigs, 
                 nsith: nsith, 
@@ -277,51 +305,46 @@ class Identifier {
         }
 
         let sigs = keeper!.sign(b(serder.raw))
-        var jsondata = {
+        var jsondata:any = {
             name: name,
             icp: serder.ked,
             sigs: sigs,
             proxy: proxy,
-            salty: keeper.params(),
             smids: states != undefined ? states.map(state => state['i']) : undefined,
             rmids: rstates != undefined ? rstates.map(state => state['i']) : undefined
             }
-        // TODO FIX TO other algos    
-        // jsondata[algo.toString()] = keeper.params()
+        jsondata[algo] = keeper.params(),
 
         this.client.pidx = this.client.pidx + 1
         let res = await this.client.fetch("/identifiers", "POST", jsondata)
         return res.json()
-
     }
 
+    async interact(name:string, data:any|undefined=undefined){
 
-    // async interact(name:string, data:Array<object>|undefined=undefined){
+        let hab = await this.get_identifier(name)
+        let pre:string = hab["prefix"]
 
-    //     let hab = await this.get_identifier(name)
-    //     let pre:string = hab["prefix"]
-
-    //     let  state = hab["state"]
-    //     let sn = state["s"].toString(16)
-    //     let dig = state["d"]
+        let  state = hab["state"]
+        let sn = Number(state["s"])
+        let dig = state["d"]
         
-    //     let _data = Array.isArray(data) ? data : [data]
+        data = Array.isArray(data) ? data : [data]
 
-    //     let serder = interact(pre, sn=sn + 1, data=data, dig=dig)
-    //     let keeper = this.client!.manager!.get(hab)
-    //     let  sigs = keeper.sign(b(serder.raw))
+        let serder = interact({pre:pre, sn:sn + 1, data:data, dig:dig, version:undefined, kind: undefined})
+        let keeper = this.client!.manager!.get(hab)
+        let  sigs = keeper.sign(b(serder.raw))
 
-    //     // FIX TO OTHER ALGOS
-    //     let jsondata = {
-    //         ixn: serder.ked,
-    //         sigs: sigs,
-    //         salty: keeper.params()
-    //     }
-    //     let res = await this.client.fetch("/identifiers/"+name+"?type=ixn", "PUT", jsondata)
-    //     return res.json()
+        let jsondata:any = {
+            ixn: serder.ked,
+            sigs: sigs,
+        }
+        jsondata[keeper.algo] = keeper.params()
 
-    // }
+        let res = await this.client.fetch("/identifiers/"+name+"?type=ixn", "PUT", jsondata)
+        return res.json()
 
+    }
 
     async rotate(
         name: string,
@@ -349,7 +372,7 @@ class Identifier {
         let state = hab["state"]
         let count = state['k'].length
         let dig = state["d"]
-        let ridx = state["s"].toString(16) + 1
+        let ridx = (Number(state["s"]) + 1)
         let wits = state['b']
         let isith = state["kt"]
 
@@ -394,14 +417,13 @@ class Identifier {
 
         let  sigs = keeper.sign(b(serder.raw))
 
-        // FIX TO ADD OTHER ALGOS
-        var jsondata = {
+        var jsondata:any = {
             rot: serder.ked,
             sigs: sigs,
-            salty: keeper.params(),
             smids: states != undefined ? states.map(state => state['i']) : undefined,
             rmids: rstates != undefined ? rstates.map(state => state['i']) : undefined
         }
+        jsondata[keeper.algo] = keeper.params()
 
         let res = await this.client.fetch("/identifiers/"+name, "PUT", jsondata)
         return res.json()

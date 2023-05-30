@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { SignifyClient, ready } from "signify-ts";
 import { SignifyDemo } from './SignifyDemo';
 
+const KERIA_URL = "http://localhost:3901"
+
 function generateRandomKey() {
     const characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     const length = 21;
@@ -16,11 +18,7 @@ function generateRandomKey() {
 
 export function Signify() {
     const [pre, setPre] = useState("")
-    const [icp, setICP] = useState("")
     const [key, setKey] = useState(generateRandomKey())
-    const [response, setResponse] = useState("")
-
-
 
     useEffect(() => {
         ready().then(() => {
@@ -32,8 +30,8 @@ export function Signify() {
 
     useEffect(() => {
         if (inputRef.current) {
-            inputRef.current.style.width = "auto"
-            inputRef.current.style.width = `${inputRef.current.scrollWidth}px`
+            // inputRef.current.style.width = "auto"
+            // inputRef.current.style.width = `${inputRef.current.scrollWidth}px`
         }
     }, [key])
 
@@ -51,7 +49,7 @@ export function Signify() {
                 {/* show kel*/}
                 <SignifyDemo text={'Agent State'}
                     onClick={async () => {
-                        const client = new SignifyClient("http://localhost:3901", key)
+                        const client = new SignifyClient(KERIA_URL, key)
                         setPre(client.controller.pre)
                         try {
                             await client.state()
@@ -67,7 +65,7 @@ export function Signify() {
 
                 <SignifyDemo text={'Connect'}
                     onClick={async () => {
-                            const client = new SignifyClient("http://localhost:3901", key)
+                            const client = new SignifyClient(KERIA_URL, key)
                             console.log('error connecting')
                             console.log('booting up')
                             await client.boot()
@@ -81,7 +79,7 @@ export function Signify() {
                 <SignifyDemo text={'Get identifiers'}
                     onClick={async () => {
                         try {
-                            const client = new SignifyClient("http://localhost:3901", key)
+                            const client = new SignifyClient(KERIA_URL, key)
                             setPre(client.controller.pre)
                             try {
                                 await client.connect()
@@ -102,10 +100,10 @@ export function Signify() {
                             return 'Error getting identifiers'
                         }
                     }} />
-                <SignifyDemo text={'Create identifier'}
+                <SignifyDemo text={'Create salty identifier'}
                     onClick={async () => {
                         try {
-                            const client = new SignifyClient("http://localhost:3901", key)
+                            const client = new SignifyClient(KERIA_URL, key)
                             setPre(client.controller.pre)
                             try {
                                 await client.connect()
@@ -126,10 +124,34 @@ export function Signify() {
                             return 'Error creating identifiers'
                         }
                     }} />
+                <SignifyDemo text={'Create randy identifier'}
+                    onClick={async () => {
+                        try {
+                            const client = new SignifyClient(KERIA_URL, key)
+                            setPre(client.controller.pre)
+                            try {
+                                await client.connect()
+                            }
+                            catch (e) {
+                                console.log('error connecting', e)
+                                console.log('booting up')
+                                await client.boot()
+                                await client.connect()
+                                console.log('booted and connected up')
+                            }
+                            const identifiers = client.identifiers()
+                            const resp = await identifiers.create('aid_' + generateRandomKey().slice(1, 3), {algo: "randy"})
+                            return JSON.stringify(resp, null, 2)
+                        }
+                        catch (e) {
+                            console.log(e)
+                            return 'Error creating identifiers'
+                        }
+                    }} />
                 <SignifyDemo text={'Rotate first identifier'}
                     onClick={async () => {
                         try {
-                            const client = new SignifyClient("http://localhost:3901", key)
+                            const client = new SignifyClient(KERIA_URL, key)
                             setPre(client.controller.pre)
                             try {
                                 await client.connect()
@@ -154,7 +176,7 @@ export function Signify() {
                 <SignifyDemo text={'Get first identifier'}
                     onClick={async () => {
                         try {
-                            const client = new SignifyClient("http://localhost:3901", key)
+                            const client = new SignifyClient(KERIA_URL, key)
                             setPre(client.controller.pre)
                             try {
                                 await client.connect()
