@@ -326,7 +326,7 @@ class Identifier {
         let pre:string = hab["prefix"]
 
         let  state = hab["state"]
-        let sn = state["s"].toString(16)
+        let sn = Number(state["s"])
         let dig = state["d"]
         
         data = Array.isArray(data) ? data : [data]
@@ -372,7 +372,7 @@ class Identifier {
         let state = hab["state"]
         let count = state['k'].length
         let dig = state["d"]
-        let ridx = state["s"].toString(16) + 1
+        let ridx = (Number(state["s"]) + 1)
         let wits = state['b']
         let isith = state["kt"]
 
