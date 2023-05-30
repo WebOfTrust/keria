@@ -43,7 +43,7 @@ export function Signify() {
                     <label htmlFor="key">Enter 21 character passcode:</label>
                     <input type="text" id="key" value={key} onChange={(e) => setKey(e.target.value)} ref={inputRef} className="button" />
                 </div>
-                <p >
+                <p className='pre' >
                     Client AID is {pre}
                 </p>
                 {/* show kel*/}

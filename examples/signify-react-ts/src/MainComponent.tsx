@@ -47,7 +47,7 @@ const tableObject = {
     description: "",
     notes: ""
   },
-  t: {
+  et: {
     title: "Message Type",
     description: "",
     notes: ""
@@ -136,13 +136,23 @@ const tableObject = {
     title: "Version Number ('major.minor')",
     description: "",
     notes: ""
+  },
+  dt: {
+    title: "Datetime of the SAID",
+    description: "",
+    notes: ""
+  },
+  f: {
+    title: "Number of first seen ordinal",
+    description: "",
+    notes: ""
   }
 };
 
 const MainComponent = () => {
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [client, setClient] = useState(null); // [pre, icp, key
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false); // Open drawer by default
   const [url, setUrl] = useState('');
   const [passcode, setPasscode] = useState('');
@@ -152,6 +162,7 @@ const MainComponent = () => {
     if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
       return;
     }
+    console.log('menu')
     setDrawerOpen(open);
   };
 
@@ -167,6 +178,20 @@ const MainComponent = () => {
     setSelectedComponent(componentName);
   };
 
+  const connectToAgent = async (client: SignifyClient) => {
+    try {
+      await client.connect()
+      const controller = await client.state();
+      console.log(JSON.stringify(controller.controller, null, 2))
+
+    } catch (e) {
+      console.log('controller not found')
+      await client.boot();
+      await client.connect()
+      const controller = await client.state();
+      console.log(JSON.stringify(controller, null, 2))
+    }
+  }
   return (
     <div>
       <AppBar position="fixed" sx={{ width: '100%' }}>
@@ -198,7 +223,7 @@ const MainComponent = () => {
         >
           <List>
             {['Identifiers', 'Credentials', 'Client'].map((text, index) => (
-              <ListItem button key={text} onClick={() => renderComponent(text)}>
+              <ListItem key={text} onClick={() => renderComponent(text)}>
                 <ListItemText primary={text} />
               </ListItem>
             ))}
@@ -254,6 +279,7 @@ const MainComponent = () => {
                 const client = new SignifyClient(url, passcode);
                 console.log(client.controller.pre)
                 setClient(client)
+                connectToAgent(client)
                 return setStatus('Connected')
               }
             }>
@@ -277,11 +303,6 @@ const MainComponent = () => {
                 Status: {status}
               </Button>
             </Grid>
-            {status === 'Connected' &&
-              <Grid item xs={12}>
-                <Typography sx={{ maxWidth: '120px' }}>AID: {client.controller.pre.slice(0, 5)}....{client.controller.pre.slice(client.controller.pre.length - 5, client.controller.pre.length)}
-                </Typography>
-              </Grid>}
 
             <Grid item xs={12}>
               <Button onClick={handleClose} color='primary' fullWidth>
@@ -312,7 +333,7 @@ const IdentifiersComponent = ({ client }) => {
 
   const handleClick = async (aid: string) => {
     // Your asynchronous function logic here
-    await client.rotate(aid,{})
+    await client.rotate(aid, {})
   };
 
   //render the identifiers
@@ -360,10 +381,10 @@ const IdentifiersComponent = ({ client }) => {
             <TableRow key={index}>
               <TableCell>{item.name}</TableCell>
               <TableCell>
-              <Button onClick={() => handleClick(item.name)}>Rotate</Button>
+                <Button onClick={() => handleClick(item.name)}>Rotate</Button>
               </TableCell>
-              <TableCell>{item.prefix.slice(0,10)}...{item.prefix.slice(item.prefix.length-10,item.prefix.length)}</TableCell>
-              <TableCell>{item.salty.sxlt.slice(0,10)}....</TableCell>
+              <TableCell>{item.prefix.slice(0, 10)}...{item.prefix.slice(item.prefix.length - 10, item.prefix.length)}</TableCell>
+              <TableCell>{item.salty.sxlt.slice(0, 10)}....</TableCell>
               <TableCell>{item.salty.pidx}</TableCell>
               <TableCell>{item.salty.kidx}</TableCell>
               <TableCell>{item.salty.stem}</TableCell>
@@ -405,85 +426,59 @@ const IdentifiersComponent = ({ client }) => {
 };
 //make it component 
 const CredentialsComponent = () => <div>Credentials Component</div>;
+const AidComponent = ({ data, text }) => {
 
+  return (<Card sx={{ maxWidth: 545, marginX:4 }}>
+    <CardContent>
+      <Typography variant="h6" component="div" gutterBottom>
+        {text}
+      </Typography>
+      <Divider />
+      <Grid container spacing={2}>
+        {Object.entries(data).map(([key, value]) =>
+          typeof value === 'string' ? (
+            <Grid item xs={12} key={key}>
+              <Typography variant="subtitle1" gutterBottom align='left'>
+                <strong>{tableObject[key].title}</strong> {value}
+              </Typography>
+            </Grid>
+          ) : null
+        )}
+      </Grid>
+    </CardContent>
+  </Card>)
+}
 const ClientComponent = ({ client }) => {
   //write an async function to get the client in the client component
   const [controller, setController] = useState(null)
   const [agent, setAgent] = useState(null)
   useEffect(() => {
     const getController = async () => {
-      try {
-        await client.connect()
-        const controller = await client.state();
-        setAgent(controller.agent)
-        setController(controller.controller.state)
-        console.log(JSON.stringify(controller.controller, null, 2))
-
-      } catch (e) {
-        console.log('controller not found')
-        await client.boot();
-        await client.connect()
-        const controller = await client.state();
-        setAgent(controller.agent)
-        setController(controller.controller.state)
-        console.log(JSON.stringify(controller, null, 2))
-      }
+      const controller = await client.state();
+      setAgent(controller.agent)
+      setController(controller.controller.state)
     }
     getController();
   }
     , [client])
   return (
-    agent !== null ? 
+    agent !== null ?
       <>
-        <Card>
-          <CardContent>
-            <Typography variant="h6" component="div" gutterBottom>
-              Agent
-            </Typography>
-            <Divider />
-            <Grid container spacing={2}>
-              {Object.entries(agent).map(([key, value]) =>
-                typeof value === 'string' ? (
-                  <Grid item xs={12} sm={6} md={4} lg={3} key={key}>
-                    <Typography variant="subtitle1" gutterBottom>
-                      <strong>{key}</strong>
-                    </Typography>
-                    <Typography variant="body1">{value}</Typography>
-                  </Grid>
-                ) : null
-              )}
-            </Grid>
-          </CardContent>
-        </Card>
+        <Grid container >
+            <AidComponent data={agent} text={'Agent'} />
+            <AidComponent data={controller} text={'Controller'} />
+        </Grid>
 
-        <Card>
-          <CardContent>
-            <Typography variant="h6" component="div" gutterBottom>
-              Controller
-            </Typography>
-            <Divider />
-            <Grid container spacing={2}>
-              {Object.entries(controller).map(([key, value]) =>
-                typeof value === 'string' ? (
-                  <Grid item xs={12} sm={6} md={4} lg={3} key={key}>
-                    <Typography variant="subtitle1" gutterBottom>
-                      <strong>{key}</strong>
-                    </Typography>
-                    <Typography variant="body1">{value}</Typography>
-                  </Grid>
-                ) : null
-              )}
-            </Grid>
-          </CardContent>
-        </Card>
+
         <Divider />
         <Button variant="contained" color="primary" onClick={() => console.log('rotate')}>
           Rotate
         </Button>
       </>
-      : <div>loading...</div>
+      : <div key='identifiers'>Loading client data...</div>
   );
 
 };
+
 
 export default MainComponent;
