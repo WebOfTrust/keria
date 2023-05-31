@@ -63,7 +63,7 @@ export class SignifyClient {
             pidx: 1,
             tier: this.controller?.tier
         };
-        let _url = this.url.includes("3903") ? this.url : KERIA_BOOT_URL;
+        let _url = this.url.includes("localhost") ? KERIA_BOOT_URL: this.url ;
         const res = await fetch(_url + "/boot", {
             method: "POST",
             body: JSON.stringify(data),

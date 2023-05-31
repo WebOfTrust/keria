@@ -4,6 +4,7 @@ import './App.css'
 // @ts-ignore
 import {SignifyClient, ready} from "signify-ts";
 import { Signify } from './Signify';
+import MainComponent from './MainComponent';
 
 function App() {
 
@@ -17,7 +18,7 @@ function App() {
 
     return (
         <>
-            <Signify/>
+            <MainComponent/>
         </>
     )
 }
