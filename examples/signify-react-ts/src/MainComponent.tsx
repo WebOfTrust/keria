@@ -25,10 +25,12 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Fab,
   Divider, Grid, Stack, Box
 } from '@mui/material';
-import { Circle, Menu, Rectangle } from '@mui/icons-material';
-import { max } from 'lodash';
+import { Circle, Menu } from '@mui/icons-material';
+import AddIcon from '@mui/icons-material/Add';
+
 import { SignifyClient } from 'signify-ts';
 
 const tableObject = {
@@ -318,22 +320,24 @@ const MainComponent = () => {
     </div>
   );
 };
+
 const IdentifiersComponent = ({ client }) => {
   const [identifiers, setIdentifiers] = useState(null)
   //async useeffect
+  const getIdentifiers = async () => {
+    const list_identifiers = await client.list_identifiers()
+    setIdentifiers(list_identifiers)
+    console.log(list_identifiers)
+  }
   useEffect(() => {
-    const getIdentifiers = async () => {
-      setIdentifiers(null)
-      const list_identifiers = await client.list_identifiers()
-      setIdentifiers(list_identifiers)
-      console.log(list_identifiers)
-    }
+
     getIdentifiers()
   }, [])
 
   const handleClick = async (aid: string) => {
     // Your asynchronous function logic here
     await client.rotate(aid, {})
+    await getIdentifiers()
   };
 
   //render the identifiers
@@ -342,83 +346,62 @@ const IdentifiersComponent = ({ client }) => {
 
 
   return <>
-    <Button variant="contained" color="primary"
-      onClick={async () => {
-        const length = identifiers.length.toString()
-        await client.create(`aid${length}`, {})
-        const list_identifiers = await client.list_identifiers()
-        setIdentifiers(list_identifiers)
-      }
-      }
-      sx={{
-        padding: '4px',
-        height: '40px',
-        marginTop: '10px'
-      }} >
-      Create Identifier
-    </Button>
-
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Name</TableCell>
-            <TableCell>Action</TableCell>
-            <TableCell>Prefix</TableCell>
-            <TableCell>Salty sxlt</TableCell>
-            <TableCell>Salty pidx</TableCell>
-            <TableCell>Salty kidx</TableCell>
-            <TableCell>Salty stem</TableCell>
-            <TableCell>Salty tier</TableCell>
-            <TableCell>Salty dcode</TableCell>
-            <TableCell>Salty icodes</TableCell>
-            <TableCell>Salty ncodes</TableCell>
-            <TableCell>Transferable</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {identifiers.map((item, index) => (
-            <TableRow key={index}>
-              <TableCell>{item.name}</TableCell>
-              <TableCell>
-                <Button onClick={() => handleClick(item.name)}>Rotate</Button>
-              </TableCell>
-              <TableCell>{item.prefix.slice(0, 10)}...{item.prefix.slice(item.prefix.length - 10, item.prefix.length)}</TableCell>
-              <TableCell>{item.salty.sxlt.slice(0, 10)}....</TableCell>
-              <TableCell>{item.salty.pidx}</TableCell>
-              <TableCell>{item.salty.kidx}</TableCell>
-              <TableCell>{item.salty.stem}</TableCell>
-              <TableCell>{item.salty.tier}</TableCell>
-              <TableCell>{item.salty.dcode}</TableCell>
-              <TableCell>{item.salty.icodes.join(', ')}</TableCell>
-              <TableCell>{item.salty.ncodes.join(', ')}</TableCell>
-              <TableCell>{item.salty.transferable.toString()}</TableCell>
+    <Box position='relative'>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Name</TableCell>
+              <TableCell>Action</TableCell>
+              <TableCell>Prefix</TableCell>
+              <TableCell>Salty sxlt</TableCell>
+              <TableCell>Salty pidx</TableCell>
+              <TableCell>Salty kidx</TableCell>
+              <TableCell>Salty stem</TableCell>
+              <TableCell>Salty tier</TableCell>
+              <TableCell>Salty dcode</TableCell>
+              <TableCell>Salty icodes</TableCell>
+              <TableCell>Salty ncodes</TableCell>
+              <TableCell>Transferable</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-    {/* <pre> {data}</pre> */}
+          </TableHead>
+          <TableBody>
+            {identifiers.map((item, index) => (
+              <TableRow key={index}>
+                <TableCell>{item.name}</TableCell>
+                <TableCell>
+                  <Button onClick={() => handleClick(item.name)}>Rotate</Button>
+                </TableCell>
+                <TableCell>{item.prefix.slice(0, 10)}...{item.prefix.slice(item.prefix.length - 10, item.prefix.length)}</TableCell>
+                <TableCell>{item.salty.sxlt.slice(0, 10)}....</TableCell>
+                <TableCell>{item.salty.pidx}</TableCell>
+                <TableCell>{item.salty.kidx}</TableCell>
+                <TableCell>{item.salty.stem}</TableCell>
+                <TableCell>{item.salty.tier}</TableCell>
+                <TableCell>{item.salty.dcode}</TableCell>
+                <TableCell>{item.salty.icodes.join(', ')}</TableCell>
+                <TableCell>{item.salty.ncodes.join(', ')}</TableCell>
+                <TableCell>{item.salty.transferable.toString()}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      <Fab
+        color="primary"
+        aria-label="add"
+        style={{ position: 'fixed', bottom: '20px', right: '20px' }}
+        onClick={async () => {
+          const length = identifiers.length.toString()
+          await client.create(`aid${length}`, {})
+          const list_identifiers = await client.list_identifiers()
+          setIdentifiers(list_identifiers)
+        }}
+      >
+        <AddIcon />
+      </Fab>
 
-
-    <Button variant="contained" color="primary"
-
-      //async onclick
-      onClick={async () => {
-        const list_identifiers = await client.list_identifiers()
-        setIdentifiers(list_identifiers)
-      }
-      }
-
-      sx={{
-        padding: '4px',
-        height: '40px',
-        marginTop: '10px'
-      }} >
-      Update
-    </Button>
-
-
+    </Box>
   </>
 
 
@@ -428,7 +411,7 @@ const IdentifiersComponent = ({ client }) => {
 const CredentialsComponent = () => <div>Credentials Component</div>;
 const AidComponent = ({ data, text }) => {
 
-  return (<Card sx={{ maxWidth: 545, marginX:4 }}>
+  return (<Card sx={{ maxWidth: 545, marginX: 4 }}>
     <CardContent>
       <Typography variant="h6" component="div" gutterBottom>
         {text}
@@ -465,8 +448,8 @@ const ClientComponent = ({ client }) => {
     agent !== null ?
       <>
         <Grid container >
-            <AidComponent data={agent} text={'Agent'} />
-            <AidComponent data={controller} text={'Controller'} />
+          <AidComponent data={agent} text={'Agent'} />
+          <AidComponent data={controller} text={'Controller'} />
         </Grid>
 
 

@@ -56,29 +56,28 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
     await page.waitForTimeout(1000)
     await clientRoute[0].click();
     console.log('going to identifiers')
-    await page.waitForTimeout(1000) //wait for 5 seconds before closing
+    await page.waitForTimeout(2000) //wait for 5 seconds before closing
     //getting the menu button
     const bb1 = await page.$x("//button[@aria-label='menu']")
     //clicking the menu button
     await bb1[0].click();
+    await page.waitForTimeout(1000)
     //get identifiers route
     const IdentifiersRoute = await page.$x("//li[contains(., 'Ident')]");
-    await page.waitForTimeout(1000)
     //click identifiers route
     await IdentifiersRoute[0].click();
     await page.waitForTimeout(1000)
     //create new identifier
-    await page.click('.css-v8aa8k-MuiButtonBase-root-MuiButton-root')
-    await page.waitForTimeout(1000)
+    const add = await page.$x("//button[@aria-label='add']")
+    await add[0].click();
+    await page.waitForTimeout(2000)
+
+
     //rotate first identifier
     const rotates = await page.$x("//button[contains(., 'Rotate')]");
-    await rotates[0].click();
-    await page.waitForTimeout(4000)
-    //show updated rotation
-    const update = await page.$x("//button[contains(., 'Update')]");
-    await update[0].click();
-    //close modal
-    await page.waitForTimeout(5000)
+    await rotates[1].click(); 
+    await page.waitForTimeout(9000)
+    //close button
     await browser.close();
     console.log(inner_html)
 
