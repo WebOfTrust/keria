@@ -4,8 +4,9 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 (async () => {
     puppeteer.use(StealthPlugin());
     const browser = await puppeteer.launch({
-        // headless: false,
+        headless: false,
         // headless: 'new',
+        devtools: true,
     });
     const page = await browser.newPage();
 
@@ -29,7 +30,7 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
     //open modal
     await page.click('.css-9b1tbl-MuiButtonBase-root-MuiButton-root')
 
-    await page.type('input[id=combo-box-demo]', 'http://localhost:390', { delay: 100 })
+    await page.type('input[id=combo-box-demo]', 'https:', { delay: 100 })
     //enter key on the same input
     await page.click('.MuiAutocomplete-listbox > li')
 
@@ -66,9 +67,9 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
     await page.waitForTimeout(1000)
     await clientRoute[0].click();
     console.log('here')
-    if (browser.headless == false) {
-        await page.waitForTimeout(5000) //wait for 5 seconds before closing
-    }
+
+    await page.waitForTimeout(5000) //wait for 5 seconds before closing
+
     await browser.close();
     console.log(inner_html)
 
