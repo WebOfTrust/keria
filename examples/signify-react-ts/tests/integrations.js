@@ -44,6 +44,9 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
     //STATUS: CONNECTED 
     const inner_html = await page.evaluate(() => document.querySelector('button:disabled').innerHTML);
     //closte button 
+    await page.waitForTimeout(1000)
+    await page.screenshot({ path: 'connecting.png', fullPage: true })
+
     const Closebutton = await page.$x("//button[contains(., 'Close')]");
     await Closebutton[0].click();
     //getting the menu button
@@ -55,9 +58,12 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
     const clientRoute = await page.$x("//li[contains(., 'Client')]");
     await page.waitForTimeout(1000)
     await clientRoute[0].click();
+
     console.log('going to identifiers')
     await page.waitForTimeout(2000) //wait for 5 seconds before closing
     //getting the menu button
+    await page.screenshot({ path: 'client.png', fullPage: true })
+
     const bb1 = await page.$x("//button[@aria-label='menu']")
     //clicking the menu button
     await bb1[0].click();
@@ -76,7 +82,9 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
     //rotate first identifier
     const rotates = await page.$x("//button[contains(., 'Rotate')]");
     await rotates[1].click(); 
-    await page.waitForTimeout(9000)
+    await page.waitForTimeout(5000)
+    await page.screenshot({ path: 'identifier.png', fullPage: true })
+
     //close button
     await browser.close();
     console.log(inner_html)
