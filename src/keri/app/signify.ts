@@ -447,7 +447,6 @@ class Identifier {
 
 }
 
-
 class Oobis {
     public client: SignifyClient
     constructor(client: SignifyClient) {
