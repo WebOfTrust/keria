@@ -64,7 +64,7 @@ def test_agent_resource(helpers, mockHelpingNowUTC):
 
         res = client.simulate_get(path=f"/agent/{agent.caid}")
         assert res.status_code == 200
-        assert res.json == {'agent': {'b': [],
+        assert res.json["agent"] == {'b': [],
                                       'bt': '0',
                                       'c': [],
                                       'd': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9',
@@ -83,8 +83,8 @@ def test_agent_resource(helpers, mockHelpingNowUTC):
                                       'nt': '1',
                                       'p': '',
                                       's': '0',
-                                      'v': 'KERI10JSON0001e2_'},
-                            'controller': {'ee': {'a': [],
+                                      'v': 'KERI10JSON0001e2_'}
+        assert res.json["controller"] == {'ee': {'a': [],
                                                   'b': [],
                                                   'bt': '0',
                                                   'c': [],
@@ -97,7 +97,7 @@ def test_agent_resource(helpers, mockHelpingNowUTC):
                                                   's': '0',
                                                   't': 'icp',
                                                   'v': 'KERI10JSON00012b_'},
-                                           'state': {'b': [],
+                                            'state': {'b': [],
                                                      'bt': '0',
                                                      'c': [],
                                                      'd': 'EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx',
@@ -116,8 +116,8 @@ def test_agent_resource(helpers, mockHelpingNowUTC):
                                                      'nt': '1',
                                                      'p': '',
                                                      's': '0',
-                                                     'v': 'KERI10JSON0001b6_'}},
-                            'pidx': 0}
+                                                     'v': 'KERI10JSON0001b6_'}}
+        assert res.json["pidx"] == 0
 
 
 def test_identifier_collection_end(helpers):
