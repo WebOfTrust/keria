@@ -30,6 +30,7 @@ import {
 } from '@mui/material';
 import { Circle, Menu } from '@mui/icons-material';
 import AddIcon from '@mui/icons-material/Add';
+import { TestsComponent } from './TestsComponent';
 
 import { SignifyClient } from 'signify-ts';
 
@@ -224,7 +225,7 @@ const MainComponent = () => {
           onKeyDown={toggleDrawer(false)}
         >
           <List>
-            {['Identifiers', 'Credentials', 'Client'].map((text, index) => (
+            {['Identifiers', 'Credentials', 'Client', 'Tests'].map((text, index) => (
               <ListItem key={text} onClick={() => renderComponent(text)}>
                 <ListItemText primary={text} />
               </ListItem>
@@ -317,6 +318,7 @@ const MainComponent = () => {
       {selectedComponent === 'Identifiers' && <IdentifiersComponent client={client.identifiers()} />}
       {selectedComponent === 'Credentials' && <CredentialsComponent />}
       {selectedComponent === 'Client' && <ClientComponent client={client} />}
+      {selectedComponent === 'Tests' && <TestsComponent  />}
     </div>
   );
 };

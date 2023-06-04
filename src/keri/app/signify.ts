@@ -226,7 +226,8 @@ class Identifier {
                     nxts:any[],
                     mhab:any,
                     keys:any[],
-                    ndigs:any[]
+                    ndigs:any[],
+                    bran:string
                 }) {
         
         let algo = Algos.salty
@@ -262,6 +263,7 @@ class Identifier {
         let mhab= kargs["mhab"]
         let _keys = kargs["keys"]
         let _ndigs = kargs["ndigs"]
+        let bran = kargs["bran"]
 
         let xargs = {
             transferable:transferable, 
@@ -281,7 +283,8 @@ class Identifier {
             states:states,
             rstates:rstates,
             keys:_keys,
-            ndigs:_ndigs
+            ndigs:_ndigs,
+            bran:bran
         }
 
         let keeper = this.client.manager!.new( algo, this.client.pidx, xargs)
