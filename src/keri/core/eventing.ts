@@ -48,10 +48,8 @@ export function rotate({
     data = undefined,
     version = undefined,
     kind = undefined,
-    size,
     intive = true }: RotateArgs) {
-    let vs = versify(Ident.KERI, version, kind, size)
-
+    let vs = versify(Ident.KERI, version, kind, 0)
     let _ilk = ilk
     if (_ilk != Ilks.rot && _ilk != Ilks.drt) {
         throw new Error(`Invalid ilk = ${ilk} for rot or drt.`)
@@ -186,9 +184,9 @@ export function rotate({
         i: pre,
         s: sner.toString(16),
         p: dig,
-        kt: tholder.num && intive && tholder.num !== undefined && tholder.num <= MaxIntThold ? tholder.num : tholder.sith,
+        kt: tholder.num && intive && tholder.num !== undefined && tholder.num <= MaxIntThold ? tholder.num.toString(16) : tholder.sith,
         k: keys,
-        nt: ntholder.num && intive && ntholder.num !== undefined && ntholder.num <= MaxIntThold ? ntholder.num : ntholder.sith,
+        nt: ntholder.num && intive && ntholder.num !== undefined && ntholder.num <= MaxIntThold ? ntholder.num.toString(16) : ntholder.sith,
         n: _ndigs,
         bt: _toad && intive && _toad !== undefined && _toad <= MaxIntThold ? _toad : _toad.toString(16),
         br: cuts,

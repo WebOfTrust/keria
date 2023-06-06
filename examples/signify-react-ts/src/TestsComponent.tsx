@@ -1,39 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import { SignifyClient, ready, Serder } from "signify-ts";
 import { SignifyDemo } from './SignifyDemo';
 import {strict as assert} from "assert";
 
-
-function generateRandomKey() {
-    const characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    const length = 21;
-    let result = "";
-    for (let i = 0; i < length; i++) {
-        result += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return result;
-}
-
 export function TestsComponent() {
-    const [pre, setPre] = useState("")
-    const [key, setKey] = useState(generateRandomKey())
-
-    useEffect(() => {
-        ready().then(() => {
-            console.log("signify client is ready")
-        })
-    }, [])
-
-    const inputRef = useRef(null)
-
-    useEffect(() => {
-        if (inputRef.current) {
-            // inputRef.current.style.width = "auto"
-            // inputRef.current.style.width = `${inputRef.current.scrollWidth}px`
-        }
-    }, [key])
 
     return (
         <>
@@ -62,8 +33,8 @@ export function TestsComponent() {
                             assert.equal(icp.verfers[0].qb64, 'DPmhSfdhCPxr3EqjxzEtF8TVy0YX7ATo0Uc8oo2cnmY9')
                             assert.equal(icp.digers.length, 1)
                             assert.equal(icp.digers[0].qb64, 'EAORnRtObOgNiOlMolji-KijC_isa3lRDpHCsol79cOc')
-                            // assert.equal(icp.tholder.num, 1)
-                            // assert.equal(icp.ntholder.num, 1)
+                            assert.equal(icp.ked['kt'], '1')
+                            assert.equal(icp.ked['nt'], '1')
                             aids = await identifiers.list_identifiers()
                             assert.equal(aids.length, 1)
                             let aid = aids.pop()
@@ -84,8 +55,8 @@ export function TestsComponent() {
                             assert.equal(icp2.digers[0].qb64, 'EML5FrjCpz8SEl4dh0U15l8bMRhV_O5iDcR1opLJGBSH')
                             assert.equal(icp2.digers[1].qb64, 'EJpKquuibYTqpwMDqEFAFs0gwq0PASAHZ_iDmSF3I2Vg')
                             assert.equal(icp2.digers[2].qb64, 'ELplTAiEKdobFhlf-dh1vUb2iVDW0dYOSzs1dR7fQo60')
-                            // assert.equal(icp2.tholder.num, 2)
-                            // assert.equal(icp2.ntholder.num, 2)
+                            assert.equal(icp2.ked['kt'], '2')
+                            assert.equal(icp2.ked['nt'], '2')
                             aids = await identifiers.list_identifiers()
                             assert.equal(aids.length, 2)
                             aid = aids[1]
@@ -97,7 +68,7 @@ export function TestsComponent() {
 
                             let ked = await identifiers.rotate('aid1',{})
                             let rot = await new Serder(ked)
-                            // assert.equal(rot.ked['d'], 'EBQABdRgaxJONrSLcgrdtbASflkvLxJkiDO0H-XmuhGg')
+                            assert.equal(rot.ked['d'], 'EBQABdRgaxJONrSLcgrdtbASflkvLxJkiDO0H-XmuhGg')
                             assert.equal(rot.ked['s'], '1')
                             assert.equal(rot.verfers.length, 1)
                             assert.equal(rot.digers.length, 1)
@@ -106,7 +77,7 @@ export function TestsComponent() {
 
                             ked = await identifiers.interact("aid1", [icp.pre])
                             let ixn = await new Serder(ked)
-                            // assert.equal(ixn.ked['d'], 'ENsmRAg_oM7Hl1S-GTRMA7s4y760lQMjzl0aqOQ2iTce')
+                            assert.equal(ixn.ked['d'], 'ENsmRAg_oM7Hl1S-GTRMA7s4y760lQMjzl0aqOQ2iTce')
                             assert.equal(ixn.ked['s'], '2')
                             assert.deepEqual(ixn.ked['a'], [icp.pre])
 
@@ -132,12 +103,11 @@ export function TestsComponent() {
                             assert.equal(serder.pre, ixn.pre)
                             assert.equal(serder.ked['d'], ixn.ked['d'])
 
-
                             return "Salty Integration Test Passed"
                         }
                         catch (e) {
                             console.log(e)
-                            return 'Salt Integration Test Failed'
+                            return 'Salty Integration Test Failed'
                         }
                     }} />
             </div>
