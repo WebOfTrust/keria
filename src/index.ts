@@ -9,6 +9,7 @@ export const ready = (async () => {
 export * from './keri/core/salter'
 export * from './keri/core/matter'
 export * from './keri/core/serder'
+export * from './keri/core/diger'
 export * from './keri/app/habery'
 export * from './keri/app/signify'
 
