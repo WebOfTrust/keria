@@ -43,7 +43,7 @@ export function TestsComponent() {
                         try {
                             const url = "http://localhost:3901"
                             const bran = '0123456789abcdefghijk'
-                            // const tier = Tiers.med
+                            // TODO Add test with Tiers.med
                             const client = new SignifyClient(url, bran)
                             assert.equal(client.controller.pre, 'ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose')
                             const r1 = await client.boot()
@@ -97,8 +97,8 @@ export function TestsComponent() {
 
                             let ked = await identifiers.rotate('aid1',{})
                             let rot = await new Serder(ked)
-                            // assert.equal(rot.said, 'EBQABdRgaxJONrSLcgrdtbASflkvLxJkiDO0H-XmuhGg')
-                            // assert.equal(rot.sn, 1)
+                            // assert.equal(rot.ked['d'], 'EBQABdRgaxJONrSLcgrdtbASflkvLxJkiDO0H-XmuhGg')
+                            assert.equal(rot.ked['s'], '1')
                             assert.equal(rot.verfers.length, 1)
                             assert.equal(rot.digers.length, 1)
                             assert.equal(rot.verfers[0].qb64, 'DHgomzINlGJHr-XP3sv2ZcR9QsIEYS3LJhs4KRaZYKly')
@@ -106,11 +106,31 @@ export function TestsComponent() {
 
                             ked = await identifiers.interact("aid1", [icp.pre])
                             let ixn = await new Serder(ked)
-                            // assert.equal(ixn.said, 'ENsmRAg_oM7Hl1S-GTRMA7s4y760lQMjzl0aqOQ2iTce')
-                            // assert.equal(ixn.sn, 2)
+                            // assert.equal(ixn.ked['d'], 'ENsmRAg_oM7Hl1S-GTRMA7s4y760lQMjzl0aqOQ2iTce')
+                            assert.equal(ixn.ked['s'], '2')
                             assert.deepEqual(ixn.ked['a'], [icp.pre])
 
-                            
+                            aid = await identifiers.get_identifier("aid1")
+                            const state = aid["state"]
+
+                            assert.equal(state['s'], '2')
+                            assert.equal(state['f'], '2')
+                            assert.equal(state['et'], 'ixn')
+                            assert.equal(state['d'], ixn.ked['d'])
+                            assert.equal(state['ee']['d'], rot.ked['d'])
+
+                            const events = client.key_events()
+                            const log = await events.get(aid["prefix"])
+                            assert.equal(log.length, 3)
+                            let serder = await new Serder(log[0])
+                            assert.equal(serder.pre, icp.pre)
+                            assert.equal(serder.ked['d'], icp.ked['d'])
+                            serder = await new Serder(log[1])
+                            assert.equal(serder.pre, rot.pre)
+                            assert.equal(serder.ked['d'], rot.ked['d'])
+                            serder = await new Serder(log[2])
+                            assert.equal(serder.pre, ixn.pre)
+                            assert.equal(serder.ked['d'], ixn.ked['d'])
 
 
                             return "Salty Integration Test Passed"
