@@ -6,6 +6,7 @@ import {
   DialogTitle,
   DialogContentText,
   DialogContent,
+  Modal,
   DialogActions,
   IconButton,
   Typography,
@@ -26,9 +27,10 @@ import {
   TableHead,
   TableRow,
   Fab,
-  Divider, Grid, Stack, Box
+  Divider, Grid, Stack, Box,
+  FormControl, Select, InputLabel, MenuItem
 } from '@mui/material';
-import { Circle, Menu } from '@mui/icons-material';
+import { Circle, Delete, Menu } from '@mui/icons-material';
 import AddIcon from '@mui/icons-material/Add';
 import { TestsComponent } from './TestsComponent';
 
@@ -315,10 +317,11 @@ const MainComponent = () => {
           </Grid>
         </DialogActions>
       </Dialog>
-      {selectedComponent === 'Identifiers' && <IdentifiersComponent client={client.identifiers()} />}
+      {selectedComponent === 'Identifiers' && <IdentifierTable client={client.identifiers()} />}
+
       {selectedComponent === 'Credentials' && <CredentialsComponent />}
       {selectedComponent === 'Client' && <ClientComponent client={client} />}
-      {selectedComponent === 'Tests' && <TestsComponent  />}
+      {selectedComponent === 'Tests' && <TestsComponent />}
     </div>
   );
 };
@@ -409,61 +412,392 @@ const IdentifiersComponent = ({ client }) => {
 
 
 };
-//make it component 
-const CredentialsComponent = () => <div>Credentials Component</div>;
-const AidComponent = ({ data, text }) => {
-
-  return (<Card sx={{ maxWidth: 545, marginX: 4 }}>
-    <CardContent>
-      <Typography variant="h6" component="div" gutterBottom>
-        {text}
-      </Typography>
-      <Divider />
-      <Grid container spacing={2}>
-        {Object.entries(data).map(([key, value]) =>
-          typeof value === 'string' ? (
-            <Grid item xs={12} key={key}>
-              <Typography variant="subtitle1" gutterBottom align='left'>
-                <strong>{tableObject[key].title}</strong> {value}
-              </Typography>
-            </Grid>
-          ) : null
-        )}
-      </Grid>
-    </CardContent>
-  </Card>)
-}
-const ClientComponent = ({ client }) => {
-  //write an async function to get the client in the client component
-  const [controller, setController] = useState(null)
-  const [agent, setAgent] = useState(null)
-  useEffect(() => {
-    const getController = async () => {
-      const controller = await client.state();
-      setAgent(controller.agent)
-      setController(controller.controller.state)
-    }
-    getController();
+const getTypeDetails = (identifierType, data) => {
+  switch (identifierType) {
+    case 'randy':
+      return (
+        <>
+          <Typography variant="h6">PRXS:</Typography>
+          {data.prxs.map((prx, index) => <Typography key={index}>{prx}</Typography>)}
+          <Typography variant="h6">NXTS:</Typography>
+          {data.nxts.map((nxt, index) => <Typography key={index}>{nxt}</Typography>)}
+        </>
+      );
+    case 'salty':
+      return (
+        <>
+          <Typography variant="h6">SXLT: {data.sxlt}</Typography>
+          <Typography variant="h6">PIDX: {data.pidx}</Typography>
+          <Typography variant="h6">KIDX: {data.kidx}</Typography>
+          <Typography variant="h6">Stem: {data.stem}</Typography>
+          <Typography variant="h6">Tier: {data.tier}</Typography>
+          <Typography variant="h6">DCode: {data.dcode}</Typography>
+          <Typography variant="h6">ICodes:</Typography>
+          {data.icodes.map((icode, index) => <Typography key={index}>{icode}</Typography>)}
+          <Typography variant="h6">NCodes:</Typography>
+          {data.ncodes.map((ncode, index) => <Typography key={index}>{ncode}</Typography>)}
+          <Typography variant="h6">Transferable: {data.transferable ? 'Yes' : 'No'}</Typography>
+        </>
+      );
+    default:
+      return null;
   }
-    , [client])
-  return (
-    agent !== null ?
-      <>
-        <Grid container >
-          <AidComponent data={agent} text={'Agent'} />
-          <AidComponent data={controller} text={'Controller'} />
-        </Grid>
-
-
-        <Divider />
-        <Button variant="contained" color="primary" onClick={() => console.log('rotate')}>
-          Rotate
-        </Button>
-      </>
-      : <div key='identifiers'>Loading client data...</div>
-  );
-
 };
 
+const IdentifierTable = ({ client }) => {
+  const [open, setOpen] = useState(false);
+  const [currentIdentifier, setCurrentIdentifier] = useState({});
+  const [identifiers, setIdentifiers] = useState([])
 
-export default MainComponent;
+  const [openCreate, setOpenCreate] = useState(false);
+  const [type, setType] = useState('salty');
+  const [name, setName] = useState('');
+  const [dynamicFields, setDynamicFields] = useState([]);
+  const [dynamicFieldsValues, setDynamicFieldsValues] = useState([]);
+  const [selectedField, setSelectedField] = useState('');
+  //async useeffect
+  const getIdentifiers = async () => {
+    const list_identifiers = await client.list_identifiers()
+    setIdentifiers(list_identifiers)
+    console.log(list_identifiers)
+  }
+  useEffect(() => {
+
+    getIdentifiers()
+  }, [])
+  const handleOpen = (identifier) => {
+    setCurrentIdentifier(identifier);
+    setOpen(true);
+  };
+
+  const handleClickRotate = async (aid: string) => {
+    // Your asynchronous function logic here
+    await client.rotate(aid, {})
+    await getIdentifiers()
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  const body = (
+    <Box sx={{
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: 400,
+      bgcolor: 'background.paper',
+      boxShadow: 24, p: 4,
+      overflow: 'auto',
+      maxHeight: '80vh',
+    }}>
+      <h2>Identifier Details</h2>
+      <p>Name: {currentIdentifier.name}</p>
+      <p>Prefix: {currentIdentifier.prefix}</p>
+      <p>Type: {Object.keys(currentIdentifier)[2]}</p>
+
+      {/* {  getTypeDetails(
+    Object.keys(currentIdentifier)[2],currentIdentifier[Object.keys(currentIdentifier)[2]]
+    )} */}
+
+      <pre>{JSON.stringify(currentIdentifier[Object.keys(currentIdentifier)[2]], null, 2)}</pre>
+      <Button onClick={() => handleClickRotate(currentIdentifier.name)}>Rotate</Button>
+    </Box>
+  );
+
+  const handleOpenCreate = () => {
+    setOpenCreate(true);
+  };
+
+  const handleCloseCreate = () => {
+    setOpenCreate(false);
+  };
+
+  const handleComplete = async () => {
+    console.log('Type:', type);
+    console.log('Name:', name);
+    console.log('Dynamic Fields:', dynamicFields);
+    console.log('Dynamic Fields Values:', dynamicFieldsValues);
+    
+    let fields = {
+      algo: type,
+    }
+    dynamicFields.forEach((field, index) => {
+      if (field == 'count' || field =='ncount' ){
+        fields[field] = parseInt(dynamicFieldsValues[index]);
+      }
+      else if (field == 'transferable'){
+        fields[field] = dynamicFieldsValues[index] == 'true' ? true : false;
+      }
+      else if (field == 'icodes' || field == 'ncodes' || field == 'prxs' || field == 'nxts'|| field == 'cuts' || field == 'adds'){
+        fields[field] = dynamicFieldsValues[index].split(',');
+      }
+      else {
+      fields[field] = dynamicFieldsValues[index];
+      }
+    });
+    console.log('name:', name);
+
+    console.log('Fields:', fields);
+
+    //create identifier
+    let _res = client.create(name, fields)
+    const list_identifiers = await client.list_identifiers()
+    setIdentifiers(list_identifiers)
+    handleClose();
+  };
+
+  const handleTypeChange = (event) => {
+    setType(event.target.value);
+  };
+
+  const handleFieldChange = (event) => {
+    const prevFields = [...dynamicFields];
+    //add field to array
+    prevFields.push(event.target.value);
+    setSelectedField(event.target.value);
+    setDynamicFields(prevFields);
+
+    const prevFieldsValues = [...dynamicFieldsValues];
+    //add field to array
+    prevFieldsValues.push('');
+    setDynamicFieldsValues(prevFieldsValues);
+
+
+  };
+
+  const handleFieldValueChange = (index, event) => {
+    const prevFieldsValues = [...dynamicFieldsValues];
+    //add field to array
+    prevFieldsValues[index] = event.target.value;
+    setDynamicFieldsValues(prevFieldsValues);
+  }
+
+
+
+    const handleNameChange = (event) => {
+      setName(event.target.value);
+    };
+
+    const renderDynamicFields = () => {
+      return dynamicFields.map((field, index) => (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            margin: '10px',
+            width: '100%',
+          }}
+        >
+          <TextField
+            key={index}
+            label={field}
+            placeholder='Enter value'
+            fullWidth
+            margin="normal"
+            variant="outlined"
+            value={dynamicFieldsValues[index]}
+            onChange={(event) => handleFieldValueChange(index, event)}
+          // Add any additional props or logic based on field name if needed
+          />
+          <br />
+          <IconButton
+            onClick={() => {
+              const prevFields = [...dynamicFields];
+              prevFields.splice(index, 1);
+              setDynamicFields(prevFields);
+              const prevFieldsValues = [...dynamicFieldsValues];
+              prevFieldsValues.splice(index, 1);
+              setDynamicFieldsValues(prevFieldsValues);
+            }}
+          >
+            <Delete />
+          </IconButton>
+
+        </Box>));
+    };
+
+    return (
+      <>
+        <TableContainer component={Paper}>
+          <Table sx={{ minWidth: 650 }} aria-label="simple table">
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Prefix</TableCell>
+                <TableCell>Type</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {identifiers.map((identifier) => (
+                <TableRow
+                  key={identifier.name}
+                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                  onClick={() => handleOpen(identifier)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <TableCell component="th" scope="row">
+                    {identifier.name}
+                  </TableCell>
+                  <TableCell>{identifier.prefix}</TableCell>
+                  <TableCell>{Object.keys(identifier)[2]}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <Modal
+          open={open}
+          onClose={handleClose}
+          aria-labelledby="modal-modal-title"
+          aria-describedby="modal-modal-description"
+        >
+          {body}
+        </Modal>
+        <Modal open={openCreate} onClose={handleCloseCreate}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 400,
+              bgcolor: 'background.paper',
+              boxShadow: 24, p: 4,
+            }}
+          >
+            <FormControl fullWidth margin="normal">
+              <Select value={type} onChange={handleTypeChange}>
+                <MenuItem value="salty">Salty</MenuItem>
+                <MenuItem value="randy">Randy</MenuItem>
+                <MenuItem value="group">Group</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              label="Name"
+              placeholder='Enter name'
+              value={name}
+              onChange={handleNameChange}
+              fullWidth
+              margin="normal"
+              variant="outlined"
+            />
+            <FormControl fullWidth margin="normal">
+              <InputLabel id="demo-simple-select-label">Field</InputLabel>
+              <Select value={selectedField} onChange={handleFieldChange}>
+                <MenuItem value="transferable">transferable</MenuItem>
+                <MenuItem value="isith">isith</MenuItem>
+                <MenuItem value="nsith">nsith</MenuItem>
+                <MenuItem value="wits">wits</MenuItem>
+                <MenuItem value="toad">toad</MenuItem>
+                <MenuItem value="proxy">proxy</MenuItem>
+                <MenuItem value="delpre">delpre</MenuItem>
+                <MenuItem value="dcode">dcode</MenuItem>
+                <MenuItem value="data">data</MenuItem>
+                <MenuItem value="pre">pre</MenuItem>
+                <MenuItem value="states">states</MenuItem>
+                <MenuItem value="rstates">rstates</MenuItem>
+                <MenuItem value="prxs">prxs</MenuItem>
+                <MenuItem value="nxts">nxts</MenuItem>
+                <MenuItem value="mhab">mhab</MenuItem>
+                <MenuItem value="keys">keys</MenuItem>
+                <MenuItem value="ndigs">ndigs</MenuItem>
+                <MenuItem value="bran">bran</MenuItem>
+                <MenuItem value="count">count</MenuItem>
+                <MenuItem value="ncount">ncount</MenuItem>
+              </Select>
+            </FormControl>
+            {/* Add more buttons to add other fields as needed */}
+            {renderDynamicFields()}
+            <Button variant="contained" 
+            //make onclick async for handlecomplete
+            onClick= {async () => { 
+              await handleComplete()
+            }}
+
+            // onClick={handleComplete}
+            
+            >
+              Complete
+            </Button>
+          </Box>
+        </Modal>
+        <Fab
+          color="primary"
+          aria-label="add"
+          style={{ position: 'fixed', bottom: '20px', right: '20px' }}
+          // onClick={async () => {
+          //   const length = identifiers.length.toString()
+          //   await client.create(`aid${length}`, {})
+          //   const list_identifiers = await client.list_identifiers()
+          //   setIdentifiers(list_identifiers)
+          // }}
+          onClick={handleOpenCreate}
+        >
+          <AddIcon />
+        </Fab>
+      </>
+    );
+  }
+
+
+  //make it component 
+  const CredentialsComponent = () => <div>Credentials Component</div>;
+  const AidComponent = ({ data, text }) => {
+
+    return (<Card sx={{ maxWidth: 545, marginX: 4 }}>
+      <CardContent>
+        <Typography variant="h6" component="div" gutterBottom>
+          {text}
+        </Typography>
+        <Divider />
+        <Grid container spacing={2}>
+          {Object.entries(data).map(([key, value]) =>
+            typeof value === 'string' ? (
+              <Grid item xs={12} key={key}>
+                <Typography variant="subtitle1" gutterBottom align='left'>
+                  <strong>{tableObject[key].title}</strong> {value}
+                </Typography>
+              </Grid>
+            ) : null
+          )}
+        </Grid>
+      </CardContent>
+    </Card>)
+  }
+  const ClientComponent = ({ client }) => {
+    //write an async function to get the client in the client component
+    const [controller, setController] = useState(null)
+    const [agent, setAgent] = useState(null)
+    useEffect(() => {
+      const getController = async () => {
+        const controller = await client.state();
+        setAgent(controller.agent)
+        setController(controller.controller.state)
+      }
+      getController();
+    }
+      , [client])
+    return (
+      agent !== null ?
+        <>
+          <Grid container >
+            <AidComponent data={agent} text={'Agent'} />
+            <AidComponent data={controller} text={'Controller'} />
+          </Grid>
+
+
+          <Divider />
+          <Button variant="contained" color="primary" onClick={() => console.log('rotate')}>
+            Rotate
+          </Button>
+        </>
+        : <div key='identifiers'>Loading client data...</div>
+    );
+
+  };
+
+
+  export default MainComponent;
