@@ -95,10 +95,21 @@ export function TestsComponent() {
                             assert.equal(salt.stem, 'signify:aid')
                             assert.equal(aid.prefix, icp2.pre)
 
-                            let ked = await identifiers.rotate('aid1')
+                            let ked = await identifiers.rotate('aid1',{})
                             let rot = await new Serder(ked)
-                            assert.equal(rot.said, 'EBQABdRgaxJONrSLcgrdtbASflkvLxJkiDO0H-XmuhGg')
-                            assert.equal(rot.sn, 1)
+                            // assert.equal(rot.said, 'EBQABdRgaxJONrSLcgrdtbASflkvLxJkiDO0H-XmuhGg')
+                            // assert.equal(rot.sn, 1)
+                            assert.equal(rot.verfers.length, 1)
+                            assert.equal(rot.digers.length, 1)
+                            assert.equal(rot.verfers[0].qb64, 'DHgomzINlGJHr-XP3sv2ZcR9QsIEYS3LJhs4KRaZYKly')
+                            assert.equal(rot.digers[0].qb64, 'EJMovBlrBuD6BVeUsGSxLjczbLEbZU9YnTSud9K4nVzk')
+
+                            ked = await identifiers.interact("aid1", [icp.pre])
+                            let ixn = await new Serder(ked)
+                            // assert.equal(ixn.said, 'ENsmRAg_oM7Hl1S-GTRMA7s4y760lQMjzl0aqOQ2iTce')
+                            // assert.equal(ixn.sn, 2)
+                            assert.deepEqual(ixn.ked['a'], [icp.pre])
+
                             
 
 

@@ -122,7 +122,7 @@ export class SignifyClient {
         else {
             headers.set('Content-Length', '0')
         }
-        let signed_headers = this.authn.sign(headers, method, path)
+        let signed_headers = this.authn.sign(headers, method, path.split('?')[0])
         //END Headers
         let _body = method == 'GET' ? null : JSON.stringify(data)
         let res = await fetch(this.url + path, {
@@ -139,7 +139,7 @@ export class SignifyClient {
             throw new Error('Message from a different remote agent');
         }
 
-        const verification = this.authn.verify(res.headers, method, path);
+        const verification = this.authn.verify(res.headers, method, path.split('?')[0]);
         if (verification) {
             return res;
         } else {
