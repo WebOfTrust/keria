@@ -227,7 +227,9 @@ class Identifier {
                     mhab:any,
                     keys:any[],
                     ndigs:any[],
-                    bran:string
+                    bran:string,
+                    count:number,
+                    ncount:number
                 }) {
         
         let algo = Algos.salty
@@ -264,6 +266,8 @@ class Identifier {
         let _keys = kargs["keys"]
         let _ndigs = kargs["ndigs"]
         let bran = kargs["bran"]
+        let count = kargs["count"]
+        let ncount = kargs["ncount"]
 
         let xargs = {
             transferable:transferable, 
@@ -284,7 +288,9 @@ class Identifier {
             rstates:rstates,
             keys:_keys,
             ndigs:_ndigs,
-            bran:bran
+            bran:bran,
+            count:count,
+            ncount:ncount
         }
 
         let keeper = this.client.manager!.new( algo, this.client.pidx, xargs)
@@ -307,6 +313,7 @@ class Identifier {
                 delpre})
             
         } else {
+            // TODO should be delcept ?
             var serder = incept({ 
                 keys: keys!, 
                 isith: isith, 
