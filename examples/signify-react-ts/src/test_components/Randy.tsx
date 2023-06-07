@@ -1,11 +1,17 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-import { SignifyClient, ready, Serder, Diger } from "signify-ts";
+import { SignifyClient, ready, Serder, Diger, MtrDex } from "signify-ts";
 import {strict as assert} from "assert";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
 
 export function Randy() {
     const [testResult, setTestResult] = useState('');
+    useEffect(() => {
+        ready().then(() => {
+            console.log("signify client is ready")
+        })
+    }, [])
 
     return (
         <>
@@ -62,12 +68,10 @@ export function Randy() {
                             assert.equal(rot.digers.length, 1)
                             assert.notEqual(rot.verfers[0].qb64, icp.verfers[0].qb64)
                             assert.notEqual(rot.digers[0].qb64, icp.digers[0].qb64)
-                            // let dig = new Diger({qb64b: rot.verfers[0].qb64b})
-                            // assert.equal(dig.qb64, icp.digers[0].qb64)
-
+                            let dig = new Diger({code: MtrDex.Blake3_256},rot.verfers[0].qb64b, )
+                            assert.equal(dig.qb64, icp.digers[0].qb64)
                             log = await events.get(aid["prefix"])
                             assert.equal(log.length, 3)
-
                             
                             setTestResult("Passed")
                         }
