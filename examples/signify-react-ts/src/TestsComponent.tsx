@@ -5,6 +5,7 @@ import { Salty } from "./test_components/Salty";
 import { Randy } from "./test_components/Randy";
 import { Delegation } from "./test_components/Delegation";
 import { Witnesses } from "./test_components/Witnesses";
+import { Multisig } from "./test_components/Multisig";
 export function TestsComponent() {
 
     return (
@@ -13,6 +14,7 @@ export function TestsComponent() {
             < Randy />
             < Witnesses />
             < Delegation />
+            < Multisig />
         </>
     )
 }

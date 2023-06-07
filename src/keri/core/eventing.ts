@@ -441,4 +441,25 @@ export function interact(args: InteractArgs): Serder {
 
     return new Serder(ked)
 }
+
+export function reply(route: string="", data: any|undefined, stamp:string|undefined, version: Version|undefined, kind:Serials= Serials.JSON){
+    const vs = versify(Ident.KERI, version, kind, 0)
+    if (data == undefined) {
+        data = {}
+    }
+    const _sad = {
+        v: vs,
+        t: Ilks.rpy,
+        d: "",
+        dt: stamp?? new Date().toISOString().replace("Z","000+00:00"),
+        r: route,
+        a: data
+    }
+    const [, sad] = Saider.saidify(_sad)
+    const saider = new Saider({qb64: sad['d']})
+
+    if ( !(saider.verify(sad,true, true, kind, 'd' )))
+        throw new Error(`Invalid said = ${saider.qb64} for reply msg=${sad}.`)
+    return new Serder(sad)
+}
     

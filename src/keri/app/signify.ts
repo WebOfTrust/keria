@@ -3,7 +3,7 @@ import { Tier } from "../core/salter"
 import { Authenticater } from "../core/authing"
 import { KeyManager } from "../core/keeping"
 import { Algos } from '../core/manager';
-import { incept, rotate, interact } from "../core/eventing"
+import { incept, rotate, interact, reply } from "../core/eventing"
 import { b, Serials, Versionage } from "../core/core";
 import { Tholder } from "../core/tholder";
 import { MtrDex } from "../core/matter";
@@ -453,6 +453,37 @@ class Identifier {
 
         let res = await this.client.fetch("/identifiers/"+name, "PUT", jsondata)
         return res.json()
+    }
+
+    async addEndRole(name:string, role:string, eid: string|undefined){
+        const hab = await this.get_identifier(name)
+        const pre = hab["prefix"]
+
+        const rpy = this.makeEndRole(pre, role, eid)
+        const keeper = this.client.manager!.get(hab)
+        const sigs = keeper.sign(b(rpy.raw))
+
+        const jsondata = {
+            rpy: rpy.ked,
+            sigs: sigs
+        }
+
+        let res = await this.client.fetch("/identifiers/"+name+"/endroles", "POST", jsondata)
+        return res.json()
+
+    }
+
+    makeEndRole(pre: string, role:string, eid:string|undefined){
+        const data:any = {
+            cid: pre,
+            role: role
+        }
+        if (eid != undefined) {
+            data["eid"] = eid
+        }
+        const route = "/end/role/add"
+        return reply(route, data, undefined, undefined, Serials.JSON)
+    
     }
 
 }
