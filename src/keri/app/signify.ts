@@ -131,7 +131,7 @@ export class SignifyClient {
             headers: signed_headers
         });
         //BEGIN Verification
-        if (res.status !== 200) {
+        if (!(res.status == 200 || res.status == 202)){
             throw new Error('Response status is not 200');
         }
         const isSameAgent = this.agent?.pre === res.headers.get('signify-resource');
@@ -476,7 +476,7 @@ class Oobis {
     async resolve(oobi: string, alias?: string) {
         let path = `/oobis`
         let data: any = {
-            oobi: oobi
+            url: oobi
         }
         if (alias !== undefined) {
             data['alias'] = alias

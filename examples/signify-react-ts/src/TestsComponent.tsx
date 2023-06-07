@@ -3,12 +3,16 @@
 import { SignifyClient, ready, Serder } from "signify-ts";
 import { Salty } from "./test_components/Salty";
 import { Randy } from "./test_components/Randy";
+import { Delegation } from "./test_components/Delegation";
+import { Witnesses } from "./test_components/Witnesses";
 export function TestsComponent() {
 
     return (
         <>
             < Salty />
             < Randy />
+            < Witnesses />
+            < Delegation />
         </>
     )
 }
