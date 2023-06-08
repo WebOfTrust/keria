@@ -5,16 +5,21 @@ keria.app.credentialing module
 
 Testing credentialing endpoint in the Mark II Agent
 """
+import json
+
 import falcon
 from falcon import testing
+from hio.base import doing
 from keri.core import scheming, coring
+from keri.core.eventing import TraitCodex
+from keri.vdr import eventing
 
 from keria.app import credentialing, aiding
 
 
 def test_load_ends(helpers):
     with helpers.openKeria() as (agency, agent, app, client):
-        credentialing.loadEnds(app=app)
+        credentialing.loadEnds(app=app, identifierResource=None)
         assert app._router is not None
 
         res = app._router.find("/test")
@@ -83,9 +88,10 @@ def test_schema_ends(helpers):
 
 def test_registry_end(helpers, seeder):
     with helpers.openKeria() as (agency, agent, app, client):
-
+        print()
         client = testing.TestClient(app)
-        registryEnd = credentialing.RegistryEnd()
+        idResEnd = aiding.IdentifierResourceEnd()
+        registryEnd = credentialing.RegistryEnd(idResEnd)
         app.add_route("/registries", registryEnd)
 
         seeder.seedSchema(agent.hby.db)
@@ -96,26 +102,46 @@ def test_registry_end(helpers, seeder):
         assert result.status == falcon.HTTP_400  # Bad Request, missing alias
 
         result = client.simulate_post(path="/registries", body=b'{"name": "test", "alias": "test123"}')
-        assert result.status == falcon.HTTP_404  # Bad Request, invalid alias
+        assert result.status == falcon.HTTP_400  # Bad Request, invalid alias
 
         end = aiding.IdentifierCollectionEnd()
         app.add_route("/identifiers", end)
         salt = b'0123456789abcdef'
-        aid = helpers.createAid(client, "test", salt)
-        assert aid['i'] == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+        op = helpers.createAid(client, "test", salt)
+        aid = op["response"]
+        pre = aid['i']
+        assert pre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
 
-        # Test all the parameters
-        result = client.simulate_post(path="/registries",
-                                      body=b'{"name": "test-full", "alias": "test",'
-                                           b' "noBackers": true, "baks": [], "toad": 0, "estOnly": false}')
+        nonce = coring.randomNonce()
+        regser = eventing.incept(pre,
+                                 baks=[],
+                                 toad="0",
+                                 nonce=nonce,
+                                 cnfg=[TraitCodex.NoBackers],
+                                 code=coring.MtrDex.Blake3_256)
+        anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)
+        serder, sigers = helpers.interact(pre=pre, bran=salt, pidx=0, ridx=0, dig=aid['d'], sn='1', data=[anchor])
+        body = dict(name="test", alias="test", vcp=regser.ked, ixn=serder.ked, sigs=sigers)
+        result = client.simulate_post(path="/registries", body=json.dumps(body).encode("utf-8"))
         assert result.status == falcon.HTTP_202
-        agent.rgy.processEscrows()
+        assert len(agent.registries) == 1
+        msg = agent.registries.popleft()
 
-        result = client.simulate_post(path="/registries", body=b'{"name": "test", "alias": "test"}')
-        assert result.status == falcon.HTTP_202
-        agent.rgy.processEscrows()
+        assert msg["pre"] == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+        assert msg["regk"] == regser.pre
+        assert msg["sn"] == '0'
+        agent.registries.append(msg)
 
-        result = client.simulate_get(path="/registries")
-        assert result.status == falcon.HTTP_200
-        # assert len(result.json) == 2
-        assert len(result.json) == 0
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+
+        # doist.do(doers=doers)
+        deeds = doist.enter(doers=[agent])
+        doist.recur(deeds=deeds)
+
+        while len(agent.registries) == 1:
+            doist.recur(deeds=deeds)
+
+        assert len(agent.registries) == 0
+        assert regser.pre in agent.tvy.tevers

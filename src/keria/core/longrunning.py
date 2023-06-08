@@ -17,9 +17,10 @@ from keri.db import dbing, koming
 from keri.help import helping
 
 # long running operationt types
-Typeage = namedtuple("Tierage", 'oobi witness delegation group query')
+Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry done')
 
-OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation', group='group', query='query')
+OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation', group='group', query='query',
+                  registry='registry', done='done')
 
 
 @dataclass_json
@@ -277,6 +278,13 @@ class Monitor:
                         operation.response = kever.state().ked
                     else:
                         operation.done = False
+
+        elif op.type in (OpTypes.registry, ):
+            pass
+
+        elif op.type in (OpTypes.done, ):
+            operation.done = True
+            operation.response = op.metadata["response"]
 
         else:
             operation.done = True

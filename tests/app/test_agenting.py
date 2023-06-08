@@ -17,6 +17,7 @@ from keri import kering
 from keri.app import habbing, configing, oobiing
 from keri.app.agenting import Receiptor
 from keri.core import coring
+from keri.core.coring import MtrDex
 from keri.db import basing
 from keri.vdr import credentialing
 
@@ -134,6 +135,40 @@ def test_agency():
             shutil.rmtree(f'/usr/local/var/keri/ks/{base}')
         if os.path.exists(f'/usr/local/var/keri/adb/{base}'):
             shutil.rmtree(f'/usr/local/var/keri/adb/{base}')
+
+
+def test_boot_ends(helpers):
+    agency = agenting.Agency(name="agency", bran=None, temp=True)
+    doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+    doist.enter(doers=[agency])
+
+    serder, sigers = helpers.controller()
+    assert serder.pre == helpers.controllerAID
+
+    app = falcon.App()
+    client = testing.TestClient(app)
+
+    bootEnd = agenting.BootEnd(agency)
+    app.add_route("/boot", bootEnd)
+
+    body = dict(
+        icp=serder.ked,
+        sig=sigers[0].qb64,
+        salty=dict(
+            stem='signify:aid', pidx=0, tier='low', sxlt='OBXYZ',
+            icodes=[MtrDex.Ed25519_Seed], ncodes=[MtrDex.Ed25519_Seed]
+        )
+    )
+
+    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"))
+    assert rep.status_code == 202
+
+    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"))
+    assert rep.status_code == 400
+    assert rep.json == {
+        'title': 'agent already exists',
+        'description': 'agent for controller EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx already exists'
+    }
 
 
 def test_witnesser(helpers):
@@ -294,7 +329,8 @@ def test_oobi_ends(seeder, helpers):
         assert url == 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'
         assert item.oobialias == 'sal'
 
-        aid = helpers.createAid(client, "aggie", salt)
+        op = helpers.createAid(client, "aggie", salt)
+        aid = op["response"]
         aggiePre = aid['i']
         assert aggiePre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
 

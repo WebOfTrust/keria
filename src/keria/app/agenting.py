@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 from keri import kering
 from keri.app.notifying import Notifier
 from keri.app.storing import Mailboxer
+from keri.db.dbing import snKey, dgKey
 from ordered_set import OrderedSet as oset
 
 import falcon
@@ -250,12 +251,16 @@ class Agent(doing.DoDoer):
         self.anchors = decking.Deck()
         self.witners = decking.Deck()
         self.queries = decking.Deck()
+        self.registries = decking.Deck()
+
         receiptor = agenting.Receiptor(hby=hby)
         self.postman = forwarding.Poster(hby=hby)
+        self.witPub = agenting.WitnessPublisher(hby=self.hby)
+
         self.rep = storing.Respondant(hby=hby, cues=self.cues, mbx=Mailboxer(name=self.hby.name, temp=self.hby.temp))
 
-        doers = [habbing.HaberyDoer(habery=hby), receiptor, self.postman, self.rep, self.swain, self.counselor,
-                 *oobiery.doers]
+        doers = [habbing.HaberyDoer(habery=hby), receiptor, self.postman, self.witPub, self.rep, self.swain,
+                 self.counselor, *oobiery.doers]
 
         verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
 
@@ -292,11 +297,13 @@ class Agent(doing.DoDoer):
 
         init = Initer(agentHab=agentHab, caid=caid)
         qr = Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries)
-        er = Escrower(kvy=self.kvy, rvy=self.rvy, tvy=self.tvy, exc=self.exc)
+        er = Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc)
         mr = Messager(kvy=self.kvy, parser=self.parser)
         wr = Witnesser(receiptor=receiptor, witners=self.witners)
         dr = Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors)
-        doers.extend([init, qr, er, mr, wr, dr])
+        rg = Registrier(hby=hby, rgy=rgy, agentHab=agentHab, witPub=self.witPub, registries=self.registries)
+
+        doers.extend([init, qr, er, mr, wr, dr, rg])
 
         super().__init__(doers=doers, always=True, **opts)
 
@@ -471,8 +478,9 @@ class Querier(doing.DoDoer):
 
 
 class Escrower(doing.Doer):
-    def __init__(self, kvy, rvy, tvy, exc):
+    def __init__(self, kvy, rgy, rvy, tvy, exc):
         self.kvy = kvy
+        self.rgy = rgy
         self.rvy = rvy
         self.tvy = tvy
         self.exc = exc
@@ -482,10 +490,62 @@ class Escrower(doing.Doer):
     def recur(self, tyme):
         """ Process all escrows once per loop. """
         self.kvy.processEscrows()
+        self.rgy.processEscrows()
         self.rvy.processEscrowReply()
         if self.tvy is not None:
             self.tvy.processEscrows()
         self.exc.processEscrow()
+
+        return False
+
+
+class Registrier(doing.Doer):
+
+    def __init__(self, hby, rgy, agentHab, witPub, registries):
+        self.hby = hby
+        self.rgy = rgy
+        self.agentHab = agentHab
+        self.witPub = witPub
+        self.registries = registries
+
+        super(Registrier, self).__init__()
+
+    def recur(self, tyme):
+        if self.registries:
+            msg = self.registries.popleft()
+            pre = msg["pre"]
+            regk = msg["regk"]
+            regd = msg["regd"]
+            sn = msg["sn"]
+
+            if pre not in self.hby.habs:
+                logger.error(f"request to incept registry from invalid pre {pre}")
+                return False
+
+            anchor = dict(i=regk, s=sn, d=regd)
+            if (serder := self.hby.db.findAnchoringEvent(pre=pre, anchor=anchor)) is None:
+                self.registries.append(msg)
+                return False
+
+            seqner = coring.Seqner(sn=serder.sn)
+            key = dgKey(regk, regd)
+            sealet = seqner.qb64b + serder.saidb
+            self.rgy.reger.putAnc(key, sealet)
+
+            rseq = coring.Seqner(snh=sn)
+            dig = self.rgy.reger.getTel(key=snKey(pre=regk, sn=rseq.sn))
+            if dig is None:
+                self.registries.append(msg)
+                return False
+
+            tevt = bytearray()
+            for msg in self.rgy.reger.clonePreIter(pre=regk, fn=rseq.sn):
+                tevt.extend(msg)
+
+            print(f"Sending TEL events to witnesses")
+            # Fire and forget the TEL event to the witnesses.  Consumers will have to query
+            # to determine when the Witnesses have received the TEL events.
+            self.witPub.msgs.append(dict(pre=self.agentHab.pre, msg=tevt))
 
         return False
 
@@ -547,6 +607,10 @@ class BootEnd:
 
         caid = icp.pre
 
+        if caid in self.agency.agents:
+            raise falcon.HTTPBadRequest(title="agent already exists",
+                                        description=f"agent for controller {caid} already exists")
+
         agent = self.agency.create(caid=caid)
 
         try:
@@ -564,25 +628,16 @@ class BootEnd:
         # Client is requesting that the Agent track the Salty parameters
         if Algos.salty in body:
             salt = body[Algos.salty]
-            if "stem" not in salt:
-                raise falcon.HTTPBadRequest(title="invalid inception",
-                                            description=f'required field "stem" missing from body.salt')
-            stem = salt["stem"]
-
-            if "pidx" not in salt:
-                raise falcon.HTTPBadRequest(title="invalid inception",
-                                            description=f'required field "pidx" missing from body.salt')
-            pidx = salt["pidx"]
-
-            if "tier" not in salt:
-                raise falcon.HTTPBadRequest(title="invalid inception",
-                                            description=f'required field "tier" missing from body.salt')
-            tier = salt["tier"]
+            stem = httping.getRequiredParam(salt, "stem")
+            pidx = httping.getRequiredParam(salt, "pidx")
+            tier = httping.getRequiredParam(salt, "tier")
+            sxlt = httping.getRequiredParam(salt, "sxlt")
+            icodes = httping.getRequiredParam(salt, "icodes")
+            ncodes = httping.getRequiredParam(salt, "ncodes")
 
             mgr = agent.mgr.get(algo=Algos.salty)
-            mgr.incept(agent.caid, verfers=ctrlHab.kever.verfers,
-                       digers=ctrlHab.kever.digers,
-                       pidx=pidx, ridx=0, kidx=0, stem=stem, tier=tier)
+            mgr.incept(agent.caid, icodes=icodes, ncodes=ncodes, sxlt=sxlt, pidx=pidx, kidx=0, stem=stem, tier=tier,
+                       transferable=True)
 
         elif Algos.randy in body:
             rand = body[Algos.randy]
