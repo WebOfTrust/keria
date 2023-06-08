@@ -214,16 +214,28 @@ class Helpers:
 
     @staticmethod
     def remove_test_dirs(name):
-        if os.path.exists(f'/usr/local/var/keri/db/{name}'):
-            shutil.rmtree(f'/usr/local/var/keri/db/{name}')
-        if os.path.exists(f'/usr/local/var/keri/ks/{name}'):
-            shutil.rmtree(f'/usr/local/var/keri/ks/{name}')
-        if os.path.exists(f'/usr/local/var/keri/reg/{name}'):
-            shutil.rmtree(f'/usr/local/var/keri/reg/{name}')
+        # if os.path.exists(f'/usr/local/var/keri/adb/TheAgency'):
+        #     shutil.rmtree(f'/usr/local/var/keri/adb/TheAgency')
         if os.path.exists(f'/usr/local/var/keri/cf/{name}.json'):
             os.remove(f'/usr/local/var/keri/cf/{name}.json')
         if os.path.exists(f'/usr/local/var/keri/cf/{name}'):
             shutil.rmtree(f'/usr/local/var/keri/cf/{name}')
+        if os.path.exists(f'/usr/local/var/keri/db/{name}'):
+            shutil.rmtree(f'/usr/local/var/keri/db/{name}')
+        if os.path.exists(f'/usr/local/var/keri/ks/{name}'):
+            shutil.rmtree(f'/usr/local/var/keri/ks/{name}')
+        if os.path.exists(f'/usr/local/var/keri/mbx/{name}'):
+            shutil.rmtree(f'/usr/local/var/keri/mbx/{name}')
+        if os.path.exists(f'/usr/local/var/keri/not/{name}'):
+            shutil.rmtree(f'/usr/local/var/keri/not/{name}')
+        if os.path.exists(f'/usr/local/var/keri/opr/{name}'):
+            shutil.rmtree(f'/usr/local/var/keri/opr/{name}')
+        if os.path.exists(f'/usr/local/var/keri/reg/{name}'):
+            shutil.rmtree(f'/usr/local/var/keri/reg/{name}')
+        if os.path.exists(f'/usr/local/var/keri/reg/agent-{name}'):
+            shutil.rmtree(f'/usr/local/var/keri/reg/agent-{name}')
+        if os.path.exists(f'/usr/local/var/keri/rks/{name}'):
+            shutil.rmtree(f'/usr/local/var/keri/rks/{name}')
         if os.path.exists(f'~/.keri/db/{name}'):
             shutil.rmtree(f'~/.keri/db/{name}')
         if os.path.exists(f'~/.keri/ks/{name}'):
