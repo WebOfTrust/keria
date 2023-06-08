@@ -48,50 +48,17 @@ export function Delegation() {
                                 count++;
                             }
 
-                            
+                            op = await identifiers.create('aid1', {delpre: delpre})
+                            let pre = op["metadata"]["pre"]
 
-                            // let aids = await identifiers.list_identifiers()
-                            // assert.equal(aids.length, 0)
+                            while (!op["done"]) {
+                                op = await operations.get(op["name"]);
+                                await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
+                            }
 
-                            // let aid = await identifiers.create('aid1', {algo: 'randy'})
-                            // const icp = await new Serder(aid)
-                            // assert.equal(icp.verfers.length, 1)
-                            // assert.equal(icp.digers.length, 1)
-                            // assert.equal(icp.ked['kt'], '1')
-                            // assert.equal(icp.ked['nt'], '1')
+                            let icp1 = new Serder(op["response"])
+                            assert.equal(icp1.pre, pre)
 
-
-                            // aids = await identifiers.list_identifiers()
-                            // assert.equal(aids.length, 1)
-                            // aid = aids[0]
-                            // assert.equal(aid.name, 'aid1')
-                            // assert.equal(aid.prefix, icp.pre)
-
-                            // let ked = await identifiers.interact("aid1", [icp.pre])
-                            // let ixn = await new Serder(ked)
-                            // assert.equal(ixn.ked['s'], '1')
-                            // assert.deepEqual(ixn.ked['a'], [icp.pre])
-
-                            // aids = await identifiers.list_identifiers()
-                            // assert.equal(aids.length, 1)
-                            // aid = aids[0]
-
-                            // const events = client.key_events()
-                            // let log = await events.get(aid["prefix"])
-                            // assert.equal(log.length, 2)
-
-                            // ked = await identifiers.rotate('aid1',{})
-                            // let rot = await new Serder(ked)
-                            // assert.equal(rot.ked['s'], '2')
-                            // assert.equal(rot.verfers.length, 1)
-                            // assert.equal(rot.digers.length, 1)
-                            // assert.notEqual(rot.verfers[0].qb64, icp.verfers[0].qb64)
-                            // assert.notEqual(rot.digers[0].qb64, icp.digers[0].qb64)
-                            // let dig = new Diger({code: MtrDex.Blake3_256},rot.verfers[0].qb64b, )
-                            // assert.equal(dig.qb64, icp.digers[0].qb64)
-                            // log = await events.get(aid["prefix"])
-                            // assert.equal(log.length, 3)
-                            
                             setTestResult("Passed")
                         }
                         catch (e) {

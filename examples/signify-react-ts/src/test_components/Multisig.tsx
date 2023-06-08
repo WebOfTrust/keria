@@ -36,7 +36,7 @@ export function Multisig() {
                             const oobis = client.oobis()
 
                             const icp = await identifiers.create('aid1', {bran: '0123456789abcdefghijk' })
-                            const serder = new Serder(icp)
+                            let serder = new Serder(icp)
                             assert.equal(serder.pre, "ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK")
                             
                             await identifiers.addEndRole("aid1", 'agent', client.agent.pre)
@@ -49,59 +49,75 @@ export function Multisig() {
                                 op = await operations.get(op["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
-                            const multisig1 = op["response"]
+                            let multisig1 = op["response"]
 
                             op = await oobis.resolve("http://127.0.0.1:5642/oobi/EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha","multisig2")
                             while (!op["done"]) {
                                 op = await operations.get(op["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
-                            const multisig2 = op["response"]
+                            let multisig2 = op["response"]
 
+                            let aid1 = await identifiers.get_identifier("aid1")
+                            let agent0 = aid1["state"]
+                            let rstates = [multisig2, multisig1, agent0]
+                            let states = rstates
+
+                            op = identifiers.create("multisig",{
+                                algo: "group",
+                                mhab: aid1,
+                                isith: ["1/3", "1/3", "1/3"], 
+                                nsith: ["1/3", "1/3", "1/3"],
+                                toad: 3,
+                                wits: [
+                                    "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
+                                    "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
+                                    "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"],
+                                states: states,
+                                rstates: rstates
+                            })
+                            console.log("waiting on multisig creation...")
+                            while (!op["done"]) {
+                                op = await operations.get(op["name"]);
+                                await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
+                            }
                             
+                            // Join an interaction event with the group
+                            const data = {i: "EE77q3_zWb5ojgJr-R1vzsL5yiL4Nzm-bfSOQzQl02dy"}
+                            op = identifiers.interact("multisig", data)
+                            while (!op["done"]) {
+                                op = await operations.get(op["name"]);
+                                await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
+                            }
+                            const ixn = new Serder(op["response"])
+                            const events = await client.events()
+                            const log = await events.get(ixn.pre)
+                            assert.equal(log.length, 2)
+                            const rot = await identifiers.rotate("aid1",{})
+                            serder = new Serder(rot)
 
-                            // let aids = await identifiers.list_identifiers()
-                            // assert.equal(aids.length, 0)
+                            aid1 = await identifiers.get_identifier("aid1")
+                            agent0 = aid1["state"]
+                            const keyState = await client.keyStates()
+                            op = await keyState.query("EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4", "1")
+                            while (!op["done"]) {
+                                op = await operations.get(op["name"]);
+                                await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
+                            }
+                            multisig1 = op["response"]
 
-                            // let aid = await identifiers.create('aid1', {algo: 'randy'})
-                            // const icp = await new Serder(aid)
-                            // assert.equal(icp.verfers.length, 1)
-                            // assert.equal(icp.digers.length, 1)
-                            // assert.equal(icp.ked['kt'], '1')
-                            // assert.equal(icp.ked['nt'], '1')
+                            op = keyState.query("EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1", "1")
+                            while (!op["done"]) {
+                                op = await operations.get(op["name"]);
+                                await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
+                            }
+                            multisig2 = op["response"]
+                            rstates = [multisig2, multisig1, agent0]
+                            states = rstates
 
+                            op = identifiers.rotate("multisig", {states: states, rstates: rstates})
+                            console.log(op)
 
-                            // aids = await identifiers.list_identifiers()
-                            // assert.equal(aids.length, 1)
-                            // aid = aids[0]
-                            // assert.equal(aid.name, 'aid1')
-                            // assert.equal(aid.prefix, icp.pre)
-
-                            // let ked = await identifiers.interact("aid1", [icp.pre])
-                            // let ixn = await new Serder(ked)
-                            // assert.equal(ixn.ked['s'], '1')
-                            // assert.deepEqual(ixn.ked['a'], [icp.pre])
-
-                            // aids = await identifiers.list_identifiers()
-                            // assert.equal(aids.length, 1)
-                            // aid = aids[0]
-
-                            // const events = client.key_events()
-                            // let log = await events.get(aid["prefix"])
-                            // assert.equal(log.length, 2)
-
-                            // ked = await identifiers.rotate('aid1',{})
-                            // let rot = await new Serder(ked)
-                            // assert.equal(rot.ked['s'], '2')
-                            // assert.equal(rot.verfers.length, 1)
-                            // assert.equal(rot.digers.length, 1)
-                            // assert.notEqual(rot.verfers[0].qb64, icp.verfers[0].qb64)
-                            // assert.notEqual(rot.digers[0].qb64, icp.digers[0].qb64)
-                            // let dig = new Diger({code: MtrDex.Blake3_256},rot.verfers[0].qb64b, )
-                            // assert.equal(dig.qb64, icp.digers[0].qb64)
-                            // log = await events.get(aid["prefix"])
-                            // assert.equal(log.length, 3)
-                            
                             setTestResult("Passed")
                         }
                         catch (e) {
