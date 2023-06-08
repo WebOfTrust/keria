@@ -5,6 +5,7 @@ keria.app.agenting module
 
 """
 import json
+import os
 from urllib.parse import urlparse
 
 from keri import kering
@@ -48,7 +49,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
     agency = Agency(name=name, base=base, bran=bran, configFile=configFile, configDir=configDir)
     bootApp = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*',
-        expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input']))
+        expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input','signify-resource','signify-timestamp']))
     bootServer = http.Server(port=bootPort, app=bootApp)
     bootServerDoer = http.ServerDoer(server=bootServer)
     bootEnd = BootEnd(agency)
@@ -59,7 +60,10 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
 
     app = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*',
-        expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input']))
+        expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input','signify-resource','signify-timestamp']))
+    if os.getenv("KERI_AGENT_CORS", "false").lower() in ("true", "1"):
+        app.add_middleware(middleware=httping.HandleCORS())
+        print("CORS  enabled")
     app.add_middleware(authing.SignatureValidationComponent(agency=agency, authn=authn, allowed=["/agent"]))
     app.req_options.media_handlers.update(media.Handlers())
     app.resp_options.media_handlers.update(media.Handlers())
@@ -75,7 +79,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
     if httpPort:
         happ = falcon.App(middleware=falcon.CORSMiddleware(
             allow_origins='*', allow_credentials='*',
-            expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input']))
+            expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input','signify-resource','signify-timestamp']))
         happ.req_options.media_handlers.update(media.Handlers())
         happ.resp_options.media_handlers.update(media.Handlers())
 
