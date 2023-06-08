@@ -167,7 +167,7 @@ def test_identifier_collection_end(helpers):
                 }
 
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
-        assert res.status_code == 200
+        assert res.status_code == 202
 
         # Try to resubmit and get an error
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
@@ -192,7 +192,7 @@ def test_identifier_collection_end(helpers):
                 'salty': {'stem': 'signify:aid', 'pidx': 1, 'tier': 'low', 'sxlt': sxlt,
                           'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}}
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
-        assert res.status_code == 200
+        assert res.status_code == 202
 
         res = client.simulate_get(path="/identifiers")
         assert res.status_code == 200
@@ -407,7 +407,7 @@ def test_identifier_collection_end(helpers):
                 }
                 }
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
-        assert res.status_code == 200
+        assert res.status_code == 202
 
         # Resubmit and get an error
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
@@ -457,7 +457,7 @@ def test_identifier_collection_end(helpers):
                 }
         res = client.simulate_put(path="/identifiers/randy1", body=json.dumps(body))
         assert res.status_code == 200
-        assert res.json == serder.ked
+        assert res.json["response"] == serder.ked
         res = client.simulate_get(path="/identifiers")
         assert res.status_code == 200
         assert len(res.json) == 1
@@ -475,7 +475,7 @@ def test_identifier_collection_end(helpers):
                 }
         res = client.simulate_put(path="/identifiers/randy1?type=ixn", body=json.dumps(body))
         assert res.status_code == 200
-        assert res.json == serder.ked
+        assert res.json["response"] == serder.ked
 
         res = client.simulate_get(path=f"/events?pre={pre}")
         assert res.status_code == 200
@@ -494,7 +494,8 @@ def test_identifier_collection_end(helpers):
 
         client = testing.TestClient(app)
         salt = b'0123456789abcdef'
-        aid = helpers.createAid(client, "delegator", salt)
+        op = helpers.createAid(client, "delegator", salt)
+        aid = op["response"]
         delpre = aid['i']
         assert delpre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
         op = helpers.createAid(client, "delegatee", salt, delpre=delpre)
@@ -522,7 +523,7 @@ def test_identifier_collection_end(helpers):
                 }
                 }
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
-        assert res.status_code == 200
+        assert res.status_code == 202
 
 def test_challenge_ends(helpers):
     with helpers.openKeria() as (agency, agent, app, client):
@@ -557,7 +558,8 @@ def test_challenge_ends(helpers):
 
         # Create an AID to test against
         salt = b'0123456789abcdef'
-        aid = helpers.createAid(client, "pal", salt)
+        op = helpers.createAid(client, "pal", salt)
+        aid = op["response"]
 
         payload = dict(i=aid['i'], words=words)
         exn = exchanging.exchange(route="/challenge/response", payload=payload)
@@ -599,7 +601,8 @@ def test_contact_ends(helpers):
         end = aiding.IdentifierCollectionEnd()
         app.add_route("/identifiers", end)
         salt = b'0123456789abcdef'
-        aid = helpers.createAid(client, "pal", salt)
+        op = helpers.createAid(client, "pal", salt)
+        aid = op["response"]
         palPre = aid["i"]
 
         msgs = bytearray()
@@ -833,7 +836,7 @@ def test_identifier_resource_end(helpers):
                 }
 
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
-        assert res.status_code == 200
+        assert res.status_code == 202
 
         res = client.simulate_get(path="/identifiers/bad")
         assert res.status_code == 404

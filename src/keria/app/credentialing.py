@@ -8,10 +8,13 @@ services and endpoint for ACDC credential managements
 import json
 
 import falcon
+from keri.core import coring
+
+from keria.core import httping, longrunning
 
 
-def loadEnds(app):
-    registryEnd = RegistryEnd()
+def loadEnds(app, identifierResource):
+    registryEnd = RegistryEnd(identifierResource)
     app.add_route("/registries", registryEnd)
 
     schemaColEnd = SchemaCollectionEnd()
@@ -25,6 +28,15 @@ class RegistryEnd:
     ReST API for admin of credential issuance and revocation registries
 
     """
+
+    def __init__(self, identifierResource):
+        """
+
+        Parameters:
+            identifierResource (IdentifierResourceEnd): endpoint class for creating rotation and interaction events
+
+        """
+        self.identifierResource = identifierResource
 
     @staticmethod
     def on_get(req, rep):
@@ -60,8 +72,7 @@ class RegistryEnd:
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
 
-    @staticmethod
-    def on_post(req, rep):
+    def on_post(self, req, rep):
         """  Registries POST endpoint
 
         Parameters:
@@ -114,35 +125,28 @@ class RegistryEnd:
         agent = req.context.agent
         body = req.get_media()
 
-        if "name" not in body:
-            raise falcon.HTTPBadRequest(description="name is a required parameter to create a verifiable "
-                                                    "credential registry")
+        alias = httping.getRequiredParam(body, "alias")
+        name = httping.getRequiredParam(body, "name")
+        ked = httping.getRequiredParam(body, "vcp")
+        vcp = coring.Serder(ked=ked)
 
-        if "alias" not in body:
-            raise falcon.HTTPBadRequest(description="alias is a required parameter to create a verifiable"
-                                                    " credential registry")
-
-        alias = body["alias"]
         hab = agent.hby.habByName(alias)
         if hab is None:
             raise falcon.HTTPNotFound(description="alias is not a valid reference to an identfier")
 
-        c = dict()
-        if "noBackers" in body:
-            c["noBackers"] = body["noBackers"]
-        if "baks" in body:
-            c["baks"] = body["baks"]
-        if "toad" in body:
-            c["toad"] = body["toad"]
-        if "estOnly" in body:
-            c["estOnly"] = body["estOnly"]
-        if "nonce" in body:
-            c["nonce"] = body["nonce"]
+        registry = agent.rgy.makeSignifyRegistry(name=name, prefix=hab.pre, regser=vcp)
+        if hab.kever.estOnly:
+            op = self.identifierResource.rotate(agent, alias, body)
+        else:
+            op = self.identifierResource.interact(agent, alias, body)
 
-        # TODO: refactor registrar to support signify event creation
-        # TODO: need a long running op here!
-        # agent.registrar.incept(name=body["name"], pre=hab.pre, conf=c)
+        # Create registry long running OP that embeds the above received OP or Serder.
+        agent.registries.append(dict(pre=hab.pre, regk=vcp.pre, sn=vcp.ked["s"], regd=vcp.said))
+        op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.registry,
+                                  metadata=dict(anchor=op))
+
         rep.status = falcon.HTTP_202
+        rep.data = op.to_json().encode("utf-8")
 
 
 class SchemaResourceEnd:
