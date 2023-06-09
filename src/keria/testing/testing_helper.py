@@ -213,39 +213,29 @@ class Helpers:
     controllerAID = "EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx"
 
     @staticmethod
-    def remove_test_dirs(name):
-        # if os.path.exists(f'/usr/local/var/keri/adb/TheAgency'):
-        #     shutil.rmtree(f'/usr/local/var/keri/adb/TheAgency')
-        if os.path.exists(f'/usr/local/var/keri/cf/{name}.json'):
-            os.remove(f'/usr/local/var/keri/cf/{name}.json')
-        if os.path.exists(f'/usr/local/var/keri/cf/{name}'):
-            shutil.rmtree(f'/usr/local/var/keri/cf/{name}')
-        if os.path.exists(f'/usr/local/var/keri/db/{name}'):
-            shutil.rmtree(f'/usr/local/var/keri/db/{name}')
-        if os.path.exists(f'/usr/local/var/keri/ks/{name}'):
-            shutil.rmtree(f'/usr/local/var/keri/ks/{name}')
-        if os.path.exists(f'/usr/local/var/keri/mbx/{name}'):
-            shutil.rmtree(f'/usr/local/var/keri/mbx/{name}')
-        if os.path.exists(f'/usr/local/var/keri/not/{name}'):
-            shutil.rmtree(f'/usr/local/var/keri/not/{name}')
-        if os.path.exists(f'/usr/local/var/keri/opr/{name}'):
-            shutil.rmtree(f'/usr/local/var/keri/opr/{name}')
-        if os.path.exists(f'/usr/local/var/keri/reg/{name}'):
-            shutil.rmtree(f'/usr/local/var/keri/reg/{name}')
-        if os.path.exists(f'/usr/local/var/keri/reg/agent-{name}'):
-            shutil.rmtree(f'/usr/local/var/keri/reg/agent-{name}')
-        if os.path.exists(f'/usr/local/var/keri/rks/{name}'):
-            shutil.rmtree(f'/usr/local/var/keri/rks/{name}')
-        if os.path.exists(f'~/.keri/db/{name}'):
-            shutil.rmtree(f'~/.keri/db/{name}')
-        if os.path.exists(f'~/.keri/ks/{name}'):
-            shutil.rmtree(f'~/.keri/ks/{name}')
-        if os.path.exists(f'~/.keri/reg/{name}'):
-            shutil.rmtree(f'~/.keri/reg/{name}')
-        if os.path.exists(f'~/.keri/cf/{name}.json'):
-            os.remove(f'~/.keri/cf/{name}.json')
-        if os.path.exists(f'~/.keri/cf/{name}'):
-            shutil.rmtree(f'~/.keri/cf/{name}')
+    def remove_test_dirs(name,kdir="/usr/local/var/keri"):
+        # if os.path.exists(f'{kdir}/adb/TheAgency'):
+        #     shutil.rmtree(f'{kdir}/adb/TheAgency')
+        if os.path.exists(f'{kdir}/cf/{name}.json'):
+            os.remove(f'{kdir}/cf/{name}.json')
+        if os.path.exists(f'{kdir}/cf/{name}'):
+            shutil.rmtree(f'{kdir}/cf/{name}')
+        if os.path.exists(f'{kdir}/db/{name}'):
+            shutil.rmtree(f'{kdir}/db/{name}')
+        if os.path.exists(f'{kdir}/ks/{name}'):
+            shutil.rmtree(f'{kdir}/ks/{name}')
+        if os.path.exists(f'{kdir}/mbx/{name}'):
+            shutil.rmtree(f'{kdir}/mbx/{name}')
+        if os.path.exists(f'{kdir}/not/{name}'):
+            shutil.rmtree(f'{kdir}/not/{name}')
+        if os.path.exists(f'{kdir}/opr/{name}'):
+            shutil.rmtree(f'{kdir}/opr/{name}')
+        if os.path.exists(f'{kdir}/reg/{name}'):
+            shutil.rmtree(f'{kdir}/reg/{name}')
+        if os.path.exists(f'{kdir}/reg/agent-{name}'):
+            shutil.rmtree(f'{kdir}/reg/agent-{name}')
+        if os.path.exists(f'{kdir}/rks/{name}'):
+            shutil.rmtree(f'{kdir}/rks/{name}')
 
     @staticmethod
     def controller():
