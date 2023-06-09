@@ -329,6 +329,16 @@ class Helpers:
         return serder, signers
 
     @staticmethod
+    def interact(pre, bran, pidx, ridx, sn, dig, data):
+        serder = eventing.interact(pre=pre, dig=dig, sn=sn, data=data)
+        salter = coring.Salter(raw=bran)
+        creator = keeping.SaltyCreator(salt=salter.qb64, stem="signify:aid", tier=coring.Tiers.low)
+
+        signers = creator.create(pidx=pidx, ridx=ridx, tier=coring.Tiers.low, temp=False, count=1)
+        sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
+        return serder, sigers
+
+    @staticmethod
     def createAid(client, name, salt, wits=None, toad="0", delpre=None):
         serder, signers = Helpers.incept(salt, "signify:aid", pidx=0, wits=wits, toad=toad, delpre=delpre)
         assert len(signers) == 1

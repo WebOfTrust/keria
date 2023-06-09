@@ -26,7 +26,9 @@ def test_indirecting(helpers):
         resend = aiding.IdentifierResourceEnd()
         app.add_route("/identifiers", end)
         app.add_route("/identifiers/{name}", resend)
-        aid = helpers.createAid(client, "recipient", salt)
+        op = helpers.createAid(client, "recipient", salt)
+        aid = op["response"]
+
         assert aid["i"] == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
 
         hab = hby.makeHab("test")

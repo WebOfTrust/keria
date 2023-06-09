@@ -178,7 +178,6 @@ class AgentResourceEnd:
                         cipher = coring.Cipher(qb64=prx)
                         agent.mgr.rb.nxts.put(keys=digers[idx].qb64b, val=cipher)
 
-        print(f"deleting {sxlt}")
         agent.mgr.delete_sxlt()
 
         rep.status = falcon.HTTP_204
@@ -356,12 +355,13 @@ class IdentifierCollectionEnd:
                     rep.data = op.to_json().encode("utf-8")
 
                 else:
-                    rep.status = falcon.HTTP_200
-                    rep.data = serder.raw
+                    rep.status = falcon.HTTP_202
+                    op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
+                                              metadata=dict(response=serder.ked))
+                    rep.data = op.to_json().encode("utf-8")
 
         except (kering.AuthError, ValueError) as e:
-            rep.status = falcon.HTTP_400
-            rep.text = e.args[0]
+            raise falcon.HTTPBadRequest(description=e.args[0])
 
 
 class IdentifierResourceEnd:
@@ -402,13 +402,13 @@ class IdentifierResourceEnd:
             typ = Ilks.ixn if req.params.get("type") == "ixn" else Ilks.rot
 
             if typ in (Ilks.rot,):
-                data = self.rotate(agent, name, body)
+                op = self.rotate(agent, name, body)
             else:
-                data = self.interact(agent, name, body)
+                op = self.interact(agent, name, body)
 
             rep.status = falcon.HTTP_200
             rep.content_type = "application/json"
-            rep.data = data
+            rep.data = op.to_json().encode("utf-8")
 
         except (kering.AuthError, ValueError) as e:
             raise falcon.HTTPBadRequest(description=e.args[0])
@@ -461,21 +461,23 @@ class IdentifierResourceEnd:
             agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
             op = agent.monitor.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=serder.sn))
 
-            return op.to_json().encode("utf-8")
+            return op
 
         if hab.kever.delegator:
             agent.anchors.append(dict(alias=name, pre=hab.pre, sn=0))
             op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
                                       metadata=dict(pre=hab.pre, sn=hab.kever.sn))
-            return op.to_json().encode("utf-8")
+            return op
 
         if hab.kever.wits:
             agent.witners.append(dict(serder=serder))
             op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.witness,
                                       metadata=dict(sn=hab.kever.sn))
-            return op.to_json().encode("utf-8")
+            return op
 
-        return serder.raw
+        op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
+                                  metadata=dict(response=serder.ked))
+        return op
 
     @staticmethod
     def interact(agent, name, body):
@@ -502,15 +504,17 @@ class IdentifierResourceEnd:
             agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers))
             op = agent.monitor.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=serder.sn))
 
-            return op.to_json().encode("utf-8")
+            return op
 
         if hab.kever.wits:
             agent.witners.append(dict(serder=serder))
             op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.witness,
                                       metadata=dict(sn=hab.kever.sn))
-            return op.to_json().encode("utf-8")
+            return op
 
-        return serder.raw
+        op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
+                                  metadata=dict(response=serder.ked))
+        return op
 
 
 def info(hab, rm, full=False):

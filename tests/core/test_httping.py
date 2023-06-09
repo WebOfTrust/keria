@@ -9,7 +9,7 @@ class HandleCORSTest(unittest.TestCase):
         self.cors_handler = HandleCORS()
 
     def test_process_request(self):
-        req = helpers.create_environ(method='GET')
+        req = helpers.create_req(method='GET')
         resp = falcon.Response()
 
         self.cors_handler.process_request(req, resp)
@@ -20,7 +20,7 @@ class HandleCORSTest(unittest.TestCase):
         self.assertEqual(resp.get_header('Access-Control-Max-Age'), '1728000')
 
     def test_process_request_options_method(self):
-        req = helpers.create_environ(method='OPTIONS')
+        req = helpers.create_req(method='OPTIONS')
         resp = falcon.Response()
 
         with self.assertRaises(HTTPStatus) as cm:
