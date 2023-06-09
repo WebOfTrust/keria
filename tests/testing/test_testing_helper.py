@@ -40,3 +40,8 @@ def test_helper():
         assert True == os.path.exists(pDir)
 
     shutil.rmtree(pDir)
+    
+def test_helper_mocks():
+    assert Helpers.mockNowUTC().strftime('%Y-%m-%dT%H:%M:%S') == "2021-01-01T00:00:00"
+    assert Helpers.mockNowIso8601() == "2021-06-27T21:26:21.233257+00:00"
+    assert Helpers.mockRandomNonce() == "A9XfpxIl1LcIkMhUSCCC8fgvkuX8gG9xK3SM-S8a8Y_U"
