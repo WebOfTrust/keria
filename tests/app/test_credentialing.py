@@ -10,9 +10,12 @@ import json
 import falcon
 from falcon import testing
 from hio.base import doing
-from keri.core import scheming, coring
+from keri.app import habbing, signing
+from keri.core import scheming, coring, parsing
 from keri.core.eventing import TraitCodex
-from keri.vdr import eventing
+from keri.vc import proving
+from keri.vdr import eventing, verifying
+from keri.vdr.credentialing import Regery, Registrar
 
 from keria.app import credentialing, aiding
 
@@ -35,7 +38,6 @@ def test_load_ends(helpers):
 
 def test_schema_ends(helpers):
     with helpers.openKeria() as (agency, agent, app, client):
-
         client = testing.TestClient(app)
 
         schemaColEnd = credentialing.SchemaCollectionEnd()
@@ -88,8 +90,6 @@ def test_schema_ends(helpers):
 
 def test_registry_end(helpers, seeder):
     with helpers.openKeria() as (agency, agent, app, client):
-        print()
-        client = testing.TestClient(app)
         idResEnd = aiding.IdentifierResourceEnd()
         registryEnd = credentialing.RegistryEnd(idResEnd)
         app.add_route("/registries", registryEnd)
@@ -145,3 +145,95 @@ def test_registry_end(helpers, seeder):
 
         assert len(agent.registries) == 0
         assert regser.pre in agent.tvy.tevers
+
+
+def test_credentialing_ends(helpers, seeder):
+    salt = b'0123456789abcdef'
+
+    with helpers.openKeria() as (agency, agent, app, client), \
+            habbing.openHab(name="issuer", salt=salt, temp=True) as (hby, hab), \
+            helpers.withIssuer(name="issuer", hby=hby) as issuer:
+        credEnd = credentialing.CredentialCollectionEnd()
+        app.add_route("/identifiers/{aid}/credentials", credEnd)
+        credResEnd = credentialing.CredentialResourceEnd()
+        app.add_route("/identifiers/{aid}/credentials/{said}", credResEnd)
+
+        assert hab.pre == "EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze"
+
+        seeder.seedSchema(hby.db)
+        seeder.seedSchema(agent.hby.db)
+
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+        op = helpers.createAid(client, "test", salt)
+        aid = op["response"]
+        issuee = aid['i']
+        assert issuee == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+
+        rgy = Regery(hby=hby, name="issuer", temp=True)
+        registrar = Registrar(hby=hby, rgy=rgy, counselor=None)
+
+        conf = dict(nonce='AGu8jwfkyvVXQ2nqEb5yVigEtR31KSytcpe2U2f7NArr')
+
+        registry = registrar.incept(name="issuer", pre=hab.pre, conf=conf)
+        assert registry.regk == "EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4"
+
+        issuer.createRegistry(hab.pre, name="issuer")
+
+        print()
+        saids = [
+            issuer.issueQVIvLEI("issuer", hab, issuee, "984500E5DEFDBQ1O9038"),
+            issuer.issueQVIvLEI("issuer", hab, issuee, "984500AAFEB59DDC0E43"),
+            issuer.issueLegalEntityvLEI("issuer", hab, issuee, "254900OPPU84GM83MG36"),
+            issuer.issueLegalEntityvLEI("issuer", hab, issuee, "9845004CC7884BN85018"),
+            issuer.issueLegalEntityvLEI("issuer", hab, issuee, "98450030F6X9EC7C8336")
+        ]
+
+        ims = bytearray()
+        for said in saids:
+            print(said)
+            ims.extend(credentialing.CredentialResourceEnd.outputCred(hby, issuer.rgy, said))
+
+        parsing.Parser(kvy=agent.kvy, rvy=agent.rvy, tvy=agent.tvy, vry=agent.verifier).parse(ims)
+
+        res = client.simulate_get(f"/identifiers/{hab.pre}/credentials")
+        assert res.status_code == 400
+        assert res.json == {'description': 'Invalid identifier '
+                                           'EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze for credentials',
+                            'title': '400 Bad Request'}
+
+        res = client.simulate_get(f"/identifiers/{issuee}/credentials")
+        assert res.status_code == 400
+        assert res.json == {'description': 'Invalid type None', 'title': '400 Bad Request'}
+
+        res = client.simulate_get(f"/identifiers/{issuee}/credentials?type=issued")
+        assert res.status_code == 200
+        assert res.json == []
+
+        res = client.simulate_get(f"/identifiers/{issuee}/credentials?type=received")
+        assert res.status_code == 200
+        assert len(res.json) == 5
+
+        res = client.simulate_get(f"/identifiers/{issuee}/credentials?type=received&schema={issuer.LE}")
+        assert res.status_code == 200
+        assert len(res.json) == 3
+
+        res = client.simulate_get(f"/identifiers/{issuee}/credentials?type=received&schema={issuer.QVI}")
+        assert res.status_code == 200
+        assert len(res.json) == 2
+
+        res = client.simulate_get(f"/identifiers/{issuee}/credentials/{saids[0]}")
+        assert res.status_code == 200
+        print(res.headers)
+        assert res.headers['content-type'] == "application/json"
+        assert res.json['sad']['d'] == saids[0]
+
+        headers = {"Accepts": "application/json+cesr"}
+        res = client.simulate_get(f"/identifiers/{hab.pre}/credentials/{saids[0]}", headers=headers)
+        assert res.status_code == 400
+        assert res.json == {'title': 'Invalid identifier EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze for '
+                                     'credentials'}
+
+        res = client.simulate_get(f"/identifiers/{issuee}/credentials/{saids[0]}", headers=headers)
+        assert res.status_code == 200
+        assert res.headers['content-type'] == "application/json+cesr"
