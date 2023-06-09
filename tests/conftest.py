@@ -14,12 +14,14 @@ import falcon
 import pytest
 from falcon import testing
 from keri import kering
-from keri.app import keeping, habbing, configing
+from keri.app import keeping, habbing, configing, signing
 from keri.core import coring, eventing, routing, parsing, scheming
 from keri.core.coring import MtrDex
-from keri.vdr import credentialing
+from keri.vc import proving
+from keri.vdr import credentialing, verifying
 from keri.help import helping
 from keri import help
+from keri.vdr.credentialing import Regery, Registrar
 
 from keria.app import agenting
 
@@ -265,6 +267,91 @@ class Helpers:
             client = testing.TestClient(app)
             yield agency, agent, app, client
 
+    @staticmethod
+    @contextmanager
+    def withIssuer(name, hby):
+        yield Issuer(name=name, hby=hby)
+
+
+class Issuer:
+
+    LE = "ENTAoj2oNBFpaniRswwPcca9W1ElEeH2V7ahw68HV4G5"
+    QVI = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
+    date = "2021-06-27T21:26:21.233257+00:00"
+
+    def __init__(self, name, hby):
+        self.rgy = Regery(hby=hby, name=name, temp=True)
+        self.registrar = Registrar(hby=hby, rgy=self.rgy, counselor=None)
+        self.verifier = verifying.Verifier(hby=hby, reger=self.rgy.reger)
+
+    def createRegistry(self, pre, name):
+        conf = dict(nonce='AGu8jwfkyvVXQ2nqEb5yVigEtR31KSytcpe2U2f7NArr')
+
+        registry = self.registrar.incept(name=name, pre=pre, conf=conf)
+        assert registry.regk == "EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4"
+
+        # Process escrows to clear event
+        self.rgy.processEscrows()
+        self.registrar.processEscrows()
+        assert self.registrar.complete(registry.regk) is True
+
+    def issueLegalEntityvLEI(self, reg, issuer, issuee, LEI):
+        registry = self.rgy.registryByName(reg)
+        credSubject = dict(
+            d="",
+            i=issuee,
+            dt=self.date,
+            LEI=LEI,
+        )
+
+        # Create the Creder and issue the credentials
+        creder = proving.credential(issuer=issuer.pre,
+                                    schema=self.LE,
+                                    data=credSubject,
+                                    status=registry.regk,
+                                    source={}, rules={})
+
+        craw = signing.ratify(hab=issuer, serder=creder)
+        self.registrar.issue(regk=registry.regk, said=creder.said, dt=self.date)
+
+        # Process escrows to clear event
+        self.rgy.processEscrows()
+        self.registrar.processEscrows()
+
+        parsing.Parser().parse(ims=craw, vry=self.verifier)
+
+        assert self.rgy.reger.saved.get(keys=creder.said) is not None
+
+        return creder.said
+
+    def issueQVIvLEI(self, reg, issuer, issuee, LEI):
+        registry = self.rgy.registryByName(reg)
+        credSubject = dict(
+            d="",
+            i=issuee,
+            dt=self.date,
+            LEI=LEI,
+        )
+
+        # Create the Creder and issue the credentials
+        creder = proving.credential(issuer=issuer.pre,
+                                    schema=self.QVI,
+                                    data=credSubject,
+                                    status=registry.regk)
+
+        craw = signing.ratify(hab=issuer, serder=creder)
+        self.registrar.issue(regk=registry.regk, said=creder.said, dt=self.date)
+
+        # Process escrows to clear event
+        self.rgy.processEscrows()
+        self.registrar.processEscrows()
+
+        parsing.Parser().parse(ims=craw, vry=self.verifier)
+
+        assert self.rgy.reger.saved.get(keys=creder.said) is not None
+
+        return creder.said
+
 
 @pytest.fixture
 def helpers():
@@ -397,7 +484,7 @@ class DbSeed:
 
         # OLD: EPz3ZvjQ_8ZwRKzfA5xzbMW8v8ZWLZhvOn2Kw1Nkqo_Q
         sad = {'$id': '', '$schema':
-            'http://json-schema.org/draft-07/schema#', 'title': 'Legal Entity vLEI Credential',
+               'http://json-schema.org/draft-07/schema#', 'title': 'Legal Entity vLEI Credential',
                'description': 'A vLEI Credential issued by a Qualified vLEI issuer to a Legal Entity',
                'credentialType': 'LegalEntityvLEICredential',
                'properties': {'v': {'type': 'string'}, 'd': {'type': 'string'}, 'i': {'type': 'string'},

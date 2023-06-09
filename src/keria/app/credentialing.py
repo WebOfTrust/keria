@@ -9,18 +9,26 @@ import json
 
 import falcon
 from keri.core import coring
+from keri.core.eventing import proofize
+from keri.vdr import eventing
 
 from keria.core import httping, longrunning
 
 
 def loadEnds(app, identifierResource):
-    registryEnd = RegistryEnd(identifierResource)
-    app.add_route("/registries", registryEnd)
-
     schemaColEnd = SchemaCollectionEnd()
     app.add_route("/schema", schemaColEnd)
     schemaResEnd = SchemaResourceEnd()
     app.add_route("/schema/{said}", schemaResEnd)
+
+    registryEnd = RegistryEnd(identifierResource)
+    app.add_route("/registries", registryEnd)
+
+    credentialCollectionEnd = CredentialCollectionEnd()
+    app.add_route("/identfiers/{aid}/credentials", credentialCollectionEnd)
+    
+    credentialResourceEnd = CredentialResourceEnd()
+    app.add_route("/identfiers/{aid}/credentials/{said}", credentialResourceEnd)
 
 
 class RegistryEnd:
@@ -134,7 +142,7 @@ class RegistryEnd:
         if hab is None:
             raise falcon.HTTPNotFound(description="alias is not a valid reference to an identfier")
 
-        registry = agent.rgy.makeSignifyRegistry(name=name, prefix=hab.pre, regser=vcp)
+        agent.rgy.makeSignifyRegistry(name=name, prefix=hab.pre, regser=vcp)
         if hab.kever.estOnly:
             op = self.identifierResource.rotate(agent, alias, body)
         else:
@@ -215,3 +223,184 @@ class SchemaCollectionEnd:
 
         rep.status = falcon.HTTP_200
         rep.data = json.dumps(data).encode("utf-8")
+
+
+class CredentialCollectionEnd:
+
+    @staticmethod
+    def on_get(req, rep, aid):
+        """ Credentials GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            aid (str): AID of Hab to load credentials for
+
+        ---
+        summary:  List credentials in credential store (wallet)
+        description: List issued or received credentials current verified
+        tags:
+           - Credentials
+        parameters:
+           - in: path
+             name: aid
+             schema:
+               type: string
+             required: true
+             description: identifier to load credentials for
+           - in: query
+             name: type
+             schema:
+                type: string
+             description:  type of credential to return, [issued|received]
+             required: true
+           - in: query
+             name: schema
+             schema:
+                type: string
+             description:  schema to filter by if provided
+             required: false
+        responses:
+           200:
+              description: Credential list.
+              content:
+                  application/json:
+                    schema:
+                        description: Credentials
+                        type: array
+                        items:
+                           type: object
+
+        """
+        agent = req.context.agent
+        
+        typ = req.params.get("type")
+        schema = req.params.get("schema")
+
+        if aid not in agent.hby.habs:
+            raise falcon.HTTPBadRequest(description=f"Invalid identifier {aid} for credentials")
+
+        hab = agent.hby.habs[aid]
+
+        if typ == "issued":
+            saids = agent.rgy.reger.issus.get(keys=hab.pre)
+        elif typ == "received":
+            saids = agent.rgy.reger.subjs.get(keys=hab.pre)
+        else:
+            raise falcon.HTTPBadRequest(description=f"Invalid type {typ}")
+
+        if schema is not None:
+            scads = agent.rgy.reger.schms.get(keys=schema)
+            saids = [saider for saider in saids if saider.qb64 in [saider.qb64 for saider in scads]]
+
+        creds = agent.rgy.reger.cloneCreds(saids)
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(creds).encode("utf-8")
+
+
+class CredentialResourceEnd:
+
+    @staticmethod
+    def on_get(req, rep, aid, said):
+        """ Credentials GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            aid (str): identifier to load credential for
+            said (str): SAID of credential to export
+
+        ---
+        summary:  Export credential and all supporting cryptographic material
+        description: Export credential and all supporting cryptographic material
+        tags:
+           - Credentials
+        parameters:
+           - in: path
+             name: aid
+             schema:
+               type: string
+             required: true
+             description: The identifier to create
+           - in: path
+             name: said
+             schema:
+               type: string
+             required: true
+             description: SAID of credential to get
+        responses:
+           200:
+              description: Credential export.
+              content:
+                  application/json+cesr:
+                    schema:
+                        description: Credential
+                        type: object
+
+        """
+        agent = req.context.agent
+
+        if aid not in agent.hby.habs:
+            raise falcon.HTTPBadRequest(f"Invalid identifier {aid} for credentials")
+
+        accepts = req.get_header("accepts")
+        print(accepts)
+        if accepts == "application/json+cesr":
+            rep.content_type = "application/json+cesr"
+            data = CredentialResourceEnd.outputCred(agent.hby, agent.rgy, said)
+        else:
+            rep.content_type = "application/json"
+            creds = agent.rgy.reger.cloneCreds([coring.Saider(qb64=said)])
+            if not creds:
+                raise falcon.HTTPNotFound(description=f"credential for said {said} not found.")
+
+            data = json.dumps(creds[0]).encode("utf-8")
+
+        rep.status = falcon.HTTP_200
+        rep.data = bytes(data)
+
+    @staticmethod
+    def outputCred(hby, rgy, said):
+        out = bytearray()
+        creder, sadsigers, sadcigars = rgy.reger.cloneCred(said=said)
+        chains = creder.chains
+        saids = []
+        for key, source in chains.items():
+            if key == 'd':
+                continue
+
+            if not isinstance(source, dict):
+                continue
+
+            saids.append(source['n'])
+
+        for said in saids:
+            out.extend(CredentialResourceEnd.outputCred(hby, rgy, said))
+
+        issr = creder.issuer
+        for msg in hby.db.clonePreIter(pre=issr):
+            serder = coring.Serder(raw=msg)
+            atc = msg[serder.size:]
+            out.extend(serder.raw)
+            out.extend(atc)
+
+        if creder.status is not None:
+            for msg in rgy.reger.clonePreIter(pre=creder.status):
+                serder = coring.Serder(raw=msg)
+                atc = msg[serder.size:]
+                out.extend(serder.raw)
+                out.extend(atc)
+
+            for msg in rgy.reger.clonePreIter(pre=creder.said):
+                serder = coring.Serder(raw=msg)
+                atc = msg[serder.size:]
+                out.extend(serder.raw)
+                out.extend(atc)
+
+        out.extend(creder.raw)
+        out.extend(proofize(sadtsgs=sadsigers, sadcigars=sadcigars, pipelined=True))
+
+        return out
+
