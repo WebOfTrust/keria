@@ -50,7 +50,8 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
     agency = Agency(name=name, base=base, bran=bran, configFile=configFile, configDir=configDir)
     bootApp = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*',
-        expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input','signify-resource','signify-timestamp']))
+        expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input',
+                        'signify-resource', 'signify-timestamp']))
     bootServer = http.Server(port=bootPort, app=bootApp)
     bootServerDoer = http.ServerDoer(server=bootServer)
     bootEnd = BootEnd(agency)
@@ -61,7 +62,8 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
 
     app = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*',
-        expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input','signify-resource','signify-timestamp']))
+        expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input',
+                        'signify-resource', 'signify-timestamp']))
     if os.getenv("KERI_AGENT_CORS", "false").lower() in ("true", "1"):
         app.add_middleware(middleware=httping.HandleCORS())
         print("CORS  enabled")
@@ -80,7 +82,8 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
     if httpPort:
         happ = falcon.App(middleware=falcon.CORSMiddleware(
             allow_origins='*', allow_credentials='*',
-            expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input','signify-resource','signify-timestamp']))
+            expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input',
+                            'signify-resource', 'signify-timestamp']))
         happ.req_options.media_handlers.update(media.Handlers())
         happ.resp_options.media_handlers.update(media.Handlers())
 
@@ -262,13 +265,13 @@ class Agent(doing.DoDoer):
         doers = [habbing.HaberyDoer(habery=hby), receiptor, self.postman, self.witPub, self.rep, self.swain,
                  self.counselor, *oobiery.doers]
 
-        verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
+        self.verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
 
         signaler = signaling.Signaler()
         self.notifier = Notifier(hby=hby, signaler=signaler)
         issueHandler = protocoling.IssueHandler(hby=hby, rgy=rgy, notifier=self.notifier)
         requestHandler = protocoling.PresentationRequestHandler(hby=hby, notifier=self.notifier)
-        applyHandler = protocoling.ApplyHandler(hby=hby, rgy=rgy, verifier=verifier,
+        applyHandler = protocoling.ApplyHandler(hby=hby, rgy=rgy, verifier=self.verifier,
                                                 name=agentHab.name)
         proofHandler = protocoling.PresentationProofHandler(notifier=self.notifier)
 
@@ -283,7 +286,7 @@ class Agent(doing.DoDoer):
                                    cues=self.cues)
         self.kvy.registerReplyRoutes(router=self.rvy.rtr)
 
-        self.tvy = Tevery(reger=verifier.reger,
+        self.tvy = Tevery(reger=self.verifier.reger,
                           db=hby.db,
                           local=False,
                           cues=self.cues)
