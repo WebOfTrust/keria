@@ -58,16 +58,19 @@ export function Multisig() {
                             }
                             let multisig2 = op["response"]
 
+
+                            await new Promise(resolve => setTimeout(resolve, 30000)); // sleep for 1 second
+
                             let aid1 = await identifiers.get_identifier("aid1")
                             let agent0 = aid1["state"]
                             let rstates = [multisig2, multisig1, agent0]
                             let states = rstates
 
-                            op = identifiers.create("multisig",{
+                            op = await identifiers.create("multisig",{
                                 algo: "group",
                                 mhab: aid1,
-                                isith: ["1/3", "1/3", "1/3"], 
-                                nsith: ["1/3", "1/3", "1/3"],
+                                isith: 2, 
+                                nsith: 2,
                                 toad: 3,
                                 wits: [
                                     "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",

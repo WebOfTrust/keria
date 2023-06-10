@@ -102,7 +102,6 @@ export class SignifyClient {
             throw Error("commitment to controller AID missing in agent inception event")
         }
         if (this.controller.serder.ked.s == 0 ) {
-            console.log('approving delegation')
             await this.approveDelegation()
         }
         this.manager = new KeyManager(this.controller.salter, null)
@@ -309,11 +308,9 @@ class Identifier {
                 version: Versionage, 
                 kind: Serials.JSON, 
                 code: dcode,
-                intive: false, 
-                delpre})
+                intive: false})
             
         } else {
-            // TODO should be delcept ?
             var serder = incept({ 
                 keys: keys!, 
                 isith: isith, 
@@ -327,7 +324,7 @@ class Identifier {
                 kind: Serials.JSON, 
                 code: dcode,
                 intive: false, 
-                delpre})
+                delpre: delpre})
         }
 
         let sigs = keeper!.sign(b(serder.raw))
