@@ -139,6 +139,8 @@ class Agency(doing.DoDoer):
             if "keria" in data:
                 curls = data["keria"]
                 data[f"agent-{caid}"] = curls
+                print(f"loading agent-{caid}")
+                print(curls)
                 del data["keria"]
 
             cf = configing.Configer(name=f"{caid}",
@@ -232,7 +234,6 @@ class Agent(doing.DoDoer):
     """
 
     def __init__(self, hby, rgy, agentHab, agency, caid, **opts):
-
         self.hby = hby
         self.rgy = rgy
         self.agentHab = agentHab
@@ -298,15 +299,17 @@ class Agent(doing.DoDoer):
                                      exc=self.exc,
                                      rvy=self.rvy)
 
-        init = Initer(agentHab=agentHab, caid=caid)
-        qr = Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries)
-        er = Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc)
-        mr = Messager(kvy=self.kvy, parser=self.parser)
-        wr = Witnesser(receiptor=receiptor, witners=self.witners)
-        dr = Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors)
-        rg = Registrier(hby=hby, rgy=rgy, agentHab=agentHab, witPub=self.witPub, registries=self.registries)
-
-        doers.extend([init, qr, er, mr, wr, dr, rg])
+        doers.extend([
+            Initer(agentHab=agentHab, caid=caid),
+            Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries),
+            Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc),
+            Messager(kvy=self.kvy, parser=self.parser),
+            Witnesser(receiptor=receiptor, witners=self.witners),
+            Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
+            GroupRequester(hby=hby, agentHab=agentHab, postman=self.postman, counselor=self.counselor,
+                           groups=self.groups),
+            Registrier(hby=hby, rgy=rgy, agentHab=agentHab, witPub=self.witPub, registries=self.registries),
+        ])
 
         super().__init__(doers=doers, always=True, **opts)
 
