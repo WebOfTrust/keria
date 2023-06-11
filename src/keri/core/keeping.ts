@@ -8,6 +8,7 @@ import { b } from "./core";
 import { Cipher } from './cipher';
 import { Diger } from './diger';
 import { Prefixer } from './prefixer';
+import { Signer } from './signer';
 
 export {};
 
@@ -72,6 +73,7 @@ export class SaltyKeeper {
     private bran:string | undefined
     private creator: SaltyCreator
     public algo:Algos = Algos.salty
+    public signers:Signer[]
 
     constructor(salter:Salter, pidx:number, kidx:number=0, tier=Tier.low, transferable=false, stem=undefined,
         code=MtrDex.Ed25519_Seed, count=1, icodes:string[]|undefined=undefined, ncode=MtrDex.Ed25519_Seed,
@@ -111,6 +113,8 @@ export class SaltyKeeper {
             let ciph = new Cipher({qb64:this.sxlt})
             this.creator = new SaltyCreator(this.decrypter.decrypt(null, ciph).qb64, tier=tier, this.stem)
         }
+
+        this.signers = this.creator.create(this.icodes, this.ncount, this.ncode, this.transferable, this.pidx, 0, this.kidx,false).signers
 
     }
 
@@ -232,6 +236,7 @@ export class RandyKeeper {
     private decrypter:Decrypter
     private creator: RandyCreator
     public algo:Algos = Algos.randy
+    public signers:Signer[]
 
 
 
@@ -262,8 +267,9 @@ export class RandyKeeper {
         this.dcode = dcode
         
         this.creator = new RandyCreator()
-        
 
+        this.signers = this.prxs!.map(prx => this.decrypter.decrypt(new Cipher({qb64:prx}).qb64b, undefined, this.transferable))
+        
     }
 
     params() {

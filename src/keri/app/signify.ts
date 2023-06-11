@@ -146,6 +146,35 @@ export class SignifyClient {
         }
     }
 
+    async signedFetch(url:string, path: string, method: string, data: any, aidName:string) {
+        const  hab = await this.identifiers().get_identifier(aidName)
+        const keeper = this.manager!.get(hab)
+
+        const authenticator = new Authenticater(keeper.signers[0], keeper.signers[0].verfer)
+        
+        let headers = new Headers()
+        headers.set('Signify-Resource', hab["prefix"])
+        headers.set('Signify-Timestamp', new Date().toISOString().replace('Z','000+00:00'))
+        headers.set('Content-Type', 'application/json')
+
+        if (data !== null) {
+            headers.set('Content-Length', data.length)
+        }
+        else {
+            headers.set('Content-Length', '0')
+        }
+        let signed_headers = authenticator.sign(headers, method, path.split('?')[0])
+        let _body = method == 'GET' ? null : JSON.stringify(data)
+
+        console.log(signed_headers)
+        return await fetch(url + path, {
+            method: method,
+            body: _body,
+            headers: signed_headers
+        });
+        
+    }
+
     async approveDelegation(){
         let sigs = this.controller.approveDelegation(this.agent!)
 
