@@ -8,7 +8,8 @@ simple indirect mode demo support classes
 import falcon
 from keri.app import httping
 from keri.core import eventing
-from keri.core.coring import Ilks
+from keri.core.coring import Ilks, Sadder
+from keri.kering import Protos
 
 CESR_DESTINATION_HEADER = "CESR-DESTINATION"
 
@@ -77,25 +78,29 @@ class HttpEnd:
         rep.set_header('connection', "close")
 
         cr = httping.parseCesrHttpRequest(req=req)
-        serder = eventing.Serder(ked=cr.payload, kind=eventing.Serials.json)
+        serder = Sadder(ked=cr.payload, kind=eventing.Serials.json)
         msg = bytearray(serder.raw)
         msg.extend(cr.attachments.encode("utf-8"))
 
         agent.parser.ims.extend(msg)
 
-        ilk = serder.ked["t"]
-        if ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.exn, Ilks.rpy):
+        if serder.proto == Protos.acdc:
             rep.status = falcon.HTTP_204
-        elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
-            rep.status = falcon.HTTP_204
-        elif ilk in (Ilks.qry,):
-            if serder.ked["r"] in ("mbx",):
-                raise falcon.HTTPNotFound(title="no mailbox support in KERIA")
-            else:
+
+        else:
+            ilk = serder.ked["t"]
+            if ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.exn, Ilks.rpy):
                 rep.status = falcon.HTTP_204
+            elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
+                rep.status = falcon.HTTP_204
+            elif ilk in (Ilks.qry,):
+                if serder.ked["r"] in ("mbx",):
+                    raise falcon.HTTPNotFound(title="no mailbox support in KERIA")
+                else:
+                    rep.status = falcon.HTTP_204
 
 
 def loadEnds(app, agency):
-    '''Add Falcon HTTP server endpoints for the HTTP endpoint class HttpEnd'''
+    """ Add Falcon HTTP server endpoints for the HTTP endpoint class HttpEnd """
     httpEnd = HttpEnd(agency=agency)
     app.add_route("/", httpEnd)

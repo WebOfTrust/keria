@@ -296,12 +296,13 @@ class Agent(doing.DoDoer):
                                      kvy=self.kvy,
                                      tvy=self.tvy,
                                      exc=self.exc,
-                                     rvy=self.rvy)
+                                     rvy=self.rvy,
+                                     vry=self.verifier)
 
         doers.extend([
             Initer(agentHab=agentHab, caid=caid),
             Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries),
-            Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc),
+            Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc, vry=self.verifier),
             Messager(kvy=self.kvy, parser=self.parser),
             Witnesser(receiptor=receiptor, witners=self.witners),
             Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
@@ -483,12 +484,13 @@ class Querier(doing.DoDoer):
 
 
 class Escrower(doing.Doer):
-    def __init__(self, kvy, rgy, rvy, tvy, exc):
+    def __init__(self, kvy, rgy, rvy, tvy, exc, vry):
         self.kvy = kvy
         self.rgy = rgy
         self.rvy = rvy
         self.tvy = tvy
         self.exc = exc
+        self.vry = vry
 
         super(Escrower, self).__init__()
 
@@ -500,6 +502,7 @@ class Escrower(doing.Doer):
         if self.tvy is not None:
             self.tvy.processEscrows()
         self.exc.processEscrow()
+        self.vry.processEscrows()
 
         return False
 
@@ -662,7 +665,7 @@ class BootEnd:
                        prxs=pris, nxts=nxts)
 
         elif Algos.group in body:
-            raise falcon.HTTPBadRequest("multisig groups not supported as agent controller")
+            raise falcon.HTTPBadRequest(description="multisig groups not supported as agent controller")
 
         rep.status = falcon.HTTP_202
 
@@ -700,7 +703,7 @@ class KeyStateCollectionEnd:
         """
         agent = req.context.agent
         if "pre" not in req.params:
-            raise falcon.HTTPBadRequest("required parameter 'pre' missing")
+            raise falcon.HTTPBadRequest(description="required parameter 'pre' missing")
 
         pres = req.params.get("pre")
         pres = pres if isinstance(pres, list) else [pres]
@@ -751,7 +754,7 @@ class KeyEventCollectionEnd:
         """
         agent = req.context.agent
         if "pre" not in req.params:
-            raise falcon.HTTPBadRequest("required parameter 'pre' missing")
+            raise falcon.HTTPBadRequest(description="required parameter 'pre' missing")
 
         pre = req.params.get("pre")
         preb = pre.encode("utf-8")
