@@ -230,8 +230,9 @@ def test_credentialing_ends(helpers, seeder):
         headers = {"Accepts": "application/json+cesr"}
         res = client.simulate_get(f"/identifiers/{hab.pre}/credentials/{saids[0]}", headers=headers)
         assert res.status_code == 400
-        assert res.json == {'title': 'Invalid identifier EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze for '
-                                     'credentials'}
+        assert res.json == {'description': 'Invalid identifier '
+                                           'EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze for credentials',
+                            'title': '400 Bad Request'}
 
         res = client.simulate_get(f"/identifiers/{issuee}/credentials/{saids[0]}", headers=headers)
         assert res.status_code == 200

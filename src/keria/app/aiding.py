@@ -121,7 +121,8 @@ class AgentResourceEnd:
 
         typ = req.params.get("type")
         if typ == "ixn":
-            self.interact(req, rep, agent, caid)
+            ixn = self.interact(req, rep, agent, caid)
+            self.anchorSeals(agent, ixn)
             return
 
         body = req.get_media()
@@ -205,6 +206,25 @@ class AgentResourceEnd:
         agent.agentHab.kvy.processEvent(serder=ixn, sigers=sigers)
 
         rep.status = falcon.HTTP_204
+
+        return ixn
+
+    @staticmethod
+    def anchorSeals(agent, ixn):
+        a = ixn.ked["a"]
+        if len(a) == 0:
+            return
+
+        delegator = coring.Saider(qb64=ixn.ked['d'])
+        delegatorsn = coring.Seqner(snh=ixn.ked['s'])
+
+        seal = a[0]
+        prefixer = coring.Prefixer(qb64=seal['i'])
+        saider = coring.Saider(qb64=seal["d"])
+
+        couple = delegatorsn.qb64b + delegator.qb64b
+        dgkey = dbing.dgKey(prefixer.qb64b, saider.qb64)
+        agent.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
 
 
 class IdentifierCollectionEnd:
@@ -563,10 +583,10 @@ class IdentifierOOBICollectionEnd:
         agent = req.context.agent
         hab = agent.hby.habByName(name)
         if not hab:
-            raise falcon.HTTPNotFound(f"invalid alias {name}")
+            raise falcon.HTTPNotFound(description="invalid alias {name}")
 
         if "role" not in req.params:
-            raise falcon.HTTPBadRequest("role parameter required")
+            raise falcon.HTTPBadRequest(description="role parameter required")
 
         role = req.params["role"]
 
@@ -585,7 +605,7 @@ class IdentifierOOBICollectionEnd:
             oobis = []
             urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http)
             if not urls:
-                raise falcon.HTTPNotFound(f"unable to query controller {hab.pre}, no http endpoint")
+                raise falcon.HTTPNotFound(description=f"unable to query controller {hab.pre}, no http endpoint")
 
             up = urlparse(urls[kering.Schemes.http])
             oobis.append(f"{kering.Schemes.http}://{up.hostname}:{up.port}/oobi/{hab.pre}/controller")
@@ -640,7 +660,7 @@ class EndRoleCollectionEnd:
             raise falcon.errors.HTTPNotFound(f"invalid alias {name}")
 
         if pre != hab.pre:
-            raise falcon.errors.HTTPBadRequest(f"error trying to create end role for unknown local AID {pre}")
+            raise falcon.errors.HTTPBadRequest(description=f"error trying to create end role for unknown local AID {pre}")
 
         rsigers = [coring.Siger(qb64=rsig) for rsig in rsigs]
         tsg = (hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn), hab.kever.serder.saider, rsigers)
@@ -648,7 +668,7 @@ class EndRoleCollectionEnd:
 
         msg = hab.loadEndRole(cid=pre, role=role, eid=eid)
         if msg is None:
-            raise falcon.errors.HTTPBadRequest(f"invalid end role rpy={rserder.ked}")
+            raise falcon.errors.HTTPBadRequest(description=f"invalid end role rpy={rserder.ked}")
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"

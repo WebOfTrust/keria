@@ -201,8 +201,12 @@ class Monitor:
                 operation.done = False
             elif obr.state == Result.resolved:
                 operation.done = True
-                kever = self.hby.kevers[obr.cid]
-                operation.response = kever.state().ked
+                if obr.cid:
+                    kever = self.hby.kevers[obr.cid]
+                    operation.response = kever.state().ked
+                else:
+                    operation.response = dict(oobi=oobi)
+
             elif obr.state == Result.failed:
                 operation.done = True
                 operation.failed = Status(code=500,
