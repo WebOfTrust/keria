@@ -31,10 +31,11 @@ from keria.end import ending
 from keri.help import helping, ogler
 from keri.peer import exchanging
 from keri.vc import protocoling
-from keri.vdr import verifying, credentialing
+from keri.vdr import verifying
+from keri.vdr.credentialing import Regery, Registrar
 from keri.vdr.eventing import Tevery
 
-from . import aiding, notifying, indirecting
+from . import aiding, notifying, indirecting, credentialing
 from .specing import AgentSpecResource
 from ..core import authing, longrunning, httping
 from ..core.authing import Authenticater
@@ -66,7 +67,6 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
                         'signify-resource', 'signify-timestamp']))
     if os.getenv("KERI_AGENT_CORS", "false").lower() in ("true", "1"):
         app.add_middleware(middleware=httping.HandleCORS())
-        print("CORS  enabled")
     app.add_middleware(authing.SignatureValidationComponent(agency=agency, authn=authn, allowed=["/agent"]))
     app.req_options.media_handlers.update(media.Handlers())
     app.resp_options.media_handlers.update(media.Handlers())
@@ -76,7 +76,8 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
 
     doers = [agency, bootServerDoer, adminServerDoer]
     loadEnds(app=app)
-    aiding.loadEnds(app=app, agency=agency, authn=authn)
+    aidEnd = aiding.loadEnds(app=app, agency=agency, authn=authn)
+    credentialing.loadEnds(app=app, identifierResource=aidEnd)
     notifying.loadEnds(app=app)
 
     if httpPort:
@@ -152,7 +153,7 @@ class Agency(doing.DoDoer):
         # Create the Hab for the Agent with only 2 AIDs
         agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, cf=cf, temp=self.temp)
         agentHab = agentHby.makeHab(f"agent-{caid}", ns="agent", transferable=True, delpre=caid)
-        agentRgy = credentialing.Regery(hby=agentHby, name=agentHab.name, base=self.base, temp=self.temp)
+        agentRgy = Regery(hby=agentHby, name=agentHab.name, base=self.base, temp=self.temp)
 
         agent = Agent(agentHby, agentRgy, agentHab,
                       caid=caid,
@@ -194,7 +195,7 @@ class Agency(doing.DoDoer):
                             reopen=True)
 
         agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, temp=self.temp)
-        agentRgy = credentialing.Regery(hby=agentHby, name=caid, base=self.base, temp=self.temp)
+        agentRgy = Regery(hby=agentHby, name=caid, base=self.base, temp=self.temp)
 
         agentHab = agentHby.habByName(f"agent-{caid}", ns="agent")
         if aaid.qb64 != agentHab.pre:
@@ -232,7 +233,6 @@ class Agent(doing.DoDoer):
     """
 
     def __init__(self, hby, rgy, agentHab, agency, caid, **opts):
-
         self.hby = hby
         self.rgy = rgy
         self.agentHab = agentHab
@@ -241,7 +241,7 @@ class Agent(doing.DoDoer):
 
         self.swain = delegating.Boatswain(hby=hby)
         self.counselor = Counselor(hby=hby)
-        self.registrar = credentialing.Registrar(hby=hby, rgy=rgy, counselor=self.counselor)
+        self.registrar = Registrar(hby=hby, rgy=rgy, counselor=self.counselor)
         self.org = connecting.Organizer(hby=hby)
 
         oobiery = oobiing.Oobiery(hby=hby)
@@ -298,15 +298,17 @@ class Agent(doing.DoDoer):
                                      exc=self.exc,
                                      rvy=self.rvy)
 
-        init = Initer(agentHab=agentHab, caid=caid)
-        qr = Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries)
-        er = Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc)
-        mr = Messager(kvy=self.kvy, parser=self.parser)
-        wr = Witnesser(receiptor=receiptor, witners=self.witners)
-        dr = Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors)
-        rg = Registrier(hby=hby, rgy=rgy, agentHab=agentHab, witPub=self.witPub, registries=self.registries)
-
-        doers.extend([init, qr, er, mr, wr, dr, rg])
+        doers.extend([
+            Initer(agentHab=agentHab, caid=caid),
+            Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries),
+            Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc),
+            Messager(kvy=self.kvy, parser=self.parser),
+            Witnesser(receiptor=receiptor, witners=self.witners),
+            Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
+            GroupRequester(hby=hby, agentHab=agentHab, postman=self.postman, counselor=self.counselor,
+                           groups=self.groups),
+            Registrier(hby=hby, rgy=rgy, agentHab=agentHab, witPub=self.witPub, registries=self.registries),
+        ])
 
         super().__init__(doers=doers, always=True, **opts)
 
@@ -876,7 +878,6 @@ class OobiResourceEnd:
                         type: object
         """
         agent = req.context.agent
-
         hab = agent.hby.habByName(alias)
         if hab is None:
             raise falcon.HTTPBadRequest(description="Invalid alias to generate OOBI")
@@ -916,6 +917,7 @@ class OobiResourceEnd:
         else:
             rep.status = falcon.HTTP_404
             return
+
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"

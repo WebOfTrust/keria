@@ -10,11 +10,10 @@ import json
 import falcon
 from falcon import testing
 from hio.base import doing
-from keri.app import habbing, signing
+from keri.app import habbing
 from keri.core import scheming, coring, parsing
 from keri.core.eventing import TraitCodex
-from keri.vc import proving
-from keri.vdr import eventing, verifying
+from keri.vdr import eventing
 from keri.vdr.credentialing import Regery, Registrar
 
 from keria.app import credentialing, aiding

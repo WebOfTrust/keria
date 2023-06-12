@@ -10,7 +10,6 @@ import json
 import falcon
 from keri.core import coring
 from keri.core.eventing import proofize
-from keri.vdr import eventing
 
 from keria.core import httping, longrunning
 
@@ -346,7 +345,6 @@ class CredentialResourceEnd:
             raise falcon.HTTPBadRequest(f"Invalid identifier {aid} for credentials")
 
         accepts = req.get_header("accepts")
-        print(accepts)
         if accepts == "application/json+cesr":
             rep.content_type = "application/json+cesr"
             data = CredentialResourceEnd.outputCred(agent.hby, agent.rgy, said)
