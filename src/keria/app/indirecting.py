@@ -61,7 +61,6 @@ class HttpEnd:
               description: KEL EXN, QRY, RPY event accepted.
 
         """
-        print(f"received post")
         if req.method == "OPTIONS":
             rep.status = falcon.HTTP_200
             return
@@ -79,7 +78,6 @@ class HttpEnd:
 
         cr = httping.parseCesrHttpRequest(req=req)
         serder = eventing.Serder(ked=cr.payload, kind=eventing.Serials.json)
-        print(f"serder: {serder.pre}")
         msg = bytearray(serder.raw)
         msg.extend(cr.attachments.encode("utf-8"))
 
