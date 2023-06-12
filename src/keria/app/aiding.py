@@ -52,6 +52,8 @@ def loadEnds(app, agency, authn):
     contactImgEnd = ContactImageResourceEnd()
     app.add_route("/contacts/{prefix}/img", contactImgEnd)
 
+    return aidEnd
+
 
 class AgentResourceEnd:
     """ Resource class for getting agent specific launch information """
