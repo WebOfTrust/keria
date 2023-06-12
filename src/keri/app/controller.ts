@@ -152,7 +152,6 @@ export class Controller {
 
         let seqner = new Seqner({sn: _agent.sn})
         let anchor = {i: _agent.pre, s: seqner.snh, d: _agent.said}
-        console.log(this.serder.ked["d"])
         this.serder = interact({
             pre:this.serder.pre, 
             dig: this.serder.ked["d"], 

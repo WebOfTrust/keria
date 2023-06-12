@@ -29,6 +29,7 @@ export const Ilks = {
     drt: 'drt',
     rct: 'rct',
     vrc: 'vrc',
+    rpy: 'rpy',
 };
 
 export const IcpLabels = ["v", "i", "s", "t", "kt", "k", "n",

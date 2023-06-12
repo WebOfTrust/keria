@@ -48,10 +48,8 @@ export function rotate({
     data = undefined,
     version = undefined,
     kind = undefined,
-    size,
     intive = true }: RotateArgs) {
-    let vs = versify(Ident.KERI, version, kind, size)
-
+    let vs = versify(Ident.KERI, version, kind, 0)
     let _ilk = ilk
     if (_ilk != Ilks.rot && _ilk != Ilks.drt) {
         throw new Error(`Invalid ilk = ${ilk} for rot or drt.`)
@@ -186,9 +184,9 @@ export function rotate({
         i: pre,
         s: sner.toString(16),
         p: dig,
-        kt: tholder.num && intive && tholder.num !== undefined && tholder.num <= MaxIntThold ? tholder.num : tholder.sith,
+        kt: tholder.num && intive && tholder.num !== undefined && tholder.num <= MaxIntThold ? tholder.num.toString(16) : tholder.sith,
         k: keys,
-        nt: ntholder.num && intive && ntholder.num !== undefined && ntholder.num <= MaxIntThold ? ntholder.num : ntholder.sith,
+        nt: ntholder.num && intive && ntholder.num !== undefined && ntholder.num <= MaxIntThold ? ntholder.num.toString(16) : ntholder.sith,
         n: _ndigs,
         bt: _toad && intive && _toad !== undefined && _toad <= MaxIntThold ? _toad : _toad.toString(16),
         br: cuts,
@@ -442,5 +440,26 @@ export function interact(args: InteractArgs): Serder {
     [, ked] = Saider.saidify(ked)
 
     return new Serder(ked)
+}
+
+export function reply(route: string="", data: any|undefined, stamp:string|undefined, version: Version|undefined, kind:Serials= Serials.JSON){
+    const vs = versify(Ident.KERI, version, kind, 0)
+    if (data == undefined) {
+        data = {}
+    }
+    const _sad = {
+        v: vs,
+        t: Ilks.rpy,
+        d: "",
+        dt: stamp?? new Date().toISOString().replace("Z","000+00:00"),
+        r: route,
+        a: data
+    }
+    const [, sad] = Saider.saidify(_sad)
+    const saider = new Saider({qb64: sad['d']})
+
+    if ( !(saider.verify(sad,true, true, kind, 'd' )))
+        throw new Error(`Invalid said = ${saider.qb64} for reply msg=${sad}.`)
+    return new Serder(sad)
 }
     

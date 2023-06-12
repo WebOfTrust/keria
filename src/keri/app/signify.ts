@@ -3,7 +3,7 @@ import { Tier } from "../core/salter"
 import { Authenticater } from "../core/authing"
 import { KeyManager } from "../core/keeping"
 import { Algos } from '../core/manager';
-import { incept, rotate, interact } from "../core/eventing"
+import { incept, rotate, interact, reply } from "../core/eventing"
 import { b, Serials, Versionage } from "../core/core";
 import { Tholder } from "../core/tholder";
 import { MtrDex } from "../core/matter";
@@ -102,7 +102,6 @@ export class SignifyClient {
             throw Error("commitment to controller AID missing in agent inception event")
         }
         if (this.controller.serder.ked.s == 0 ) {
-            console.log('approving delegation')
             await this.approveDelegation()
         }
         this.manager = new KeyManager(this.controller.salter, null)
@@ -122,7 +121,7 @@ export class SignifyClient {
         else {
             headers.set('Content-Length', '0')
         }
-        let signed_headers = this.authn.sign(headers, method, path)
+        let signed_headers = this.authn.sign(headers, method, path.split('?')[0])
         //END Headers
         let _body = method == 'GET' ? null : JSON.stringify(data)
         let res = await fetch(this.url + path, {
@@ -131,7 +130,7 @@ export class SignifyClient {
             headers: signed_headers
         });
         //BEGIN Verification
-        if (res.status !== 200) {
+        if (!(res.status == 200 || res.status == 202)){
             throw new Error('Response status is not 200');
         }
         const isSameAgent = this.agent?.pre === res.headers.get('signify-resource');
@@ -139,12 +138,41 @@ export class SignifyClient {
             throw new Error('Message from a different remote agent');
         }
 
-        const verification = this.authn.verify(res.headers, method, path);
+        const verification = this.authn.verify(res.headers, method, path.split('?')[0]);
         if (verification) {
             return res;
         } else {
             throw new Error('Response verification failed');
         }
+    }
+
+    async signedFetch(url:string, path: string, method: string, data: any, aidName:string) {
+        const  hab = await this.identifiers().get_identifier(aidName)
+        const keeper = this.manager!.get(hab)
+
+        const authenticator = new Authenticater(keeper.signers[0], keeper.signers[0].verfer)
+        
+        let headers = new Headers()
+        headers.set('Signify-Resource', hab["prefix"])
+        headers.set('Signify-Timestamp', new Date().toISOString().replace('Z','000+00:00'))
+        headers.set('Content-Type', 'application/json')
+
+        if (data !== null) {
+            headers.set('Content-Length', data.length)
+        }
+        else {
+            headers.set('Content-Length', '0')
+        }
+        let signed_headers = authenticator.sign(headers, method, path.split('?')[0])
+        let _body = method == 'GET' ? null : JSON.stringify(data)
+
+        console.log(signed_headers)
+        return await fetch(url + path, {
+            method: method,
+            body: _body,
+            headers: signed_headers
+        });
+        
     }
 
     async approveDelegation(){
@@ -226,7 +254,10 @@ class Identifier {
                     nxts:any[],
                     mhab:any,
                     keys:any[],
-                    ndigs:any[]
+                    ndigs:any[],
+                    bran:string,
+                    count:number,
+                    ncount:number
                 }) {
         
         let algo = Algos.salty
@@ -262,6 +293,9 @@ class Identifier {
         let mhab= kargs["mhab"]
         let _keys = kargs["keys"]
         let _ndigs = kargs["ndigs"]
+        let bran = kargs["bran"]
+        let count = kargs["count"]
+        let ncount = kargs["ncount"]
 
         let xargs = {
             transferable:transferable, 
@@ -281,7 +315,10 @@ class Identifier {
             states:states,
             rstates:rstates,
             keys:_keys,
-            ndigs:_ndigs
+            ndigs:_ndigs,
+            bran:bran,
+            count:count,
+            ncount:ncount
         }
 
         let keeper = this.client.manager!.new( algo, this.client.pidx, xargs)
@@ -300,8 +337,7 @@ class Identifier {
                 version: Versionage, 
                 kind: Serials.JSON, 
                 code: dcode,
-                intive: false, 
-                delpre})
+                intive: false})
             
         } else {
             var serder = incept({ 
@@ -317,7 +353,7 @@ class Identifier {
                 kind: Serials.JSON, 
                 code: dcode,
                 intive: false, 
-                delpre})
+                delpre: delpre})
         }
 
         let sigs = keeper!.sign(b(serder.raw))
@@ -445,6 +481,37 @@ class Identifier {
         return res.json()
     }
 
+    async addEndRole(name:string, role:string, eid: string|undefined){
+        const hab = await this.get_identifier(name)
+        const pre = hab["prefix"]
+
+        const rpy = this.makeEndRole(pre, role, eid)
+        const keeper = this.client.manager!.get(hab)
+        const sigs = keeper.sign(b(rpy.raw))
+
+        const jsondata = {
+            rpy: rpy.ked,
+            sigs: sigs
+        }
+
+        let res = await this.client.fetch("/identifiers/"+name+"/endroles", "POST", jsondata)
+        return res.json()
+
+    }
+
+    makeEndRole(pre: string, role:string, eid:string|undefined){
+        const data:any = {
+            cid: pre,
+            role: role
+        }
+        if (eid != undefined) {
+            data["eid"] = eid
+        }
+        const route = "/end/role/add"
+        return reply(route, data, undefined, undefined, Serials.JSON)
+    
+    }
+
 }
 
 class Oobis {
@@ -466,7 +533,7 @@ class Oobis {
     async resolve(oobi: string, alias?: string) {
         let path = `/oobis`
         let data: any = {
-            oobi: oobi
+            url: oobi
         }
         if (alias !== undefined) {
             data['alias'] = alias
