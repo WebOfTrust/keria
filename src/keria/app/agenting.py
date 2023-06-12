@@ -140,8 +140,6 @@ class Agency(doing.DoDoer):
             if "keria" in data:
                 curls = data["keria"]
                 data[f"agent-{caid}"] = curls
-                print(f"loading agent-{caid}")
-                print(curls)
                 del data["keria"]
 
             cf = configing.Configer(name=f"{caid}",

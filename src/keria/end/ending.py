@@ -48,8 +48,6 @@ class OOBIEnd:
             eid: qb64 identifier prefix of participant in role
 
         """
-        print(f"OOBI for {aid}")
-
         if aid is None:
             if self.default is None:
                 rep.status = falcon.HTTP_NOT_FOUND
@@ -59,7 +57,6 @@ class OOBIEnd:
             aid = self.default
 
         agent = self.agency.lookup(pre=aid)
-        print(f"got agent {agent.agentHab.pre}")
         if agent is None:
             rep.status = falcon.HTTP_NOT_FOUND
             rep.text = "AID not found for this OOBI"
