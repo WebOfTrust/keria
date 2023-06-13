@@ -384,6 +384,14 @@ class CredentialResourceEnd:
             out.extend(serder.raw)
             out.extend(atc)
 
+        if "i" in creder.subject:
+            subj = creder.subject["i"]
+            for msg in hby.db.clonePreIter(pre=subj):
+                serder = coring.Serder(raw=msg)
+                atc = msg[serder.size:]
+                out.extend(serder.raw)
+                out.extend(atc)
+
         if creder.status is not None:
             for msg in rgy.reger.clonePreIter(pre=creder.status):
                 serder = coring.Serder(raw=msg)
