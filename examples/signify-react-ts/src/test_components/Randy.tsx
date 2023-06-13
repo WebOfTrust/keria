@@ -33,8 +33,10 @@ export function Randy() {
                             let aids = await identifiers.list_identifiers()
                             assert.equal(aids.length, 0)
 
-                            let aid = await identifiers.create('aid1', {algo: 'randy'})
-                            const icp = await new Serder(aid)
+                            let op = await identifiers.create('aid1', {algo: 'randy'})
+                            assert.equal(op['done'], true)
+                            let aid = op['response']
+                            const icp = new Serder(aid)
                             assert.equal(icp.verfers.length, 1)
                             assert.equal(icp.digers.length, 1)
                             assert.equal(icp.ked['kt'], '1')
@@ -47,8 +49,10 @@ export function Randy() {
                             assert.equal(aid.name, 'aid1')
                             assert.equal(aid.prefix, icp.pre)
 
-                            let ked = await identifiers.interact("aid1", [icp.pre])
-                            let ixn = await new Serder(ked)
+                            op = await identifiers.interact("aid1", [icp.pre])
+                            assert.equal(op['done'], true)
+                            let ked = op['response']
+                            let ixn = new Serder(ked)
                             assert.equal(ixn.ked['s'], '1')
                             assert.deepEqual(ixn.ked['a'], [icp.pre])
 
@@ -60,8 +64,10 @@ export function Randy() {
                             let log = await events.get(aid["prefix"])
                             assert.equal(log.length, 2)
 
-                            ked = await identifiers.rotate('aid1',{})
-                            let rot = await new Serder(ked)
+                            op = await identifiers.rotate('aid1',{})
+                            assert.equal(op['done'], true)
+                            ked = op['response']
+                            let rot = new Serder(ked)
                             assert.equal(rot.ked['s'], '2')
                             assert.equal(rot.verfers.length, 1)
                             assert.equal(rot.digers.length, 1)

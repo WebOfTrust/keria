@@ -258,8 +258,8 @@ export class RandyKeeper {
         this.encrypter = new Encrypter({}, b(this.aeid))
         this.decrypter = new Decrypter({}, signer.qb64b)
 
-        this.nxts = nxts
-        this.prxs = prxs
+        this.nxts = nxts ?? []
+        this.prxs = prxs ?? []
         this.transferable = transferable
 
         this.icodes = icodes
@@ -268,7 +268,7 @@ export class RandyKeeper {
         
         this.creator = new RandyCreator()
 
-        this.signers = this.prxs!.map(prx => this.decrypter.decrypt(new Cipher({qb64:prx}).qb64b, undefined, this.transferable))
+        this.signers = this.prxs.map(prx => this.decrypter.decrypt(new Cipher({qb64:prx}).qb64b, undefined, this.transferable))
         
     }
 
