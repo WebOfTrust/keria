@@ -60,9 +60,6 @@ export function Multisig() {
                             }
                             let multisig2 = op["response"]
 
-
-                            await new Promise(resolve => setTimeout(resolve, 30000)); // sleep for 1 second
-
                             let aid1 = await identifiers.get_identifier("aid1")
                             let agent0 = aid1["state"]
                             let rstates = [multisig2, multisig1, agent0]
@@ -106,14 +103,14 @@ export function Multisig() {
                             aid1 = await identifiers.get_identifier("aid1")
                             agent0 = aid1["state"]
                             const keyState = await client.key_states()
-                            op = await keyState.query("EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4", 1)
+                            op = await keyState.query("EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4",0)
                             while (!op["done"]) {
                                 op = await operations.get(op["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
                             multisig1 = op["response"]
 
-                            op = await keyState.query("EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1", 1)
+                            op = await keyState.query("EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1", 0)
                             while (!op["done"]) {
                                 op = await operations.get(op["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
@@ -123,10 +120,6 @@ export function Multisig() {
                             states = rstates
 
                             op = identifiers.rotate("multisig", {states: states, rstates: rstates})
-                            while (!op["done"]) {
-                                op = await operations.get(op["name"]);
-                                await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
-                            }
 
                             setTestResult("Passed")
                         }
