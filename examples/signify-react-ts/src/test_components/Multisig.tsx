@@ -35,7 +35,9 @@ export function Multisig() {
                             const operations = client.operations()
                             const oobis = client.oobis()
 
-                            const icp = await identifiers.create('aid1', {bran: '0123456789abcdefghijk' })
+                            let op = await identifiers.create('aid1', {bran: '0123456789abcdefghijk' })
+                            assert.equal(op['done'], true)
+                            const icp = op['response']
                             let serder = new Serder(icp)
                             assert.equal(serder.pre, "ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK")
                             
@@ -44,7 +46,7 @@ export function Multisig() {
                             let oobi = await oobis.get("aid1")
                             console.log(oobi)
 
-                            let op = await oobis.resolve("http://127.0.0.1:5642/oobi/EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha","multisig1")
+                            op = await oobis.resolve("http://127.0.0.1:5642/oobi/EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha","multisig1")
                             while (!op["done"]) {
                                 op = await operations.get(op["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
@@ -69,8 +71,8 @@ export function Multisig() {
                             op = await identifiers.create("multisig",{
                                 algo: "group",
                                 mhab: aid1,
-                                isith: 2, 
-                                nsith: 2,
+                                isith: 3, 
+                                nsith: 3,
                                 toad: 3,
                                 wits: [
                                     "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
@@ -87,29 +89,31 @@ export function Multisig() {
                             
                             // Join an interaction event with the group
                             const data = {i: "EE77q3_zWb5ojgJr-R1vzsL5yiL4Nzm-bfSOQzQl02dy"}
-                            op = identifiers.interact("multisig", data)
+                            op = await identifiers.interact("multisig", data)
                             while (!op["done"]) {
                                 op = await operations.get(op["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
                             const ixn = new Serder(op["response"])
-                            const events = await client.events()
+                            const events = await client.key_events()
                             const log = await events.get(ixn.pre)
                             assert.equal(log.length, 2)
-                            const rot = await identifiers.rotate("aid1",{})
+                            op = await identifiers.rotate("aid1",{})
+                            assert.equal(op['done'], true)
+                            const rot = op['response']
                             serder = new Serder(rot)
 
                             aid1 = await identifiers.get_identifier("aid1")
                             agent0 = aid1["state"]
-                            const keyState = await client.keyStates()
-                            op = await keyState.query("EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4", "1")
+                            const keyState = await client.key_states()
+                            op = await keyState.query("EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4", 1)
                             while (!op["done"]) {
                                 op = await operations.get(op["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
                             multisig1 = op["response"]
 
-                            op = keyState.query("EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1", "1")
+                            op = await keyState.query("EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1", 1)
                             while (!op["done"]) {
                                 op = await operations.get(op["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
@@ -119,7 +123,10 @@ export function Multisig() {
                             states = rstates
 
                             op = identifiers.rotate("multisig", {states: states, rstates: rstates})
-                            console.log(op)
+                            while (!op["done"]) {
+                                op = await operations.get(op["name"]);
+                                await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
+                            }
 
                             setTestResult("Passed")
                         }

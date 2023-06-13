@@ -9,6 +9,8 @@ import { Cipher } from './cipher';
 import { Diger } from './diger';
 import { Prefixer } from './prefixer';
 import { Signer } from './signer';
+import { Siger } from './siger';
+import { Cigar } from './cigar';
 
 export {};
 
@@ -44,7 +46,8 @@ export class KeyManager {
             let kargs = aid[Algos.randy]
             return new RandyKeeper(this.salter!, kargs["code"], kargs["count"], kargs["icodes"], pre.transferable, kargs["ncode"], kargs["ncount"], kargs["ncodes"], kargs["dcode"], kargs["prxs"],  kargs["nxts"])
         } else if (Algos.group in aid) {
-            throw new Error(`Group Keeper not allowed yet`)
+            let kargs = aid[Algos.group]
+            return new GroupKeeper(this, kargs["mhab"], kargs["states"], kargs["rstates"],kargs["keys"],kargs["ndigs"])
         } else{
             throw new Error(`Algo not allowed yet`)
         }
@@ -357,6 +360,7 @@ export class RandyKeeper {
         private gkeys:string[] | undefined
         private gdigs:string[] | undefined
         public algo:Algos = Algos.group
+        public signers:Signer[]
     
         constructor(manager:KeyManager, mhab=undefined, states:any[]|undefined=undefined, rstates:any[]|undefined=undefined, keys:any[]|undefined=undefined, ndigs:any[]|undefined=undefined){
         
@@ -372,17 +376,18 @@ export class RandyKeeper {
         this.gkeys = keys
         this.gdigs = ndigs
         this.mhab = mhab
+        this.signers = []
     }
     incept(..._:any){
         return [this.gkeys, this.gdigs]
     }
 
-    rotate(states:any[], rstates:any[],..._:any){
+    rotate(_ncodes:string[], _transferable:boolean,states:any[], rstates:any[],..._:any){
         this.gkeys = states.map(state => state['k'][0])
         this.gdigs = rstates.map(state => state['n'][0])
         return [this.gkeys, this.gdigs]
     }
-    sign(ser:Uint8Array, indexed:boolean=true, _rotate:boolean=false, ..._:any){
+    sign(ser:Uint8Array, indexed:boolean=true, _indices:number[]|undefined=undefined, _ondices:number[]|undefined=undefined):Siger[]|Cigar[]{
         let key = this.mhab['state']['k'][0]
         let ndig = this.mhab['state']['n'][0]
 
