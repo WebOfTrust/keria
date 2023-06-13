@@ -15,7 +15,6 @@ export function Witnesses() {
                         try {
                             const url = "http://localhost:3901"
                             const bran = '0123456789abcdefghijk'
-                            // TODO Add test with Tiers.med
                             const client = new SignifyClient(url, bran)
                             assert.equal(client.controller.pre, 'ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose')
                             const r1 = await client.boot()

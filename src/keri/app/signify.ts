@@ -601,8 +601,8 @@ class KeyStates {
 
     }
 
-    async query(pre: string, sn?: string, anchor?: string) {
-        let path = `/oobis`
+    async query(pre: string, sn?: number, anchor?: string) {
+        let path = `/queries`
         let data: any = {
             pre: pre
         }
