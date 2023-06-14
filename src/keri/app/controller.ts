@@ -125,9 +125,9 @@ export class Controller {
         this.tier = tier
         this.ridx = ridx
 
-        this.salter = new Salter({ qb64: this.bran, tier: tier })
+        this.salter = new Salter({ qb64: this.bran, tier: this.tier })
 
-        let creator = new SaltyCreator(this.salter.qb64, tier, this.stem)
+        let creator = new SaltyCreator(this.salter.qb64, this.tier, this.stem)
 
         this.signer = creator.create(undefined, 1, MtrDex.Ed25519_Seed, true, 0, this.ridx, 0, false).signers.pop()
         this.nsigner = creator.create(undefined, 1, MtrDex.Ed25519_Seed, true, 0, this.ridx + 1, 0, false).signers.pop()
