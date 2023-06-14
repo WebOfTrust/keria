@@ -280,7 +280,8 @@ class Identifier {
             ndigs: any[],
             bran: string,
             count: number,
-            ncount: number
+            ncount: number,
+            tier: Tier
         }) {
 
         let algo = Algos.salty
@@ -319,6 +320,7 @@ class Identifier {
         let bran = kargs["bran"]
         let count = kargs["count"]
         let ncount = kargs["ncount"]
+        let tier = kargs["tier"]
 
         let xargs = {
             transferable: transferable,
@@ -341,7 +343,8 @@ class Identifier {
             ndigs: _ndigs,
             bran: bran,
             count: count,
-            ncount: ncount
+            ncount: ncount,
+            tier: tier
         }
 
         let keeper = this.client.manager!.new(algo, this.client.pidx, xargs)

@@ -1,6 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-import { SignifyClient, ready, Serder } from "signify-ts";
+import { SignifyClient, ready, Serder, Tier } from "signify-ts";
 import {strict as assert} from "assert";
 import { useState } from 'react';
 
@@ -15,8 +15,11 @@ export function Salty() {
                         try {
                             const url = "http://localhost:3901"
                             const bran = '0123456789abcdefghijk'
-                            // TODO Add test with Tiers.med
-                            const client = new SignifyClient(url, bran)
+
+                            let client = new SignifyClient(url, bran, Tier.med)
+                            assert.equal(client.controller.pre, 'EOgQvKz8ziRn7FdR_ebwK9BkaVOnGeXQOJ87N6hMLrK0')
+
+                            client = new SignifyClient(url, bran, Tier.low)
                             assert.equal(client.controller.pre, 'ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose')
                             const r1 = await client.boot()
                             assert.equal(r1.status, 202)

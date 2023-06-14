@@ -125,7 +125,7 @@ export class Controller {
         this.tier = tier
         this.ridx = ridx
 
-        this.salter = new Salter({ qb64: this.bran })
+        this.salter = new Salter({ qb64: this.bran, tier: tier })
 
         let creator = new SaltyCreator(this.salter.qb64, tier, this.stem)
 
@@ -194,7 +194,7 @@ export class Controller {
 
     rotate(bran: string, aids: Array<any>) {
         let nbran = MtrDex.Salt_128 + 'A' + bran.substring(21)  // qb64 salt for seed
-        let nsalter = new Salter({ qb64: nbran })
+        let nsalter = new Salter({ qb64: nbran, tier:this.tier })
         let nsigner = this.salter.signer({ transferable: false })
 
         let creator = new SaltyCreator(this.salter.qb64, this.tier, this.stem)
