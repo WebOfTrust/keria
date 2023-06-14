@@ -654,7 +654,7 @@ class Credentials {
         this.client = client
     }
     async list(aid: string, typ: CredentialTypes, schema: string) {
-        let path = `/identifiers/${aid}/credentials`
+        let path = `/aids/${aid}/credentials`
         //if type is not in the credential types, throw an error
         if (!Object.values(CredentialTypes).includes(typ)) {
             throw new Error("Invalid Credential Type")
@@ -674,13 +674,14 @@ class Credentials {
     }
 
     async export(aid: string, said: string) {
-        let path = `/identifiers/${aid}/credentials/${said}`
+        let path = `/aids/${aid}/credentials/${said}`
         let method = 'GET'
-        let headers = {
+        let headers = new Headers({
             'Accept': 'application/json+cesr'
-        }
+            
+        })
         let res = await this.client.fetch(path, method, null, headers)
-        return await res.json()
+        return await res.text()
 
     }
 

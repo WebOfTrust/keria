@@ -33,6 +33,8 @@ export function Credentials() {
                             console.log(rs)
                             let said = rs[0]['sad']['d']
                             let resp = await creds.export(ids[0].prefix,said)
+                            console.log(resp)
+                            // console.log(JSON.stringify(resp,null,2))
                             
                             setTestResult("Passed")
                         }
