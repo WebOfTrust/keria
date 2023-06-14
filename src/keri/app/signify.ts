@@ -211,6 +211,28 @@ export class SignifyClient {
         })
     }
 
+    async saveOldSalt(salt:string) {
+        const caid = this.controller?.pre;
+        const body = { salt: salt };
+        return await fetch(this.url + "/salt/" + caid, {
+            method: "PUT",
+            body: JSON.stringify(body),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        })
+    }
+
+    async deleteldSalt() {
+        const caid = this.controller?.pre;
+        return await fetch(this.url + "/salt/" + caid, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        })
+    }
+
     identifiers() {
         return new Identifier(this)
     }
