@@ -10,6 +10,11 @@ import { MtrDex } from "../core/matter";
 
 const KERIA_BOOT_URL = "http://localhost:3903"
 
+export class CredentialTypes {
+    static issued = "issued"
+    static received = "received"
+}
+
 class State {
     agent: any | null
     controller: any | null
@@ -63,7 +68,7 @@ export class SignifyClient {
             pidx: 1,
             tier: this.controller?.tier
         };
-        let _url = this.url.includes("localhost") ? KERIA_BOOT_URL: this.url ;
+        let _url = this.url.includes("localhost") ? KERIA_BOOT_URL : this.url;
         const res = await fetch(_url + "/boot", {
             method: "POST",
             body: JSON.stringify(data),
@@ -101,18 +106,18 @@ export class SignifyClient {
         if (this.agent.anchor != this.controller.pre) {
             throw Error("commitment to controller AID missing in agent inception event")
         }
-        if (this.controller.serder.ked.s == 0 ) {
+        if (this.controller.serder.ked.s == 0) {
             await this.approveDelegation()
         }
         this.manager = new KeyManager(this.controller.salter, null)
         this.authn = new Authenticater(this.controller.signer, this.agent.verfer!)
     }
 
-    async fetch(path: string, method: string, data: any) {
+    async fetch(path: string, method: string, data: any, _headers: any) {
         //BEGIN Headers
         let headers = new Headers()
         headers.set('Signify-Resource', this.controller.pre)
-        headers.set('Signify-Timestamp', new Date().toISOString().replace('Z','000+00:00'))
+        headers.set('Signify-Timestamp', new Date().toISOString().replace('Z', '000+00:00'))
         headers.set('Content-Type', 'application/json')
 
         if (data !== null) {
@@ -124,13 +129,27 @@ export class SignifyClient {
         let signed_headers = this.authn.sign(headers, method, path.split('?')[0])
         //END Headers
         let _body = method == 'GET' ? null : JSON.stringify(data)
+
+        //add _headers to signed_headers
+        let final_headers = new Headers()
+        for (let [key, value] of signed_headers.entries()) {
+            final_headers.set(key, value)
+        }
+        if (_headers !== undefined) {
+            for (let [key, value] of _headers.entries()) {
+                final_headers.set(key, value)
+            }
+        }
+
         let res = await fetch(this.url + path, {
             method: method,
             body: _body,
-            headers: signed_headers
+            headers: final_headers
         });
+
+
         //BEGIN Verification
-        if (!(res.status == 200 || res.status == 202)){
+        if (!(res.status == 200 || res.status == 202)) {
             throw new Error('Response status is not 200');
         }
         const isSameAgent = this.agent?.pre === res.headers.get('signify-resource');
@@ -146,15 +165,15 @@ export class SignifyClient {
         }
     }
 
-    async signedFetch(url:string, path: string, method: string, data: any, aidName:string) {
-        const  hab = await this.identifiers().get_identifier(aidName)
+    async signedFetch(url: string, path: string, method: string, data: any, aidName: string) {
+        const hab = await this.identifiers().get_identifier(aidName)
         const keeper = this.manager!.get(hab)
 
         const authenticator = new Authenticater(keeper.signers[0], keeper.signers[0].verfer)
-        
+
         let headers = new Headers()
         headers.set('Signify-Resource', hab["prefix"])
-        headers.set('Signify-Timestamp', new Date().toISOString().replace('Z','000+00:00'))
+        headers.set('Signify-Timestamp', new Date().toISOString().replace('Z', '000+00:00'))
         headers.set('Content-Type', 'application/json')
 
         if (data !== null) {
@@ -172,18 +191,18 @@ export class SignifyClient {
             body: _body,
             headers: signed_headers
         });
-        
+
     }
 
-    async approveDelegation(){
+    async approveDelegation() {
         let sigs = this.controller.approveDelegation(this.agent!)
 
         let data = {
             ixn: this.controller.serder.ked,
             sigs: sigs
         }
-        
-        await fetch(this.url + "/agent/"+ this.controller.pre+"?type=ixn", {
+
+        await fetch(this.url + "/agent/" + this.controller.pre + "?type=ixn", {
             method: "PUT",
             body: JSON.stringify(data),
             headers: {
@@ -211,6 +230,10 @@ export class SignifyClient {
     key_states() {
         return new KeyStates(this)
     }
+
+    credentials() {
+        return new Credentials(this)
+    }
 }
 
 class Identifier {
@@ -223,7 +246,7 @@ class Identifier {
         let path = `/identifiers`
         let data = null
         let method = 'GET'
-        let res = await this.client.fetch(path, method, data)
+        let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
     }
 
@@ -231,51 +254,51 @@ class Identifier {
         let path = `/identifiers/${name}`
         let data = null
         let method = 'GET'
-        let res = await this.client.fetch(path, method, data)
+        let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
     }
 
-    async create(name: string,  
-                kargs:{
-                    transferable:boolean, 
-                    isith:string, 
-                    nsith:string, 
-                    wits:string[], 
-                    toad:string, 
-                    proxy:string, 
-                    delpre:string, 
-                    dcode:string, 
-                    data:any, 
-                    algo:string,
-                    pre:string,
-                    states:any[],
-                    rstates:any[]
-                    prxs:any[],
-                    nxts:any[],
-                    mhab:any,
-                    keys:any[],
-                    ndigs:any[],
-                    bran:string,
-                    count:number,
-                    ncount:number
-                }) {
-        
+    async create(name: string,
+        kargs: {
+            transferable: boolean,
+            isith: string,
+            nsith: string,
+            wits: string[],
+            toad: string,
+            proxy: string,
+            delpre: string,
+            dcode: string,
+            data: any,
+            algo: string,
+            pre: string,
+            states: any[],
+            rstates: any[]
+            prxs: any[],
+            nxts: any[],
+            mhab: any,
+            keys: any[],
+            ndigs: any[],
+            bran: string,
+            count: number,
+            ncount: number
+        }) {
+
         let algo = Algos.salty
         switch (kargs["algo"]) {
             case "salty":
-                algo  = Algos.salty
+                algo = Algos.salty
                 break;
             case "randy":
-                algo  = Algos.randy
+                algo = Algos.randy
                 break;
             case "group":
-                algo  = Algos.group
+                algo = Algos.group
                 break;
             default:
-                algo  = Algos.salty
+                algo = Algos.salty
                 break;
         }
-        
+
         let transferable = kargs["transferable"] ?? true
         let isith = kargs["isith"] ?? "1"
         let nsith = kargs["nsith"] ?? "1"
@@ -290,7 +313,7 @@ class Identifier {
         let rstates = kargs["rstates"]
         let prxs = kargs["prxs"]
         let nxts = kargs["nxts"]
-        let mhab= kargs["mhab"]
+        let mhab = kargs["mhab"]
         let _keys = kargs["keys"]
         let _ndigs = kargs["ndigs"]
         let bran = kargs["bran"]
@@ -298,120 +321,123 @@ class Identifier {
         let ncount = kargs["ncount"]
 
         let xargs = {
-            transferable:transferable, 
-            isith:isith, 
-            nsith:nsith, 
-            wits:wits, 
-            toad:toad, 
-            proxy:proxy, 
-            delpre:delpre, 
-            dcode:dcode, 
-            data:data, 
-            algo:algo,
-            pre:pre,
-            prxs:prxs,
-            nxts:nxts,
-            mhab:mhab,
-            states:states,
-            rstates:rstates,
-            keys:_keys,
-            ndigs:_ndigs,
-            bran:bran,
-            count:count,
-            ncount:ncount
+            transferable: transferable,
+            isith: isith,
+            nsith: nsith,
+            wits: wits,
+            toad: toad,
+            proxy: proxy,
+            delpre: delpre,
+            dcode: dcode,
+            data: data,
+            algo: algo,
+            pre: pre,
+            prxs: prxs,
+            nxts: nxts,
+            mhab: mhab,
+            states: states,
+            rstates: rstates,
+            keys: _keys,
+            ndigs: _ndigs,
+            bran: bran,
+            count: count,
+            ncount: ncount
         }
 
-        let keeper = this.client.manager!.new( algo, this.client.pidx, xargs)
+        let keeper = this.client.manager!.new(algo, this.client.pidx, xargs)
         let [keys, ndigs] = keeper!.incept(transferable)
         wits = wits !== undefined ? wits : []
-        if (delpre == undefined){
-            var serder = incept({ 
-                keys: keys!, 
-                isith: isith, 
-                ndigs: ndigs, 
-                nsith: nsith, 
-                toad: toad, 
-                wits: wits, 
-                cnfg: [], 
-                data: data, 
-                version: Versionage, 
-                kind: Serials.JSON, 
+        if (delpre == undefined) {
+            var serder = incept({
+                keys: keys!,
+                isith: isith,
+                ndigs: ndigs,
+                nsith: nsith,
+                toad: toad,
+                wits: wits,
+                cnfg: [],
+                data: data,
+                version: Versionage,
+                kind: Serials.JSON,
                 code: dcode,
-                intive: false})
-            
+                intive: false
+            })
+
         } else {
-            var serder = incept({ 
-                keys: keys!, 
-                isith: isith, 
-                ndigs: ndigs, 
-                nsith: nsith, 
-                toad: toad, 
-                wits: wits, 
-                cnfg: [], 
-                data: data, 
-                version: Versionage, 
-                kind: Serials.JSON, 
+            var serder = incept({
+                keys: keys!,
+                isith: isith,
+                ndigs: ndigs,
+                nsith: nsith,
+                toad: toad,
+                wits: wits,
+                cnfg: [],
+                data: data,
+                version: Versionage,
+                kind: Serials.JSON,
                 code: dcode,
-                intive: false, 
-                delpre: delpre})
+                intive: false,
+                delpre: delpre
+            })
         }
 
         let sigs = keeper!.sign(b(serder.raw))
-        var jsondata:any = {
+        var jsondata: any = {
             name: name,
             icp: serder.ked,
             sigs: sigs,
             proxy: proxy,
             smids: states != undefined ? states.map(state => state['i']) : undefined,
             rmids: rstates != undefined ? rstates.map(state => state['i']) : undefined
-            }
+        }
         jsondata[algo] = keeper.params(),
 
-        this.client.pidx = this.client.pidx + 1
-        let res = await this.client.fetch("/identifiers", "POST", jsondata)
+            this.client.pidx = this.client.pidx + 1
+        let res = await this.client.fetch("/identifiers", "POST", jsondata, undefined)
         return res.json()
     }
 
-    async interact(name:string, data:any|undefined=undefined){
+    async interact(name: string, data: any | undefined = undefined) {
 
         let hab = await this.get_identifier(name)
-        let pre:string = hab["prefix"]
+        let pre: string = hab["prefix"]
 
-        let  state = hab["state"]
+        let state = hab["state"]
         let sn = Number(state["s"])
         let dig = state["d"]
-        
+
         data = Array.isArray(data) ? data : [data]
 
-        let serder = interact({pre:pre, sn:sn + 1, data:data, dig:dig, version:undefined, kind: undefined})
+        let serder = interact({ pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined })
         let keeper = this.client!.manager!.get(hab)
-        let  sigs = keeper.sign(b(serder.raw))
+        let sigs = keeper.sign(b(serder.raw))
 
-        let jsondata:any = {
+        let jsondata: any = {
             ixn: serder.ked,
             sigs: sigs,
         }
         jsondata[keeper.algo] = keeper.params()
 
-        let res = await this.client.fetch("/identifiers/"+name+"?type=ixn", "PUT", jsondata)
+        let res = await this.client.fetch("/identifiers/" + name + "?type=ixn", "PUT", jsondata, undefined)
         return res.json()
 
     }
 
     async rotate(
         name: string,
-        kargs:{
-            transferable:boolean, 
-            nsith:string, 
-            toad:number,
-            cuts:string[],
-            adds:string[],
-            data:Array<object>,
-            ncode:string,
-            ncount:number,
-            ncodes:string[],
-            states:any[],
-            rstates:any[]}){
+        kargs: {
+            transferable: boolean,
+            nsith: string,
+            toad: number,
+            cuts: string[],
+            adds: string[],
+            data: Array<object>,
+            ncode: string,
+            ncount: number,
+            ncodes: string[],
+            states: any[],
+            rstates: any[]
+        }) {
 
         let transferable = kargs["transferable"] ?? true
         let ncode = kargs["ncode"] ?? MtrDex.Ed25519_Seed
@@ -438,7 +464,7 @@ class Identifier {
         if (nsith == undefined) nsith = `${Math.max(1, Math.ceil(ncount / 2)).toString(16)}`
 
         let cst = new Tholder(isith).sith  // current signing threshold
-        let  nst = new Tholder(nsith).sith  // next signing threshold
+        let nst = new Tholder(nsith).sith  // next signing threshold
 
         // Regenerate next keys to sign rotation event
         let keeper = this.client.manager!.get(hab)
@@ -451,25 +477,26 @@ class Identifier {
 
         let cuts = kargs["cuts"] ?? []
         let adds = kargs["adds"] ?? []
-        let data = kargs["data"] != undefined ? [kargs["data"]]:[]
+        let data = kargs["data"] != undefined ? [kargs["data"]] : []
         let toad = kargs["toad"]
         let serder = rotate({
-                pre: pre,
-                keys: keys,
-                dig: dig,
-                sn: ridx,
-                isith: cst,
-                nsith: nst,
-                ndigs: ndigs,
-                toad: toad,
-                wits: wits,
-                cuts: cuts,
-                adds: adds,
-                data: data })
+            pre: pre,
+            keys: keys,
+            dig: dig,
+            sn: ridx,
+            isith: cst,
+            nsith: nst,
+            ndigs: ndigs,
+            toad: toad,
+            wits: wits,
+            cuts: cuts,
+            adds: adds,
+            data: data
+        })
 
-        let  sigs = keeper.sign(b(serder.raw))
+        let sigs = keeper.sign(b(serder.raw))
 
-        var jsondata:any = {
+        var jsondata: any = {
             rot: serder.ked,
             sigs: sigs,
             smids: states != undefined ? states.map(state => state['i']) : undefined,
@@ -477,11 +504,11 @@ class Identifier {
         }
         jsondata[keeper.algo] = keeper.params()
 
-        let res = await this.client.fetch("/identifiers/"+name, "PUT", jsondata)
+        let res = await this.client.fetch("/identifiers/" + name, "PUT", jsondata, undefined)
         return res.json()
     }
 
-    async addEndRole(name:string, role:string, eid: string|undefined){
+    async addEndRole(name: string, role: string, eid: string | undefined) {
         const hab = await this.get_identifier(name)
         const pre = hab["prefix"]
 
@@ -494,13 +521,13 @@ class Identifier {
             sigs: sigs
         }
 
-        let res = await this.client.fetch("/identifiers/"+name+"/endroles", "POST", jsondata)
+        let res = await this.client.fetch("/identifiers/" + name + "/endroles", "POST", jsondata, undefined)
         return res.json()
 
     }
 
-    makeEndRole(pre: string, role:string, eid:string|undefined){
-        const data:any = {
+    makeEndRole(pre: string, role: string, eid: string | undefined) {
+        const data: any = {
             cid: pre,
             role: role
         }
@@ -509,7 +536,7 @@ class Identifier {
         }
         const route = "/end/role/add"
         return reply(route, data, undefined, undefined, Serials.JSON)
-    
+
     }
 
 }
@@ -525,7 +552,7 @@ class Oobis {
         let data = null
         let method = 'GET'
         console.log('this.client', this.client)
-        let res = await this.client.fetch(path, method, data)
+        let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
 
     }
@@ -539,7 +566,7 @@ class Oobis {
             data['alias'] = alias
         }
         let method = 'POST'
-        let res = await this.client.fetch(path, method, data)
+        let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
 
     }
@@ -555,7 +582,7 @@ class Operations {
         let path = `/operations/${name}`
         let data = null
         let method = 'GET'
-        let res = await this.client.fetch(path, method, data)
+        let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
 
     }
@@ -571,7 +598,7 @@ class KeyEvents {
         let path = `/events?pre=${pre}`
         let data = null
         let method = 'GET'
-        let res = await this.client.fetch(path, method, data)
+        let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
 
     }
@@ -587,7 +614,7 @@ class KeyStates {
         let path = `/states?pre=${pre}`
         let data = null
         let method = 'GET'
-        let res = await this.client.fetch(path, method, data)
+        let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
 
     }
@@ -596,7 +623,7 @@ class KeyStates {
         let path = `/states?${pres.map(pre => `pre=${pre}`).join('&')}`
         let data = null
         let method = 'GET'
-        let res = await this.client.fetch(path, method, data)
+        let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
 
     }
@@ -614,8 +641,49 @@ class KeyStates {
         }
 
         let method = 'POST'
-        let res = await this.client.fetch(path, method, data)
+        let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
 
     }
+}
+
+
+class Credentials {
+    public client: SignifyClient
+    constructor(client: SignifyClient) {
+        this.client = client
+    }
+    async list(aid: string, typ: CredentialTypes, schema: string) {
+        let path = `/aids/${aid}/credentials`
+        //if type is not in the credential types, throw an error
+        if (!Object.values(CredentialTypes).includes(typ)) {
+            throw new Error("Invalid Credential Type")
+        }
+        //add typ and schema as query params
+        let params = new URLSearchParams()
+        params.append('type', typ.toString())
+        if (schema !== '') {
+            params.append('schema', schema)
+        }
+        path = path + '?' + params.toString()
+
+        let method = 'GET'
+
+        let res = await this.client.fetch(path, method, null, undefined)
+        return await res.json()
+    }
+
+    async export(aid: string, said: string) {
+        let path = `/aids/${aid}/credentials/${said}`
+        let method = 'GET'
+        let headers = new Headers({
+            'Accept': 'application/json+cesr'
+            
+        })
+        let res = await this.client.fetch(path, method, null, headers)
+        return await res.text()
+
+    }
+
+
 }

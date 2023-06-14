@@ -6,10 +6,12 @@ import { Randy } from "./test_components/Randy";
 import { Delegation } from "./test_components/Delegation";
 import { Witnesses } from "./test_components/Witnesses";
 import { Multisig } from "./test_components/Multisig";
+import { Credentials } from "./test_components/Credentials";
 export function TestsComponent() {
 
     return (
         <>
+            < Credentials />
             < Salty />
             < Randy />
             < Witnesses />
