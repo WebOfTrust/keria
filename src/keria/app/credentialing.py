@@ -344,8 +344,8 @@ class CredentialResourceEnd:
         if aid not in agent.hby.habs:
             raise falcon.HTTPBadRequest(description=f"Invalid identifier {aid} for credentials")
 
-        accepts = req.get_header("accepts")
-        if accepts == "application/json+cesr":
+        accept = req.get_header("accept")
+        if accept == "application/json+cesr":
             rep.content_type = "application/json+cesr"
             data = CredentialResourceEnd.outputCred(agent.hby, agent.rgy, said)
         else:
