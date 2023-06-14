@@ -24,10 +24,10 @@ def loadEnds(app, identifierResource):
     app.add_route("/registries", registryEnd)
 
     credentialCollectionEnd = CredentialCollectionEnd()
-    app.add_route("/identfiers/{aid}/credentials", credentialCollectionEnd)
+    app.add_route("/identifiers/{aid}/credentials", credentialCollectionEnd)
     
     credentialResourceEnd = CredentialResourceEnd()
-    app.add_route("/identfiers/{aid}/credentials/{said}", credentialResourceEnd)
+    app.add_route("/identifiers/{aid}/credentials/{said}", credentialResourceEnd)
 
 
 class RegistryEnd:

@@ -693,8 +693,8 @@ class ChallengeCollectionEnd:
             rep: falcon.Response HTTP response
 
         ---
-        summary:  Get list of agent identfiers
-        description:  Get the list of identfiers associated with this agent
+        summary:  Get list of agent identifiers
+        description:  Get the list of identifiers associated with this agent
         tags:
            - Challenge/Response
         parameters:
@@ -857,8 +857,8 @@ class ContactCollectionEnd:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
         ---
-        summary:  Get list of contact information associated with remote identfiers
-        description:  Get list of contact information associated with remote identfiers.  All
+        summary:  Get list of contact information associated with remote identifiers
+        description:  Get list of contact information associated with remote identifiers.  All
                       information is metadata and kept in local storage only
         tags:
            - Contacts
