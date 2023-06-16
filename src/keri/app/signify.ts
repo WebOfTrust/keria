@@ -793,17 +793,17 @@ class Challenges {
             exn: serder.ked,
             sigs: sigs,
         }
-        
+
         let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
     }
     //ChallengeResourceEnd
-    async accept_challenge(name: string, aid: string, saids: [string]) {
+    async accept_challenge(name: string, aid: string, said: string) {
         let path = `/challenges/${name}`
         let method = 'PUT'
         let data = {
             aid: aid,
-            saids: saids
+            said: said
         }
         let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
