@@ -46,7 +46,7 @@ export function Challenges() {
 
                             let challenge_to_send = await challenges1.send_challenge('alex', aid2.d, challenge1_small)
                             console.log(challenge_to_send)
-                            await setTimeout(() => { }, 3000)
+                            await setTimeout(() => { }, 3000)//TODO: better way of checking if the challenge was received
                         
                             let challenge_to_receive = await challenges2.accept_challenge('rodo', aid1.d, challenge_to_send.d)
                             console.log(challenge_to_receive)
