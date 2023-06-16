@@ -791,11 +791,11 @@ class Challenges {
             recipient: recipient,
             words: words,
             exn: serder.ked,
-            sigs: sigs,
+            sig: sigs,
         }
 
         let res = await this.client.fetch(path, method, data, undefined)
-        return await res.json()
+        return res
     }
     //ChallengeResourceEnd
     async accept_challenge(name: string, aid: string, said: string) {
