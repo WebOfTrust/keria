@@ -31,7 +31,7 @@ export function Challenges() {
                             assert.equal(challenge1_small.words.length, 12)
                             let challenge1_big = await challenges1.get_challenge(256)
                             assert.equal(challenge1_big.words.length, 24)
-                            let op1 = await identifiers1.create('aid123', {})
+                            let op1 = await identifiers1.create('alex', {})
                             let aid1 = op1['response']
 
                             const client2 = new SignifyClient(url, bran2)
@@ -39,17 +39,16 @@ export function Challenges() {
                             await client2.connect()
                             const identifiers2 = client2.identifiers()
                             const challenges2 = client2.challenges()
-                            console.log('here1')
-                            let op2 = await identifiers2.create('aid223', {})
+                            let op2 = await identifiers2.create('rodo', {})
                             let aid2 = op2['response']
-                            console.log('here12')
+                            console.log(aid2)
 
-                            let challenge_to_send = await challenges1.send_challenge('aid123', aid2, challenge1_small)
-                            console.log(challenge_to_send.status)
-                            assert.equal(challenge_to_send.status, 202)
+
+                            let challenge_to_send = await challenges1.send_challenge('alex', aid2.d, challenge1_small)
+                            console.log(challenge_to_send)
                             await setTimeout(() => { }, 3000)
-
-                            let challenge_to_receive = await challenges2.accept_challenge('aid223', aid1, challenge_to_send)
+                        
+                            let challenge_to_receive = await challenges2.accept_challenge('rodo', aid1.d, challenge_to_send.d)
                             console.log(challenge_to_receive)
                             setTestResult("Passed")
                         }

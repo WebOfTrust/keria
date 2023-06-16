@@ -794,8 +794,13 @@ class Challenges {
             sig: sigs,
         }
 
-        let res = await this.client.fetch(path, method, data, undefined)
-        return res
+        let resp = await this.client.fetch(path, method, data, undefined)
+        if (resp.status === 202) {
+            return serder.ked
+        }
+        else {
+            throw new Error("Sending Challenge Failed")
+        }
     }
     //ChallengeResourceEnd
     async accept_challenge(name: string, aid: string, said: string) {
@@ -806,7 +811,13 @@ class Challenges {
             said: said
         }
         let res = await this.client.fetch(path, method, data, undefined)
-        return await res.json()
+
+        if (res.status === 202) {
+            return res
+        }
+        else {
+            throw new Error("Sending Challenge Failed")
+        }
     }
 
 }
