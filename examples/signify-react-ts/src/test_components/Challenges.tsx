@@ -50,6 +50,7 @@ export function Challenges() {
                         
                             let challenge_to_receive = await challenges2.accept_challenge('rodo', aid1.d, challenge_to_send.d)
                             console.log(challenge_to_receive)
+                            assert.equal(challenge_to_receive.status,202)
                             setTestResult("Passed")
                         }
                         catch (e) {
