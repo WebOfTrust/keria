@@ -799,7 +799,7 @@ class Challenges {
             return serder.ked
         }
         else {
-            throw new Error("Sending Challenge Failed")
+            return resp
         }
     }
     //ChallengeResourceEnd
@@ -812,12 +812,7 @@ class Challenges {
         }
         let res = await this.client.fetch(path, method, data, undefined)
 
-        if (res.status === 202) {
-            return res
-        }
-        else {
-            throw new Error("Sending Challenge Failed")
-        }
+        return res
     }
 
 }
