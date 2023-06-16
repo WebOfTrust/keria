@@ -234,6 +234,18 @@ export class SignifyClient {
     credentials() {
         return new Credentials(this)
     }
+
+    registries() {
+        return new Registries(this)
+    }
+
+    schemas() {
+        return new Schemas(this)
+    }
+
+    challenges() {
+        return new Challenges(this)
+    }
 }
 
 class Identifier {
@@ -241,7 +253,7 @@ class Identifier {
     constructor(client: SignifyClient) {
         this.client = client
     }
-
+    //GET IdentifierCollectionEnd
     async list_identifiers() {
         let path = `/identifiers`
         let data = null
@@ -249,7 +261,7 @@ class Identifier {
         let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
     }
-
+    //GET  
     async get_identifier(name: string) {
         let path = `/identifiers/${name}`
         let data = null
@@ -257,7 +269,7 @@ class Identifier {
         let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
     }
-
+    //POST
     async create(name: string,
         kargs: {
             transferable: boolean,
@@ -392,11 +404,11 @@ class Identifier {
         }
         jsondata[algo] = keeper.params(),
 
-            this.client.pidx = this.client.pidx + 1
+        this.client.pidx = this.client.pidx + 1
         let res = await this.client.fetch("/identifiers", "POST", jsondata, undefined)
         return res.json()
     }
-
+    //PUT IdentifierResourceEnd
     async interact(name: string, data: any | undefined = undefined) {
 
         let hab = await this.get_identifier(name)
@@ -422,7 +434,7 @@ class Identifier {
         return res.json()
 
     }
-
+    //PUT IdentifierResourceEnd
     async rotate(
         name: string,
         kargs: {
@@ -507,7 +519,7 @@ class Identifier {
         let res = await this.client.fetch("/identifiers/" + name, "PUT", jsondata, undefined)
         return res.json()
     }
-
+    //POST EndRoleCollectionEnd
     async addEndRole(name: string, role: string, eid: string | undefined) {
         const hab = await this.get_identifier(name)
         const pre = hab["prefix"]
@@ -525,7 +537,7 @@ class Identifier {
         return res.json()
 
     }
-
+    //POST /end/role/add
     makeEndRole(pre: string, role: string, eid: string | undefined) {
         const data: any = {
             cid: pre,
@@ -647,12 +659,13 @@ class KeyStates {
     }
 }
 
-
 class Credentials {
     public client: SignifyClient
     constructor(client: SignifyClient) {
         this.client = client
     }
+    //CredentialCollectionEnd
+    //todo rename to list_credentials
     async list(aid: string, typ: CredentialTypes, schema: string) {
         let path = `/aids/${aid}/credentials`
         //if type is not in the credential types, throw an error
@@ -672,7 +685,8 @@ class Credentials {
         let res = await this.client.fetch(path, method, null, undefined)
         return await res.json()
     }
-
+    //CredentialResourceEnd
+    //rename get_credential 
     async export(aid: string, said: string) {
         let path = `/aids/${aid}/credentials/${said}`
         let method = 'GET'
@@ -685,5 +699,101 @@ class Credentials {
 
     }
 
+
+}
+
+class Registries {
+    public client: SignifyClient
+    constructor(client: SignifyClient) {
+        this.client = client
+    }
+
+    async list() {
+        let path = `/registries`
+        let method = 'GET'
+        let res = await this.client.fetch(path, method, null, undefined)
+        return await res.json()
+
+    }
+    async create(name : string, alias : string, toad : number, nonce : string, noBackers : boolean, baks : [string], estOnly : boolean) {
+        let path = `/registries`
+        let method = 'POST'
+        let data = {
+            name: name,
+            alias: alias,
+            toad: toad,
+            nonce: nonce,
+            noBackers: noBackers,
+            baks: baks,
+            estOnly: estOnly
+        }
+        let res = await this.client.fetch(path, method, data, undefined)
+        return await res.json()
+    }
+    
+}
+
+class Schemas {
+    client: SignifyClient
+    constructor(client: SignifyClient) {
+        this.client = client
+    }
+    //SchemaResourceEnd 
+    async get_schema(said:string) {
+        let path = `/schemas/${said}`
+        let method = 'GET'
+        let res = await this.client.fetch(path, method, null, undefined)
+        return await res.json()
+    }
+
+    //SchemaCollectionEnd
+
+    async list_all_schemas() {
+        let path = `/schemas`
+        let method = 'GET'
+        let res = await this.client.fetch(path, method, null, undefined)
+        return await res.json()
+    }
+
+
+        
+}
+
+class Challenges {
+    client: SignifyClient
+    constructor(client: SignifyClient) {
+        this.client = client
+    }
+    //ChallengeCollectionEnd
+    async get_challenge(strength:number) {
+        let path = `/challenges/${strength.toString()}`
+        let method = 'GET'
+        let res = await this.client.fetch(path, method, null, undefined)
+        return await res.json()
+    }
+    //ChallengeResourceEnd
+    async send_challenge(name:string, recipient: string, words: [string], exn: string, sig: string) {
+        let path = `/challenges/${name}`
+        let method = 'POST'
+        let data = {
+            recipient: recipient,
+            words: words,
+            exn: exn,
+            sig: sig
+        }
+        let res = await this.client.fetch(path, method, data, undefined)
+        return await res.json()
+    }
+    //ChallengeResourceEnd
+    async accept_challenge(name:string, aid: string, saids: [string]) {
+        let path = `/challenges/${name}`
+        let method = 'PUT'
+        let data = {
+            aid: aid,
+            saids: saids
+        }
+        let res = await this.client.fetch(path, method, data, undefined)
+        return await res.json()
+    }
 
 }
