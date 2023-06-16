@@ -7,6 +7,7 @@ import { incept, rotate, interact, reply } from "../core/eventing"
 import { b, Serials, Versionage } from "../core/core";
 import { Tholder } from "../core/tholder";
 import { MtrDex } from "../core/matter";
+import { TraitDex } from "./habery";
 
 const KERIA_BOOT_URL = "http://localhost:3903"
 
@@ -715,7 +716,7 @@ class Registries {
         return await res.json()
 
     }
-    async create(name : string, alias : string, toad : number, nonce : string, noBackers : boolean, baks : [string], estOnly : boolean) {
+    async create(name : string, alias : string, toad : number, nonce : string, baks : [string], estOnly : boolean, noBackers : string = TraitDex.NoBackers) {
         let path = `/registries`
         let method = 'POST'
         let data = {
