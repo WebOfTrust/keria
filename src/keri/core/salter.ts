@@ -4,7 +4,7 @@ import { Matter, MtrDex } from './matter';
 import { EmptyMaterialError } from './kering'
 import libsodium  from 'libsodium-wrappers-sumo';
 
-export const enum Tier {
+export enum Tier {
     low = "low",
     med = "med",
     high = "high"

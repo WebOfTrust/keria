@@ -1,6 +1,6 @@
 
 import _sodium from 'libsodium-wrappers-sumo';
-import load from 'blake3/browser-async'
+import load from 'blake3/browser-async';
 export const ready = (async () => {
     await load('https://cdn.jsdelivr.net/npm/blake3@2.1.7/dist/wasm/web/blake3_js_bg.wasm')
     await _sodium.ready;

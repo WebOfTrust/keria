@@ -211,6 +211,28 @@ export class SignifyClient {
         })
     }
 
+    async saveOldSalt(salt:string) {
+        const caid = this.controller?.pre;
+        const body = { salt: salt };
+        return await fetch(this.url + "/salt/" + caid, {
+            method: "PUT",
+            body: JSON.stringify(body),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        })
+    }
+
+    async deleteldSalt() {
+        const caid = this.controller?.pre;
+        return await fetch(this.url + "/salt/" + caid, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        })
+    }
+
     identifiers() {
         return new Identifier(this)
     }
@@ -280,7 +302,8 @@ class Identifier {
             ndigs: any[],
             bran: string,
             count: number,
-            ncount: number
+            ncount: number,
+            tier: Tier
         }) {
 
         let algo = Algos.salty
@@ -319,6 +342,7 @@ class Identifier {
         let bran = kargs["bran"]
         let count = kargs["count"]
         let ncount = kargs["ncount"]
+        let tier = kargs["tier"]
 
         let xargs = {
             transferable: transferable,
@@ -341,7 +365,8 @@ class Identifier {
             ndigs: _ndigs,
             bran: bran,
             count: count,
-            ncount: ncount
+            ncount: ncount,
+            tier: tier
         }
 
         let keeper = this.client.manager!.new(algo, this.client.pidx, xargs)
