@@ -284,7 +284,19 @@ class Monitor:
                         operation.done = False
 
         elif op.type in (OpTypes.registry, ):
-            pass
+            if op.oid not in self.hby.kevers:
+                raise kering.ValidationError(
+                    f"long running {op.type} operation identifier {op.oid} not found")
+            if "anchor" not in op.metadata:
+                raise kering.ValidationError(
+                    f"invalid long running {op.type} operaiton, metadata missing 'anchor' field")
+            kever = self.hby.kevers[op.oid]
+            anchor = op.metadata["anchor"]["response"]["a"][0]
+            if self.hby.db.findAnchoringEvent(op.oid, anchor=anchor) is not None:
+                operation.done = True
+                operation.response = kever.state().ked
+            else:
+                operation.done = False
 
         elif op.type in (OpTypes.done, ):
             operation.done = True
