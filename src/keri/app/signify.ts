@@ -405,7 +405,7 @@ class Identifier {
         }
         jsondata[algo] = keeper.params(),
 
-        this.client.pidx = this.client.pidx + 1
+            this.client.pidx = this.client.pidx + 1
         let res = await this.client.fetch("/identifiers", "POST", jsondata, undefined)
         return res.json()
     }
@@ -693,7 +693,7 @@ class Credentials {
         let method = 'GET'
         let headers = new Headers({
             'Accept': 'application/json+cesr'
-            
+
         })
         let res = await this.client.fetch(path, method, null, headers)
         return await res.text()
@@ -716,7 +716,7 @@ class Registries {
         return await res.json()
 
     }
-    async create(name : string, alias : string, toad : number, nonce : string, baks : [string], estOnly : boolean, noBackers : string = TraitDex.NoBackers) {
+    async create(name: string, alias: string, toad: number, nonce: string, baks: [string], estOnly: boolean, noBackers: string = TraitDex.NoBackers) {
         let path = `/registries`
         let method = 'POST'
         let data = {
@@ -731,7 +731,7 @@ class Registries {
         let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
     }
-    
+
 }
 
 class Schemas {
@@ -740,7 +740,7 @@ class Schemas {
         this.client = client
     }
     //SchemaResourceEnd 
-    async get_schema(said:string) {
+    async get_schema(said: string) {
         let path = `/schemas/${said}`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, undefined)
@@ -757,7 +757,7 @@ class Schemas {
     }
 
 
-        
+
 }
 
 class Challenges {
@@ -766,27 +766,39 @@ class Challenges {
         this.client = client
     }
     //ChallengeCollectionEnd
-    async get_challenge(strength:number) {
-        let path = `/challenges/${strength.toString()}`
+    async get_challenge(strength: number = 128) {
+        let path = `/challenges?strength=${strength.toString()}`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, undefined)
         return await res.json()
     }
     //ChallengeResourceEnd
-    async send_challenge(name:string, recipient: string, words: [string], exn: string, sig: string) {
+    async send_challenge(name: string, recipient: string, words: [string]) {
         let path = `/challenges/${name}`
         let method = 'POST'
+
+        let hab = await this.client.identifiers().get_identifier(name)
+        let pre: string = hab["prefix"]
+        let state = hab["state"]
+        let sn = Number(state["s"])
+        let dig = state["d"]
+
+        let serder = interact({ pre: pre, dig: dig, sn: sn + 1, data: words, version: undefined, kind: undefined })
+        let keeper = this.client!.manager!.get(hab)
+        let sigs = keeper.sign(b(serder.raw))
+
         let data = {
             recipient: recipient,
             words: words,
-            exn: exn,
-            sig: sig
+            exn: serder.ked,
+            sigs: sigs,
         }
+        
         let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
     }
     //ChallengeResourceEnd
-    async accept_challenge(name:string, aid: string, saids: [string]) {
+    async accept_challenge(name: string, aid: string, saids: [string]) {
         let path = `/challenges/${name}`
         let method = 'PUT'
         let data = {
