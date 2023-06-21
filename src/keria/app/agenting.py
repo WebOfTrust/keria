@@ -6,6 +6,7 @@ keria.app.agenting module
 """
 import json
 import os
+from dataclasses import asdict
 from urllib.parse import urlparse
 
 from keri import kering
@@ -311,7 +312,7 @@ class Agent(doing.DoDoer):
             Registrier(hby=hby, rgy=rgy, agentHab=agentHab, witPub=self.witPub, registries=self.registries),
         ])
 
-        super().__init__(doers=doers, always=True, **opts)
+        super(Agent, self).__init__(doers=doers, always=True, **opts)
 
     @property
     def pre(self):
@@ -714,7 +715,7 @@ class KeyStateCollectionEnd:
                 continue
 
             kever = agent.hby.kevers[pre]
-            states.append(kever.state().ked)
+            states.append(asdict(kever.state()))
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"

@@ -8,6 +8,7 @@ Testing the Mark II Agent
 import json
 import os
 from builtins import isinstance
+from dataclasses import asdict
 
 import falcon
 from falcon import testing
@@ -83,7 +84,6 @@ def test_agent_resource(helpers, mockHelpingNowUTC):
                                      'nt': '1',
                                      'p': '',
                                      's': '0',
-                                     'v': 'KERI10JSON0001ed_',
                                      'vn': [1, 0]}
         assert res.json["controller"] == {'ee': {'a': [],
                                                  'b': [],
@@ -117,7 +117,6 @@ def test_agent_resource(helpers, mockHelpingNowUTC):
                                                     'nt': '1',
                                                     'p': '',
                                                     's': '0',
-                                                    'v': 'KERI10JSON0001c1_',
                                                     'vn': [1, 0]}}
         assert res.json["pidx"] == 0
 
@@ -271,7 +270,7 @@ def test_identifier_collection_end(helpers):
         # Send in all signatures as if we are joining the inception event
         sigers = [signer0.sign(ser=serder.raw, index=0).qb64, p1.sign(ser=serder.raw, indices=[1])[0].qb64,
                   p2.sign(ser=serder.raw, indices=[2])[0].qb64]
-        states = nstates = [agent0, p1.kever.state().ked, p2.kever.state().ked]
+        states = nstates = [agent0, asdict(p1.kever.state()), asdict(p2.kever.state())]
 
         body = {
             'name': 'multisig',

@@ -5,6 +5,7 @@ keria.app.ending module
 
 """
 import json
+from dataclasses import asdict
 from urllib.parse import urlparse
 
 import falcon
@@ -85,13 +86,13 @@ class AgentResourceEnd:
 
         pidx = agent.hby.db.habs.cntAll()
 
-        state = agent.hby.kevers[agent.caid].state().ked
+        state = asdict(agent.hby.kevers[agent.caid].state())
         key = dbing.dgKey(state['i'], state['ee']['d'])  # digest key
         msg = agent.hby.db.getEvt(key)
         eserder = coring.Serder(raw=bytes(msg))
 
         body = dict(
-            agent=agent.hby.kevers[agent.pre].state().ked,
+            agent=asdict(agent.hby.kevers[agent.pre].state()),
             controller=dict(
                 state=state,
                 ee=eserder.ked
@@ -556,7 +557,7 @@ def info(hab, rm, full=False):
     if hab.accepted and full:
         kever = hab.kevers[hab.pre]
         data["transferable"] = kever.transferable
-        data["state"] = kever.state().ked
+        data["state"] = asdict(kever.state())
         dgkey = dbing.dgKey(kever.prefixer.qb64b, kever.serder.saidb)
         wigs = hab.db.getWigs(dgkey)
         data["windexes"] = [coring.Siger(qb64b=bytes(wig)).index for wig in wigs]
