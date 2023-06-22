@@ -3,11 +3,12 @@ import { Tier } from "../core/salter"
 import { Authenticater } from "../core/authing"
 import { KeyManager } from "../core/keeping"
 import { Algos } from '../core/manager';
-import { incept, rotate, interact, reply } from "../core/eventing"
-import { b, Serials, Versionage } from "../core/core";
+import { incept, rotate, interact, reply, messagize } from "../core/eventing"
+import { b, Serials, Versionage} from "../core/core";
 import { Tholder } from "../core/tholder";
 import { MtrDex } from "../core/matter";
 import { TraitDex } from "./habery";
+import { Siger } from "../core/siger";
 
 const KERIA_BOOT_URL = "http://localhost:3903"
 
@@ -268,6 +269,10 @@ export class SignifyClient {
 
     challenges() {
         return new Challenges(this)
+    }
+
+    contacts() {
+        return new Contacts(this)
     }
 }
 
@@ -791,53 +796,122 @@ class Challenges {
         this.client = client
     }
     //ChallengeCollectionEnd
-    async get_challenge(strength: number = 128) {
+    async generate_challenge(strength: number = 128) {
         let path = `/challenges?strength=${strength.toString()}`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, undefined)
         return await res.json()
     }
     //ChallengeResourceEnd
-    async send_challenge(name: string, recipient: string, words: [string]) {
-        let path = `/challenges/${name}`
+    async respond_challenge(alias: string, recipient: string, words: string[]) {
+        let path = `/challenges/${alias}`
         let method = 'POST'
 
-        let hab = await this.client.identifiers().get_identifier(name)
+        let hab = await this.client.identifiers().get_identifier(alias)
         let pre: string = hab["prefix"]
-        let state = hab["state"]
-        let sn = Number(state["s"])
-        let dig = state["d"]
-
-        let serder = interact({ pre: pre, dig: dig, sn: sn + 1, data: words, version: undefined, kind: undefined })
-        let keeper = this.client!.manager!.get(hab)
-        let sigs = keeper.sign(b(serder.raw))
-
         let data = {
-            recipient: recipient,
-            words: words,
-            exn: serder.ked,
-            sig: sigs,
+            i: pre,
+            words: words
         }
 
-        let resp = await this.client.fetch(path, method, data, undefined)
+        const exn = reply("/challenge/response",data,undefined,undefined,Serials.JSON)
+
+        
+        let keeper = this.client!.manager!.get(hab)
+
+
+        let sig = keeper.sign(b(exn.raw))
+        // let siger = new Siger({qb64:sig[0]})
+        // let ims = messagize(exn,[siger],undefined, undefined, undefined, false)
+        // let sigers = [siger]
+        // let msg = new Uint8Array(b(exn.raw))
+        // console.log(msg)
+        // console.log([sigers])
+        // console.log(sigers[0].qb64b)
+        // let ims = concat(msg, sigers[0].qb64b)
+        // console.log(ims)
+
+
+        let jsondata = {
+            recipient: recipient,
+            words: words,
+            exn: exn.ked,
+            sig: sig[0],
+        }
+
+        let resp = await this.client.fetch(path, method, jsondata, undefined)
         if (resp.status === 202) {
-            return serder.ked
+            return exn.ked
         }
         else {
             return resp
         }
     }
     //ChallengeResourceEnd
-    async accept_challenge(name: string, aid: string, said: string) {
-        let path = `/challenges/${name}`
+    async verify_challenge(alias: string, pre: string, said: string) {
+        let path = `/challenges/${alias}`
         let method = 'PUT'
         let data = {
-            aid: aid,
+            aid: pre,
             said: said
         }
         let res = await this.client.fetch(path, method, data, undefined)
 
         return res
     }
+
+}
+
+class Contacts {
+    client: SignifyClient
+    constructor(client: SignifyClient) {
+        this.client = client
+    }
+
+    async list_contacts(group:string|undefined, filterField:string|undefined, filterValue:string|undefined) {
+        let params = new URLSearchParams()
+        if (group !== undefined) {params.append('group', group)}
+        if (filterField !== undefined && filterValue !== undefined) {params.append(filterField, filterValue)}
+        
+        let path = `/contacts`+ '?' + params.toString()
+        let method = 'GET'
+        let res = await this.client.fetch(path, method, null, undefined)
+        return await res.json()
+
+    }
+
+    async get_contact(pre:string) {
+        
+        let path = `/contacts/`+ pre
+        let method = 'GET'
+        let res = await this.client.fetch(path, method, null, undefined)
+        return await res.json()
+
+    }
+
+    async add_contact(pre: string, info: any) {
+        let path = `/contacts/`+ pre
+        let method = 'POST'
+
+        let res = await this.client.fetch(path, method, info, undefined)
+        return await res.json()
+    }
+
+    async delete_contact(pre: string) {
+        let path = `/contacts/`+ pre
+        let method = 'DELETE'
+
+        let res = await this.client.fetch(path, method, null, undefined)
+        return await res.json()
+    }
+
+    async update_contact(pre: string, info: any) {
+        let path = `/contacts/`+pre
+        let method = 'PUT'
+
+        let res = await this.client.fetch(path, method, info, undefined)
+        return await res.json()
+    }
+
 
 }

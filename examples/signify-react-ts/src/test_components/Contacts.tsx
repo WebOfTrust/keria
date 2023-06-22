@@ -1,17 +1,11 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-import { SignifyClient, ready, Serder, Diger, MtrDex, CredentialTypes } from "signify-ts";
-import { strict as assert } from "assert";
-import { useState, useEffect } from 'react';
+import { SignifyClient, ready, Serder } from "signify-ts";
+import {strict as assert} from "assert";
+import { useState } from 'react';
 
-
-export function Challenges() {
+export function Contacts() {
     const [testResult, setTestResult] = useState('');
-    useEffect(() => {
-        ready().then(() => {
-            console.log("signify client is ready")
-        })
-    }, [])
 
     return (
         <>
@@ -51,7 +45,6 @@ export function Challenges() {
                             await client2.boot()
                             await client2.connect()
                             const identifiers2 = client2.identifiers()
-                            const challenges2 = client2.challenges()
                             const operations2 = client2.operations()
                             const oobis2 = client2.oobis()
                             let op2 = await identifiers2.create('rodo', {
@@ -70,37 +63,55 @@ export function Challenges() {
                             await identifiers1.addEndRole("alex", 'agent', client1!.agent!.pre)
                             await identifiers2.addEndRole("rodo", 'agent', client2!.agent!.pre)
                             
-                            // const oobi1 = await oobis1.get("alex")
-                            // const oobi2 = await oobis2.get("rodo")
 
-                            op1 = await oobis1.resolve("http://127.0.0.1:5642/oobi/"+aid2.i+"/witness","rodo")
+                            op1 = await oobis1.resolve("http://127.0.0.1:5642/oobi/"+aid2.i+"/witness")
                             while (!op1["done"]) {
                                 op1 = await operations1.get(op1["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
-                            await contacts1.add_contact(aid2.i,{alias: "rodo"})
-                            // await new Promise(resolve => setTimeout(resolve, 30000))
-                            op2 = await oobis2.resolve("http://127.0.0.1:5642/oobi/"+aid1.i+"/witness","alex")
+
+                            op2 = await oobis2.resolve("http://127.0.0.1:5642/oobi/"+aid1.i+"/witness")
                             while (!op2["done"]) {
                                 op2 = await operations2.get(op2["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
-                            await contacts1.list_contacts(undefined, undefined, undefined)
-                            // let words:string[] = ["collect", "merit", "vibrant", "fault", "math", "attitude", "goddess", "upgrade", "also", "ahead", "left", "rare"]
-                            // await challenges1.respond_challenge('alex', "EBn2oXQrGn-rCMddl6L_mrFeq7dwF5ESGJu0xNWXrsM2", words)
-                            let challenge = await challenges2.respond_challenge('rodo', aid1.i, challenge1_small)
-                            // await new Promise(resolve => setTimeout(resolve, 3000));//TODO: better way of checking if the challenge was received
-                        
-                            await contacts1.list_contacts(undefined, undefined, undefined)
-                            await challenges1.verify_challenge('alex', aid2.i, challenge.d)
-                            await contacts1.list_contacts(undefined, undefined, undefined)
+
+                            await contacts1.list_contacts()
+
+                            await contacts1.add_contact(aid2.i,{alias: "rodo"})
+
+                            await contacts1.list_contacts()
+
+                            await contacts1.get_contact(aid2.i)
+
+                            await contacts1.update_contact(aid2.i,{alias: "rodo2"})
+
+                            await contacts1.get_contact(aid2.i)
+
+                            // await contacts1.delete_contact(aid2.i)
+
+                            await contacts1.list_contacts()
+
+                            op1 = await oobis1.resolve("http://127.0.0.1:5642/oobi/EDIX9959tP3TL_F0kB3s3_njSSVmv-As15Ny7IjTK9dv/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha","keripy")
+                            while (!op1["done"]) {
+                                op1 = await operations1.get(op1["name"]);
+                                await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
+                            }
+
+                            await contacts1.add_contact("EDIX9959tP3TL_F0kB3s3_njSSVmv-As15Ny7IjTK9dv",{alias: "rodo"})
+
+                            while (true){
+                                await contacts1.list_contacts()
+                                await new Promise(resolve => setTimeout(resolve, 10000))
+                            }
+
                             setTestResult("Passed")
                         }
                         catch (e) {
                             console.log(e)
                             setTestResult("Failed")
                         }
-                    }} >Challenges Test</button>{testResult}
+                    }} >Contacts Integration Test</button>{testResult}
             </div>
         </>
     )
