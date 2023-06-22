@@ -18,7 +18,7 @@ export class Agent {
     pre: string;
     anchor: string;
     verfer: Verfer | null;
-    serder: Serder | null;
+    state: any | null;
     sn : number | undefined;
     said : string | undefined;
 
@@ -26,7 +26,7 @@ export class Agent {
         this.pre = "";
         this.anchor = "";
         this.verfer = null;
-        this.serder = null;
+        this.state = null;
         this.sn = 0;
         this.said = "";
         this.parse(agent);
@@ -36,21 +36,21 @@ export class Agent {
         // if (kel.length < 1) {
         //     throw new Error("invalid empty KEL");
         // }
-        let [serder, verfer, ] = this.event(agent);
+        let [state, verfer, ] = this.event(agent);
 
-        this.sn = new PNumber(serder.ked['s']).num
-        this.said = serder.ked['d']
+        this.sn = new PNumber(state['s']).num
+        this.said = state['d']
 
-        if (serder.ked['et'] !== Ilks.dip) {
-            throw new Error(`invalid inception event type ${serder.ked['et']}`);
+        if (state['et'] !== Ilks.dip) {
+            throw new Error(`invalid inception event type ${state['et']}`);
         }
 
-        this.pre = serder.pre;
-        if (!serder.ked['di']) {
+        this.pre = state['i'];
+        if (!state['di']) {
             throw new Error("no anchor to controller AID");
         }
 
-        this.anchor = serder.ked['di'];
+        this.anchor = state['di'];
         // for (let evt of kel.kel.slice(1)) {
         // for (let evt of state.controller.slice(1)) {
         //     let [rot, nverfer, ndiger] = this.event(evt);
@@ -67,14 +67,14 @@ export class Agent {
         // }
 
         this.verfer = verfer
-        this.serder = serder
+        this.state = state
     }
 
-    event(evt: any): [Serder, Verfer, Diger] {
-        let serder = new Serder(evt);
+    event(evt: any): [any, Verfer, Diger] {
         // let siger = new Siger({ qb64: evt["sig"] });
 
-        if (serder.verfers.length !== 1) {
+
+        if (evt['k'].length !== 1) {
             throw new Error(`agent inception event can only have one key`);
         }
 
@@ -82,24 +82,24 @@ export class Agent {
         //     throw new Error(`invalid signature on evt ${serder.ked['d']}`);
         // }
 
-        let verfer = serder.verfers[0];
+        let verfer = new Verfer({qb64: evt['k'][0]})
 
-        if (serder.digers.length !== 1) {
+        if (evt['n'].length !== 1) {
             throw new Error(`agent inception event can only have one next key`);
         }
 
-        let diger = serder.digers[0];
+        let diger = new Diger({qb64: evt['n'][0]});
 
-        let tholder = new Tholder(serder.ked["kt"]);
+        let tholder = new Tholder(evt["kt"]);
         if (tholder.num !== 1) {
             throw new Error(`invalid threshold ${tholder.num}, must be 1`);
         }
 
-        let ntholder = new Tholder(serder.ked["nt"]);
+        let ntholder = new Tholder(evt["nt"]);
         if (ntholder.num !== 1) {
             throw new Error(`invalid next threshold ${ntholder.num}, must be 1`);
         }
-        return [serder, verfer, diger];
+        return [evt, verfer, diger];
     }
 }
 export class Controller {
