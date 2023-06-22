@@ -6,6 +6,7 @@ keria.app.credentialing module
 services and endpoint for ACDC credential managements
 """
 import json
+from dataclasses import asdict
 
 import falcon
 from keri.core import coring
@@ -71,7 +72,7 @@ class RegistryEnd:
                 name=registry.name,
                 regk=registry.regk,
                 pre=registry.hab.pre,
-                state=registry.tever.state().ked
+                state=asdict(registry.tever.state())
             )
             res.append(rd)
 

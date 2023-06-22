@@ -6,7 +6,7 @@ keria.core.longrunning module
 """
 import datetime
 from collections import namedtuple
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 import falcon
 from dataclasses_json import dataclass_json
@@ -203,7 +203,7 @@ class Monitor:
                 operation.done = True
                 if obr.cid:
                     kever = self.hby.kevers[obr.cid]
-                    operation.response = kever.state().ked
+                    operation.response = asdict(kever.state())
                 else:
                     operation.response = dict(oobi=oobi)
 
@@ -261,14 +261,14 @@ class Monitor:
                 if "sn" in op.metadata:
                     if kever.sn >= op.metadata["sn"]:
                         operation.done = True
-                        operation.response = kever.state().ked
+                        operation.response = asdict(kever.state())
                     else:
                         operation.done = False
                 elif "anchor" in op.metadata:
                     anchor = op.metadata["anchor"]
                     if self.hby.db.findAnchoringEvent(op.oid, anchor=anchor) is not None:
                         operation.done = True
-                        operation.response = kever.state().ked
+                        operation.response = asdict(kever.state())
                     else:
                         operation.done = False
                 else:
@@ -279,7 +279,7 @@ class Monitor:
 
                     if ksn and ksn.ked['d'] == kever.serder.said:
                         operation.done = True
-                        operation.response = kever.state().ked
+                        operation.response = asdict(kever.state())
                     else:
                         operation.done = False
 
