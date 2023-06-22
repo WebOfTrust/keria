@@ -3,12 +3,11 @@ import { Tier } from "../core/salter"
 import { Authenticater } from "../core/authing"
 import { KeyManager } from "../core/keeping"
 import { Algos } from '../core/manager';
-import { incept, rotate, interact, reply, messagize } from "../core/eventing"
+import { incept, rotate, interact, reply } from "../core/eventing"
 import { b, Serials, Versionage} from "../core/core";
 import { Tholder } from "../core/tholder";
 import { MtrDex } from "../core/matter";
 import { TraitDex } from "./habery";
-import { Siger } from "../core/siger";
 
 const KERIA_BOOT_URL = "http://localhost:3903"
 
