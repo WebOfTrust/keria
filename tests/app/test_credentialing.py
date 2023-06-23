@@ -17,6 +17,7 @@ from keri.vdr import eventing
 from keri.vdr.credentialing import Regery, Registrar
 
 from keria.app import credentialing, aiding
+from keria.core import longrunning
 
 
 def test_load_ends(helpers):
@@ -92,6 +93,8 @@ def test_registry_end(helpers, seeder):
         idResEnd = aiding.IdentifierResourceEnd()
         registryEnd = credentialing.RegistryEnd(idResEnd)
         app.add_route("/registries", registryEnd)
+        opEnd = longrunning.OperationResourceEnd()
+        app.add_route("/operations/{name}", opEnd)
 
         seeder.seedSchema(agent.hby.db)
         result = client.simulate_post(path="/registries", body=b'{}')
@@ -122,6 +125,11 @@ def test_registry_end(helpers, seeder):
         serder, sigers = helpers.interact(pre=pre, bran=salt, pidx=0, ridx=0, dig=aid['d'], sn='1', data=[anchor])
         body = dict(name="test", alias="test", vcp=regser.ked, ixn=serder.ked, sigs=sigers)
         result = client.simulate_post(path="/registries", body=json.dumps(body).encode("utf-8"))
+        op = result.json
+        metadata = op["metadata"]
+
+        assert op["done"] is True
+        assert metadata["anchor"] == anchor
         assert result.status == falcon.HTTP_202
         assert len(agent.registries) == 1
         msg = agent.registries.popleft()

@@ -142,16 +142,17 @@ class RegistryEnd:
         if hab is None:
             raise falcon.HTTPNotFound(description="alias is not a valid reference to an identfier")
 
-        agent.rgy.makeSignifyRegistry(name=name, prefix=hab.pre, regser=vcp)
+        registry = agent.rgy.makeSignifyRegistry(name=name, prefix=hab.pre, regser=vcp)
         if hab.kever.estOnly:
             op = self.identifierResource.rotate(agent, alias, body)
         else:
             op = self.identifierResource.interact(agent, alias, body)
 
+        anchor = dict(i=registry.regk, s="0", d=registry.regk)
         # Create registry long running OP that embeds the above received OP or Serder.
         agent.registries.append(dict(pre=hab.pre, regk=vcp.pre, sn=vcp.ked["s"], regd=vcp.said))
         op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.registry,
-                                  metadata=dict(anchor=op))
+                                  metadata=dict(anchor=anchor, depends=op))
 
         rep.status = falcon.HTTP_202
         rep.data = op.to_json().encode("utf-8")
