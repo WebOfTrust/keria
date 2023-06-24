@@ -13,6 +13,7 @@ from hio.base import doing
 from keri.app import habbing
 from keri.core import scheming, coring, parsing
 from keri.core.eventing import TraitCodex
+from keri.vc import proving
 from keri.vdr import eventing
 from keri.vdr.credentialing import Regery, Registrar
 
@@ -32,8 +33,8 @@ def test_load_ends(helpers):
         assert isinstance(end, credentialing.SchemaCollectionEnd)
         (end, *_) = app._router.find("/schema/SAID")
         assert isinstance(end, credentialing.SchemaResourceEnd)
-        (end, *_) = app._router.find("/registries")
-        assert isinstance(end, credentialing.RegistryEnd)
+        (end, *_) = app._router.find("/identifiers/NAME/registries")
+        assert isinstance(end, credentialing.RegistryCollectionEnd)
 
 
 def test_schema_ends(helpers):
@@ -91,20 +92,12 @@ def test_schema_ends(helpers):
 def test_registry_end(helpers, seeder):
     with helpers.openKeria() as (agency, agent, app, client):
         idResEnd = aiding.IdentifierResourceEnd()
-        registryEnd = credentialing.RegistryEnd(idResEnd)
-        app.add_route("/registries", registryEnd)
+        registryEnd = credentialing.RegistryCollectionEnd(idResEnd)
+        app.add_route("/identifiers/{name}/registries", registryEnd)
         opEnd = longrunning.OperationResourceEnd()
         app.add_route("/operations/{name}", opEnd)
 
         seeder.seedSchema(agent.hby.db)
-        result = client.simulate_post(path="/registries", body=b'{}')
-        assert result.status == falcon.HTTP_400  # Bad request, missing name
-
-        result = client.simulate_post(path="/registries", body=b'{"name": "test"}')
-        assert result.status == falcon.HTTP_400  # Bad Request, missing alias
-
-        result = client.simulate_post(path="/registries", body=b'{"name": "test", "alias": "test123"}')
-        assert result.status == falcon.HTTP_400  # Bad Request, invalid alias
 
         end = aiding.IdentifierCollectionEnd()
         app.add_route("/identifiers", end)
@@ -113,6 +106,12 @@ def test_registry_end(helpers, seeder):
         aid = op["response"]
         pre = aid['i']
         assert pre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+
+        result = client.simulate_post(path="/identifiers/test/registries", body=b'{}')
+        assert result.status == falcon.HTTP_400  # Bad request, missing name
+
+        result = client.simulate_post(path="/identifiers/test123/registries", body=b'{"name": "test"}')
+        assert result.status == falcon.HTTP_400  # Bad Request, invalid aid name
 
         nonce = coring.randomNonce()
         regser = eventing.incept(pre,
@@ -124,34 +123,103 @@ def test_registry_end(helpers, seeder):
         anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)
         serder, sigers = helpers.interact(pre=pre, bran=salt, pidx=0, ridx=0, dig=aid['d'], sn='1', data=[anchor])
         body = dict(name="test", alias="test", vcp=regser.ked, ixn=serder.ked, sigs=sigers)
-        result = client.simulate_post(path="/registries", body=json.dumps(body).encode("utf-8"))
+        result = client.simulate_post(path="/identifiers/test/registries", body=json.dumps(body).encode("utf-8"))
         op = result.json
         metadata = op["metadata"]
 
         assert op["done"] is True
         assert metadata["anchor"] == anchor
         assert result.status == falcon.HTTP_202
-        assert len(agent.registries) == 1
-        msg = agent.registries.popleft()
-
-        assert msg["pre"] == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
-        assert msg["regk"] == regser.pre
-        assert msg["sn"] == '0'
-        agent.registries.append(msg)
 
         tock = 0.03125
         limit = 1.0
         doist = doing.Doist(limit=limit, tock=tock, real=True)
 
-        # doist.do(doers=doers)
         deeds = doist.enter(doers=[agent])
         doist.recur(deeds=deeds)
 
-        while len(agent.registries) == 1:
+        while regser.pre not in agent.tvy.tevers:
             doist.recur(deeds=deeds)
 
-        assert len(agent.registries) == 0
         assert regser.pre in agent.tvy.tevers
+
+
+def test_issue_credential(helpers, seeder):
+    with helpers.openKeria() as (agency, agent, app, client):
+        idResEnd = aiding.IdentifierResourceEnd()
+        app.add_route("/identifiers/{name}", idResEnd)
+        registryEnd = credentialing.RegistryCollectionEnd(idResEnd)
+        app.add_route("/identifiers/{name}/registries", registryEnd)
+        credEnd = credentialing.CredentialCollectionEnd(idResEnd)
+        app.add_route("/identifiers/{name}/credentials", credEnd)
+        opEnd = longrunning.OperationResourceEnd()
+        app.add_route("/operations/{name}", opEnd)
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+        endRolesEnd = aiding.EndRoleCollectionEnd()
+        app.add_route("/identifiers/{name}/endroles", endRolesEnd)
+
+        seeder.seedSchema(agent.hby.db)
+
+        # create the server that will receive the credential issuance messages
+        serverDoer = helpers.server(agency)
+
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+        deeds = doist.enter(doers=[agent, serverDoer])
+
+        isalt = b'0123456789abcdef'
+        registry, issuer = helpers.createRegistry(client, agent, isalt, doist, deeds)
+
+        iaid = issuer["prefix"]
+        idig = issuer['state']['d']
+
+        rsalt = b'abcdef0123456789'
+        op = helpers.createAid(client, "recipient", rsalt)
+        aid = op["response"]
+        recp = aid['i']
+        assert recp == "EMgdjM1qALk3jlh4P2YyLRSTcjSOjLXD3e_uYpxbdbg6"
+
+        helpers.createEndRole(client, agent, recp, "recipient", rsalt)
+
+        dt = "2021-01-01T00:00:00.000000+00:00"
+        schema = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
+        data = dict(LEI="254900DA0GOGCFVWB618", dt=dt)
+        creder = proving.credential(issuer=iaid,
+                                    schema=schema,
+                                    recipient=recp,
+                                    data=data,
+                                    source={},
+                                    status=registry["regk"])
+
+        csigers = helpers.sign(bran=isalt, pidx=0, ridx=0, ser=creder.raw)
+
+        # Test no backers... backers would use backerIssue
+        regser = eventing.issue(vcdig=creder.said, regk=registry["regk"], dt=dt)
+
+        anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)
+        serder, sigers = helpers.interact(pre=iaid, bran=isalt, pidx=0, ridx=0, dig=idig, sn='2', data=[anchor])
+
+        pather = coring.Pather(path=[])
+
+        body = dict(
+            iss=regser.ked,
+            ixn=serder.ked,
+            sigs=sigers,
+            cred=creder.ked,
+            csigs=csigers,
+            path=pather.qb64)
+        result = client.simulate_post(path="/identifiers/issuer/credentials", body=json.dumps(body).encode("utf-8"))
+        op = result.json
+
+        assert 'ced' in op['metadata']
+        assert op['metadata']['ced'] == creder.ked
+
+        while not agent.credentialer.complete(creder.said):
+            doist.recur(deeds=deeds)
+
+        assert agent.credentialer.complete(creder.said) is True
 
 
 def test_credentialing_ends(helpers, seeder):
@@ -160,10 +228,11 @@ def test_credentialing_ends(helpers, seeder):
     with helpers.openKeria() as (agency, agent, app, client), \
             habbing.openHab(name="issuer", salt=salt, temp=True) as (hby, hab), \
             helpers.withIssuer(name="issuer", hby=hby) as issuer:
-        credEnd = credentialing.CredentialCollectionEnd()
-        app.add_route("/identifiers/{aid}/credentials", credEnd)
+        idResEnd = aiding.IdentifierResourceEnd()
+        credEnd = credentialing.CredentialCollectionEnd(idResEnd)
+        app.add_route("/identifiers/{name}/credentials", credEnd)
         credResEnd = credentialing.CredentialResourceEnd()
-        app.add_route("/identifiers/{aid}/credentials/{said}", credResEnd)
+        app.add_route("/identifiers/{name}/credentials/{said}", credResEnd)
 
         assert hab.pre == "EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze"
 
@@ -203,42 +272,40 @@ def test_credentialing_ends(helpers, seeder):
 
         parsing.Parser(kvy=agent.kvy, rvy=agent.rvy, tvy=agent.tvy, vry=agent.verifier).parse(ims)
 
-        res = client.simulate_get(f"/identifiers/{hab.pre}/credentials")
-        assert res.status_code == 400
-        assert res.json == {'description': 'Invalid identifier '
-                                           'EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze for credentials',
-                            'title': '400 Bad Request'}
+        res = client.simulate_get(f"/identifiers/{hab.name}/credentials")
+        assert res.status_code == 404
+        assert res.json == {'description': 'name is not a valid reference to an identfier',
+                            'title': '404 Not Found'}
 
-        res = client.simulate_get(f"/identifiers/{issuee}/credentials")
+        res = client.simulate_get(f"/identifiers/test/credentials")
         assert res.status_code == 400
         assert res.json == {'description': 'Invalid type None', 'title': '400 Bad Request'}
 
-        res = client.simulate_get(f"/identifiers/{issuee}/credentials?type=issued")
+        res = client.simulate_get(f"/identifiers/test/credentials?type=issued")
         assert res.status_code == 200
         assert res.json == []
 
-        res = client.simulate_get(f"/identifiers/{issuee}/credentials?type=received")
+        res = client.simulate_get(f"/identifiers/test/credentials?type=received")
         assert res.status_code == 200
         assert len(res.json) == 5
 
-        res = client.simulate_get(f"/identifiers/{issuee}/credentials?type=received&schema={issuer.LE}")
+        res = client.simulate_get(f"/identifiers/test/credentials?type=received&schema={issuer.LE}")
         assert res.status_code == 200
         assert len(res.json) == 3
 
-        res = client.simulate_get(f"/identifiers/{issuee}/credentials?type=received&schema={issuer.QVI}")
+        res = client.simulate_get(f"/identifiers/test/credentials?type=received&schema={issuer.QVI}")
         assert res.status_code == 200
         assert len(res.json) == 2
 
-        res = client.simulate_get(f"/identifiers/{issuee}/credentials/{saids[0]}")
+        res = client.simulate_get(f"/identifiers/test/credentials/{saids[0]}")
         assert res.status_code == 200
-        print(res.headers)
         assert res.headers['content-type'] == "application/json"
         assert res.json['sad']['d'] == saids[0]
 
         headers = {"Accept": "application/json+cesr"}
-        res = client.simulate_get(f"/identifiers/{hab.pre}/credentials/{saids[0]}", headers=headers)
-        assert res.status_code == 400
+        res = client.simulate_get(f"/identifiers/{hab.name}/credentials/{saids[0]}", headers=headers)
+        assert res.status_code == 404
 
-        res = client.simulate_get(f"/identifiers/{issuee}/credentials/{saids[0]}", headers=headers)
+        res = client.simulate_get(f"/identifiers/test/credentials/{saids[0]}", headers=headers)
         assert res.status_code == 200
         assert res.headers['content-type'] == "application/json+cesr"

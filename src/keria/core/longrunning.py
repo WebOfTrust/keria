@@ -17,10 +17,10 @@ from keri.db import dbing, koming
 from keri.help import helping
 
 # long running operationt types
-Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry done')
+Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential done')
 
 OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation', group='group', query='query',
-                  registry='registry', done='done')
+                  registry='registry', credential='credential', done='done')
 
 
 @dataclass_json
@@ -89,7 +89,7 @@ class Monitor:
 
     """
 
-    def __init__(self, hby, swain, counselor, opr=None, temp=False):
+    def __init__(self, hby, swain, counselor=None, registrar=None, credentialer=None, opr=None, temp=False):
         """ Create long running operation monitor
 
         Parameters:
@@ -101,6 +101,8 @@ class Monitor:
         self.hby = hby
         self.swain = swain
         self.counselor = counselor
+        self.registrar = registrar
+        self.credentialer = credentialer
         self.opr = opr if opr is not None else Operator(name=hby.name, temp=temp)
 
     def submit(self, oid, typ, metadata=None):
@@ -295,6 +297,18 @@ class Monitor:
             if self.hby.db.findAnchoringEvent(op.oid, anchor=anchor) is not None:
                 operation.done = True
                 operation.response = dict(anchor=anchor)
+            else:
+                operation.done = False
+
+        elif op.type in (OpTypes.credential,):
+            if "ced" not in op.metadata:
+                raise kering.ValidationError(
+                    f"invalid long running {op.type} operaiton, metadata missing 'ced' field")
+
+            ced = op.metadata["ced"]
+            if self.credentialer.complete(ced['d']):
+                operation.done = True
+                operation.response = dict(ced=ced)
             else:
                 operation.done = False
 
