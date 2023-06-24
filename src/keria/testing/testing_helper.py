@@ -9,6 +9,8 @@ import json
 import falcon
 import pytest
 from falcon import testing
+from hio.base import doing
+from hio.core import http
 from keri import kering
 from keri.app import keeping, habbing, configing, signing
 from keri.core import coring, eventing, parsing, routing, scheming
@@ -16,8 +18,9 @@ from keri.core.coring import MtrDex
 from keri.help import helping
 from keri.vc import proving
 from keri.vdr import credentialing, verifying
+from keri.vdr import eventing as veventing
 from keri.vdr.credentialing import Regery, Registrar
-from keria.app import agenting
+from keria.app import agenting, indirecting
 from contextlib import contextmanager
 
 WitnessUrls = {
@@ -28,6 +31,7 @@ WitnessUrls = {
     "wil:tcp": "tcp://127.0.0.1:5633/",
     "wil:http": "http://127.0.0.1:5643/",
 }
+
 
 class DbSeed:
     @staticmethod
@@ -210,12 +214,12 @@ class DbSeed:
         # NEW: EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs
         db.schema.pin(schemer.said, schemer)
 
-class Helpers:
 
+class Helpers:
     controllerAID = "EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx"
 
     @staticmethod
-    def remove_test_dirs(name,kdir="/usr/local/var/keri"):
+    def remove_test_dirs(name, kdir="/usr/local/var/keri"):
         # if os.path.exists(f'{kdir}/adb/TheAgency'):
         #     shutil.rmtree(f'{kdir}/adb/TheAgency')
         if os.path.exists(f'{kdir}/cf/{name}.json'):
@@ -238,6 +242,16 @@ class Helpers:
             shutil.rmtree(f'{kdir}/reg/agent-{name}')
         if os.path.exists(f'{kdir}/rks/{name}'):
             shutil.rmtree(f'{kdir}/rks/{name}')
+
+    @staticmethod
+    def server(agency, httpPort=3902):
+        app = falcon.App()
+        httpEnd = indirecting.HttpEnd(agency=agency)
+        app.add_route("/", httpEnd)
+        server = http.Server(port=httpPort, app=app)
+        httpServerDoer = http.ServerDoer(server=server)
+        return httpServerDoer
+
 
     @staticmethod
     def controller():
@@ -341,6 +355,15 @@ class Helpers:
         return serder, sigers
 
     @staticmethod
+    def sign(bran, pidx, ridx, ser):
+        salter = coring.Salter(raw=bran)
+        creator = keeping.SaltyCreator(salt=salter.qb64, stem="signify:aid", tier=coring.Tiers.low)
+
+        signers = creator.create(pidx=pidx, ridx=ridx, tier=coring.Tiers.low, temp=False, count=1)
+        sigers = [signer.sign(ser=ser, index=0).qb64 for signer in signers]
+        return sigers
+
+    @staticmethod
     def createAid(client, name, salt, wits=None, toad="0", delpre=None):
         serder, signers = Helpers.incept(salt, "signify:aid", pidx=0, wits=wits, toad=toad, delpre=delpre)
         assert len(signers) == 1
@@ -364,6 +387,56 @@ class Helpers:
         return res.json
 
     @staticmethod
+    def createEndRole(client, agent, recp, name, salt):
+        rpy = Helpers.endrole(recp, agent.agentHab.pre)
+        sigs = Helpers.sign(salt, 0, 0, rpy.raw)
+        body = dict(rpy=rpy.ked, sigs=sigs)
+
+        res = client.simulate_post(path=f"/identifiers/{name}/endroles", json=body)
+        ked = res.json
+        serder = coring.Serder(ked=ked)
+        assert serder.raw == rpy.raw
+
+    @staticmethod
+    def createRegistry(client, agent, salt, doist, deeds):
+        op = Helpers.createAid(client, "issuer", salt)
+        aid = op["response"]
+        pre = aid['i']
+        assert pre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+
+        nonce = coring.randomNonce()
+        regser = veventing.incept(pre,
+                                  baks=[],
+                                  toad="0",
+                                  nonce=nonce,
+                                  cnfg=[eventing.TraitCodex.NoBackers],
+                                  code=coring.MtrDex.Blake3_256)
+        anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)
+        serder, sigers = Helpers.interact(pre=pre, bran=salt, pidx=0, ridx=0, dig=aid['d'], sn='1', data=[anchor])
+        body = dict(name="test", alias="test", vcp=regser.ked, ixn=serder.ked, sigs=sigers)
+        result = client.simulate_post(path="/identifiers/issuer/registries", body=json.dumps(body).encode("utf-8"))
+        op = result.json
+        metadata = op["metadata"]
+
+        assert op["done"] is True
+        assert metadata["anchor"] == anchor
+        assert result.status == falcon.HTTP_202
+
+        while regser.pre not in agent.tvy.tevers:
+            doist.recur(deeds=deeds)
+
+        assert regser.pre in agent.tvy.tevers
+
+        result = client.simulate_get(path="/identifiers/issuer/registries")
+        registries = result.json
+        assert len(registries) == 1
+        assert registries[0]["name"] == "test"
+
+        issuer = client.simulate_get("/identifiers/issuer")
+
+        return registries[0], issuer.json
+
+    @staticmethod
     def endrole(cid, eid):
         data = dict(cid=cid, role="agent", eid=eid)
         return eventing.reply(route="/end/role/add", data=data)
@@ -384,7 +457,7 @@ class Helpers:
             salter = coring.Salter(raw=salt)
 
         if cf is None:
-            cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
+            cf = configing.Configer(name="keria", headDirPath="tests/scripts", reopen=True, clear=False)
 
         with habbing.openHby(name="keria", salt=salter.qb64, temp=temp, cf=cf) as hby:
             ims = eventing.messagize(serder, sigers=sigers)
@@ -401,12 +474,12 @@ class Helpers:
             app.add_middleware(Helpers.middleware(agent))
             client = testing.TestClient(app)
             yield agency, agent, app, client
-            
+
     @staticmethod
     @contextmanager
     def withIssuer(name, hby):
         yield Issuer(name=name, hby=hby)
-    
+
     @staticmethod
     def mockNowUTC():
         """
@@ -422,15 +495,13 @@ class Helpers:
         '2021-01-01T00:00:00.000000+00:00'
         """
         return "2021-06-27T21:26:21.233257+00:00"
-        
+
     @staticmethod
     def mockRandomNonce():
         return "A9XfpxIl1LcIkMhUSCCC8fgvkuX8gG9xK3SM-S8a8Y_U"
-    
 
 
 class Issuer:
-
     LE = "ENTAoj2oNBFpaniRswwPcca9W1ElEeH2V7ahw68HV4G5"
     QVI = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
     date = "2021-06-27T21:26:21.233257+00:00"
@@ -507,7 +578,8 @@ class Issuer:
         assert self.rgy.reger.saved.get(keys=creder.said) is not None
 
         return creder.said
-            
+
+
 class MockAgentMiddleware:
 
     def __init__(self, agent):

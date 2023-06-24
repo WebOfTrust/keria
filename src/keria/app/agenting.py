@@ -12,7 +12,6 @@ from urllib.parse import urlparse
 from keri import kering
 from keri.app.notifying import Notifier
 from keri.app.storing import Mailboxer
-from keri.db.dbing import snKey, dgKey
 from ordered_set import OrderedSet as oset
 
 import falcon
@@ -33,7 +32,7 @@ from keri.help import helping, ogler
 from keri.peer import exchanging
 from keri.vc import protocoling
 from keri.vdr import verifying
-from keri.vdr.credentialing import Regery, Registrar
+from keri.vdr.credentialing import Regery
 from keri.vdr.eventing import Tevery
 
 from . import aiding, notifying, indirecting, credentialing
@@ -242,12 +241,10 @@ class Agent(doing.DoDoer):
 
         self.swain = delegating.Boatswain(hby=hby)
         self.counselor = Counselor(hby=hby)
-        self.registrar = Registrar(hby=hby, rgy=rgy, counselor=self.counselor)
         self.org = connecting.Organizer(hby=hby)
 
         oobiery = oobiing.Oobiery(hby=hby)
 
-        self.monitor = longrunning.Monitor(hby=hby, swain=self.swain, counselor=self.counselor, temp=hby.temp)
         self.mgr = RemoteManager(hby=hby)
 
         self.cues = decking.Deck()
@@ -255,21 +252,31 @@ class Agent(doing.DoDoer):
         self.anchors = decking.Deck()
         self.witners = decking.Deck()
         self.queries = decking.Deck()
-        self.registries = decking.Deck()
 
         receiptor = agenting.Receiptor(hby=hby)
         self.postman = forwarding.Poster(hby=hby)
         self.witPub = agenting.WitnessPublisher(hby=self.hby)
+        self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
 
         self.rep = storing.Respondant(hby=hby, cues=self.cues, mbx=Mailboxer(name=self.hby.name, temp=self.hby.temp))
 
         doers = [habbing.HaberyDoer(habery=hby), receiptor, self.postman, self.witPub, self.rep, self.swain,
                  self.counselor, *oobiery.doers]
 
-        self.verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
-
         signaler = signaling.Signaler()
         self.notifier = Notifier(hby=hby, signaler=signaler)
+
+        # Initialize all the credential processors
+        self.verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
+        self.registrar = credentialing.Registrar(hby=hby, rgy=rgy, counselor=self.counselor, witPub=self.witPub,
+                                                 witDoer=self.witDoer)
+        self.credentialer = credentialing.Credentialer(agentHab=agentHab, hby=self.hby, rgy=self.rgy,
+                                                       postman=self.postman, registrar=self.registrar,
+                                                       verifier=self.verifier, notifier=self.notifier)
+
+        self.monitor = longrunning.Monitor(hby=hby, swain=self.swain, counselor=self.counselor, temp=hby.temp,
+                                           registrar=self.registrar, credentialer=self.credentialer)
+
         issueHandler = protocoling.IssueHandler(hby=hby, rgy=rgy, notifier=self.notifier)
         requestHandler = protocoling.PresentationRequestHandler(hby=hby, notifier=self.notifier)
         applyHandler = protocoling.ApplyHandler(hby=hby, rgy=rgy, verifier=self.verifier,
@@ -303,13 +310,13 @@ class Agent(doing.DoDoer):
         doers.extend([
             Initer(agentHab=agentHab, caid=caid),
             Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries),
-            Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc, vry=self.verifier),
+            Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc, vry=self.verifier,
+                     registrar=self.registrar, credentialer=self.credentialer),
             Messager(kvy=self.kvy, parser=self.parser),
             Witnesser(receiptor=receiptor, witners=self.witners),
             Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
             GroupRequester(hby=hby, agentHab=agentHab, postman=self.postman, counselor=self.counselor,
                            groups=self.groups),
-            Registrier(hby=hby, rgy=rgy, agentHab=agentHab, witPub=self.witPub, registries=self.registries),
         ])
 
         super(Agent, self).__init__(doers=doers, always=True, **opts)
@@ -485,13 +492,27 @@ class Querier(doing.DoDoer):
 
 
 class Escrower(doing.Doer):
-    def __init__(self, kvy, rgy, rvy, tvy, exc, vry):
+    def __init__(self, kvy, rgy, rvy, tvy, exc, vry, registrar, credentialer):
+        """ Recuring process or escrows for all components in an Agent
+
+        Parameters:
+            kvy (Kevery):
+            rgy (Regery):
+            rvy (Revery):
+            tvy (Tevery):
+            exc (Exchanger):
+            vry (Verifier):
+            registrar (Registrar): Credential TEL escrow processor
+            credentialer (Credentialer): Credential escrow processor
+        """
         self.kvy = kvy
         self.rgy = rgy
         self.rvy = rvy
         self.tvy = tvy
         self.exc = exc
         self.vry = vry
+        self.registrar = registrar
+        self.credentialer = credentialer
 
         super(Escrower, self).__init__()
 
@@ -504,57 +525,8 @@ class Escrower(doing.Doer):
             self.tvy.processEscrows()
         self.exc.processEscrow()
         self.vry.processEscrows()
-
-        return False
-
-
-class Registrier(doing.Doer):
-
-    def __init__(self, hby, rgy, agentHab, witPub, registries):
-        self.hby = hby
-        self.rgy = rgy
-        self.agentHab = agentHab
-        self.witPub = witPub
-        self.registries = registries
-
-        super(Registrier, self).__init__()
-
-    def recur(self, tyme):
-        if self.registries:
-            msg = self.registries.popleft()
-            pre = msg["pre"]
-            regk = msg["regk"]
-            regd = msg["regd"]
-            sn = msg["sn"]
-
-            if pre not in self.hby.habs:
-                logger.error(f"request to incept registry from invalid pre {pre}")
-                return False
-
-            anchor = dict(i=regk, s=sn, d=regd)
-            if (serder := self.hby.db.findAnchoringEvent(pre=pre, anchor=anchor)) is None:
-                self.registries.append(msg)
-                return False
-
-            seqner = coring.Seqner(sn=serder.sn)
-            key = dgKey(regk, regd)
-            sealet = seqner.qb64b + serder.saidb
-            self.rgy.reger.putAnc(key, sealet)
-
-            rseq = coring.Seqner(snh=sn)
-            dig = self.rgy.reger.getTel(key=snKey(pre=regk, sn=rseq.sn))
-            if dig is None:
-                self.registries.append(msg)
-                return False
-
-            tevt = bytearray()
-            for msg in self.rgy.reger.clonePreIter(pre=regk, fn=rseq.sn):
-                tevt.extend(msg)
-
-            print(f"Sending TEL events to witnesses")
-            # Fire and forget the TEL event to the witnesses.  Consumers will have to query
-            # to determine when the Witnesses have received the TEL events.
-            self.witPub.msgs.append(dict(pre=self.agentHab.pre, msg=tevt))
+        self.registrar.processEscrows()
+        self.credentialer.processEscrows()
 
         return False
 

@@ -53,6 +53,36 @@ def test_load_ends(helpers):
         assert isinstance(end, aiding.ContactImageResourceEnd)
 
 
+def test_endrole_ends(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+        idResEnd = aiding.IdentifierResourceEnd()
+        app.add_route("/identifiers/{name}", idResEnd)
+        endRolesEnd = aiding.EndRoleCollectionEnd()
+        app.add_route("/identifiers/{name}/endroles", endRolesEnd)
+
+        salt = b'0123456789abcdef'
+        op = helpers.createAid(client, "user1", salt)
+        aid = op["response"]
+        recp = aid['i']
+        assert recp == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+
+        rpy = helpers.endrole(recp, agent.agentHab.pre)
+        sigs = helpers.sign(salt, 0, 0, rpy.raw)
+        body = dict(rpy=rpy.ked, sigs=sigs)
+
+        res = client.simulate_post(path=f"/identifiers/user1/endroles", json=body)
+        ked = res.json
+        serder = coring.Serder(ked=ked)
+        assert serder.raw == rpy.raw
+
+        keys = (recp, 'agent', agent.agentHab.pre)
+        end = agent.hby.db.ends.get(keys=keys)
+        assert end is not None
+        assert end.allowed is True
+
+
 def test_agent_resource(helpers, mockHelpingNowUTC):
     with helpers.openKeria() as (agency, agent, app, client):
         agentEnd = aiding.AgentResourceEnd(agency=agency, authn=None)
