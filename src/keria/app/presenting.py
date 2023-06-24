@@ -167,20 +167,16 @@ class PresentationRequestsCollectionEnd:
             raise falcon.HTTPBadRequest(f"Invalid alias {name} for credential request")
 
         body = req.get_media()
+        exn = httping.getRequiredParam(body, "exn")
+        sigs = httping.getRequiredParam(body, 'sigs')
         recp = httping.getRequiredParam(body, 'recipient')
-        schema = httping.getRequiredParam(body, 'schema')
 
-        pl = dict(
-            s=schema
-        )
+        serder = coring.Serder(ked=exn)
+        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+        msg = eventing.messagize(serder=serder, sigers=sigers)
 
-        issuer = body.get("issuer")
-        if issuer is not None:
-            pl['i'] = issuer
+        atc = msg[serder.size:]
 
-        exn = exchanging.exchange(route="/presentation/request", payload=pl)
-        ims = hab.endorse(serder=exn, last=True, pipelined=False)
-        del ims[:exn.size]
-        agent.postman.send(src=hab.pre, dest=recp, topic="credential", serder=exn, attachment=ims)
+        agent.postman.send(src=hab.pre, dest=recp, topic="credential", serder=exn, attachment=atc)
 
         rep.status = falcon.HTTP_202

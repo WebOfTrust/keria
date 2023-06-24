@@ -169,3 +169,38 @@ def test_presentation(helpers, seeder, mockHelpingNowUTC):
                                   'v': 'KERI10JSON000138_'},
                        'src': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
                        'topic': 'credential'}
+
+
+def test_presentation_request(helpers):
+    salt = b'0123456789abcdef'
+    with helpers.openKeria() as (agency, agent, app, client):
+        requestsEnd = PresentationRequestsCollectionEnd()
+        app.add_route("/identifiers/{name}/requests", requestsEnd)
+
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+        op = helpers.createAid(client, "test", salt)
+        aid = op["response"]
+        issuee = aid['i']
+        assert issuee == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+
+        schema = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
+        issuer = "EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4"
+        pl = dict(
+            s=schema,
+            i=issuer
+        )
+
+        exn = exchanging.exchange(route="/presentation/request", payload=pl)
+        sigs = helpers.sign(bran=salt, pidx=0, ridx=0, ser=exn.raw)
+
+        body = dict(
+            exn=exn.ked,
+            sigs=sigs,
+            recipient=issuee
+        )
+
+        res = client.simulate_post(path=f"/identifiers/test/requests",
+                                   body=json.dumps(body).encode("utf-8"))
+        assert res.status_code == 202
+
