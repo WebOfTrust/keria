@@ -457,9 +457,8 @@ class Helpers:
             salter = coring.Salter(raw=salt)
 
         if cf is None:
-            cf = configing.Configer(name="keria", headDirPath="scripts", reopen=True, clear=False)
+            cf = configing.Configer(name="keria", headDirPath="tests/scripts", reopen=True, clear=False)
 
-        print(cf.path)
         with habbing.openHby(name="keria", salt=salter.qb64, temp=temp, cf=cf) as hby:
             ims = eventing.messagize(serder, sigers=sigers)
             parsing.Parser(kvy=hby.kvy).parseOne(ims=ims)

@@ -409,7 +409,7 @@ class CredentialCollectionEnd:
             op = self.identifierResource.interact(agent, name, body)
 
         try:
-
+            agent.credentialer.validate(creder)
             agent.registrar.issue(regk, iserder)
             agent.credentialer.issue(creder=creder, sadsigers=sadsigers)
             op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.credential,
