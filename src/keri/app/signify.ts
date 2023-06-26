@@ -744,15 +744,15 @@ class Registries {
         this.client = client
     }
 
-    async list() {
-        let path = `/registries`
+    async list(name:string) {
+        let path = `/identifiers/`+name+`/registries`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, undefined)
         return await res.json()
 
     }
     async create(name: string, alias: string, toad: number, nonce: string, baks: [string], estOnly: boolean, noBackers: string = TraitDex.NoBackers) {
-        let path = `/registries`
+        let path = `/identifiers/`+name+`/registries`
         let method = 'POST'
         let data = {
             name: name,
