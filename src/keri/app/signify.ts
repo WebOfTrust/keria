@@ -701,8 +701,8 @@ class Credentials {
         this.client = client
     }
     //CredentialCollectionEnd
-    async list_credentials(aid: string, typ: CredentialTypes, schema: string) {
-        let path = `/identifiers/${aid}/credentials`
+    async list_credentials(name: string, typ: CredentialTypes, schema: string) {
+        let path = `/identifiers/${name}/credentials`
         //if type is not in the credential types, throw an error
         if (!Object.values(CredentialTypes).includes(typ)) {
             throw new Error("Invalid Credential Type")
@@ -721,8 +721,8 @@ class Credentials {
         return await res.json()
     }
     //CredentialResourceEnd
-    async export_credential(aid: string, said: string) {
-        let path = `/identifiers/${aid}/credentials/${said}`
+    async export_credential(name: string, said: string) {
+        let path = `/identifiers/${name}/credentials/${said}`
         let method = 'GET'
         let headers = new Headers({
             'Accept': 'application/json+cesr'
@@ -733,7 +733,7 @@ class Credentials {
 
     }
 
-    async issue_credential(aid: string, registy: string, recipient: string, schema: string, rules: any, source: any, credentialData: any, _private: boolean=false) {
+    async issue_credential(name: string, registy: string, recipient: string, schema: string, rules: any, source: any, credentialData: any, _private: boolean=false) {
         
         let body = {
             registry: registy,
@@ -775,7 +775,99 @@ class Credentials {
         //         type: boolean
         //         description: flag to inidicate this credential should support privacy preserving presentations
         
-        let path = `/identifiers/${aid}/credentials`
+        let path = `/identifiers/${name}/credentials`
+        let method = 'POST'
+        let headers = new Headers({
+            'Accept': 'application/json+cesr'
+
+        })
+        let res = await this.client.fetch(path, method, body, headers)
+        return await res.text()
+
+    }
+
+
+    async present_credential(name: string, said: string, recipient: string, include: boolean=true) {
+    //     parameters:
+    //     - in: path
+    //       name: alias
+    //       schema:
+    //         type: string
+    //       required: true
+    //       description: Human readable alias for the holder of credential
+    //   requestBody:
+    //       required: true
+    //       content:
+    //         application/json:
+    //           schema:
+    //             type: object
+    //             properties:
+    //               said:
+    //                 type: string
+    //                 required: true
+    //                 description: qb64 SAID of credential to send
+    //               recipient:
+    //                 type: string
+    //                 required: true
+    //                 description: qb64 AID to send credential presentation to
+    //               include:
+    //                 type: boolean
+    //                 required: true
+    //                 default: true
+    //                 description: flag indicating whether to stream credential alongside presentation exn
+        
+        let body = {
+            said: said,
+            recipient: recipient,
+            include: include
+
+        }
+        let path = `/identifiers/${name}/credentials/${said}/presentations`
+        let method = 'POST'
+        let headers = new Headers({
+            'Accept': 'application/json+cesr'
+
+        })
+        let res = await this.client.fetch(path, method, body, headers)
+        return await res.text()
+
+    }
+
+    async request_credential(name: string, recipient: string, schema: string, issuer: string) {
+
+
+        // parameters:
+        //   - in: path
+        //     name: alias
+        //     schema:
+        //       type: string
+        //     required: true
+        //     description: Human readable alias for the identifier to create
+        // requestBody:
+        //     required: true
+        //     content:
+        //       application/json:
+        //         schema:
+        //           type: object
+        //           properties:
+        //             recipient:
+        //               type: string
+        //               required: true
+        //               description: qb64 AID to send presentation request to
+        //             schema:
+        //               type: string
+        //               required: true
+        //               description: qb64 SAID of schema for credential being requested
+        //             issuer:
+        //               type: string
+        //               required: false
+        //               description: qb64 AID of issuer of credential being requested
+        let body = {
+            recipient: recipient,
+            schema: schema,
+            issuer: issuer
+        }
+        let path = `/identifiers/${name}/requests`
         let method = 'POST'
         let headers = new Headers({
             'Accept': 'application/json+cesr'
@@ -796,14 +888,14 @@ class Registries {
     }
 
     async list(name:string) {
-        let path = `/identifiers/`+name+`/registries`
+        let path = `/identifiers/${name}/registries`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, undefined)
         return await res.json()
 
     }
     async create(name: string, alias: string, toad: number, nonce: string, baks: [string], estOnly: boolean, noBackers: string = TraitDex.NoBackers) {
-        let path = `/identifiers/`+name+`/registries`
+        let path = `/identifiers/${name}/registries`
         let method = 'POST'
         let data = {
             name: name,
@@ -987,7 +1079,7 @@ class Notifications {
         if (last !== undefined) {params.append('last', last)}
         if (limit !== undefined) {params.append('limit', limit.toString())}
         
-        let path = `/notifications` //+ '?' + params.toString()
+        let path = `/notifications` + '?' + params.toString()
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, undefined)
         return await res.json()
@@ -1012,5 +1104,5 @@ class Notifications {
 
     }
 
-
 }
+
