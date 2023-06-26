@@ -733,6 +733,59 @@ class Credentials {
 
     }
 
+    async issue_credential(aid: string, registy: string, recipient: string, schema: string, rules: any, source: any, credentialData: any, _private: boolean=false) {
+        
+        let body = {
+            registry: registy,
+            recipient: recipient,
+            schema: schema,
+            rules: rules,
+            source: source,
+            credentialData: credentialData,
+            private: _private
+        }
+        // TODO
+        // properties:
+        //     registry:
+        //         type: string
+        //         description: Alias of credential issuance/revocation registry (aka status)
+        //     recipient:
+        //         type: string
+        //         description: AID of credential issuance/revocation recipient
+        //     schema:
+        //         type: string
+        //         description: SAID of credential schema being issued
+        //     rules:
+        //         type: object
+        //         description: Rules section (Ricardian contract) for credential being issued
+        //     source:
+        //         type: object
+        //         description: ACDC edge or edge group for chained credentials
+        //         properties:
+        //             d:
+        //             type: string
+        //             description: SAID of reference chain
+        //             s:
+        //             type: string
+        //             description: SAID of reference chain schema
+        //     credentialData:
+        //         type: object
+        //         description: dynamic map of values specific to the schema
+        //     private:
+        //         type: boolean
+        //         description: flag to inidicate this credential should support privacy preserving presentations
+        
+        let path = `/identifiers/${aid}/credentials`
+        let method = 'POST'
+        let headers = new Headers({
+            'Accept': 'application/json+cesr'
+
+        })
+        let res = await this.client.fetch(path, method, body, headers)
+        return await res.text()
+
+    }
+
 
 }
 
