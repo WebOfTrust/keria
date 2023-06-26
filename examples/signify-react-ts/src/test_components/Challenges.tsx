@@ -28,7 +28,8 @@ export function Challenges() {
                             const operations1 = client1.operations()
                             const oobis1 = client1.oobis()
                             const contacts1 = client1.contacts()
-                            let challenges1 = client1.challenges()
+                            const challenges1 = client1.challenges()
+                            const notifications1 = client1.notifications()
                             let challenge1_small = await challenges1.generate_challenge(128)
                             assert.equal(challenge1_small.words.length, 12)
                             let challenge1_big = await challenges1.generate_challenge(256)
@@ -83,6 +84,9 @@ export function Challenges() {
                             await contacts1.list_contacts(undefined, undefined, undefined)
                             await challenges2.respond_challenge('rodo', aid1.i, challenge1_small.words)
                             // await challenges1.accept_challenge_response('alex', said)
+                            await contacts1.list_contacts(undefined, undefined, undefined)
+                            await new Promise(resolve => setTimeout(resolve, 10000));
+                            await notifications1.list_notifications(undefined, undefined)
                             setTestResult("Passed")
                         }
                         catch (e) {

@@ -275,6 +275,10 @@ export class SignifyClient {
     contacts() {
         return new Contacts(this)
     }
+
+    notifications() {
+        return new Notifications(this)
+    }
 }
 
 class Identifier {
@@ -917,6 +921,44 @@ class Contacts {
 
         let res = await this.client.fetch(path, method, info, undefined)
         return await res.json()
+    }
+
+}
+
+class Notifications {
+    client: SignifyClient
+    constructor(client: SignifyClient) {
+        this.client = client
+    }
+
+    async list_notifications(last:string|undefined, limit:number|undefined) {
+        let params = new URLSearchParams()
+        if (last !== undefined) {params.append('last', last)}
+        if (limit !== undefined) {params.append('limit', limit.toString())}
+        
+        let path = `/notifications` //+ '?' + params.toString()
+        let method = 'GET'
+        let res = await this.client.fetch(path, method, null, undefined)
+        return await res.json()
+
+    }
+
+    async mark_notification(said:string) {
+        
+        let path = `/notifications/`+ said
+        let method = 'PUT'
+        let res = await this.client.fetch(path, method, null, undefined)
+        return await res.json()
+
+    }
+
+    async delete_notification(said:string) {
+        
+        let path = `/notifications/`+ said
+        let method = 'DELETE'
+        let res = await this.client.fetch(path, method, null, undefined)
+        return await res.json()
+
     }
 
 
