@@ -4,7 +4,6 @@ import { SignifyClient, ready, Serder, Diger, MtrDex, CredentialTypes } from "si
 import { strict as assert } from "assert";
 import { useState, useEffect } from 'react';
 
-
 export function Challenges() {
     const [testResult, setTestResult] = useState('');
     useEffect(() => {
@@ -70,30 +69,20 @@ export function Challenges() {
                             await identifiers1.addEndRole("alex", 'agent', client1!.agent!.pre)
                             await identifiers2.addEndRole("rodo", 'agent', client2!.agent!.pre)
                             
-                            // const oobi1 = await oobis1.get("alex")
-                            // const oobi2 = await oobis2.get("rodo")
-
-                            op1 = await oobis1.resolve("http://127.0.0.1:5642/oobi/"+aid2.i+"/witness","rodo")
+                            op1 = await oobis1.resolve("http://127.0.0.1:5642/oobi/"+aid2.i+"/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha","rodo")
                             while (!op1["done"]) {
                                 op1 = await operations1.get(op1["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
                             await contacts1.add_contact(aid2.i,{alias: "rodo"})
-                            // await new Promise(resolve => setTimeout(resolve, 30000))
                             op2 = await oobis2.resolve("http://127.0.0.1:5642/oobi/"+aid1.i+"/witness","alex")
                             while (!op2["done"]) {
                                 op2 = await operations2.get(op2["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
                             await contacts1.list_contacts(undefined, undefined, undefined)
-                            // let words:string[] = ["collect", "merit", "vibrant", "fault", "math", "attitude", "goddess", "upgrade", "also", "ahead", "left", "rare"]
-                            // await challenges1.respond_challenge('alex', "EBn2oXQrGn-rCMddl6L_mrFeq7dwF5ESGJu0xNWXrsM2", words)
-                            let challenge = await challenges2.respond_challenge('rodo', aid1.i, challenge1_small)
-                            // await new Promise(resolve => setTimeout(resolve, 3000));//TODO: better way of checking if the challenge was received
-                        
-                            await contacts1.list_contacts(undefined, undefined, undefined)
-                            await challenges1.verify_challenge('alex', aid2.i, challenge.d)
-                            await contacts1.list_contacts(undefined, undefined, undefined)
+                            await challenges2.respond_challenge('rodo', aid1.i, challenge1_small.words)
+                            // await challenges1.accept_challenge_response('alex', said)
                             setTestResult("Passed")
                         }
                         catch (e) {

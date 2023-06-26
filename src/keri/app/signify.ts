@@ -3,12 +3,14 @@ import { Tier } from "../core/salter"
 import { Authenticater } from "../core/authing"
 import { KeyManager } from "../core/keeping"
 import { Algos } from '../core/manager';
-import { incept, rotate, interact, reply } from "../core/eventing"
-import { b, Serials, Versionage} from "../core/core";
+import { incept, rotate, interact, reply, messagize } from "../core/eventing"
+import { b, Serials, Versionage, Ilks, versify, Ident} from "../core/core";
 import { Tholder } from "../core/tholder";
 import { MtrDex } from "../core/matter";
 import { TraitDex } from "./habery";
-
+import { Saider } from "../core/saider";
+import { Serder } from "../core/serder";
+import { Siger } from "../core/siger";
 const KERIA_BOOT_URL = "http://localhost:3903"
 
 export class CredentialTypes {
@@ -813,29 +815,34 @@ class Challenges {
             words: words
         }
 
-        const exn = reply("/challenge/response",data,undefined,undefined,Serials.JSON)
+        const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
 
+        const _sad = {
+            v: vs,
+            t: Ilks.exn,
+            d: "",
+            dt: new Date().toISOString().replace("Z","000+00:00"),
+            r: "/challenge/response",
+            q: {},
+            a: data
+        }
+        const [, sad] = Saider.saidify(_sad)
+        const exn = new Serder(sad)
         
         let keeper = this.client!.manager!.get(hab)
 
+        let sig = keeper.sign(b(exn.raw),true)
 
-        let sig = keeper.sign(b(exn.raw))
-        // let siger = new Siger({qb64:sig[0]})
-        // let ims = messagize(exn,[siger],undefined, undefined, undefined, false)
-        // let sigers = [siger]
-        // let msg = new Uint8Array(b(exn.raw))
-        // console.log(msg)
-        // console.log([sigers])
-        // console.log(sigers[0].qb64b)
-        // let ims = concat(msg, sigers[0].qb64b)
-        // console.log(ims)
-
+        let siger = new Siger({qb64:sig[0]})
+        let seal = ["SealLast" , {i:pre}]
+        let ims = messagize(exn,[siger],seal, undefined, undefined, true)
+        ims = ims.slice(JSON.stringify(exn.ked).length)
 
         let jsondata = {
             recipient: recipient,
             words: words,
             exn: exn.ked,
-            sig: sig[0],
+            sig: new TextDecoder().decode(ims)
         }
 
         let resp = await this.client.fetch(path, method, jsondata, undefined)
@@ -847,7 +854,7 @@ class Challenges {
         }
     }
     //ChallengeResourceEnd
-    async verify_challenge(alias: string, pre: string, said: string) {
+    async accept_challenge_response(alias: string, pre: string, said: string) {
         let path = `/challenges/${alias}`
         let method = 'PUT'
         let data = {

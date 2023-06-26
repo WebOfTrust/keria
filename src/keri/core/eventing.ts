@@ -8,6 +8,7 @@ import { Saider } from "./saider";
 import { Siger } from "./siger";
 import { Cigar } from "./cigar";
 import { Counter, CtrDex } from "./counter";
+import { Seqner } from "./seqner";
 
 let MaxIntThold = 2 ** 32 - 1
 
@@ -364,7 +365,17 @@ export function messagize(serder: Serder, sigers?: Array<Siger>, seal?: any, wig
 
     if (sigers != undefined) {
         if (seal != undefined) {
-            throw new Error(`Index sig group seals not yet supported`)
+            if (seal[0]=="SealEvent") {
+                atc = concat(atc, new Counter({ code: CtrDex.TransIdxSigGroups, count: 1 }).qb64b)
+                atc = concat(atc, seal.i.encode("utf-8"))
+                atc = concat(atc, new Seqner(seal[1].s).qb64b)
+                atc = concat(atc, seal.d.encode("utf-8"))
+
+            } else if (seal[0] == "SealLast") {
+                atc = concat(atc, new Counter({ code: CtrDex.TransLastIdxSigGroups, count: 1 }).qb64b)
+                atc = concat(atc, new TextEncoder().encode(seal[1].i))
+            }
+
         }
 
         atc = concat(atc, new Counter({ code: CtrDex.ControllerIdxSigs, count: sigers.length }).qb64b)
@@ -402,7 +413,6 @@ export function messagize(serder: Serder, sigers?: Array<Siger>, seal?: any, wig
         msg = concat(msg, new Counter({ code: CtrDex.AttachedMaterialQuadlets, count: (Math.floor(atc.length / 4)) }).qb64b)
     }
     msg = concat(msg, atc)
-
     return msg
 }
 
