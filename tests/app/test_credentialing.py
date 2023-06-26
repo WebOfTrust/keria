@@ -256,7 +256,6 @@ def test_credentialing_ends(helpers, seeder):
 
         issuer.createRegistry(hab.pre, name="issuer")
 
-        print()
         saids = [
             issuer.issueQVIvLEI("issuer", hab, issuee, "984500E5DEFDBQ1O9038"),
             issuer.issueQVIvLEI("issuer", hab, issuee, "984500AAFEB59DDC0E43"),
@@ -267,7 +266,6 @@ def test_credentialing_ends(helpers, seeder):
 
         ims = bytearray()
         for said in saids:
-            print(said)
             ims.extend(credentialing.CredentialResourceEnd.outputCred(hby, issuer.rgy, said))
 
         parsing.Parser(kvy=agent.kvy, rvy=agent.rvy, tvy=agent.tvy, vry=agent.verifier).parse(ims)
