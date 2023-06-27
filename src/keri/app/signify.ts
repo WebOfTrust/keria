@@ -701,7 +701,8 @@ class Credentials {
         this.client = client
     }
     //CredentialCollectionEnd
-    async list_credentials(name: string, typ: CredentialTypes, schema: string) {
+    //todo rename to list_credentials
+    async list(name: string, typ: CredentialTypes, schema: string) {
         let path = `/identifiers/${name}/credentials`
         //if type is not in the credential types, throw an error
         if (!Object.values(CredentialTypes).includes(typ)) {
@@ -721,7 +722,8 @@ class Credentials {
         return await res.json()
     }
     //CredentialResourceEnd
-    async export_credential(name: string, said: string) {
+    //rename get_credential 
+    async export(name: string, said: string) {
         let path = `/identifiers/${name}/credentials/${said}`
         let method = 'GET'
         let headers = new Headers({
