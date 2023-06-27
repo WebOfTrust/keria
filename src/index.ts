@@ -12,6 +12,7 @@ export * from './keri/core/serder'
 export * from './keri/core/diger'
 export * from './keri/app/habery'
 export * from './keri/app/signify'
+export * from './keri/app/apping';
 
 import { Buffer } from 'buffer';
 

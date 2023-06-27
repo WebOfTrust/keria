@@ -3,12 +3,14 @@ import { Tier } from "../core/salter"
 import { Authenticater } from "../core/authing"
 import { KeyManager } from "../core/keeping"
 import { Algos } from '../core/manager';
-import { incept, rotate, interact, reply } from "../core/eventing"
-import { b, Serials, Versionage } from "../core/core";
+import { incept, rotate, interact, reply, messagize } from "../core/eventing"
+import { b, Serials, Versionage, Ilks, versify, Ident} from "../core/core";
 import { Tholder } from "../core/tholder";
 import { MtrDex } from "../core/matter";
 import { TraitDex } from "./habery";
-
+import { Saider } from "../core/saider";
+import { Serder } from "../core/serder";
+import { Siger } from "../core/siger";
 const KERIA_BOOT_URL = "http://localhost:3903"
 
 export class CredentialTypes {
@@ -268,6 +270,14 @@ export class SignifyClient {
 
     challenges() {
         return new Challenges(this)
+    }
+
+    contacts() {
+        return new Contacts(this)
+    }
+
+    notifications() {
+        return new Notifications(this)
     }
 }
 
@@ -725,6 +735,151 @@ class Credentials {
 
     }
 
+    async issue_credential(name: string, registy: string, recipient: string, schema: string, rules: any, source: any, credentialData: any, _private: boolean=false) {
+        
+        let body = {
+            registry: registy,
+            recipient: recipient,
+            schema: schema,
+            rules: rules,
+            source: source,
+            credentialData: credentialData,
+            private: _private
+        }
+        // TODO
+        // properties:
+        //     registry:
+        //         type: string
+        //         description: Alias of credential issuance/revocation registry (aka status)
+        //     recipient:
+        //         type: string
+        //         description: AID of credential issuance/revocation recipient
+        //     schema:
+        //         type: string
+        //         description: SAID of credential schema being issued
+        //     rules:
+        //         type: object
+        //         description: Rules section (Ricardian contract) for credential being issued
+        //     source:
+        //         type: object
+        //         description: ACDC edge or edge group for chained credentials
+        //         properties:
+        //             d:
+        //             type: string
+        //             description: SAID of reference chain
+        //             s:
+        //             type: string
+        //             description: SAID of reference chain schema
+        //     credentialData:
+        //         type: object
+        //         description: dynamic map of values specific to the schema
+        //     private:
+        //         type: boolean
+        //         description: flag to inidicate this credential should support privacy preserving presentations
+        
+        let path = `/identifiers/${name}/credentials`
+        let method = 'POST'
+        let headers = new Headers({
+            'Accept': 'application/json+cesr'
+
+        })
+        let res = await this.client.fetch(path, method, body, headers)
+        return await res.text()
+
+    }
+
+
+    async present_credential(name: string, said: string, recipient: string, include: boolean=true) {
+    //     parameters:
+    //     - in: path
+    //       name: alias
+    //       schema:
+    //         type: string
+    //       required: true
+    //       description: Human readable alias for the holder of credential
+    //   requestBody:
+    //       required: true
+    //       content:
+    //         application/json:
+    //           schema:
+    //             type: object
+    //             properties:
+    //               said:
+    //                 type: string
+    //                 required: true
+    //                 description: qb64 SAID of credential to send
+    //               recipient:
+    //                 type: string
+    //                 required: true
+    //                 description: qb64 AID to send credential presentation to
+    //               include:
+    //                 type: boolean
+    //                 required: true
+    //                 default: true
+    //                 description: flag indicating whether to stream credential alongside presentation exn
+        
+        let body = {
+            said: said,
+            recipient: recipient,
+            include: include
+
+        }
+        let path = `/identifiers/${name}/credentials/${said}/presentations`
+        let method = 'POST'
+        let headers = new Headers({
+            'Accept': 'application/json+cesr'
+
+        })
+        let res = await this.client.fetch(path, method, body, headers)
+        return await res.text()
+
+    }
+
+    async request_credential(name: string, recipient: string, schema: string, issuer: string) {
+
+
+        // parameters:
+        //   - in: path
+        //     name: alias
+        //     schema:
+        //       type: string
+        //     required: true
+        //     description: Human readable alias for the identifier to create
+        // requestBody:
+        //     required: true
+        //     content:
+        //       application/json:
+        //         schema:
+        //           type: object
+        //           properties:
+        //             recipient:
+        //               type: string
+        //               required: true
+        //               description: qb64 AID to send presentation request to
+        //             schema:
+        //               type: string
+        //               required: true
+        //               description: qb64 SAID of schema for credential being requested
+        //             issuer:
+        //               type: string
+        //               required: false
+        //               description: qb64 AID of issuer of credential being requested
+        let body = {
+            recipient: recipient,
+            schema: schema,
+            issuer: issuer
+        }
+        let path = `/identifiers/${name}/requests`
+        let method = 'POST'
+        let headers = new Headers({
+            'Accept': 'application/json+cesr'
+
+        })
+        let res = await this.client.fetch(path, method, body, headers)
+        return await res.text()
+
+    }
+
 
 }
 
@@ -734,15 +889,15 @@ class Registries {
         this.client = client
     }
 
-    async list() {
-        let path = `/registries`
+    async list(name:string) {
+        let path = `/identifiers/${name}/registries`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, undefined)
         return await res.json()
 
     }
     async create(name: string, alias: string, toad: number, nonce: string, baks: [string], estOnly: boolean, noBackers: string = TraitDex.NoBackers) {
-        let path = `/registries`
+        let path = `/identifiers/${name}/registries`
         let method = 'POST'
         let data = {
             name: name,
@@ -791,48 +946,68 @@ class Challenges {
         this.client = client
     }
     //ChallengeCollectionEnd
-    async get_challenge(strength: number = 128) {
+    async generate_challenge(strength: number = 128) {
         let path = `/challenges?strength=${strength.toString()}`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, undefined)
         return await res.json()
     }
     //ChallengeResourceEnd
-    async send_challenge(name: string, recipient: string, words: [string]) {
-        let path = `/challenges/${name}`
+    async respond_challenge(alias: string, recipient: string, words: string[]) {
+        let path = `/challenges/${alias}`
         let method = 'POST'
 
-        let hab = await this.client.identifiers().get_identifier(name)
+        let hab = await this.client.identifiers().get_identifier(alias)
         let pre: string = hab["prefix"]
-        let state = hab["state"]
-        let sn = Number(state["s"])
-        let dig = state["d"]
-
-        let serder = interact({ pre: pre, dig: dig, sn: sn + 1, data: words, version: undefined, kind: undefined })
-        let keeper = this.client!.manager!.get(hab)
-        let sigs = keeper.sign(b(serder.raw))
-
         let data = {
-            recipient: recipient,
-            words: words,
-            exn: serder.ked,
-            sig: sigs,
+            i: pre,
+            words: words
         }
 
-        let resp = await this.client.fetch(path, method, data, undefined)
+        const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
+
+        const _sad = {
+            v: vs,
+            t: Ilks.exn,
+            d: "",
+            dt: new Date().toISOString().replace("Z","000+00:00"),
+            r: "/challenge/response",
+            q: {},
+            a: data
+        }
+        const [, sad] = Saider.saidify(_sad)
+        const exn = new Serder(sad)
+        
+        let keeper = this.client!.manager!.get(hab)
+
+        let sig = keeper.sign(b(exn.raw),true)
+
+        let siger = new Siger({qb64:sig[0]})
+        let seal = ["SealLast" , {i:pre}]
+        let ims = messagize(exn,[siger],seal, undefined, undefined, true)
+        ims = ims.slice(JSON.stringify(exn.ked).length)
+
+        let jsondata = {
+            recipient: recipient,
+            words: words,
+            exn: exn.ked,
+            sig: new TextDecoder().decode(ims)
+        }
+
+        let resp = await this.client.fetch(path, method, jsondata, undefined)
         if (resp.status === 202) {
-            return serder.ked
+            return exn.ked
         }
         else {
             return resp
         }
     }
     //ChallengeResourceEnd
-    async accept_challenge(name: string, aid: string, said: string) {
-        let path = `/challenges/${name}`
+    async accept_challenge_response(alias: string, pre: string, said: string) {
+        let path = `/challenges/${alias}`
         let method = 'PUT'
         let data = {
-            aid: aid,
+            aid: pre,
             said: said
         }
         let res = await this.client.fetch(path, method, data, undefined)
@@ -841,3 +1016,95 @@ class Challenges {
     }
 
 }
+
+class Contacts {
+    client: SignifyClient
+    constructor(client: SignifyClient) {
+        this.client = client
+    }
+
+    async list_contacts(group:string|undefined, filterField:string|undefined, filterValue:string|undefined) {
+        let params = new URLSearchParams()
+        if (group !== undefined) {params.append('group', group)}
+        if (filterField !== undefined && filterValue !== undefined) {params.append(filterField, filterValue)}
+        
+        let path = `/contacts`+ '?' + params.toString()
+        let method = 'GET'
+        let res = await this.client.fetch(path, method, null, undefined)
+        return await res.json()
+
+    }
+
+    async get_contact(pre:string) {
+        
+        let path = `/contacts/`+ pre
+        let method = 'GET'
+        let res = await this.client.fetch(path, method, null, undefined)
+        return await res.json()
+
+    }
+
+    async add_contact(pre: string, info: any) {
+        let path = `/contacts/`+ pre
+        let method = 'POST'
+
+        let res = await this.client.fetch(path, method, info, undefined)
+        return await res.json()
+    }
+
+    async delete_contact(pre: string) {
+        let path = `/contacts/`+ pre
+        let method = 'DELETE'
+
+        let res = await this.client.fetch(path, method, null, undefined)
+        return await res.json()
+    }
+
+    async update_contact(pre: string, info: any) {
+        let path = `/contacts/`+pre
+        let method = 'PUT'
+
+        let res = await this.client.fetch(path, method, info, undefined)
+        return await res.json()
+    }
+
+}
+
+class Notifications {
+    client: SignifyClient
+    constructor(client: SignifyClient) {
+        this.client = client
+    }
+
+    async list_notifications(last:string|undefined, limit:number|undefined) {
+        let params = new URLSearchParams()
+        if (last !== undefined) {params.append('last', last)}
+        if (limit !== undefined) {params.append('limit', limit.toString())}
+        
+        let path = `/notifications` + '?' + params.toString()
+        let method = 'GET'
+        let res = await this.client.fetch(path, method, null, undefined)
+        return await res.json()
+
+    }
+
+    async mark_notification(said:string) {
+        
+        let path = `/notifications/`+ said
+        let method = 'PUT'
+        let res = await this.client.fetch(path, method, null, undefined)
+        return await res.json()
+
+    }
+
+    async delete_notification(said:string) {
+        
+        let path = `/notifications/`+ said
+        let method = 'DELETE'
+        let res = await this.client.fetch(path, method, null, undefined)
+        return await res.json()
+
+    }
+
+}
+
