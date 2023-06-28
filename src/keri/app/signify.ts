@@ -7,10 +7,10 @@ import { incept, rotate, interact, reply, messagize } from "../core/eventing"
 import { b, Serials, Versionage, Ilks, versify, Ident} from "../core/core";
 import { Tholder } from "../core/tholder";
 import { MtrDex } from "../core/matter";
-import { TraitDex } from "./habery";
 import { Saider } from "../core/saider";
 import { Serder } from "../core/serder";
 import { Siger } from "../core/siger";
+import { Prefixer } from "../core/prefixer";
 const KERIA_BOOT_URL = "http://localhost:3903"
 
 export class CredentialTypes {
@@ -896,17 +896,61 @@ class Registries {
         return await res.json()
 
     }
-    async create(name: string, alias: string, toad: number, nonce: string, baks: [string], estOnly: boolean, noBackers: string = TraitDex.NoBackers) {
+    async create(name: string, registryName: string, nonce:string, estOnly: boolean=false) {
+        // TODO add backers option
+        
+        let hab = await this.client.identifiers().get_identifier(name)
+        let pre: string = hab["prefix"]
+        
+        const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
+        let vcp = {
+            v: vs,
+            t: Ilks.vcp,
+            d: "",
+            i: "",
+            ii: pre,
+            s: "0",
+            c: ['NB'],
+            bt: "0",
+            b: [],
+            n: nonce           
+        }
+
+        let prefixer = new Prefixer({code: MtrDex.Blake3_256}, vcp) 
+        vcp['i'] = prefixer.qb64
+        vcp['d'] = prefixer.qb64
+
+        let ixn = {}
+        let sigs = []
+        if (estOnly) {
+            // TODO implement rotation event
+            throw new Error("Establishment only not implemented")
+        
+        } else {
+            let state = hab["state"]
+            let sn = Number(state["s"])
+            let dig = state["d"]
+
+            let data:any = [{
+                i: prefixer.qb64,
+                s: "0",
+                d: prefixer.qb64
+            }]
+
+            let serder = interact({ pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined })
+            let keeper = this.client!.manager!.get(hab)
+            sigs = keeper.sign(b(serder.raw))
+            ixn = serder.ked
+        }
+        
+        
         let path = `/identifiers/${name}/registries`
         let method = 'POST'
         let data = {
-            name: name,
-            alias: alias,
-            toad: toad,
-            nonce: nonce,
-            noBackers: noBackers,
-            baks: baks,
-            estOnly: estOnly
+            name: registryName,
+            vcp: vcp,
+            ixn: ixn!,
+            sigs: sigs
         }
         let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
