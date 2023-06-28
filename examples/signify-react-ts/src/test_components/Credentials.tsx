@@ -75,6 +75,17 @@ export function Credentials() {
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
 
+                            op1 = await oobis1.resolve("http://127.0.0.1:7723/oobi/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao","schema")
+                            while (!op1["done"]) {
+                                op1 = await operations1.get(op1["name"]);
+                                await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
+                            }
+                            op2 = await oobis2.resolve("http://127.0.0.1:7723/oobi/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao","schema")
+                            while (!op2["done"]) {
+                                op2 = await operations2.get(op2["name"]);
+                                await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
+                            }
+
 
                             op1 = await client1.registries().create('issuer','vLEI', "AOLPzF1vRwMPo6tDfoxba1udvpu0jG_BCP_CI49rpMxK", false)
                             while (!op1["done"]) {
@@ -84,6 +95,8 @@ export function Credentials() {
 
                             await client1.registries().list('issuer')
 
+                            await client1.schemas().get_schema("EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
+                            await client2.schemas().list_all_schemas()
                             // const creds = client.credentials()
                             // let rs = await creds.list(ids[0].prefix,CredentialTypes.received,'')
                             // console.log(rs)

@@ -965,7 +965,7 @@ class Schemas {
     }
     //SchemaResourceEnd 
     async get_schema(said: string) {
-        let path = `/schemas/${said}`
+        let path = `/schema/${said}`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, undefined)
         return await res.json()
@@ -974,7 +974,7 @@ class Schemas {
     //SchemaCollectionEnd
 
     async list_all_schemas() {
-        let path = `/schemas`
+        let path = `/schema`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, undefined)
         return await res.json()
