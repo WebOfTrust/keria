@@ -132,7 +132,7 @@ export class Saider extends Matter {
     private static _serialze(sad: Dict<any>, kind?: Serials): string {
         let knd = Serials.JSON
         if ('v' in sad) {
-            [knd] = deversify(sad['v'])
+            [,knd] = deversify(sad['v'])
         }
 
         if (kind == undefined) {

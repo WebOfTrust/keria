@@ -5,7 +5,8 @@ export enum Serials {
 }
 
 export enum Ident {
-    KERI = "KERI"
+    KERI = "KERI",
+    ACDC = "ACDC"
 }
 
 export class Version {
@@ -31,7 +32,8 @@ export const Ilks = {
     vrc: 'vrc',
     rpy: 'rpy',
     exn: 'exn',
-    vcp: 'vcp'
+    vcp: 'vcp',
+    iss: 'iss'
 };
 
 export const IcpLabels = ["v", "i", "s", "t", "kt", "k", "n",
@@ -63,7 +65,7 @@ export const MINSIGSIZE = 4;
 // const version_pattern1 = `KERI\(\?P<major>\[0\-9a\-f\]\)\(\?P<minor>\[0\-9a\-f\]\)\
 // (\?P<kind>\[A\-Z\]\{4\}\)\(\?P<size>\[0\-9a\-f\]\{6\}\)_`
 
-export const VEREX = 'KERI([0-9a-f])([0-9a-f])([A-Z]{4})([0-9a-f]{6})_';
+export const VEREX = '(KERI|ACDC)([0-9a-f])([0-9a-f])([A-Z]{4})([0-9a-f]{6})_';
 
 export interface Dict<TValue> {
     [id: string]: TValue;
@@ -75,12 +77,13 @@ export interface Dict<TValue> {
  * @description This function is use to deversify the version
  * Here we will use regex to  to validate and extract serialization kind,size and version
  * @param {string} versionString   version string
- * @return {Object}  contaning kind of serialization like cbor,json,mgpk
+ * @return {Object}  contaning prototol (KERI or ACDC), kind of serialization like cbor,json,mgpk
  *                    version = version of object ,size = raw size integer
  */
-export function deversify(versionString: string): [Serials, Version, string] {
+export function deversify(versionString: string): [Ident, Serials, Version, string] {
     let kind;
     let size;
+    let proto;
     const version = Versionage;
 
     // we need to identify how to match the buffers pattern ,like we do regex matching for strings
@@ -89,20 +92,27 @@ export function deversify(versionString: string): [Serials, Version, string] {
     const match = re.exec(versionString);
 
     if (match) {
-        [version.major, version.minor, kind, size] = [
-            +match[1],
+        [proto, version.major, version.minor, kind, size] = [
+            match[1],
             +match[2],
-            match[3],
+            +match[3],
             match[4],
+            match[5],
         ];
         if (!Object.values(Serials).includes(kind as Serials)) {
             throw new Error(`Invalid serialization kind = ${kind}`);
         }
+        if (!Object.values(Ident).includes(proto as Ident)) {
+            throw new Error(`Invalid serialization kind = ${kind}`);
+        }
+        
 
         let ta = kind as keyof typeof Serials
         kind = Serials[ta]
+        let pa = proto as keyof typeof Ident
+        proto = Ident[pa]
 
-        return [kind, version, size];
+        return [proto, kind, version, size];
     }
     throw new Error(`Invalid version string = ${versionString}`);
 }

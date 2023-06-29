@@ -97,6 +97,15 @@ export function Credentials() {
 
                             await client1.schemas().get_schema("EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
                             await client2.schemas().list_all_schemas()
+                            const vcdata = {
+                                "LEI": "5493001KJTIIGC8Y1R17"
+                              }
+                            op1 = await client1.credentials().issue_credential('issuer','vLEI', aid2.i,'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao',{},{},vcdata,false)
+                            while (!op1["done"]) {
+                                op1 = await operations1.get(op1["name"]);
+                                await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
+                            }
+                            await client2.credentials().list('holder')
                             // const creds = client.credentials()
                             // let rs = await creds.list(ids[0].prefix,CredentialTypes.received,'')
                             // console.log(rs)

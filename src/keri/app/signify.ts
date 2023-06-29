@@ -11,6 +11,7 @@ import { Saider } from "../core/saider";
 import { Serder } from "../core/serder";
 import { Siger } from "../core/siger";
 import { Prefixer } from "../core/prefixer";
+import { Salter } from "../core/salter";
 const KERIA_BOOT_URL = "http://localhost:3903"
 
 export class CredentialTypes {
@@ -735,18 +736,9 @@ class Credentials {
 
     }
 
-    async issue_credential(name: string, registy: string, recipient: string, schema: string, rules: any, source: any, credentialData: any, _private: boolean=false) {
+    async issue_credential(name: string, registy: string, recipient: string|undefined, schema: string, rules: any, source: any, credentialData: any, _private: boolean=false, estOnly:boolean=false) {
         
-        let body = {
-            registry: registy,
-            recipient: recipient,
-            schema: schema,
-            rules: rules,
-            source: source,
-            credentialData: credentialData,
-            private: _private
-        }
-        // TODO
+        
         // properties:
         //     registry:
         //         type: string
@@ -776,7 +768,111 @@ class Credentials {
         //     private:
         //         type: boolean
         //         description: flag to inidicate this credential should support privacy preserving presentations
+
+
+        // Create Credential
+        let hab = await this.client.identifiers().get_identifier(name)
+        let pre: string = hab["prefix"]
+        const dt = new Date().toISOString().replace('Z', '000+00:00')
         
+        const vsacdc = versify(Ident.ACDC, undefined, Serials.JSON, 0)
+        const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
+
+
+        let cred: any = {
+            v: vsacdc,
+            d: ""
+        }
+
+        let subject: any = {
+            d: "",
+        }
+
+        if (_private) {
+            cred['u'] = new Salter({})
+            subject['u'] = new Salter({})
+        }
+
+        if (recipient != undefined) {
+            subject['i'] = recipient
+        }
+
+        subject['dt'] = dt
+        subject = {...subject, ...credentialData}
+        cred = {...cred, i:pre}
+        cred['ri'] = registy
+        cred = {...cred,...{s: schema, a: {}}}
+        cred['e'] = source
+        cred['r']= rules
+        const [, vc] = Saider.saidify(cred)
+        // Create iss
+        let _iss = {
+            v: vs,
+            t: Ilks.iss,
+            d: "",
+            i: vc.s,
+            s: "0",
+            ri: registy,
+            dt: dt
+
+        }
+
+        let [, iss] = Saider.saidify(_iss)
+
+        // create ixn
+        // TODO FIX NONCE
+
+        let vcp = {
+            v: vs,
+            t: Ilks.vcp,
+            d: "",
+            i: "",
+            ii: pre,
+            s: "0",
+            c: ['NB'],
+            bt: "0",
+            b: [],
+            n: "AOLPzF1vRwMPo6tDfoxba1udvpu0jG_BCP_CI49rpMxK"           
+        }
+
+        let prefixer = new Prefixer({code: MtrDex.Blake3_256}, vcp) 
+        vcp['i'] = prefixer.qb64
+        vcp['d'] = prefixer.qb64
+
+        let ixn = {}
+        let sigs = []
+        if (estOnly) {
+            // TODO implement rotation event
+            throw new Error("Establishment only not implemented")
+        
+        } else {
+            let state = hab["state"]
+            let sn = Number(state["s"])
+            let dig = state["d"]
+
+            let data:any = [{
+                i: prefixer.qb64,
+                s: "0",
+                d: prefixer.qb64
+            }]
+
+            let serder = interact({ pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined })
+            let keeper = this.client!.manager!.get(hab)
+            sigs = keeper.sign(b(serder.raw))
+            ixn = serder.ked
+        }
+        
+
+
+        let body = {
+            cred: vc,
+            csigs: [],
+            path: [],
+            iss: iss, 
+            ixn: ixn,
+            sigs: sigs
+        }
+
         let path = `/identifiers/${name}/credentials`
         let method = 'POST'
         let headers = new Headers({
@@ -898,6 +994,8 @@ class Registries {
     }
     async create(name: string, registryName: string, nonce:string, estOnly: boolean=false) {
         // TODO add backers option
+        // TODO get estOnly from get_identifier ?
+        // TODO generate random nonce if not provided
         
         let hab = await this.client.identifiers().get_identifier(name)
         let pre: string = hab["prefix"]

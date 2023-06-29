@@ -10,7 +10,7 @@ import {Prefixer} from "../../src/keri/core/prefixer";
 
 describe('deversify', () => {
     it('should parse a KERI event version string', async () => {
-        let [kind, version, size] = deversify("KERI10JSON00011c_")
+        let [,kind, version, size] = deversify("KERI10JSON00011c_")
         assert.equal(kind, Serials.JSON)
         assert.deepStrictEqual(version, new Version(1, 0))
         assert.equal(size, "00011c")
