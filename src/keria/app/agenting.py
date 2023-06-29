@@ -195,12 +195,12 @@ class Agency(doing.DoDoer):
                             reopen=True)
 
         agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, temp=self.temp)
-        agentRgy = Regery(hby=agentHby, name=caid, base=self.base, temp=self.temp)
 
         agentHab = agentHby.habByName(f"agent-{caid}", ns="agent")
         if aaid.qb64 != agentHab.pre:
             raise kering.ConfigurationError(f"invalid agent aid={aaid.qb64}/{agentHab.pre} to controller aid={caid}")
 
+        agentRgy = Regery(hby=agentHby, name=agentHab.name, base=self.base, temp=self.temp)
         agent = Agent(hby=agentHby, rgy=agentRgy, agentHab=agentHab, agency=self, caid=caid)
         self.agents[caid] = agent
 
