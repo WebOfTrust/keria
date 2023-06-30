@@ -41,11 +41,25 @@ from ..core import authing, longrunning, httping
 from ..core.authing import Authenticater
 from ..core.keeping import RemoteManager
 from ..db import basing
-
+import requests
 logger = ogler.getLogger()
 
+#function to push data to an webhook endpoint
 
-def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=None, configDir=None):
+class Interceptor:
+
+    def __init__(self, webhook, headers):
+        self.webhook = webhook
+        self.headers = headers
+
+    def push(self, data):
+        try:
+            resp = requests.post(self.webhook, data=json.dumps(data), headers=self.headers)
+            if resp.status_code != 200:
+                logger.info('Error in pushing data to webhook')
+        except Exception as e:
+            logger.info('Error in pushing data to webhook')
+def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=None, configDir=None, interceptor_webhook=None, interceptor_headers=None):
     """ Set up an ahab in Signify mode """
 
     agency = Agency(name=name, base=base, bran=bran, configFile=configFile, configDir=configDir)
@@ -107,7 +121,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
 
 
 class Agency(doing.DoDoer):
-    def __init__(self, name, bran, base="", configFile=None, configDir=None, adb=None, temp=False):
+    def __init__(self, name, bran, base="", configFile=None, configDir=None, adb=None, temp=False,interceptor_webhook=None,interceptor_headers=None):
         self.name = name
         self.base = base
         self.bran = bran
@@ -115,6 +129,8 @@ class Agency(doing.DoDoer):
         self.configFile = configFile
         self.configDir = configDir
         self.cf = None
+        self.interceptor_webhook = interceptor_webhook
+        self.interceptor_headers = interceptor_headers
         if self.configFile is not None:  # Load config file if creating database
             self.cf = configing.Configer(name=self.configFile,
                                          base="",
@@ -159,7 +175,10 @@ class Agency(doing.DoDoer):
                       caid=caid,
                       agency=self,
                       configDir=self.configDir,
-                      configFile=self.configFile)
+                      configFile=self.configFile,
+                      interceptor_webhook=self.interceptor_webhook,
+                      interceptor_headers=self.interceptor_headers
+                      )
 
         self.adb.agnt.pin(keys=(caid,),
                           val=coring.Prefixer(qb64=agent.pre))
@@ -247,6 +266,10 @@ class Agent(doing.DoDoer):
 
         self.mgr = RemoteManager(hby=hby)
 
+
+        interceptor = Interceptor(self.agency.interceptor_webhook, self.agency.interceptor_headers)
+
+
         self.cues = decking.Deck()
         self.groups = decking.Deck()
         self.anchors = decking.Deck()
@@ -313,10 +336,10 @@ class Agent(doing.DoDoer):
             Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc, vry=self.verifier,
                      registrar=self.registrar, credentialer=self.credentialer),
             Messager(kvy=self.kvy, parser=self.parser),
-            Witnesser(receiptor=receiptor, witners=self.witners),
-            Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
+            Witnesser(receiptor=receiptor, witners=self.witners, interceptor=interceptor),
+            Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors,interceptor=interceptor),
             GroupRequester(hby=hby, agentHab=agentHab, postman=self.postman, counselor=self.counselor,
-                           groups=self.groups),
+                           groups=self.groups,interceptor=interceptor),
         ])
 
         super(Agent, self).__init__(doers=doers, always=True, **opts)
@@ -366,15 +389,17 @@ class Messager(doing.Doer):
 
 class Witnesser(doing.Doer):
 
-    def __init__(self, receiptor, witners):
+    def __init__(self, receiptor, witners, interceptor):
         self.receiptor = receiptor
         self.witners = witners
+        self.interceptor = interceptor
         super(Witnesser, self).__init__()
 
     def recur(self, tyme=None):
         while True:
             if self.witners:
                 msg = self.witners.popleft()
+                self.interceptor.push(msg)
                 serder = msg["serder"]
 
                 # If we are a rotation event, may need to catch new witnesses up to current key state
@@ -390,15 +415,17 @@ class Witnesser(doing.Doer):
 
 class Delegator(doing.Doer):
 
-    def __init__(self, agentHab, swain, anchors):
+    def __init__(self, agentHab, swain, anchors, interceptor):
         self.agentHab = agentHab
         self.swain = swain
         self.anchors = anchors
+        self.interceptor = interceptor
         super(Delegator, self).__init__()
 
     def recur(self, tyme=None):
         if self.anchors:
             msg = self.anchors.popleft()
+            self.interceptor.push(msg)
             sn = msg["sn"] if "sn" in msg else None
             self.swain.delegation(pre=msg["pre"], sn=sn, proxy=self.agentHab)
 
@@ -422,19 +449,20 @@ class Initer(doing.Doer):
 
 class GroupRequester(doing.Doer):
 
-    def __init__(self, hby, agentHab, postman, counselor, groups):
+    def __init__(self, hby, agentHab, postman, counselor, groups, interceptor):
         self.hby = hby
         self.agentHab = agentHab
         self.postman = postman
         self.counselor = counselor
         self.groups = groups
-
+        self.interceptor = interceptor
         super(GroupRequester, self).__init__()
 
     def recur(self, tyme):
         """ Checks cue for group proceccing requests and processes any with Counselor """
         if self.groups:
             msg = self.groups.popleft()
+            self.interceptor.push(msg)
             serder = msg["serder"]
             sigers = msg["sigers"]
 
