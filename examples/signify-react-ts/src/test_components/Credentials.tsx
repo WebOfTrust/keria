@@ -30,7 +30,7 @@ export function Credentials() {
                             const operations1 = client1.operations()
                             const oobis1 = client1.oobis()
                             let op1 = await identifiers1.create('issuer',  {
-                                toad: 2,
+                                toad: 3,
                                 wits: [
                                     "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
                                     "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
@@ -48,8 +48,12 @@ export function Credentials() {
                             const identifiers2 = client2.identifiers()
                             const operations2 = client2.operations()
                             const oobis2 = client2.oobis()
-                            let op2 = await identifiers2.create('holder', {
-                                toad: 2,
+                            // let client2 = client1
+                            // let identifiers2 = identifiers1
+                            // let operations2 = operations1
+                            // let oobis2 = oobis1
+                            let op2 = await identifiers2.create('recipient', {
+                                toad: 3,
                                 wits: [
                                     "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
                                     "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
@@ -62,14 +66,20 @@ export function Credentials() {
                             const aid2 = op2['response']
                             
                             await identifiers1.addEndRole("issuer", 'agent', client1!.agent!.pre)
-                            await identifiers2.addEndRole("holder", 'agent', client2!.agent!.pre)
+                            await identifiers2.addEndRole("recipient", 'agent', client2!.agent!.pre)
+                            let oobi1 = await oobis1.get("issuer","agent")
+                            let oobi2 = await oobis2.get("recipient","agent")
                             
-                            op1 = await oobis1.resolve("http://127.0.0.1:5642/oobi/"+aid2.i+"/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha","rodo")
+                            // op1 = await oobis1.resolve("http://127.0.0.1:5642/oobi/"+aid2.i+"/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha","recipient")
+                            op1 = await oobis1.resolve(oobi2.oobis[0],"recipient")
+
                             while (!op1["done"]) {
                                 op1 = await operations1.get(op1["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
-                            op2 = await oobis2.resolve("http://127.0.0.1:5642/oobi/"+aid1.i+"/witness","alex")
+                            // op2 = await oobis2.resolve("http://127.0.0.1:5642/oobi/"+aid1.i+"/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha","issuer")
+                            op2 = await oobis2.resolve(oobi1.oobis[0],"issuer")
+
                             while (!op2["done"]) {
                                 op2 = await operations2.get(op2["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
@@ -93,19 +103,22 @@ export function Credentials() {
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
 
-                            await client1.registries().list('issuer')
+                            let registries = await client1.registries().list('issuer')
 
                             await client1.schemas().get_schema("EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
                             await client2.schemas().list_all_schemas()
                             const vcdata = {
                                 "LEI": "5493001KJTIIGC8Y1R17"
                               }
-                            op1 = await client1.credentials().issue_credential('issuer','vLEI', aid2.i,'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao',{},{},vcdata,false)
-                            while (!op1["done"]) {
-                                op1 = await operations1.get(op1["name"]);
-                                await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
-                            }
-                            await client2.credentials().list('holder')
+                            op1 = await client1.credentials().issue_credential('issuer',registries[0].regk, aid2.i,'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao',{},{},vcdata,false)
+                            // while (!op1["done"]) {
+                            //     op1 = await operations1.get(op1["name"]);
+                            //     await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
+                            // }
+                            await new Promise(resolve => setTimeout(resolve, 20000))
+                            await client2.credentials().list('recipient',CredentialTypes.received,'')
+                            await client1.credentials().list('issuer',CredentialTypes.issued,'')
+                            await client2.notifications().list_notifications(undefined, undefined)
                             // const creds = client.credentials()
                             // let rs = await creds.list(ids[0].prefix,CredentialTypes.received,'')
                             // console.log(rs)

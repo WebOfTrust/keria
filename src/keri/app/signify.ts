@@ -612,7 +612,7 @@ class Oobis {
             url: oobi
         }
         if (alias !== undefined) {
-            data['alias'] = alias
+            data['oobialias'] = alias
         }
         let method = 'POST'
         let res = await this.client.fetch(path, method, data, undefined)
@@ -799,18 +799,24 @@ class Credentials {
 
         subject['dt'] = dt
         subject = {...subject, ...credentialData}
+
+        const [, a] = Saider.saidify(subject,undefined,undefined,"d")
+
         cred = {...cred, i:pre}
         cred['ri'] = registy
-        cred = {...cred,...{s: schema, a: {}}}
-        cred['e'] = source
-        cred['r']= rules
+        cred = {...cred,...{s: schema}, ...{a: a}}
+        // cred['e'] = source
+        // cred['r']= rules
+        console.log(rules, source)
         const [, vc] = Saider.saidify(cred)
+        
+        
         // Create iss
         let _iss = {
             v: vs,
             t: Ilks.iss,
             d: "",
-            i: vc.s,
+            i: vc.d,
             s: "0",
             ri: registy,
             dt: dt
@@ -819,25 +825,18 @@ class Credentials {
 
         let [, iss] = Saider.saidify(_iss)
 
+
+        // Create paths and sign
+
+        let cpath = '6AABAAA-'
+
+        let keeper = this.client!.manager!.get(hab)
+
+        let csigs = keeper.sign(b(JSON.stringify(vc)))
+
+
         // create ixn
         // TODO FIX NONCE
-
-        let vcp = {
-            v: vs,
-            t: Ilks.vcp,
-            d: "",
-            i: "",
-            ii: pre,
-            s: "0",
-            c: ['NB'],
-            bt: "0",
-            b: [],
-            n: "AOLPzF1vRwMPo6tDfoxba1udvpu0jG_BCP_CI49rpMxK"           
-        }
-
-        let prefixer = new Prefixer({code: MtrDex.Blake3_256}, vcp) 
-        vcp['i'] = prefixer.qb64
-        vcp['d'] = prefixer.qb64
 
         let ixn = {}
         let sigs = []
@@ -851,23 +850,21 @@ class Credentials {
             let dig = state["d"]
 
             let data:any = [{
-                i: prefixer.qb64,
-                s: "0",
-                d: prefixer.qb64
+                i: iss.i,
+                s: iss.s,
+                d: iss.d
             }]
 
             let serder = interact({ pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined })
-            let keeper = this.client!.manager!.get(hab)
+            
             sigs = keeper.sign(b(serder.raw))
             ixn = serder.ked
         }
         
-
-
         let body = {
             cred: vc,
-            csigs: [],
-            path: [],
+            csigs: csigs,
+            path: cpath,
             iss: iss, 
             ixn: ixn,
             sigs: sigs
@@ -880,7 +877,7 @@ class Credentials {
 
         })
         let res = await this.client.fetch(path, method, body, headers)
-        return await res.text()
+        return await res.json()
 
     }
 
@@ -1138,7 +1135,7 @@ class Challenges {
 
         let resp = await this.client.fetch(path, method, jsondata, undefined)
         if (resp.status === 202) {
-            return exn.ked
+            return exn.ked.d
         }
         else {
             return resp
