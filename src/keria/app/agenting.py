@@ -34,6 +34,7 @@ from keri.vc import protocoling
 from keri.vdr import verifying
 from keri.vdr.credentialing import Regery
 from keri.vdr.eventing import Tevery
+from keri.app import challenging
 
 from . import aiding, notifying, indirecting, credentialing
 from .specing import AgentSpecResource
@@ -283,7 +284,9 @@ class Agent(doing.DoDoer):
                                                 name=agentHab.name)
         proofHandler = protocoling.PresentationProofHandler(notifier=self.notifier)
 
-        handlers = [issueHandler, requestHandler, proofHandler, applyHandler]
+        challengeHandler = challenging.ChallengeHandler(db=hby.db, signaler=signaler)
+
+        handlers = [issueHandler, requestHandler, proofHandler, applyHandler, challengeHandler]
         self.exc = exchanging.Exchanger(db=hby.db, handlers=handlers)
 
         self.rvy = routing.Revery(db=hby.db, cues=self.cues)
