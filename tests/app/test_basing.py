@@ -107,9 +107,9 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
             seeker.index(lesaid)
 
         saids = seeker.find(
-            fields=[coring.Pather(path=['i']).qb64],
+            fields=['-i'],
             values=[issuerHab.pre],
-            order=[coring.Pather(path=['a', 'LEI']).qb64],
+            order=['-a-LEI'],
             start=20,
             limit=30
         )
