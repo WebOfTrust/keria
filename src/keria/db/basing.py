@@ -5,10 +5,10 @@ keria.db.basing module
 
 """
 from dataclasses import dataclass
+from ordered_set import OrderedSet as oset
 
 from keri.core import coring
 from keri.db import dbing, subing, koming
-
 
 SCALAR_TYPES = ("string", "number")
 
@@ -178,7 +178,7 @@ class Seeker(dbing.LMDBer):
         if (saider := self.reger.saved.get(keys=(said,))) is None:
             raise ValueError(f"{said} is not a verified credential")
 
-        creder = self.reger.creds.get(keys=(saider.qb64, ))
+        creder = self.reger.creds.get(keys=(saider.qb64,))
         saider = coring.Saider(qb64b=creder.saidb)
 
         # Load schema index and if not indexed in schIdx, index it.
@@ -195,7 +195,6 @@ class Seeker(dbing.LMDBer):
                 values.append(pather.resolve(creder.crd))
 
             value = "".join(values)
-            print(f"for {idx.paths}, {value} -> {saider}")
             db.add(keys=(value,), val=saider)
 
     def generateIndexes(self, said):
@@ -243,7 +242,14 @@ class Seeker(dbing.LMDBer):
                 self.dynIdx.pin(keys=(pather.qb64,), val=idx)
             self.schIdx.add(keys=(said,), val=pather.qb64b)
 
-            for field in (ISSUER_FIELD, ISSUEE_FIELD, SCHEMA_FIELD):
+            subkey = f"{SCHEMA_FIELD.qb64}.{pather.qb64}"
+            if subkey not in self.indexes:
+                self.indexes[subkey] = subing.CesrDupSuber(db=self, subkey=subkey, klas=coring.Saider)
+                idx = IndexRecord(subkey=subkey, paths=[SCHEMA_FIELD.qb64, pather.qb64])
+                self.dynIdx.pin(keys=(subkey,), val=idx)
+            self.schIdx.add(keys=(said,), val=subkey)
+
+            for field in (ISSUER_FIELD, ISSUEE_FIELD):
                 subkey = f"{field.qb64}.{pather.qb64}"
                 if subkey not in self.indexes:
                     self.indexes[subkey] = subing.CesrDupSuber(db=self, subkey=subkey, klas=coring.Saider)
@@ -252,4 +258,119 @@ class Seeker(dbing.LMDBer):
 
                 self.schIdx.add(keys=(said,), val=subkey)
 
+                subkey = f"{field.qb64}.{SCHEMA_FIELD.qb64}.{pather.qb64}"
+                if subkey not in self.indexes:
+                    self.indexes[subkey] = subing.CesrDupSuber(db=self, subkey=subkey, klas=coring.Saider)
+                    idx = IndexRecord(subkey=subkey, paths=[field.qb64, SCHEMA_FIELD.qb64, pather.qb64])
+                    self.dynIdx.pin(keys=(subkey,), val=idx)
+
+                self.schIdx.add(keys=(said,), val=subkey)
+
         return [index for index in self.schIdx.get(keys=(said,))]
+
+    def find(self, fields, values, order=None, start=None, limit=None):
+        if (saids := self.indexSearch(fields, values)) is not None:
+            return self.order(saids, order, start, limit)
+        elif (saids := self.indexScan(fields, values)) is not None:
+            return self.order(saids, order, start, limit)
+        else:
+            saids = self.fullTableScan(fields, values)
+            return self.order(saids, order, start, limit)
+
+    def indexSearch(self, fields, values):
+        index = ".".join(fields)
+        if index not in self.indexes:
+            return None
+
+        idx = self.indexes[index]
+        val = "".join(values)
+        return [val.qb64 for val in idx.getIter(keys=(val,))]
+
+    def indexScan(self, fields, values):
+        use = []
+        vals = []
+        scan = []
+        scanVals = []
+        for idx, field in enumerate(fields):
+            if field in self.indexes:
+                use.append(field)
+                vals.append(values[idx])
+            else:
+                scan.append(field)
+                scanVals.append(values[idx])
+
+        if len(use) == 0:
+            return self.fullTableScan(fields, values)
+
+        idx = self.indexes[use[0]]
+        saids = oset([val.qb64 for val in idx.getIter(keys=(vals[0],))])
+        if len(saids) == 0:
+            return list()
+
+        for i, field in enumerate(use[1:]):
+            idx = self.indexes[field]
+            nxt = oset([val.qb64 for val in idx.getIter(keys=(vals[i + 1],))])
+            saids &= nxt
+
+        if len(scan) == 0:
+            return list(saids)
+        else:
+            return self.tableScan(list(saids), scan, scanVals)
+
+    def fullTableScan(self, fields, values):
+        saids = [saider.qb64 for _, saider in self.reger.saved.getItemIter()]
+        return self.tableScan(saids, fields, values)
+
+    def tableScan(self, saids, fields, values):
+        pathers = [coring.Pather(qb64=field) for field in fields]
+
+        res = []
+        for said in saids:
+            creder = self.reger.creds.get(keys=(said,))
+            for idx, pather in enumerate(pathers):
+                if pather.resolve(creder.crd) == values[idx]:
+                    res.append(said)
+
+        return res
+
+    def order(self, saids, order, start, limit):
+        start = start if start is not None else 0
+        limit = limit if limit is not None else 25
+
+        if (res := self.indexOrder(saids, order, start, limit)) is not None:
+            return res
+        else:
+            self.tableScanOrder(saids, order, start, limit)
+
+    def indexOrder(self, saids, order, start, limit):
+        if order is None:
+            return saids
+
+        index = ".".join(order)
+        if index not in self.indexes:
+            return None
+
+        idx = self.indexes[index]
+
+        ctx = idx.getItemIter()
+
+        # Run off the values before start
+        cur = 0
+        while cur < start:
+            _, saider = next(ctx)
+            if saider.qb64 in saids:
+                cur += 1
+
+        # Load values in order until we get enough (based on limit)
+        res = []
+        for _, saider in ctx:
+            if saider.qb64 in saids:
+                res.append(saider.qb64)
+
+            if len(res) == limit:
+                break
+
+        return res
+
+    def tableScanOrder(self, saids, order, start, limit):
+        pass

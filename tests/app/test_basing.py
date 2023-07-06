@@ -5,16 +5,18 @@ keria.app.basing module
 
 Testing the database classes
 """
+import random
+
 from keri.app import habbing
-from keri.vdr import viring
+from keri.core import coring
 
 from keria.db import basing
 
 QVI_SAID = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
-LE_SAID = "ED892b40P_GcESs3wOcc2zFvL_GVi2Ybzp9isNTZKqP0"
+LE_SAID = "ENTAoj2oNBFpaniRswwPcca9W1ElEeH2V7ahw68HV4G5"
 
 
-def test_seeker(helpers, seeder):
+def test_seeker(helpers, seeder, mockHelpingNowUTC):
     salt = b'0123456789abcdef'
 
     with habbing.openHab(name="hal", salt=salt, temp=True) as (issueeHby, issueeHab), \
@@ -32,24 +34,32 @@ def test_seeker(helpers, seeder):
         assert indexes == ['5AABAA-i',
                            '5AABAA-i.5AABAA-s',
                            '4AAB-a-d',
-                           '5AABAA-i.4AAB-a-d',
-                           '4AAB-a-i.4AAB-a-d',
                            '5AABAA-s.4AAB-a-d',
+                           '5AABAA-i.4AAB-a-d',
+                           '5AABAA-i.5AABAA-s.4AAB-a-d',
+                           '4AAB-a-i.4AAB-a-d',
+                           '4AAB-a-i.5AABAA-s.4AAB-a-d',
                            '4AAB-a-i',
-                           '5AABAA-i.4AAB-a-i',
-                           '4AAB-a-i.4AAB-a-i',
                            '5AABAA-s.4AAB-a-i',
+                           '5AABAA-i.4AAB-a-i',
+                           '5AABAA-i.5AABAA-s.4AAB-a-i',
+                           '4AAB-a-i.4AAB-a-i',
+                           '4AAB-a-i.5AABAA-s.4AAB-a-i',
                            '6AACAAA-a-dt',
-                           '5AABAA-i.6AACAAA-a-dt',
-                           '4AAB-a-i.6AACAAA-a-dt',
                            '5AABAA-s.6AACAAA-a-dt',
+                           '5AABAA-i.6AACAAA-a-dt',
+                           '5AABAA-i.5AABAA-s.6AACAAA-a-dt',
+                           '4AAB-a-i.6AACAAA-a-dt',
+                           '4AAB-a-i.5AABAA-s.6AACAAA-a-dt',
                            '5AACAA-a-LEI',
+                           '5AABAA-s.5AACAA-a-LEI',
                            '5AABAA-i.5AACAA-a-LEI',
+                           '5AABAA-i.5AABAA-s.5AACAA-a-LEI',
                            '4AAB-a-i.5AACAA-a-LEI',
-                           '5AABAA-s.5AACAA-a-LEI']
+                           '4AAB-a-i.5AABAA-s.5AACAA-a-LEI']
 
         # Test that the index tables were correctly ereated
-        assert len(seeker.indexes) == 21
+        assert len(seeker.indexes) == 29
 
         indexes = seeker.generateIndexes(LE_SAID)
 
@@ -57,28 +67,62 @@ def test_seeker(helpers, seeder):
         assert indexes == ['5AABAA-i',
                            '5AABAA-i.5AABAA-s',
                            '4AAB-a-d',
-                           '5AABAA-i.4AAB-a-d',
-                           '4AAB-a-i.4AAB-a-d',
                            '5AABAA-s.4AAB-a-d',
+                           '5AABAA-i.4AAB-a-d',
+                           '5AABAA-i.5AABAA-s.4AAB-a-d',
+                           '4AAB-a-i.4AAB-a-d',
+                           '4AAB-a-i.5AABAA-s.4AAB-a-d',
                            '4AAB-a-i',
-                           '5AABAA-i.4AAB-a-i',
-                           '4AAB-a-i.4AAB-a-i',
                            '5AABAA-s.4AAB-a-i',
+                           '5AABAA-i.4AAB-a-i',
+                           '5AABAA-i.5AABAA-s.4AAB-a-i',
+                           '4AAB-a-i.4AAB-a-i',
+                           '4AAB-a-i.5AABAA-s.4AAB-a-i',
                            '6AACAAA-a-dt',
-                           '5AABAA-i.6AACAAA-a-dt',
-                           '4AAB-a-i.6AACAAA-a-dt',
                            '5AABAA-s.6AACAAA-a-dt',
+                           '5AABAA-i.6AACAAA-a-dt',
+                           '5AABAA-i.5AABAA-s.6AACAAA-a-dt',
+                           '4AAB-a-i.6AACAAA-a-dt',
+                           '4AAB-a-i.5AABAA-s.6AACAAA-a-dt',
                            '5AACAA-a-LEI',
+                           '5AABAA-s.5AACAA-a-LEI',
                            '5AABAA-i.5AACAA-a-LEI',
+                           '5AABAA-i.5AABAA-s.5AACAA-a-LEI',
                            '4AAB-a-i.5AACAA-a-LEI',
-                           '5AABAA-s.5AACAA-a-LEI']
+                           '4AAB-a-i.5AABAA-s.5AACAA-a-LEI']
 
         # Assure that no knew index tables needed to be created
-        assert len(seeker.indexes) == 21
+        assert len(seeker.indexes) == 29
 
         issuer.createRegistry(issuerHab.pre, name="issuer")
-        qvisaid = issuer.issueQVIvLEI("issuer", issuerHab, issueeHab.pre, "984500E5DEFDBQ1O9038")
 
-        seeker.index(qvisaid)
+        for _ in range(50):
+            LEI = randomLEI()
+            qvisaid = issuer.issueQVIvLEI("issuer", issuerHab, issueeHab.pre, LEI)
+            seeker.index(qvisaid)
+
+        for _ in range(50):
+            LEI = randomLEI()
+            lesaid = issuer.issueLegalEntityvLEI("issuer", issuerHab, issueeHab.pre, LEI)
+            seeker.index(lesaid)
+
+        saids = seeker.find(
+            fields=[coring.Pather(path=['i']).qb64],
+            values=[issuerHab.pre],
+            order=[coring.Pather(path=['a', 'LEI']).qb64],
+            start=20,
+            limit=30
+        )
+
+        for said in saids:
+            creder = seeker.reger.creds.get(keys=(said,))
+            print(creder.ked['a']['LEI'])
 
 
+def randomLEI():
+    values = "0123456789ABCDEFGHIJKLNMOPQRTUVXZY"
+    lei = []
+    for _ in range(20):
+        lei.append(random.choice(values))
+
+    return "".join(lei)
