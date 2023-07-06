@@ -131,7 +131,7 @@ export class Prefixer extends Matter {
     static _derive_blake3_256(ked: Dict<any>): [Uint8Array, string] {
         let kd = ked
         let ilk = ked["t"]
-        if (!([Ilks.icp, Ilks.dip].includes(ilk))) {
+        if (!([Ilks.icp, Ilks.dip, Ilks.vcp, Ilks.dip].includes(ilk))) {
             throw new Error(`Invalid ilk = ${ilk} to derive pre.`)
         }
 

@@ -7,10 +7,11 @@ import { incept, rotate, interact, reply, messagize } from "../core/eventing"
 import { b, Serials, Versionage, Ilks, versify, Ident} from "../core/core";
 import { Tholder } from "../core/tholder";
 import { MtrDex } from "../core/matter";
-import { TraitDex } from "./habery";
 import { Saider } from "../core/saider";
 import { Serder } from "../core/serder";
 import { Siger } from "../core/siger";
+import { Prefixer } from "../core/prefixer";
+import { Salter } from "../core/salter";
 const KERIA_BOOT_URL = "http://localhost:3903"
 
 export class CredentialTypes {
@@ -611,7 +612,7 @@ class Oobis {
             url: oobi
         }
         if (alias !== undefined) {
-            data['alias'] = alias
+            data['oobialias'] = alias
         }
         let method = 'POST'
         let res = await this.client.fetch(path, method, data, undefined)
@@ -735,18 +736,9 @@ class Credentials {
 
     }
 
-    async issue_credential(name: string, registy: string, recipient: string, schema: string, rules: any, source: any, credentialData: any, _private: boolean=false) {
+    async issue_credential(name: string, registy: string, recipient: string|undefined, schema: string, rules: any, source: any, credentialData: any, _private: boolean=false, estOnly:boolean=false) {
         
-        let body = {
-            registry: registy,
-            recipient: recipient,
-            schema: schema,
-            rules: rules,
-            source: source,
-            credentialData: credentialData,
-            private: _private
-        }
-        // TODO
+        
         // properties:
         //     registry:
         //         type: string
@@ -776,7 +768,108 @@ class Credentials {
         //     private:
         //         type: boolean
         //         description: flag to inidicate this credential should support privacy preserving presentations
+
+
+        // Create Credential
+        let hab = await this.client.identifiers().get_identifier(name)
+        let pre: string = hab["prefix"]
+        const dt = new Date().toISOString().replace('Z', '000+00:00')
         
+        const vsacdc = versify(Ident.ACDC, undefined, Serials.JSON, 0)
+        const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
+
+
+        let cred: any = {
+            v: vsacdc,
+            d: ""
+        }
+
+        let subject: any = {
+            d: "",
+        }
+
+        if (_private) {
+            cred['u'] = new Salter({})
+            subject['u'] = new Salter({})
+        }
+
+        if (recipient != undefined) {
+            subject['i'] = recipient
+        }
+
+        subject['dt'] = dt
+        subject = {...subject, ...credentialData}
+
+        const [, a] = Saider.saidify(subject,undefined,undefined,"d")
+
+        cred = {...cred, i:pre}
+        cred['ri'] = registy
+        cred = {...cred,...{s: schema}, ...{a: a}}
+        // cred['e'] = source
+        // cred['r']= rules
+        console.log(rules, source)
+        const [, vc] = Saider.saidify(cred)
+        
+        
+        // Create iss
+        let _iss = {
+            v: vs,
+            t: Ilks.iss,
+            d: "",
+            i: vc.d,
+            s: "0",
+            ri: registy,
+            dt: dt
+
+        }
+
+        let [, iss] = Saider.saidify(_iss)
+
+
+        // Create paths and sign
+
+        let cpath = '6AABAAA-'
+
+        let keeper = this.client!.manager!.get(hab)
+
+        let csigs = keeper.sign(b(JSON.stringify(vc)))
+
+
+        // create ixn
+        // TODO FIX NONCE
+
+        let ixn = {}
+        let sigs = []
+        if (estOnly) {
+            // TODO implement rotation event
+            throw new Error("Establishment only not implemented")
+        
+        } else {
+            let state = hab["state"]
+            let sn = Number(state["s"])
+            let dig = state["d"]
+
+            let data:any = [{
+                i: iss.i,
+                s: iss.s,
+                d: iss.d
+            }]
+
+            let serder = interact({ pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined })
+            
+            sigs = keeper.sign(b(serder.raw))
+            ixn = serder.ked
+        }
+        
+        let body = {
+            cred: vc,
+            csigs: csigs,
+            path: cpath,
+            iss: iss, 
+            ixn: ixn,
+            sigs: sigs
+        }
+
         let path = `/identifiers/${name}/credentials`
         let method = 'POST'
         let headers = new Headers({
@@ -784,7 +877,7 @@ class Credentials {
 
         })
         let res = await this.client.fetch(path, method, body, headers)
-        return await res.text()
+        return await res.json()
 
     }
 
@@ -896,17 +989,63 @@ class Registries {
         return await res.json()
 
     }
-    async create(name: string, alias: string, toad: number, nonce: string, baks: [string], estOnly: boolean, noBackers: string = TraitDex.NoBackers) {
+    async create(name: string, registryName: string, nonce:string, estOnly: boolean=false) {
+        // TODO add backers option
+        // TODO get estOnly from get_identifier ?
+        // TODO generate random nonce if not provided
+        
+        let hab = await this.client.identifiers().get_identifier(name)
+        let pre: string = hab["prefix"]
+        
+        const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
+        let vcp = {
+            v: vs,
+            t: Ilks.vcp,
+            d: "",
+            i: "",
+            ii: pre,
+            s: "0",
+            c: ['NB'],
+            bt: "0",
+            b: [],
+            n: nonce           
+        }
+
+        let prefixer = new Prefixer({code: MtrDex.Blake3_256}, vcp) 
+        vcp['i'] = prefixer.qb64
+        vcp['d'] = prefixer.qb64
+
+        let ixn = {}
+        let sigs = []
+        if (estOnly) {
+            // TODO implement rotation event
+            throw new Error("Establishment only not implemented")
+        
+        } else {
+            let state = hab["state"]
+            let sn = Number(state["s"])
+            let dig = state["d"]
+
+            let data:any = [{
+                i: prefixer.qb64,
+                s: "0",
+                d: prefixer.qb64
+            }]
+
+            let serder = interact({ pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined })
+            let keeper = this.client!.manager!.get(hab)
+            sigs = keeper.sign(b(serder.raw))
+            ixn = serder.ked
+        }
+        
+        
         let path = `/identifiers/${name}/registries`
         let method = 'POST'
         let data = {
-            name: name,
-            alias: alias,
-            toad: toad,
-            nonce: nonce,
-            noBackers: noBackers,
-            baks: baks,
-            estOnly: estOnly
+            name: registryName,
+            vcp: vcp,
+            ixn: ixn!,
+            sigs: sigs
         }
         let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
@@ -921,7 +1060,7 @@ class Schemas {
     }
     //SchemaResourceEnd 
     async get_schema(said: string) {
-        let path = `/schemas/${said}`
+        let path = `/schema/${said}`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, undefined)
         return await res.json()
@@ -930,7 +1069,7 @@ class Schemas {
     //SchemaCollectionEnd
 
     async list_all_schemas() {
-        let path = `/schemas`
+        let path = `/schema`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, undefined)
         return await res.json()
@@ -996,7 +1135,7 @@ class Challenges {
 
         let resp = await this.client.fetch(path, method, jsondata, undefined)
         if (resp.status === 202) {
-            return exn.ked
+            return exn.ked.d
         }
         else {
             return resp

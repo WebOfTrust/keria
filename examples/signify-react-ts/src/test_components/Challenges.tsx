@@ -69,23 +69,26 @@ export function Challenges() {
                             
                             await identifiers1.addEndRole("alex", 'agent', client1!.agent!.pre)
                             await identifiers2.addEndRole("rodo", 'agent', client2!.agent!.pre)
+                            let oobi1 = await oobis1.get("alex","witness")
+                            let oobi2 = await oobis2.get("rodo","witness")
                             
-                            op1 = await oobis1.resolve("http://127.0.0.1:5642/oobi/"+aid2.i+"/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha","rodo")
+                            op1 = await oobis1.resolve(oobi2.oobis[0],"rodo")
                             while (!op1["done"]) {
                                 op1 = await operations1.get(op1["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
-                            await contacts1.add_contact(aid2.i,{alias: "rodo"})
-                            op2 = await oobis2.resolve("http://127.0.0.1:5642/oobi/"+aid1.i+"/witness","alex")
+                            // await contacts1.add_contact(aid2.i,{alias: "rodo"})
+                            op2 = await oobis2.resolve(oobi1.oobis[0],"alex")
                             while (!op2["done"]) {
                                 op2 = await operations2.get(op2["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
                             await contacts1.list_contacts(undefined, undefined, undefined)
-                            await challenges2.respond_challenge('rodo', aid1.i, challenge1_small.words)
-                            // await challenges1.accept_challenge_response('alex', said)
+                            let said = await challenges2.respond_challenge('rodo', aid1.i, challenge1_small.words)
+                            await challenges1.accept_challenge_response('alex', aid2.i, said)
                             await contacts1.list_contacts(undefined, undefined, undefined)
                             await new Promise(resolve => setTimeout(resolve, 10000));
+                            await contacts1.list_contacts(undefined, undefined, undefined)
                             await notifications1.list_notifications(undefined, undefined)
                             setTestResult("Passed")
                         }
