@@ -245,6 +245,8 @@ class Agent(doing.DoDoer):
         self.caid = caid
         if interceptor_webhook is not None:
             self.interceptor = Interceptor(interceptor_webhook, interceptor_headers)
+        else:
+            self.interceptor = None
 
         self.swain = delegating.Boatswain(hby=hby)
         self.counselor = Counselor(hby=hby)
