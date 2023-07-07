@@ -55,13 +55,11 @@ parser.add_argument("--config-dir",
                     action="store",
                     default=None,
                     help="directory override for configuration data")
-
 parser.add_argument("--interceptor-webhook",
                     dest="interceptor_webhook",
                     action="store",
                     default=None,
-                    help="webhook to send intercepted messages to")
-
+                    help="webhook to send intercepted messages")
 parser.add_argument("--interceptor-headers",
                     dest="interceptor_headers",
                     action="store",
@@ -87,7 +85,7 @@ def launch(args):
              configFile=args.configFile,
              configDir=args.configDir,
              interceptor_webhook=args.interceptor_webhook,
-             interceptor_headers=json.loads(args.interceptor_headers))
+             interceptor_headers=json.loads(args.interceptor_headers) if args.interceptor_headers else {'Content-Type': 'application/json'})
 
     logger.info("******* Ended Agent for %s listening: admin/%s, http/%s"
                 ".******", args.name, args.admin, args.http)
