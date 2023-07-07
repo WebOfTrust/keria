@@ -15,6 +15,7 @@ from keri.app.storing import Mailboxer
 from ordered_set import OrderedSet as oset
 
 import falcon
+import requests
 from falcon import media
 from hio.base import doing
 from hio.core import http
@@ -45,10 +46,10 @@ from ..db import basing
 logger = ogler.getLogger()
 
 
-def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=None, configDir=None):
+def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=None, configDir=None,interceptor_webhook=None, interceptor_headers=None):
     """ Set up an ahab in Signify mode """
 
-    agency = Agency(name=name, base=base, bran=bran, configFile=configFile, configDir=configDir)
+    agency = Agency(name=name, base=base, bran=bran, configFile=configFile, configDir=configDir,interceptor_webhook=None, interceptor_headers=None)
     bootApp = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*',
         expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input',
@@ -107,7 +108,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
 
 
 class Agency(doing.DoDoer):
-    def __init__(self, name, bran, base="", configFile=None, configDir=None, adb=None, temp=False):
+    def __init__(self, name, bran, base="", configFile=None, configDir=None, adb=None, temp=False,interceptor_webhook=None, interceptor_headers=None):
         self.name = name
         self.base = base
         self.bran = bran
@@ -115,6 +116,8 @@ class Agency(doing.DoDoer):
         self.configFile = configFile
         self.configDir = configDir
         self.cf = None
+        self.interceptor_webhook = interceptor_webhook
+        self.interceptor_headers = interceptor_headers
         if self.configFile is not None:  # Load config file if creating database
             self.cf = configing.Configer(name=self.configFile,
                                          base="",
@@ -159,7 +162,9 @@ class Agency(doing.DoDoer):
                       caid=caid,
                       agency=self,
                       configDir=self.configDir,
-                      configFile=self.configFile)
+                      configFile=self.configFile,
+                      interceptor_webhook,
+                     interceptor_headers)
 
         self.adb.agnt.pin(keys=(caid,),
                           val=coring.Prefixer(qb64=agent.pre))
@@ -232,12 +237,14 @@ class Agent(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, rgy, agentHab, agency, caid, **opts):
+    def __init__(self, hby, rgy, agentHab, agency, caid, interceptor_webhook=None, interceptor_headers=None, **opts):
         self.hby = hby
         self.rgy = rgy
         self.agentHab = agentHab
         self.agency = agency
         self.caid = caid
+        if interceptor_webhook is not None:
+            self.interceptor = Interceptor(interceptor_webhook, interceptor_headers)
 
         self.swain = delegating.Boatswain(hby=hby)
         self.counselor = Counselor(hby=hby)
@@ -313,10 +320,10 @@ class Agent(doing.DoDoer):
             Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc, vry=self.verifier,
                      registrar=self.registrar, credentialer=self.credentialer),
             Messager(kvy=self.kvy, parser=self.parser),
-            Witnesser(receiptor=receiptor, witners=self.witners),
-            Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
+            Witnesser(receiptor=receiptor, witners=self.witners, interceptor=self.interceptor),
+            Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors, interceptor=self.interceptor),
             GroupRequester(hby=hby, agentHab=agentHab, postman=self.postman, counselor=self.counselor,
-                           groups=self.groups),
+                           groups=self.groups, interceptor=self.interceptor),
         ])
 
         super(Agent, self).__init__(doers=doers, always=True, **opts)
@@ -349,6 +356,19 @@ class Agent(doing.DoDoer):
 
         self.agency.incept(self.caid, pre)
 
+class Interceptor:
+
+    def __init__(self, webhook, headers):
+        self.webhook = webhook
+        self.headers = headers
+
+    def push(self, data):
+        try:
+            resp = requests.post(self.webhook, data=json.dumps(data), headers=self.headers)
+            if resp.status_code != 200:
+                logger.info('Error in pushing data to webhook')
+        except Exception as e:
+            logger.info('Error in pushing data to webhook')
 
 class Messager(doing.Doer):
 
@@ -366,9 +386,10 @@ class Messager(doing.Doer):
 
 class Witnesser(doing.Doer):
 
-    def __init__(self, receiptor, witners):
+    def __init__(self, receiptor, witners, interceptor=None):
         self.receiptor = receiptor
         self.witners = witners
+        self.interceptor = interceptor
         super(Witnesser, self).__init__()
 
     def recur(self, tyme=None):
@@ -376,7 +397,9 @@ class Witnesser(doing.Doer):
             if self.witners:
                 msg = self.witners.popleft()
                 serder = msg["serder"]
-
+                if self.interceptor:
+                    data = serder.pretty() 
+                    self.interceptor.push(data)
                 # If we are a rotation event, may need to catch new witnesses up to current key state
                 if serder.ked['t'] in (Ilks.rot, Ilks.drt):
                     adds = serder.ked["ba"]
@@ -390,15 +413,18 @@ class Witnesser(doing.Doer):
 
 class Delegator(doing.Doer):
 
-    def __init__(self, agentHab, swain, anchors):
+    def __init__(self, agentHab, swain, anchors, interceptor=None):
         self.agentHab = agentHab
         self.swain = swain
         self.anchors = anchors
+        self.interceptor = interceptor
         super(Delegator, self).__init__()
 
     def recur(self, tyme=None):
         if self.anchors:
             msg = self.anchors.popleft()
+            if self.interceptor:
+                self.interceptor.push(msg)
             sn = msg["sn"] if "sn" in msg else None
             self.swain.delegation(pre=msg["pre"], sn=sn, proxy=self.agentHab)
 
@@ -422,12 +448,13 @@ class Initer(doing.Doer):
 
 class GroupRequester(doing.Doer):
 
-    def __init__(self, hby, agentHab, postman, counselor, groups):
+    def __init__(self, hby, agentHab, postman, counselor, groups, interceptor=None):
         self.hby = hby
         self.agentHab = agentHab
         self.postman = postman
         self.counselor = counselor
         self.groups = groups
+        self.interceptor = interceptor
 
         super(GroupRequester, self).__init__()
 
@@ -437,6 +464,12 @@ class GroupRequester(doing.Doer):
             msg = self.groups.popleft()
             serder = msg["serder"]
             sigers = msg["sigers"]
+
+            if self.interceptor:
+                data = {}
+                if 'serder' in msg:
+                    data['serder'] = serder.pretty()
+                self.interceptor.push(data)
 
             ghab = self.hby.habs[serder.pre]
             if "smids" in msg:

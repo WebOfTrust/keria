@@ -7,6 +7,7 @@ Witness command line interface
 """
 import argparse
 import logging
+import json
 
 from keri import __version__
 from keri import help
@@ -55,6 +56,18 @@ parser.add_argument("--config-dir",
                     default=None,
                     help="directory override for configuration data")
 
+parser.add_argument("--interceptor-webhook",
+                    dest="interceptor_webhook",
+                    action="store",
+                    default=None,
+                    help="webhook to send intercepted messages to")
+
+parser.add_argument("--interceptor-headers",
+                    dest="interceptor_headers",
+                    action="store",
+                    default=None,
+                    help="headers to send with intercepted messages")
+
 
 def launch(args):
     help.ogler.level = logging.CRITICAL
@@ -72,14 +85,16 @@ def launch(args):
              http=int(args.http),
              boot=int(args.boot),
              configFile=args.configFile,
-             configDir=args.configDir)
+             configDir=args.configDir,
+             interceptor_webhook=args.interceptor_webhook,
+             interceptor_headers=json.loads(args.interceptor_headers))
 
     logger.info("******* Ended Agent for %s listening: admin/%s, http/%s"
                 ".******", args.name, args.admin, args.http)
 
 
 def runAgent(name="ahab", base="", bran="", admin=3901, http=3902, boot=3903, configFile=None,
-             configDir=None, expire=0.0):
+             configDir=None, expire=0.0, interceptor_webhook = None, interceptor_headers = None):
     """
     Setup and run one witness
     """
@@ -90,6 +105,8 @@ def runAgent(name="ahab", base="", bran="", admin=3901, http=3902, boot=3903, co
                                 httpPort=http,
                                 bootPort=boot,
                                 configFile=configFile,
-                                configDir=configDir))
+                                configDir=configDir,
+                                interceptor_webhook=interceptor_webhook,
+                                interceptor_headers=interceptor_headers))
 
     directing.runController(doers=doers, expire=expire)

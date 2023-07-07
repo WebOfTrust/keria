@@ -83,6 +83,7 @@ setup(
         'http_sfv>=0.9.8',
         'dataclasses_json>=0.5.7',
         'apispec>=6.3.0',
+        'requests>=2.25.1',
     ],
     extras_require={
         # eg:
