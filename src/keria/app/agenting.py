@@ -49,7 +49,7 @@ logger = ogler.getLogger()
 def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=None, configDir=None,interceptor_webhook=None, interceptor_headers=None):
     """ Set up an ahab in Signify mode """
 
-    agency = Agency(name=name, base=base, bran=bran, configFile=configFile, configDir=configDir,interceptor_webhook=None, interceptor_headers=None)
+    agency = Agency(name=name, base=base, bran=bran, configFile=configFile, configDir=configDir,interceptor_webhook=interceptor_webhook, interceptor_headers=interceptor_headers)
     bootApp = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*',
         expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input',
@@ -163,8 +163,8 @@ class Agency(doing.DoDoer):
                       agency=self,
                       configDir=self.configDir,
                       configFile=self.configFile,
-                      interceptor_webhook,
-                     interceptor_headers)
+                      interceptor_webhook=self.interceptor_webhook,
+                     interceptor_headers=self.interceptor_headers)
 
         self.adb.agnt.pin(keys=(caid,),
                           val=coring.Prefixer(qb64=agent.pre))
