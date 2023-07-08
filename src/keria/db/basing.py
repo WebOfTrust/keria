@@ -268,95 +268,141 @@ class Seeker(dbing.LMDBer):
 
         return [index for index in self.schIdx.get(keys=(said,))]
 
-    def find(self, fields, values, order=None, start=None, limit=None):
-        if (saids := self.indexSearch(fields, values)) is not None:
-            return self.order(saids, order, start, limit)
-        elif (saids := self.indexScan(fields, values)) is not None:
-            return self.order(saids, order, start, limit)
-        else:
-            saids = self.fullTableScan(fields, values)
-            return self.order(saids, order, start, limit)
+    def find(self, filtr, sort=None, skip=None, limit=None):
+        return Cursor(seeker=self, filtr=filtr, sort=sort, skip=skip, limit=limit)
 
-    def indexSearch(self, fields, values):
-        index = ".".join(fields)
-        if index not in self.indexes:
+
+class Cursor:
+
+    def __init__(self, seeker, filtr=None, sort=None, skip=None, limit=None):
+        self.filtr = filtr
+        self.operators = operators(self.filtr)
+        self.names = [op.name for op in self.operators]
+        self.indexable = next((False for op in self.operators if not isinstance(op, Eq)), True)
+        self.values = [op.value for op in self.operators]
+
+        self.seeker = seeker
+        self._sort = sort
+        self._skip = skip if skip is not None else 0
+        self._limit = limit if limit is not None else 25
+
+        self.cur = None
+        self.saids = None
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.saids is None:
+            self._query()
+
+        if self.cur >= len(self.saids):
+            raise StopIteration
+
+        said = self.saids[self.cur]
+        self.cur += 1
+        return said
+
+    def sort(self, sort):
+        self._sort = sort
+        return self
+
+    def skip(self, skip):
+        self._skip = skip
+        return self
+
+    def limit(self, limit):
+        self._limit = limit
+        return self
+
+    def _query(self):
+        self.cur = 0
+        if len(self.filtr) == 0:
+            self.saids = self.order([said for (said,), _ in self.seeker.reger.saved.getItemIter()])
+        elif (saids := self.indexSearch()) is not None:
+            self.saids = self.order(saids)
+        elif (saids := self.indexScan()) is not None:
+            self.saids = self.order(saids)
+        else:
+            saids = self.fullTableScan()
+            self.saids = self.order(saids)
+
+    def indexSearch(self):
+        if len(self.operators) == 1 and self.operators[0].name in self.seeker.indexes:
+            op = self.operators[0]
+            idx = self.seeker.indexes[op.name]
+            return op.index(idx)
+
+        index = ".".join(self.names)
+        if not (self.indexable and index in self.seeker.indexes):
             return None
 
-        idx = self.indexes[index]
-        val = "".join(values)
+        idx = self.seeker.indexes[index]
+        val = "".join(self.values)
         return [val.qb64 for val in idx.getIter(keys=(val,))]
 
-    def indexScan(self, fields, values):
+    def indexScan(self):
         use = []
-        vals = []
         scan = []
-        scanVals = []
-        for idx, field in enumerate(fields):
-            if field in self.indexes:
-                use.append(field)
-                vals.append(values[idx])
+
+        for idx, op in enumerate(self.operators):
+            if op.name in self.seeker.indexes:
+                use.append(op)
             else:
-                scan.append(field)
-                scanVals.append(values[idx])
+                scan.append(op)
 
         if len(use) == 0:
-            return self.fullTableScan(fields, values)
+            return self.fullTableScan()
 
-        idx = self.indexes[use[0]]
-        saids = oset([val.qb64 for val in idx.getIter(keys=(vals[0],))])
+        idx = self.seeker.indexes[use[0].name]
+        saids = oset([val.qb64 for val in idx.getIter(keys=(use[0].value,))])
         if len(saids) == 0:
             return list()
 
-        for i, field in enumerate(use[1:]):
-            idx = self.indexes[field]
-            nxt = oset([val.qb64 for val in idx.getIter(keys=(vals[i + 1],))])
+        for i, op in enumerate(use[1:]):
+            idx = self.seeker.indexes[op.name]
+            nxt = oset([val.qb64 for val in idx.getIter(keys=(op.value,))])
             saids &= nxt
 
         if len(scan) == 0:
             return list(saids)
         else:
-            return self.tableScan(list(saids), scan, scanVals)
+            return self.tableScan(list(saids), scan)
 
-    def fullTableScan(self, fields, values):
-        saids = [saider.qb64 for _, saider in self.reger.saved.getItemIter()]
-        return self.tableScan(saids, fields, values)
+    def fullTableScan(self):
+        saids = [saider.qb64 for _, saider in self.seeker.reger.saved.getItemIter()]
+        return self.tableScan(saids, ops=self.operators)
 
-    def tableScan(self, saids, fields, values):
-        pathers = [coring.Pather(qb64=field) for field in fields]
-
+    def tableScan(self, saids, ops):
         res = []
         for said in saids:
-            creder = self.reger.creds.get(keys=(said,))
-            for idx, pather in enumerate(pathers):
-                if pather.resolve(creder.crd) == values[idx]:
+            creder = self.seeker.reger.creds.get(keys=(said,))
+            for op in ops:
+                if op(creder):
                     res.append(said)
 
         return res
 
-    def order(self, saids, order, start, limit):
-        start = start if start is not None else 0
-        limit = limit if limit is not None else 25
+    def order(self, saids):
+        if not self._sort:
+            return self.slice(saids)
 
-        if (res := self.indexOrder(saids, order, start, limit)) is not None:
+        if (res := self.indexOrder(saids)) is not None:
             return res
         else:
-            self.tableScanOrder(saids, order, start, limit)
+            return self.tableScanOrder(saids)
 
-    def indexOrder(self, saids, order, start, limit):
-        if order is None:
-            return saids
-
-        index = ".".join(order)
-        if index not in self.indexes:
+    def indexOrder(self, saids):
+        index = ".".join([coring.Pather(bext=s).qb64 for s in self._sort])
+        if index not in self.seeker.indexes:
             return None
 
-        idx = self.indexes[index]
-
+        idx = self.seeker.indexes[index]
         ctx = idx.getItemIter()
 
         # Run off the values before start
         cur = 0
-        while cur < start:
+        while cur < self._skip:
             _, saider = next(ctx)
             if saider.qb64 in saids:
                 cur += 1
@@ -367,10 +413,98 @@ class Seeker(dbing.LMDBer):
             if saider.qb64 in saids:
                 res.append(saider.qb64)
 
-            if len(res) == limit:
+            if len(res) == self._limit:
                 break
 
         return res
 
-    def tableScanOrder(self, saids, order, start, limit):
-        pass
+    def slice(self, saids):
+        if self._skip >= len(saids):
+            return []
+
+        end = self._skip + self._limit
+        return saids[self._skip:end]
+
+    def tableScanOrder(self, saids):
+        """ Should we bother implementing table scan sort order
+
+        We have single field indexes for all fields in credentials so this situation will
+        only occur if multiple fields are selected for which we don't have a multi-column
+        index.  In that case, perhaps we raise an exception.
+
+        For now, we'll just slice the results to honor skip and limit.
+
+        """
+        return self.slice(saids)
+
+
+def operators(filtr):
+    """ Executable operator factory method
+
+     An factory for processing a filter dict and generating an array of
+     executable operators to apply to a given credential search
+
+    """
+    # filtr = {"-a-i": {"$begins": "984"}}
+    ops = []
+    for f, v in filtr.items():
+        if isinstance(v, dict):
+            for op, val in v.items():
+                match op:
+                    case "$eq":
+                        ops.append(Eq(field=f, value=val))
+                    case "$begins":
+                        ops.append(Begins(field=f, value=val))
+            pass
+        else:
+            ops.append(Eq(field=f, value=v))
+
+    return ops
+
+
+class Eq:
+    def __init__(self, field, value):
+        self.field = field
+        self.pather = coring.Pather(bext=self.field)
+        self.value = value
+
+    def __call__(self, *args, **kwargs):
+        if len(args) != 1:
+            raise ValueError(f"invalid argument length={len(args)} for equals operator, must be 2")
+
+        val = self.pather.resolve(args[0].crd)
+        return val == self.value
+
+    @property
+    def name(self) -> str:
+        return self.pather.qb64
+
+    def index(self, idx):
+        return [val.qb64 for val in idx.getIter(keys=(self.value,))]
+
+
+class Begins:
+    def __init__(self, field, value):
+        self.field = field
+        self.pather = coring.Pather(bext=self.field)
+
+        if not isinstance(value, str):
+            raise ValueError(f"invalid type={type(value)} for begins, must be `str`")
+        self.value = value
+
+    def __call__(self, *args, **kwargs):
+        if len(args) != 1:
+            raise ValueError(f"invalid argument length={len(args)} for begins operator, must be 2")
+
+        val = self.pather.resolve(args[0].crd)
+        if not isinstance(val, str):
+            raise ValueError(f"invalid type={type(args[0])} for begins, must be `str`")
+
+        return val.startswith(self.value)
+
+    def index(self, idx):
+        return [val.qb64 for _, val in idx.getItemIter(keys=(self.value,))]
+
+    @property
+    def name(self) -> str:
+        return self.pather.qb64
