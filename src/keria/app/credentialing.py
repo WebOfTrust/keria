@@ -589,7 +589,7 @@ class Registrar:
             seqner = coring.Seqner(sn=hab.kever.sner.num)
             saider = hab.kever.serder.saider
             registry.anchorMsg(pre=registry.regk, regd=registry.regd, seqner=seqner, saider=saider)
-
+            self.witDoer.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
             self.rgy.reger.tpwe.add(keys=(registry.regk, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
 
         else:
@@ -622,6 +622,7 @@ class Registrar:
             registry.anchorMsg(pre=vcid, regd=iserder.said, seqner=seqner, saider=saider)
 
             print("Waiting for TEL event witness receipts")
+            self.witDoer.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
             return vcid, rseq.sn
 
