@@ -489,16 +489,16 @@ class IdentifierResourceEnd:
         if hab.kever.delegator:
             agent.anchors.append(dict(alias=name, pre=hab.pre, sn=0))
             op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
-                                      metadata=dict(pre=hab.pre, sn=hab.kever.sn))
+                                      metadata=dict(pre=hab.pre, sn=serder.sn))
             return op
 
-        if hab.kever.wits:
+        elif hab.kever.wits:
             agent.witners.append(dict(serder=serder))
             op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.witness,
-                                      metadata=dict(sn=hab.kever.sn))
+                                      metadata=dict(sn=serder.sn))
             return op
-
-        op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
+        else:
+            op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
                                   metadata=dict(response=serder.ked))
         return op
 
@@ -529,13 +529,13 @@ class IdentifierResourceEnd:
 
             return op
 
-        if hab.kever.wits:
+        elif hab.kever.wits:
             agent.witners.append(dict(serder=serder))
             op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.witness,
-                                      metadata=dict(sn=hab.kever.sn))
+                                      metadata=dict(sn=serder.sn))
             return op
-
-        op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
+        else:
+            op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
                                   metadata=dict(response=serder.ked))
         return op
 
@@ -1236,3 +1236,4 @@ class ContactResourceEnd:
             raise falcon.HTTPNotFound(description=f"no contact information to delete for {prefix}")
 
         rep.status = falcon.HTTP_202
+

@@ -262,7 +262,7 @@ class Agent(doing.DoDoer):
         self.rep = storing.Respondant(hby=hby, cues=self.cues, mbx=Mailboxer(name=self.hby.name, temp=self.hby.temp))
 
         doers = [habbing.HaberyDoer(habery=hby), receiptor, self.postman, self.witPub, self.rep, self.swain,
-                 self.counselor, *oobiery.doers]
+                 self.counselor, self.witDoer, *oobiery.doers]
 
         signaler = signaling.Signaler()
         self.notifier = Notifier(hby=hby, signaler=signaler)
