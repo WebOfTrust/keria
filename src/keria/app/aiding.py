@@ -492,13 +492,13 @@ class IdentifierResourceEnd:
                                       metadata=dict(pre=hab.pre, sn=serder.sn))
             return op
 
-        elif hab.kever.wits:
+        if hab.kever.wits:
             agent.witners.append(dict(serder=serder))
             op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.witness,
                                       metadata=dict(sn=serder.sn))
             return op
-        else:
-            op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
+
+        op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
                                   metadata=dict(response=serder.ked))
         return op
 
@@ -529,13 +529,13 @@ class IdentifierResourceEnd:
 
             return op
 
-        elif hab.kever.wits:
+        if hab.kever.wits:
             agent.witners.append(dict(serder=serder))
             op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.witness,
                                       metadata=dict(sn=serder.sn))
             return op
-        else:
-            op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
+
+        op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
                                   metadata=dict(response=serder.ked))
         return op
 
