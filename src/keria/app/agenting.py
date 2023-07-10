@@ -276,6 +276,7 @@ class Agent(doing.DoDoer):
 
         self.monitor = longrunning.Monitor(hby=hby, swain=self.swain, counselor=self.counselor, temp=hby.temp,
                                            registrar=self.registrar, credentialer=self.credentialer)
+        self.seeker = basing.Seeker(db=hby.db, reger=self.rgy.reger, reopen=True, temp=self.hby.temp)
 
         issueHandler = protocoling.IssueHandler(hby=hby, rgy=rgy, notifier=self.notifier)
         requestHandler = protocoling.PresentationRequestHandler(hby=hby, notifier=self.notifier)
@@ -317,6 +318,7 @@ class Agent(doing.DoDoer):
             Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
             GroupRequester(hby=hby, agentHab=agentHab, postman=self.postman, counselor=self.counselor,
                            groups=self.groups),
+            SeekerDoer(seeker=self.seeker, cues=self.verifier.cues)
         ])
 
         super(Agent, self).__init__(doers=doers, always=True, **opts)
@@ -403,6 +405,25 @@ class Delegator(doing.Doer):
             self.swain.delegation(pre=msg["pre"], sn=sn, proxy=self.agentHab)
 
         return False
+
+
+class SeekerDoer(doing.Doer):
+
+    def __init__(self, seeker, cues):
+        self.seeker = seeker
+        self.cues = cues
+
+        super(SeekerDoer, self).__init__()
+
+    def recur(self, tyme=None):
+        if self.cues:
+            cue = self.cues.popleft()
+            if cue["kin"] == "saved":
+                creder = cue["creder"]
+                print(f"indexing {creder.said}")
+                self.seeker.index(said=creder.said)
+
+            self.cues.append(cue)
 
 
 class Initer(doing.Doer):

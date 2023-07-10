@@ -30,15 +30,17 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
         indexes = seeker.generateIndexes(QVI_SAID)
 
         # Verify the indexes created for the QVI schema
-        assert indexes == ['5AABAA-i',
+        assert indexes == ['5AABAA-s',
+                           '5AABAA-i',
                            '5AABAA-i.5AABAA-s',
+                           '4AAB-a-i',
+                           '4AAB-a-i.5AABAA-s',
                            '4AAB-a-d',
                            '5AABAA-s.4AAB-a-d',
                            '5AABAA-i.4AAB-a-d',
                            '5AABAA-i.5AABAA-s.4AAB-a-d',
                            '4AAB-a-i.4AAB-a-d',
                            '4AAB-a-i.5AABAA-s.4AAB-a-d',
-                           '4AAB-a-i',
                            '5AABAA-s.4AAB-a-i',
                            '5AABAA-i.4AAB-a-i',
                            '5AABAA-i.5AABAA-s.4AAB-a-i',
@@ -63,15 +65,17 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
         indexes = seeker.generateIndexes(LE_SAID)
 
         # Test the indexes assigned to the LE schema
-        assert indexes == ['5AABAA-i',
+        assert indexes == ['5AABAA-s',
+                           '5AABAA-i',
                            '5AABAA-i.5AABAA-s',
+                           '4AAB-a-i',
+                           '4AAB-a-i.5AABAA-s',
                            '4AAB-a-d',
                            '5AABAA-s.4AAB-a-d',
                            '5AABAA-i.4AAB-a-d',
                            '5AABAA-i.5AABAA-s.4AAB-a-d',
                            '4AAB-a-i.4AAB-a-d',
                            '4AAB-a-i.5AABAA-s.4AAB-a-d',
-                           '4AAB-a-i',
                            '5AABAA-s.4AAB-a-i',
                            '5AABAA-i.4AAB-a-i',
                            '5AABAA-i.5AABAA-s.4AAB-a-i',
@@ -133,11 +137,14 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
                                'EGO5Dh4ADbgDSTj-0X3452s7R6iAjFG2amY1qXlhqVxe',
                                'EOMWNhcIYPuXkh-LDZTc--sVL-cOINWNINfqO9kUhnBG']
 
-        print(f"\nIssued by {issuerHab.pre}")
-        saids = seeker.find({'-i': {'$eq': issuerHab.pre}}).sort(['-a-LEI']).skip(25).limit(6)
-        for said in saids:
-            creder = seeker.reger.creds.get(keys=(said,))
-            print(creder.ked['a']['LEI'])
+        saids = seeker.find({'-i': {'$eq': issuerHab.pre}, '-a-LEI': {'$begins': 'Y'}}).sort(['-a-LEI'])
+        assert list(saids) == ['EA4KV-yecOHV8jt0F2vG7tYRkyikhuOloCXliit_KTHI',
+                               'EI9K4digb0UgEPi0ZT4Rw1DlSSx5NewLpxl4M-XurJMO',
+                               'ELAcuTv3lYs7P6N9uP6Ob2oQ10CWhTLpGWJOht5VPvPT',
+                               'EFl7rgKSxQdEsFomKbeXfSDfGG_9QE0oDzNQ9v8DsJmJ']
+
+        saids = seeker.find({'-i': {'$eq': issuerHab.pre}, '-a-LEI': {'$eq': 'U6452GAE5C4TVRUY9EIX'}}).sort(['-a-LEI'])
+        assert list(saids) == ['ELDA-hNidE8nsNOYAg993mOLiYAew_eIgicEiK_ilb9Y']
 
 
 def randomLEI():

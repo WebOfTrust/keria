@@ -183,7 +183,7 @@ class Seeker(dbing.LMDBer):
 
         # Load schema index and if not indexed in schIdx, index it.
         schemaSaid = creder.schema
-        if (indexes := self.schIdx.get(keys=(schemaSaid,))) is None:
+        if not (indexes := self.schIdx.get(keys=(schemaSaid,))):
             indexes = self.generateIndexes(schemaSaid)
 
         for index in indexes:
@@ -218,9 +218,10 @@ class Seeker(dbing.LMDBer):
 
         properties = payload["properties"]
 
-        attestation = 'i' not in payload
+        attestation = 'i' not in properties
 
-        # Assign single field ISSUER index and ISSUER/SCHEMA:
+        # Assign single field Schema and ISSUER index and ISSUER/SCHEMA:
+        self.schIdx.add(keys=(said,), val=SCHEMA_FIELD.qb64b)
         self.schIdx.add(keys=(said,), val=ISSUER_FIELD.qb64b)
         subkey = f"{ISSUER_FIELD.qb64}.{SCHEMA_FIELD.qb64}"
         self.schIdx.add(keys=(said,), val=subkey.encode("UTF-8"))
@@ -355,13 +356,13 @@ class Cursor:
             return self.fullTableScan()
 
         idx = self.seeker.indexes[use[0].name]
-        saids = oset([val.qb64 for val in idx.getIter(keys=(use[0].value,))])
+        saids = oset(use[0].index(idx))
         if len(saids) == 0:
             return list()
 
         for i, op in enumerate(use[1:]):
             idx = self.seeker.indexes[op.name]
-            nxt = oset([val.qb64 for val in idx.getIter(keys=(op.value,))])
+            nxt = oset(op.index(idx))
             saids &= nxt
 
         if len(scan) == 0:
