@@ -312,6 +312,7 @@ class Agent(doing.DoDoer):
                                      vry=self.verifier)
 
         doers.extend([
+            self.exc,
             Initer(agentHab=agentHab, caid=caid),
             Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries),
             Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc, vry=self.verifier,
