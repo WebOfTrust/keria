@@ -270,28 +270,40 @@ def test_credentialing_ends(helpers, seeder):
 
         parsing.Parser(kvy=agent.kvy, rvy=agent.rvy, tvy=agent.tvy, vry=agent.verifier).parse(ims)
 
+        for said in saids:
+            agent.seeker.index(said)
+
         res = client.simulate_get(f"/identifiers/{hab.name}/credentials")
         assert res.status_code == 404
         assert res.json == {'description': 'name is not a valid reference to an identfier',
                             'title': '404 Not Found'}
 
         res = client.simulate_get(f"/identifiers/test/credentials")
-        assert res.status_code == 400
-        assert res.json == {'description': 'Invalid type None', 'title': '400 Bad Request'}
-
-        res = client.simulate_get(f"/identifiers/test/credentials?type=issued")
-        assert res.status_code == 200
-        assert res.json == []
-
-        res = client.simulate_get(f"/identifiers/test/credentials?type=received")
         assert res.status_code == 200
         assert len(res.json) == 5
 
-        res = client.simulate_get(f"/identifiers/test/credentials?type=received&schema={issuer.LE}")
+        body = json.dumps({'filter': {'-i': issuee}}).encode("utf-8")
+        res = client.simulate_get(f"/identifiers/test/credentials", body=body)
+        assert res.status_code == 200
+        assert res.json == []
+
+        body = json.dumps({'filter': {'-a-i': issuee}}).encode("utf-8")
+        res = client.simulate_get(f"/identifiers/test/credentials", body=body)
+        assert res.status_code == 200
+        assert len(res.json) == 5
+
+        body = json.dumps({'filter': {'-i': hab.pre}}).encode("utf-8")
+        res = client.simulate_get(f"/identifiers/test/credentials", body=body)
+        assert res.status_code == 200
+        assert len(res.json) == 5
+
+        body = json.dumps({'filter': {'-s': {'$eq': issuer.LE}}}).encode("utf-8")
+        res = client.simulate_get(f"/identifiers/test/credentials", body=body)
         assert res.status_code == 200
         assert len(res.json) == 3
 
-        res = client.simulate_get(f"/identifiers/test/credentials?type=received&schema={issuer.QVI}")
+        body = json.dumps({'filter': {'-s': {'$eq': issuer.QVI}}}).encode("utf-8")
+        res = client.simulate_get(f"/identifiers/test/credentials", body=body)
         assert res.status_code == 200
         assert len(res.json) == 2
 

@@ -295,26 +295,31 @@ class CredentialCollectionEnd:
 
         """
         agent = req.context.agent
-        
-        typ = req.params.get("type")
-        schema = req.params.get("schema")
-
         hab = agent.hby.habByName(name)
         if hab is None:
             raise falcon.HTTPNotFound(description="name is not a valid reference to an identfier")
 
-        if typ == "issued":
-            saids = agent.rgy.reger.issus.get(keys=hab.pre)
-        elif typ == "received":
-            saids = agent.rgy.reger.subjs.get(keys=hab.pre)
-        else:
-            raise falcon.HTTPBadRequest(description=f"Invalid type {typ}")
+        try:
+            body = req.get_media()
+            if "filter" in body:
+                filtr = body["filter"]
+            else:
+                filtr = {}
 
-        if schema is not None:
-            scads = agent.rgy.reger.schms.get(keys=schema)
-            saids = [saider for saider in saids if saider.qb64 in [saider.qb64 for saider in scads]]
+            if "sort" in body:
+                sort = body["sort"]
+            else:
+                sort = None
+        except falcon.HTTPError:
+            filtr = {}
+            sort = {}
 
-        creds = agent.rgy.reger.cloneCreds(saids)
+        skip = req.params.get("skip")
+        limit = req.params.get("limit")
+
+        cur = agent.seeker.find(filtr=filtr, sort=sort, skip=skip, limit=limit)
+        saids = [coring.Saider(qb64=said) for said in cur]
+        creds = agent.rgy.reger.cloneCreds(saids=saids)
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
