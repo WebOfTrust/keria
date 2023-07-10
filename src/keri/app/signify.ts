@@ -124,15 +124,16 @@ export class SignifyClient {
         headers.set('Signify-Timestamp', new Date().toISOString().replace('Z', '000+00:00'))
         headers.set('Content-Type', 'application/json')
 
-        if (data !== null) {
-            headers.set('Content-Length', data.length)
+        let _body = method == 'GET' ? null : JSON.stringify(data)
+        if (_body !== null) {
+            headers.set('Content-Length', String(_body.length))
         }
         else {
+            console.log("setting content length to 0")
             headers.set('Content-Length', '0')
         }
         let signed_headers = this.authn.sign(headers, method, path.split('?')[0])
         //END Headers
-        let _body = method == 'GET' ? null : JSON.stringify(data)
 
         //add _headers to signed_headers
         let final_headers = new Headers()
