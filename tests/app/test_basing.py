@@ -7,6 +7,7 @@ Testing the database classes
 """
 import random
 
+import pytest
 from keri.app import habbing
 
 from keria.db import basing
@@ -26,6 +27,9 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
 
         seeder.seedSchema(issueeHby.db)
         seeder.seedSchema(issuerHby.db)
+
+        with pytest.raises(ValueError):
+            seeker.generateIndexes(said="INVALIDSCHEMASAID")
 
         indexes = seeker.generateIndexes(QVI_SAID)
 
@@ -96,6 +100,9 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
 
         # Assure that no knew index tables needed to be created
         assert len(seeker.indexes) == 29
+
+        # test credemtial with "oneOf"
+        seeker.generateIndexes(said="EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
 
         issuer.createRegistry(issuerHab.pre, name="issuer")
 
