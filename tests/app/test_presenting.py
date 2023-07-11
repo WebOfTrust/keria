@@ -79,7 +79,8 @@ def test_presentation(helpers, seeder, mockHelpingNowUTC):
         res = client.simulate_post(path=f"/identifiers/BadUser/credentials/{said}/presentations",
                                    body=json.dumps(body).encode("utf-8"))
         assert res.status_code == 400
-        assert res.json == {'title': 'Invalid alias BadUser for credential presentation'}
+        assert res.json == {'description': 'Invalid alias BadUser for credential presentation',
+                            'title': '400 Bad Request'}
 
         res = client.simulate_post(path=f"/identifiers/test/credentials/{said}/presentations",
                                    body=json.dumps(body).encode("utf-8"))

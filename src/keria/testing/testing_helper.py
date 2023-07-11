@@ -2,14 +2,13 @@
 """
 Helpers for tests that need KERIA
 """
+import json
 import os
 import shutil
-import json
+from contextlib import contextmanager
 
 import falcon
-import pytest
 from falcon import testing
-from hio.base import doing
 from hio.core import http
 from keri import kering
 from keri.app import keeping, habbing, configing, signing
@@ -20,8 +19,8 @@ from keri.vc import proving
 from keri.vdr import credentialing, verifying
 from keri.vdr import eventing as veventing
 from keri.vdr.credentialing import Regery, Registrar
+
 from keria.app import agenting, indirecting
-from contextlib import contextmanager
 
 WitnessUrls = {
     "wan:tcp": "tcp://127.0.0.1:5632/",
@@ -251,7 +250,6 @@ class Helpers:
         server = http.Server(port=httpPort, app=app)
         httpServerDoer = http.ServerDoer(server=server)
         return httpServerDoer
-
 
     @staticmethod
     def controller():

@@ -77,7 +77,7 @@ class PresentationCollectionEnd:
 
         hab = agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPBadRequest(f"Invalid alias {name} for credential presentation")
+            raise falcon.HTTPBadRequest(description=f"Invalid alias {name} for credential presentation")
 
         body = req.get_media()
 

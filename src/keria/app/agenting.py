@@ -427,8 +427,6 @@ class SeekerDoer(doing.Doer):
                 print(f"indexing {creder.said}")
                 self.seeker.index(said=creder.said)
 
-            self.cues.append(cue)
-
 
 class Initer(doing.Doer):
     def __init__(self, agentHab, caid):

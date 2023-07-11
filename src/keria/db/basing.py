@@ -110,7 +110,7 @@ class Seeker(dbing.LMDBer):
     TailDirPath = "keri/seekdb"
     AltTailDirPath = ".keri/seekdb"
     TempPrefix = "keri_seekdb_"
-    MaxNamedDBs = 50
+    MaxNamedDBs = 500
 
     def __init__(self, db, reger, headDirPath=None, perm=None, reopen=False, **kwa):
         """
@@ -207,8 +207,9 @@ class Seeker(dbing.LMDBer):
 
         properties = schemer.sed["properties"]
         payload = properties['a']
-        if isinstance(payload, list):
-            for p in payload:
+        if "oneOf" in payload:
+            oo = payload["oneOf"]
+            for p in oo:
                 if p["type"] == "object":
                     payload = p
                     break
