@@ -847,12 +847,62 @@ class Credentials {
 
     }
 
-    async revoke_credential(name: string, said: string, send?: string) {
+    async revoke_credential(name: string, registy: string, said: string, send?: string, estOnly:boolean=false) {
+        
+        let hab = await this.client.identifiers().get_identifier(name)
+        let pre: string = hab["prefix"]
+
+        const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
+        const dt = new Date().toISOString().replace('Z', '000+00:00')
+
+        // Create rev
+        let _rev = {
+            v: vs,
+            t: Ilks.rev,
+            d: "",
+            i: said,
+            s: "1",
+            ri: registy,
+            dt: dt
+
+        }
+
+        let [, rev] = Saider.saidify(_rev)
+
+
+        // create ixn
+        // TODO FIX NONCE
+
+        let ixn = {}
+        let sigs = []
+        if (estOnly) {
+            // TODO implement rotation event
+            throw new Error("Establishment only not implemented")
+        
+        } else {
+            let state = hab["state"]
+            let sn = Number(state["s"])
+            let dig = state["d"]
+
+            let data:any = [{
+                i: rev.i,
+                s: rev.s,
+                d: rev.d
+            }]
+
+            let serder = interact({ pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined })
+            let keeper = this.client!.manager!.get(hab)
+            sigs = keeper.sign(b(serder.raw))
+            ixn = serder.ked
+        }
         
         let body = {
             said: said,
-            send: send
+            rev: rev, 
+            ixn: ixn,
+            sigs: sigs
         }
+
 
         let path = `/identifiers/${name}/credentials/${said}`
         let method = 'DELETE'

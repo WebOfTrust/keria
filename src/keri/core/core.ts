@@ -33,7 +33,8 @@ export const Ilks = {
     rpy: 'rpy',
     exn: 'exn',
     vcp: 'vcp',
-    iss: 'iss'
+    iss: 'iss',
+    rev: 'rev'
 };
 
 export const IcpLabels = ["v", "i", "s", "t", "kt", "k", "n",
