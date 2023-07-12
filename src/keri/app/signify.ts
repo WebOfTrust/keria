@@ -724,53 +724,18 @@ class Credentials {
         return await res.json()
     }
     //CredentialResourceEnd
-    //rename get_credential 
-    async export(name: string, said: string) {
+    async get_credential(name: string, said: string, includeCESR: boolean = false) {
         let path = `/identifiers/${name}/credentials/${said}`
         let method = 'GET'
-        let headers = new Headers({
-            'Accept': 'application/json+cesr'
-
-        })
+        let headers = includeCESR? new Headers({'Accept': 'application/json+cesr'}) : new Headers({'Accept': 'application/json'})
         let res = await this.client.fetch(path, method, null, headers)
-        return await res.text()
-
+        
+        return includeCESR? await res.text() : await res.json()
     }
 
     async issue_credential(name: string, registy: string, recipient: string|undefined, schema: string, rules: any, source: any, credentialData: any, _private: boolean=false, estOnly:boolean=false) {
         
         
-        // properties:
-        //     registry:
-        //         type: string
-        //         description: Alias of credential issuance/revocation registry (aka status)
-        //     recipient:
-        //         type: string
-        //         description: AID of credential issuance/revocation recipient
-        //     schema:
-        //         type: string
-        //         description: SAID of credential schema being issued
-        //     rules:
-        //         type: object
-        //         description: Rules section (Ricardian contract) for credential being issued
-        //     source:
-        //         type: object
-        //         description: ACDC edge or edge group for chained credentials
-        //         properties:
-        //             d:
-        //             type: string
-        //             description: SAID of reference chain
-        //             s:
-        //             type: string
-        //             description: SAID of reference chain schema
-        //     credentialData:
-        //         type: object
-        //         description: dynamic map of values specific to the schema
-        //     private:
-        //         type: boolean
-        //         description: flag to inidicate this credential should support privacy preserving presentations
-
-
         // Create Credential
         let hab = await this.client.identifiers().get_identifier(name)
         let pre: string = hab["prefix"]
@@ -882,42 +847,68 @@ class Credentials {
 
     }
 
-
-    async present_credential(name: string, said: string, recipient: string, include: boolean=true) {
-    //     parameters:
-    //     - in: path
-    //       name: alias
-    //       schema:
-    //         type: string
-    //       required: true
-    //       description: Human readable alias for the holder of credential
-    //   requestBody:
-    //       required: true
-    //       content:
-    //         application/json:
-    //           schema:
-    //             type: object
-    //             properties:
-    //               said:
-    //                 type: string
-    //                 required: true
-    //                 description: qb64 SAID of credential to send
-    //               recipient:
-    //                 type: string
-    //                 required: true
-    //                 description: qb64 AID to send credential presentation to
-    //               include:
-    //                 type: boolean
-    //                 required: true
-    //                 default: true
-    //                 description: flag indicating whether to stream credential alongside presentation exn
+    async revoke_credential(name: string, said: string, send?: string) {
         
         let body = {
             said: said,
+            send: send
+        }
+
+        let path = `/identifiers/${name}/credentials/${said}`
+        let method = 'DELETE'
+        let headers = new Headers({
+            'Accept': 'application/json+cesr'
+
+        })
+        let res = await this.client.fetch(path, method, body, headers)
+        return await res.text()
+
+    }
+
+
+    async present_credential(name: string, said: string, recipient: string, include: boolean=true) {
+
+        let hab = await this.client.identifiers().get_identifier(name)
+        let pre: string = hab["prefix"]
+
+        let cred = await this.get_credential(name, said)
+        let data = {
+            i: cred.sad.i,
+            s: cred.sad.s,
+            n: said
+        }
+
+        const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
+
+        const _sad = {
+            v: vs,
+            t: Ilks.exn,
+            d: "",
+            dt: new Date().toISOString().replace("Z","000+00:00"),
+            r: "/presentation",
+            q: {},
+            a: data
+        }
+        const [, sad] = Saider.saidify(_sad)
+        const exn = new Serder(sad)
+        
+        let keeper = this.client!.manager!.get(hab)
+
+        let sig = keeper.sign(b(exn.raw),true)
+
+        let siger = new Siger({qb64:sig[0]})
+        let seal = ["SealLast" , {i:pre}]
+        let ims = messagize(exn,[siger],seal, undefined, undefined, true)
+        ims = ims.slice(JSON.stringify(exn.ked).length)
+
+        
+        let body = {
+            exn: exn.ked,
+            sig: new TextDecoder().decode(ims),
             recipient: recipient,
             include: include
-
         }
+
         let path = `/identifiers/${name}/credentials/${said}/presentations`
         let method = 'POST'
         let headers = new Headers({
@@ -931,38 +922,44 @@ class Credentials {
 
     async request_credential(name: string, recipient: string, schema: string, issuer: string) {
 
+        let hab = await this.client.identifiers().get_identifier(name)
+        let pre: string = hab["prefix"]
 
-        // parameters:
-        //   - in: path
-        //     name: alias
-        //     schema:
-        //       type: string
-        //     required: true
-        //     description: Human readable alias for the identifier to create
-        // requestBody:
-        //     required: true
-        //     content:
-        //       application/json:
-        //         schema:
-        //           type: object
-        //           properties:
-        //             recipient:
-        //               type: string
-        //               required: true
-        //               description: qb64 AID to send presentation request to
-        //             schema:
-        //               type: string
-        //               required: true
-        //               description: qb64 SAID of schema for credential being requested
-        //             issuer:
-        //               type: string
-        //               required: false
-        //               description: qb64 AID of issuer of credential being requested
-        let body = {
-            recipient: recipient,
-            schema: schema,
-            issuer: issuer
+        let data = {
+            i: issuer,
+            s: schema
         }
+
+        const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
+
+        const _sad = {
+            v: vs,
+            t: Ilks.exn,
+            d: "",
+            dt: new Date().toISOString().replace("Z","000+00:00"),
+            r: "/presentation/request",
+            q: {},
+            a: data
+        }
+        const [, sad] = Saider.saidify(_sad)
+        const exn = new Serder(sad)
+        
+        let keeper = this.client!.manager!.get(hab)
+
+        let sig = keeper.sign(b(exn.raw),true)
+
+        let siger = new Siger({qb64:sig[0]})
+        let seal = ["SealLast" , {i:pre}]
+        let ims = messagize(exn,[siger],seal, undefined, undefined, true)
+        ims = ims.slice(JSON.stringify(exn.ked).length)
+
+        
+        let body = {
+            exn: exn.ked,
+            sig: new TextDecoder().decode(ims),
+            recipient: recipient,
+        }
+
         let path = `/identifiers/${name}/requests`
         let method = 'POST'
         let headers = new Headers({
