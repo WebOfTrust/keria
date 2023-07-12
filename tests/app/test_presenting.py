@@ -211,3 +211,9 @@ def test_presentation_request(helpers):
                                    body=json.dumps(body).encode("utf-8"))
         assert res.status_code == 202
 
+        body = dict(exn=exn.ked, sig=sig, recipient="BadRecipient")
+        res = client.simulate_post(path=f"/identifiers/test/requests",
+                                   body=json.dumps(body).encode("utf-8"))
+        assert res.status_code == 400
+        assert res.json == {'description': 'invalid recipient BadRecipient', 'title': '400 Bad Request'}
+
