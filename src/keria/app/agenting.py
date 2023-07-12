@@ -277,7 +277,7 @@ class Agent(doing.DoDoer):
 
         self.monitor = longrunning.Monitor(hby=hby, swain=self.swain, counselor=self.counselor, temp=hby.temp,
                                            registrar=self.registrar, credentialer=self.credentialer)
-        self.seeker = basing.Seeker(db=hby.db, reger=self.rgy.reger, reopen=True, temp=self.hby.temp)
+        self.seeker = basing.Seeker(name=hby.name, db=hby.db, reger=self.rgy.reger, reopen=True, temp=self.hby.temp)
 
         issueHandler = protocoling.IssueHandler(hby=hby, rgy=rgy, notifier=self.notifier)
         requestHandler = protocoling.PresentationRequestHandler(hby=hby, notifier=self.notifier)
