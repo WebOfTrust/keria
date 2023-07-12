@@ -32,7 +32,7 @@ def loadEnds(app, identifierResource):
     credentialCollectionEnd = CredentialCollectionEnd(identifierResource)
     app.add_route("/identifiers/{name}/credentials", credentialCollectionEnd)
     
-    credentialResourceEnd = CredentialResourceEnd()
+    credentialResourceEnd = CredentialResourceEnd(identifierResource)
     app.add_route("/identifiers/{name}/credentials/{said}", credentialResourceEnd)
 
 
@@ -430,6 +430,14 @@ class CredentialCollectionEnd:
 
 
 class CredentialResourceEnd:
+    def __init__(self, identifierResource):
+        """
+
+        Parameters:
+            identifierResource (IdentifierResourceEnd): endpoint class for creating rotation and interaction events
+
+        """
+        self.identifierResource = identifierResource
 
     @staticmethod
     def on_get(req, rep, name, said):
@@ -540,6 +548,53 @@ class CredentialResourceEnd:
         out.extend(proofize(sadtsgs=sadsigers, sadcigars=sadcigars, pipelined=True))
 
         return out
+    
+    @staticmethod
+    def on_delete(self, req, rep, name, said):
+        """ Initiate a credential issuance
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            name (str): human readable alias for AID to use as issuer
+            said (str): SAID of credential to revoke
+        ---
+        summary: Perform credential revocation
+        description: Perform credential revocation
+        """
+
+        agent = req.context.agent
+
+        body = req.get_media()
+        hab = agent.hby.habByName(name)
+        if hab is None:
+            raise falcon.HTTPNotFound(description="name is not a valid reference to an identfier")
+
+        rserder = coring.Serder(ked=httping.getRequiredParam(body, "rev"))
+
+        regk = rserder.ked['ri']
+        if regk not in agent.rgy.tevers:
+            raise falcon.HTTPNotFound(description=f"revocation against invalid registry SAID {regk}")
+
+
+        if hab.kever.estOnly:
+            op = self.identifierResource.rotate(agent, name, body)
+        else:
+            op = self.identifierResource.interact(agent, name, body)
+
+        try:
+            agent.registrar.revoke(regk, said)
+
+
+        except kering.ConfigurationError as e:
+            rep.status = falcon.HTTP_400
+            rep.text = e.args[0]
+            return
+
+        rep.status = falcon.HTTP_200
+        rep.data = op.to_json().encode("utf-8")
+
+
 
 
 def signPaths(hab, pather, sigers):
