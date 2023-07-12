@@ -36,7 +36,7 @@ from keri.vdr.credentialing import Regery
 from keri.vdr.eventing import Tevery
 from keri.app import challenging
 
-from . import aiding, notifying, indirecting, credentialing
+from . import aiding, notifying, indirecting, credentialing, presenting
 from .specing import AgentSpecResource
 from ..core import authing, longrunning, httping
 from ..core.authing import Authenticater
@@ -79,6 +79,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
     loadEnds(app=app)
     aidEnd = aiding.loadEnds(app=app, agency=agency, authn=authn)
     credentialing.loadEnds(app=app, identifierResource=aidEnd)
+    presenting.loadEnds(app=app)
     notifying.loadEnds(app=app)
 
     if httpPort:
