@@ -711,10 +711,6 @@ class Registrar:
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
         if not isinstance(hab, SignifyGroupHab):
-            if registry.estOnly:
-                hab.rotate(data=[rseal])
-            else:
-                hab.interact(data=[rseal])
 
             seqner = coring.Seqner(sn=hab.kever.sner.num)
             saider = hab.kever.serder.saider
@@ -1050,3 +1046,4 @@ class Credentialer:
         self.processCredentialIssuedEscrow()
         self.processCredentialMissingSigEscrow()
         self.processCredentialSentEscrow()
+        self.processCredentialRevokedEscrow()
