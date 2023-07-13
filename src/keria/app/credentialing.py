@@ -549,7 +549,6 @@ class CredentialResourceEnd:
 
         return out
     
-    @staticmethod
     def on_delete(self, req, rep, name, said):
         """ Initiate a credential issuance
 
@@ -583,7 +582,7 @@ class CredentialResourceEnd:
             op = self.identifierResource.interact(agent, name, body)
 
         try:
-            agent.registrar.revoke(regk, said)
+            agent.registrar.revoke(regk, rserder)
 
 
         except kering.ConfigurationError as e:
@@ -694,27 +693,17 @@ class Registrar:
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, iserder.said), val=(prefixer, seqner, saider))
             return vcid, rseq.sn
 
-    def revoke(self, regk, said, dt=None, smids=None, rmids=None):
+    def revoke(self, regk, rserder):
         """
         Create and process the credential revocation TEL events on the given registry
 
         Parameters:
             regk (str): qb64 identifier prefix of the credential registry
-            said (str): qb64 SAID of the credential to issue
-            dt (str): iso8601 formatted date string of issuance date
-            smids (list): group signing member ids (multisig) in the anchoring event
-                need to contribute digest of current signing key
-            rmids (list | None): group rotating member ids (multisig) in the anchoring event
-                need to contribute digest of next rotating key
+            rserder (Serder): TEL revocation event
         """
         registry = self.rgy.regs[regk]
+        registry.processEvent(serder=rserder)
         hab = registry.hab
-
-        state = registry.tever.vcState(vci=said)
-        if state is None or state.ked["et"] not in (coring.Ilks.iss, coring.Ilks.rev):
-            raise kering.ValidationError(f"credential {said} not is correct state for revocation")
-
-        rserder = registry.revoke(said=said, dt=dt)
 
         vcid = rserder.ked["i"]
         rseq = coring.Seqner(snh=rserder.ked["s"])
