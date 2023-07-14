@@ -24,6 +24,19 @@ The communication protocol between a Signify client and KERI agent will encode a
 encoded strings for the initial implementation.  Support for binary CESR can be added in the future.
 
 
+### Environment Setup
+
+The code is built using Typescript and running code locally requires a Mac or Linux OS.
+
+-   Install [Node.js](https://nodejs.org)    
+
+
+-   Install dependencies:
+    ```bash
+    npm install
+    ```
+
+
 Account Creation Workflow
 
 
