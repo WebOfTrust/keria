@@ -12,7 +12,7 @@ import { Encrypter } from "../core/encrypter";
 import { Decrypter } from "../core/decrypter";
 import { Cipher } from "../core/cipher";
 import {Seqner } from "../core/seqner";
-import { PNumber } from "../core/number";
+import { CesrNumber } from "../core/number";
 
 export class Agent {
     pre: string;
@@ -38,7 +38,7 @@ export class Agent {
         // }
         let [state, verfer, ] = this.event(agent);
 
-        this.sn = new PNumber(state['s']).num
+        this.sn = new CesrNumber(state['s']).num
         this.said = state['d']
 
         if (state['et'] !== Ilks.dip) {
@@ -155,7 +155,7 @@ export class Controller {
         this.serder = interact({
             pre:this.serder.pre, 
             dig: this.serder.ked["d"], 
-            sn: new PNumber(this.serder.ked["s"]).num + 1,
+            sn: new CesrNumber(this.serder.ked["s"]).num + 1,
             data:[anchor],
             version: Versionage,
             kind: Serials.JSON})

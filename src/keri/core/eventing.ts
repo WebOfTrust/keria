@@ -1,6 +1,6 @@
 import { b, concat, Dict, Ident, Ilks, Serials, versify, Version, Versionage } from "./core";
 import { Tholder } from "./tholder";
-import { PNumber } from "./number";
+import { CesrNumber } from "./number";
 import { Prefixer } from "./prefixer";
 import { Serder } from "./serder";
 import { MtrDex, NonTransDex } from "./matter";
@@ -247,7 +247,7 @@ export function incept({ keys, isith, ndigs, nsith, toad, wits, cnfg, data, vers
 
     let vs = versify(Ident.KERI, version, kind, 0)
     let ilk = delpre == undefined ? Ilks.icp : Ilks.dip
-    let sner = new PNumber(0)
+    let sner = new CesrNumber(0)
 
     if (isith == undefined) {
         isith = Math.max(1, Math.ceil(keys.length / 2))
@@ -290,7 +290,7 @@ export function incept({ keys, isith, ndigs, nsith, toad, wits, cnfg, data, vers
         }
     }
 
-    let toader = new PNumber(toad)
+    let toader = new CesrNumber(toad)
     if (wits.length > 0) {
         if (toader.num < 1 || toader.num > wits.length) {
             throw new Error(`Invalid toad = ${toader.num} for wits = ${wits}`)
@@ -429,7 +429,7 @@ export function interact(args: InteractArgs): Serder {
     let { pre, dig, sn, data, version, kind } = args
     let vs = versify(Ident.KERI, version, kind, 0)
     let ilk = Ilks.ixn
-    let sner = new PNumber(sn)
+    let sner = new CesrNumber(sn)
 
     if (sner.num < 1) {
         throw new Error(`Invalid sn = 0x${sner.numh} for ixn.`)

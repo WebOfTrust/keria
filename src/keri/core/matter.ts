@@ -51,6 +51,26 @@ export class DigiCodex extends Codex {
 
 export const DigiDex = new DigiCodex()
 
+export class NumCodex extends Codex {
+    Short:   string = 'M'  // Short 2 byte b2 number
+    Long:    string = '0H'  // Long 4 byte b2 number
+    Big:     string = 'N'  // Big 8 byte b2 number
+    Huge:    string = '0A'  // Huge 16 byte b2 number (same as Salt_128)
+}
+
+export const NumDex = new NumCodex()
+
+export class BexCodex extends Codex {
+    StrB64_L0: string = '4A'  // String Base64 Only Leader Size 0
+    StrB64_L1: string = '5A'  // String Base64 Only Leader Size 1
+    StrB64_L2: string = '6A'  // String Base64 Only Leader Size 2
+    StrB64_Big_L0: string = '7AAA'  // String Base64 Only Big Leader Size 0
+    StrB64_Big_L1: string = '8AAA'  // String Base64 Only Big Leader Size 1
+    StrB64_Big_L2: string = '9AAA'  // String Base64 Only Big Leader Size 2
+}
+
+export const BexDex = new BexCodex()
+
 export class Sizage {
     public hs: number;
     public ss: number;
