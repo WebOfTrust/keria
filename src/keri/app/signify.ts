@@ -513,8 +513,8 @@ class Identifier {
         // if nsith is None:  # compute default from newly rotated digers above
         if (nsith == undefined) nsith = `${Math.max(1, Math.ceil(ncount / 2)).toString(16)}`
 
-        let cst = new Tholder(isith).sith  // current signing threshold
-        let nst = new Tholder(nsith).sith  // next signing threshold
+        let cst = new Tholder({sith: isith}).sith  // current signing threshold
+        let nst = new Tholder({sith: nsith}).sith  // next signing threshold
 
         // Regenerate next keys to sign rotation event
         let keeper = this.client.manager!.get(hab)
@@ -848,7 +848,6 @@ class Credentials {
     }
 
     async revoke_credential(name: string, cred: any, estOnly:boolean=false) {
-        console.log(send)
         let hab = await this.client.identifiers().get_identifier(name)
         let pre: string = hab["prefix"]
 
