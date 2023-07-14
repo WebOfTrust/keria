@@ -170,7 +170,22 @@ export function Credentials() {
                             // await new Promise(resolve => setTimeout(resolve, 20000))
                             let creds = await client1.credentials().list('issuer',CredentialTypes.received,'')
                             await client1.credentials().list('issuer',CredentialTypes.issued,'')
+                            await client2.credentials().list('recipient',CredentialTypes.received,'')
                             
+                            await client1.credentials().present_credential('issuer', creds[0].sad.d, 'verifier', true)
+                            await new Promise(resolve => setTimeout(resolve, 5000))
+                            await client3.credentials().list('verifier',CredentialTypes.received,'')
+
+                            op1 = await client1.credentials().revoke_credential('issuer', creds[0], false)
+                            // while (!op1["done"]) {
+                            //     op1 = await operations1.get(op1["name"]);
+                            //     await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
+                            // }
+                            await new Promise(resolve => setTimeout(resolve, 5000))
+                            await client1.credentials().list('issuer',CredentialTypes.issued,'')
+                            await client2.credentials().list('recipient',CredentialTypes.issued,'')
+                            await client3.credentials().list('verifier',CredentialTypes.issued,'')
+
                             await client1.credentials().present_credential('issuer', creds[0].sad.d, 'verifier', true)
                             await new Promise(resolve => setTimeout(resolve, 5000))
                             await client3.credentials().list('verifier',CredentialTypes.received,'')

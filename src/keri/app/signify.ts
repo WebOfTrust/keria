@@ -847,13 +847,15 @@ class Credentials {
 
     }
 
-    async revoke_credential(name: string, registy: string, said: string, send?: string, estOnly:boolean=false) {
+    async revoke_credential(name: string, cred: any, estOnly:boolean=false) {
         
         let hab = await this.client.identifiers().get_identifier(name)
         let pre: string = hab["prefix"]
 
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
         const dt = new Date().toISOString().replace('Z', '000+00:00')
+
+        const said = cred.sad.d
 
         // Create rev
         let _rev = {
@@ -862,7 +864,8 @@ class Credentials {
             d: "",
             i: said,
             s: "1",
-            ri: registy,
+            p: cred.status.d,
+            ri: cred.sad.ri,
             dt: dt
 
         }
@@ -897,7 +900,6 @@ class Credentials {
         }
         
         let body = {
-            said: said,
             rev: rev, 
             ixn: ixn,
             sigs: sigs
