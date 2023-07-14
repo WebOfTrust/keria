@@ -1,8 +1,8 @@
 import {Matter, MatterArgs, NumDex} from "./matter";
 import {intToBytes} from "./utils";
+import {readInt} from "./core";
 
 export class CesrNumber extends Matter {
-    private readonly _num: number = 0;
     constructor({raw, code, qb64b, qb64, qb2}: MatterArgs, num?: number | string, numh?: string) {
         let _num;
         if(raw == undefined && qb64 == undefined && qb64b == undefined && qb2 == undefined) {
@@ -46,11 +46,11 @@ export class CesrNumber extends Matter {
     }
 
     get num(): number {
-        return this._num;
+        return readInt(this.raw);
     }
 
     get numh(): string {
-        return this._num.toString(16)
+        return this.num.toString(16)
     }
 
     get positive(): boolean {
