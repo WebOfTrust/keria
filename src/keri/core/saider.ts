@@ -76,7 +76,7 @@ export class Saider extends Matter {
         }
 
         sad = {...sad}
-        sad[label] = "".padStart(Matter.Sizes.get(code)!.fs, Dummy)
+        sad[label] = "".padStart(Matter.Sizes.get(code)!.fs!, Dummy)
         if ('v' in sad) {
             [, , kind, sad, ] = sizeify(sad, kind)
         }
