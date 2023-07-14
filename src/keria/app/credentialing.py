@@ -581,8 +581,9 @@ class CredentialResourceEnd:
         if regk not in agent.rgy.tevers:
             raise falcon.HTTPNotFound(description=f"revocation against invalid registry SAID {regk}")
         
-        creds = agent.rgy.reger.cloneCreds([coring.Saider(qb64=said)])
-        if not creds:
+        try:
+            agent.rgy.reger.cloneCreds([coring.Saider(qb64=said)])
+        except:
             raise falcon.HTTPNotFound(description=f"credential for said {said} not found.")
 
         if hab.kever.estOnly:

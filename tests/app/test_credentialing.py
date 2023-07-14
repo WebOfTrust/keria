@@ -421,7 +421,18 @@ def test_revoke_credential(helpers, seeder):
             rev=regser.ked,
             ixn=serder.ked,
             sigs=sigers)
-        res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}", body=json.dumps(body).encode("utf-8"))
+        res = client.simulate_delete(path=f"/identifiers/badname/credentials/{creder.said}", body=json.dumps(body).encode("utf-8"))
+        assert res.status_code == 404
+        assert res.json == {'description': "name is not a valid reference to an identfier",
+                            'title': '404 Not Found'}
+        
+        res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{regser.said}", body=json.dumps(body).encode("utf-8"))
+        assert res.status_code == 404
+        assert res.json == {'description': f"credential for said {regser.said} not found.",
+                            'title': '404 Not Found'}
+        
+        
+        res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}", body=json.dumps(body).encode("utf-8"))        
         assert res.status_code == 200
         
         while not agent.registrar.complete(creder.said, sn=1):
