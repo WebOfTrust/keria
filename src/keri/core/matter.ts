@@ -74,10 +74,10 @@ export const BexDex = new BexCodex()
 export class Sizage {
     public hs: number;
     public ss: number;
-    public ls: number;
-    public fs: number;
+    public ls?: number;
+    public fs?: number;
 
-    constructor(hs: number, ss: number, fs: number, ls: number) {
+    constructor(hs: number, ss: number, fs?: number, ls?: number) {
         this.hs = hs;
         this.ss = ss;
         this.fs = fs;
@@ -101,11 +101,51 @@ export class Matter {
         'C': new Sizage(1, 0, 44, 0),
         'D': new Sizage(1, 0, 44, 0),
         'E': new Sizage(1, 0, 44, 0),
+        'F': new Sizage(1, 0, 44, 0),
+        'G': new Sizage(1, 0, 44, 0),
+        'H': new Sizage(1, 0, 44, 0),
+        'I': new Sizage(1, 0, 44, 0),
+        'J': new Sizage(1, 0, 44, 0),
+        'K': new Sizage(1, 0, 76, 0),
+        'L': new Sizage(1, 0, 76, 0),
+        'M': new Sizage(1, 0, 4, 0),
+        'N': new Sizage(1, 0, 12, 0),
         'O': new Sizage(1, 0, 44, 0),
         'P': new Sizage(1, 0, 124, 0),
-        "0A": new Sizage(2, 0, 24, 0),
+        'Q': new Sizage(1, 0, 44, 0),
+        '0A': new Sizage(2, 0, 24, 0),
         '0B': new Sizage(2, 0, 88, 0),
+        '0C': new Sizage(2, 0, 88, 0),
+        '0D': new Sizage(2, 0, 88, 0),
+        '0E': new Sizage(2, 0, 88, 0),
+        '0F': new Sizage(2, 0, 88, 0),
+        '0G': new Sizage(2, 0, 88, 0),
+        '0H': new Sizage(2, 0, 8, 0),
+        '0I': new Sizage(2, 0, 88, 0),
+        '1AAA': new Sizage(4, 0, 48, 0),
+        '1AAB': new Sizage(4, 0, 48, 0),
+        '1AAC': new Sizage(4, 0, 80, 0),
+        '1AAD': new Sizage(4, 0, 80, 0),
+        '1AAE': new Sizage(4, 0, 56, 0),
+        '1AAF': new Sizage(4, 0, 8, 0),
+        '1AAG': new Sizage(4, 0, 36, 0),
         '1AAH': new Sizage(4, 0, 100, 0),
+        '1AAI': new Sizage(4, 0, 48, 0),
+        '1AAJ': new Sizage(4, 0, 48, 0),
+        '2AAA': new Sizage(4, 0, 8, 1),
+        '3AAA': new Sizage(4, 0, 8, 2),
+        '4A': new Sizage(2, 2, undefined, 0),
+        '5A': new Sizage(2, 2, undefined, 1),
+        '6A': new Sizage(2, 2, undefined, 2),
+        '7AAA': new Sizage(4, 4, undefined, 0),
+        '8AAA': new Sizage(4, 4, undefined, 1),
+        '9AAA': new Sizage(4, 4, undefined, 2),
+        '4B': new Sizage(2, 2, undefined, 0),
+        '5B': new Sizage(2, 2, undefined, 1),
+        '6B': new Sizage(2, 2, undefined, 2),
+        '7AAB': new Sizage(4, 4, undefined, 0),
+        '8AAB': new Sizage(4, 4, undefined, 1),
+        '9AAB': new Sizage(4, 4, undefined, 2),
     }));
 
     static Hards = new Map<string, number>([['A', 1], ['B', 1], ['C', 1], ['D', 1], ['E', 1], ['F', 1], ['G', 1],
@@ -191,7 +231,7 @@ export class Matter {
             throw Error(`Non-fixed raw size code ${code}.`)
         }
 
-        return (Math.floor((sizage!.fs - cs) * 3 / 4)) - sizage!.ls
+        return (Math.floor((sizage!.fs! - cs) * 3 / 4)) - sizage!.ls!
 
     }
 
@@ -218,7 +258,7 @@ export class Matter {
         } else {
             let both = code
             let cs = both.length
-            if ((cs % 4) != ps - sizage!.ls) {  // adjusted pad given lead bytes
+            if ((cs % 4) != ps - sizage!.ls!) {  // adjusted pad given lead bytes
                 throw new Error(`Invalid code=${both} for converted raw pad size=${ps}, ${raw.length}.`);
             }
             // prepad, convert, and replace upfront
@@ -263,16 +303,16 @@ export class Matter {
         if (sizage!.fs == -1) { // Variable size code, Not supported
             throw new Error("Variable size codes not supported yet")
         } else {
-            size = sizage!.fs
+            size = sizage!.fs!
         }
 
-        if (qb64.length < sizage!.fs) {
-            throw new Error(`Need ${sizage!.fs - qb64.length} more chars.`)
+        if (qb64.length < sizage!.fs!) {
+            throw new Error(`Need ${sizage!.fs! - qb64.length} more chars.`)
         }
 
         qb64 = qb64.slice(0, sizage!.fs)
         let ps = cs % 4
-        let pbs = 2 * (ps == 0 ? sizage!.ls : ps)
+        let pbs = 2 * (ps == 0 ? sizage!.ls! : ps)
         let raw
         if (ps != 0) {
             let base = new Array(ps + 1).join('A') + qb64.slice(cs);

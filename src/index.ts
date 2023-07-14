@@ -1,5 +1,6 @@
 
 import _sodium from 'libsodium-wrappers-sumo';
+import { create, all } from 'mathjs'
 
 export const ready:() => Promise<void> =  (async() => {
     try {
@@ -27,3 +28,6 @@ try {
     window.Buffer = Buffer;
 } catch(e) {
 }
+
+const config = { }
+export const math = create(all, config)

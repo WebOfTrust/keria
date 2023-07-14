@@ -848,6 +848,7 @@ class Credentials {
     }
 
     async revoke_credential(name: string, cred: any, estOnly:boolean=false) {
+        console.log(send)
         let hab = await this.client.identifiers().get_identifier(name)
         let pre: string = hab["prefix"]
 
