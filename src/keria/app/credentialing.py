@@ -550,13 +550,19 @@ class CredentialResourceEnd:
         return out
     
     def on_delete(self, req, rep, name, said):
-        """ Initiate a credential issuance
+        """ Initiate a credential revocation
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
             name (str): human readable alias for AID to use as issuer
             said (str): SAID of credential to revoke
+
+        RequestBody:
+            rev (str): serialized revocation event
+            ixn (str): serialized interaction event
+            rot (str): serialized rotation event
+            sigs (list): list of signatures for the revocation event
         ---
         summary: Perform credential revocation
         description: Perform credential revocation
@@ -574,7 +580,10 @@ class CredentialResourceEnd:
         regk = rserder.ked['ri']
         if regk not in agent.rgy.tevers:
             raise falcon.HTTPNotFound(description=f"revocation against invalid registry SAID {regk}")
-
+        
+        creds = agent.rgy.reger.cloneCreds([coring.Saider(qb64=said)])
+        if not creds:
+            raise falcon.HTTPNotFound(description=f"credential for said {said} not found.")
 
         if hab.kever.estOnly:
             op = self.identifierResource.rotate(agent, name, body)
@@ -592,9 +601,6 @@ class CredentialResourceEnd:
 
         rep.status = falcon.HTTP_200
         rep.data = op.to_json().encode("utf-8")
-
-
-
 
 def signPaths(hab, pather, sigers):
     """ Sign the SAD or SAIDs with the keys from the Habitat.
@@ -621,12 +627,15 @@ def signPaths(hab, pather, sigers):
 
 class Registrar:
 
-    def __init__(self, hby, rgy, counselor, witDoer, witPub):
+    def __init__(self, agentHab, hby, rgy, counselor, witDoer, witPub, postman, verifier):
         self.hby = hby
+        self.agentHab = agentHab
         self.rgy = rgy
         self.counselor = counselor
         self.witDoer = witDoer
         self.witPub = witPub
+        self.postman = postman
+        self.verifier = verifier
 
     def incept(self, hab, registry, prefixer=None, seqner=None, saider=None):
         """
@@ -831,6 +840,94 @@ class Registrar:
             # to determine when the Witnesses have received the TEL events.
             self.witPub.msgs.append(dict(pre=prefixer.qb64, msg=tevt))
             self.rgy.reger.ctel.put(keys=(regk, rseq.qb64), val=saider)  # idempotent
+            if rseq.sn == 1:
+                print("Credential revocation completed, sending to recipients")
+                revt = self.rgy.reger.getTvt(dbing.dgKey(pre=regk, dig=dig))
+                rserder = coring.Serder(raw=bytes(revt))
+                creder = self.rgy.reger.creds.get(keys=(rserder.ked["i"],))
+                self.sendToRecipients(creder)
+
+    def sendToRecipients(self, creder):
+        issr = creder.issuer
+        regk = creder.status
+        if "i" in creder.subject:
+            recp = creder.subject["i"]
+
+            hab = self.hby.habs[issr]
+            if isinstance(hab, SignifyGroupHab):
+                sender = hab.mhab.pre
+            else:
+                sender = issr
+
+            ikever = self.hby.db.kevers[issr]
+            for msg in self.hby.db.cloneDelegation(ikever):
+                serder = coring.Serder(raw=msg)
+                atc = msg[serder.size:]
+                self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+
+            for msg in self.hby.db.clonePreIter(pre=issr):
+                serder = coring.Serder(raw=msg)
+                atc = msg[serder.size:]
+                self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+
+            if regk is not None:
+                for msg in self.verifier.reger.clonePreIter(pre=regk):
+                    serder = coring.Serder(raw=msg)
+                    atc = msg[serder.size:]
+                    self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+
+            for msg in self.verifier.reger.clonePreIter(pre=creder.said):
+                serder = coring.Serder(raw=msg)
+                atc = msg[serder.size:]
+                self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+
+            sources = self.verifier.reger.sources(self.hby.db, creder)
+            for source, atc in sources:
+                regk = source.status
+                vci = source.said
+
+                issr = source.crd["i"]
+                ikever = self.hby.db.kevers[issr]
+                for msg in self.hby.db.cloneDelegation(ikever):
+                    serder = coring.Serder(raw=msg)
+                    atc = msg[serder.size:]
+                    self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+
+                for msg in self.hby.db.clonePreIter(pre=issr):
+                    serder = coring.Serder(raw=msg)
+                    atc = msg[serder.size:]
+                    self.postman.send(src=sender, dest=recp, topic="credential", serder=serder,
+                                    attachment=atc)
+
+                for msg in self.verifier.reger.clonePreIter(pre=regk):
+                    serder = coring.Serder(raw=msg)
+                    atc = msg[serder.size:]
+                    self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+
+                for msg in self.verifier.reger.clonePreIter(pre=vci):
+                    serder = coring.Serder(raw=msg)
+                    atc = msg[serder.size:]
+                    self.postman.send(src=sender, dest=recp, topic="credential", serder=serder,
+                                    attachment=atc)
+
+                serder, sadsigs, sadcigs = self.rgy.reger.cloneCred(source.said)
+                atc = signing.provision(serder=source, sadcigars=sadcigs, sadsigers=sadsigs)
+                del atc[:serder.size]
+                self.postman.send(src=sender, dest=recp, topic="credential", serder=source, attachment=atc)
+
+            serder, sadsigs, sadcigs = self.rgy.reger.cloneCred(creder.said)
+            atc = signing.provision(serder=creder, sadcigars=sadcigs, sadsigers=sadsigs)
+            del atc[:serder.size]
+            self.postman.send(src=sender, dest=recp, topic="credential", serder=creder, attachment=atc)
+
+            exn, atc = protocoling.credentialIssueExn(hab=self.agentHab, issuer=issr, schema=creder.schema, said=creder.said)
+            self.postman.send(src=sender, dest=recp, topic="credential", serder=exn, attachment=atc)
+
+            # Escrow until postman has successfully sent the notification
+            self.rgy.reger.crse.put(keys=(exn.said,), val=creder)
+        else:
+            # Credential complete, mark it in the database
+            self.rgy.reger.ccrd.put(keys=(creder.said,), val=creder)        
 
 
 class Credentialer:
@@ -928,88 +1025,8 @@ class Credentialer:
             if saider is None:
                 continue
 
-            issr = creder.issuer
-            regk = creder.status
-
             print("Credential issuance complete, sending to recipient")
-            if "i" in creder.subject:
-                recp = creder.subject["i"]
-
-                hab = self.hby.habs[issr]
-                if isinstance(hab, SignifyGroupHab):
-                    sender = hab.mhab.pre
-                else:
-                    sender = issr
-
-                ikever = self.hby.db.kevers[issr]
-                for msg in self.hby.db.cloneDelegation(ikever):
-                    serder = coring.Serder(raw=msg)
-                    atc = msg[serder.size:]
-                    self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
-
-                for msg in self.hby.db.clonePreIter(pre=issr):
-                    serder = coring.Serder(raw=msg)
-                    atc = msg[serder.size:]
-                    self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
-
-                if regk is not None:
-                    for msg in self.verifier.reger.clonePreIter(pre=regk):
-                        serder = coring.Serder(raw=msg)
-                        atc = msg[serder.size:]
-                        self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
-
-                for msg in self.verifier.reger.clonePreIter(pre=creder.said):
-                    serder = coring.Serder(raw=msg)
-                    atc = msg[serder.size:]
-                    self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
-
-                sources = self.verifier.reger.sources(self.hby.db, creder)
-                for source, atc in sources:
-                    regk = source.status
-                    vci = source.said
-
-                    issr = source.crd["i"]
-                    ikever = self.hby.db.kevers[issr]
-                    for msg in self.hby.db.cloneDelegation(ikever):
-                        serder = coring.Serder(raw=msg)
-                        atc = msg[serder.size:]
-                        self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
-
-                    for msg in self.hby.db.clonePreIter(pre=issr):
-                        serder = coring.Serder(raw=msg)
-                        atc = msg[serder.size:]
-                        self.postman.send(src=sender, dest=recp, topic="credential", serder=serder,
-                                          attachment=atc)
-
-                    for msg in self.verifier.reger.clonePreIter(pre=regk):
-                        serder = coring.Serder(raw=msg)
-                        atc = msg[serder.size:]
-                        self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
-
-                    for msg in self.verifier.reger.clonePreIter(pre=vci):
-                        serder = coring.Serder(raw=msg)
-                        atc = msg[serder.size:]
-                        self.postman.send(src=sender, dest=recp, topic="credential", serder=serder,
-                                          attachment=atc)
-
-                    serder, sadsigs, sadcigs = self.rgy.reger.cloneCred(source.said)
-                    atc = signing.provision(serder=source, sadcigars=sadcigs, sadsigers=sadsigs)
-                    del atc[:serder.size]
-                    self.postman.send(src=sender, dest=recp, topic="credential", serder=source, attachment=atc)
-
-                serder, sadsigs, sadcigs = self.rgy.reger.cloneCred(creder.said)
-                atc = signing.provision(serder=creder, sadcigars=sadcigs, sadsigers=sadsigs)
-                del atc[:serder.size]
-                self.postman.send(src=sender, dest=recp, topic="credential", serder=creder, attachment=atc)
-
-                exn, atc = protocoling.credentialIssueExn(hab=self.agentHab, issuer=issr, schema=creder.schema, said=creder.said)
-                self.postman.send(src=sender, dest=recp, topic="credential", serder=exn, attachment=atc)
-
-                # Escrow until postman has successfully sent the notification
-                self.rgy.reger.crse.put(keys=(exn.said,), val=creder)
-            else:
-                # Credential complete, mark it in the database
-                self.rgy.reger.ccrd.put(keys=(said,), val=creder)
+            self.registrar.sendToRecipients(creder)
 
             self.rgy.reger.crie.rem(keys=(said, snq))
 
@@ -1046,4 +1063,3 @@ class Credentialer:
         self.processCredentialIssuedEscrow()
         self.processCredentialMissingSigEscrow()
         self.processCredentialSentEscrow()
-        self.processCredentialRevokedEscrow()

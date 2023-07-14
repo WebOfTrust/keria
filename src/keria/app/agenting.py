@@ -270,8 +270,8 @@ class Agent(doing.DoDoer):
 
         # Initialize all the credential processors
         self.verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
-        self.registrar = credentialing.Registrar(hby=hby, rgy=rgy, counselor=self.counselor, witPub=self.witPub,
-                                                 witDoer=self.witDoer)
+        self.registrar = credentialing.Registrar(agentHab=agentHab, hby=hby, rgy=rgy, counselor=self.counselor, witPub=self.witPub,
+                                                 witDoer=self.witDoer, postman=self.postman, verifier=self.verifier)
         self.credentialer = credentialing.Credentialer(agentHab=agentHab, hby=self.hby, rgy=self.rgy,
                                                        postman=self.postman, registrar=self.registrar,
                                                        verifier=self.verifier, notifier=self.notifier)
