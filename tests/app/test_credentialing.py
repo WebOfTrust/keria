@@ -20,6 +20,8 @@ from keri.vdr.credentialing import Regery, Registrar
 from keria.app import credentialing, aiding
 from keria.core import longrunning
 
+import time
+
 
 def test_load_ends(helpers):
     with helpers.openKeria() as (agency, agent, app, client):
@@ -231,7 +233,7 @@ def test_credentialing_ends(helpers, seeder):
         idResEnd = aiding.IdentifierResourceEnd()
         credEnd = credentialing.CredentialCollectionEnd(idResEnd)
         app.add_route("/identifiers/{name}/credentials", credEnd)
-        credResEnd = credentialing.CredentialResourceEnd()
+        credResEnd = credentialing.CredentialResourceEnd(idResEnd)
         app.add_route("/identifiers/{name}/credentials/{said}", credResEnd)
 
         assert hab.pre == "EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze"
@@ -319,3 +321,120 @@ def test_credentialing_ends(helpers, seeder):
         res = client.simulate_get(f"/identifiers/test/credentials/{saids[0]}", headers=headers)
         assert res.status_code == 200
         assert res.headers['content-type'] == "application/json+cesr"
+
+def test_revoke_credential(helpers, seeder):
+    with helpers.openKeria() as (agency, agent, app, client):
+        idResEnd = aiding.IdentifierResourceEnd()
+        app.add_route("/identifiers/{name}", idResEnd)
+        registryEnd = credentialing.RegistryCollectionEnd(idResEnd)
+        app.add_route("/identifiers/{name}/registries", registryEnd)
+        credEnd = credentialing.CredentialCollectionEnd(idResEnd)
+        app.add_route("/identifiers/{name}/credentials", credEnd)
+        opEnd = longrunning.OperationResourceEnd()
+        app.add_route("/operations/{name}", opEnd)
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+        endRolesEnd = aiding.EndRoleCollectionEnd()
+        app.add_route("/identifiers/{name}/endroles", endRolesEnd)
+        credResEnd = credentialing.CredentialResourceEnd(idResEnd)
+        app.add_route("/identifiers/{name}/credentials/{said}", credResEnd)
+
+        seeder.seedSchema(agent.hby.db)
+
+        # create the server that will receive the credential issuance messages
+        serverDoer = helpers.server(agency)
+
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+        deeds = doist.enter(doers=[agent, serverDoer])
+
+        isalt = b'0123456789abcdef'
+        registry, issuer = helpers.createRegistry(client, agent, isalt, doist, deeds)
+
+        iaid = issuer["prefix"]
+        idig = issuer['state']['d']
+
+        rsalt = b'abcdef0123456789'
+        op = helpers.createAid(client, "recipient", rsalt)
+        aid = op["response"]
+        recp = aid['i']
+        assert recp == "EMgdjM1qALk3jlh4P2YyLRSTcjSOjLXD3e_uYpxbdbg6"
+
+        helpers.createEndRole(client, agent, recp, "recipient", rsalt)
+
+        dt = "2021-01-01T00:00:00.000000+00:00"
+        schema = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
+        data = dict(LEI="254900DA0GOGCFVWB618", dt=dt)
+        creder = proving.credential(issuer=iaid,
+                                    schema=schema,
+                                    recipient=recp,
+                                    data=data,
+                                    source={},
+                                    status=registry["regk"])
+
+        csigers = helpers.sign(bran=isalt, pidx=0, ridx=0, ser=creder.raw)
+
+        # Test no backers... backers would use backerIssue
+        regser = eventing.issue(vcdig=creder.said, regk=registry["regk"], dt=dt)
+
+        anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)
+        serder, sigers = helpers.interact(pre=iaid, bran=isalt, pidx=0, ridx=0, dig=idig, sn='2', data=[anchor])
+
+        pather = coring.Pather(path=[])
+
+        body = dict(
+            iss=regser.ked,
+            ixn=serder.ked,
+            sigs=sigers,
+            cred=creder.ked,
+            csigs=csigers,
+            path=pather.qb64)
+        result = client.simulate_post(path="/identifiers/issuer/credentials", body=json.dumps(body).encode("utf-8"))
+        op = result.json
+
+        assert 'ced' in op['metadata']
+        assert op['metadata']['ced'] == creder.ked
+
+        while not agent.credentialer.complete(creder.said):
+            doist.recur(deeds=deeds)
+
+        assert agent.credentialer.complete(creder.said) is True
+
+        res = client.simulate_get(f"/identifiers/issuer/credentials")
+        assert res.status_code == 200
+        assert len(res.json) == 1
+        assert res.json[0]['sad']['d'] == creder.said
+        assert res.json[0]['status']['s'] == "0"
+
+        res = client.simulate_get(f"/identifiers/recipient/credentials")
+        assert res.status_code == 200
+        assert len(res.json) == 1
+        assert res.json[0]['sad']['d'] == creder.said
+        assert res.json[0]['status']['s'] == "0"
+
+        regser = eventing.revoke(vcdig=creder.said, regk=registry["regk"], dig = regser.said, dt=dt)
+        anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)
+        serder, sigers = helpers.interact(pre=iaid, bran=isalt, pidx=0, ridx=0, dig=serder.said, sn='3', data=[anchor])
+
+        body = dict(
+            rev=regser.ked,
+            ixn=serder.ked,
+            sigs=sigers)
+        res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}", body=json.dumps(body).encode("utf-8"))
+        assert res.status_code == 200
+        
+        while not agent.registrar.complete(creder.said, sn=1):
+            doist.recur(deeds=deeds)
+        
+        res = client.simulate_get(f"/identifiers/issuer/credentials")
+        assert res.status_code == 200
+        assert len(res.json) == 1
+        assert res.json[0]['sad']['d'] == creder.said
+        assert res.json[0]['status']['s'] == "1"
+
+        res = client.simulate_get(f"/identifiers/recipient/credentials")
+        assert res.status_code == 200
+        assert len(res.json) == 1
+        assert res.json[0]['sad']['d'] == creder.said
+        assert res.json[0]['status']['s'] == "1"
