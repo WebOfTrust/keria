@@ -128,10 +128,6 @@ export class SignifyClient {
         if (_body !== null) {
             headers.set('Content-Length', String(_body.length))
         }
-        else {
-            console.log("setting content length to 0")
-            headers.set('Content-Length', '0')
-        }
         let signed_headers = this.authn.sign(headers, method, path.split('?')[0])
         //END Headers
 

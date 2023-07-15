@@ -1,6 +1,5 @@
 import {Matter, MatterArgs, NumDex} from "./matter";
-import {intToBytes} from "./utils";
-import {readInt} from "./core";
+import {bytesToInt, intToBytes} from "./utils";
 
 export class CesrNumber extends Matter {
     constructor({raw, code, qb64b, qb64, qb2}: MatterArgs, num?: number | string, numh?: string) {
@@ -46,7 +45,7 @@ export class CesrNumber extends Matter {
     }
 
     get num(): number {
-        return readInt(this.raw);
+        return bytesToInt(this.raw);
     }
 
     get numh(): string {
