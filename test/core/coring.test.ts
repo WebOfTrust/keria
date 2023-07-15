@@ -1,6 +1,7 @@
 import libsodium from "libsodium-wrappers-sumo";
 import {b, d, b64ToInt, intToB64, intToB64b} from "../../src/keri/core/core";
 import {strict as assert} from "assert";
+import {bytesToInt, intToBytes} from "../../src/keri/core/utils";
 
 
 describe('int to b64 and back', () => {
@@ -86,5 +87,30 @@ describe('int to b64 and back', () => {
         assert.deepStrictEqual(csb, b("Bd7"))
         i = b64ToInt(d(csb))
         assert.equal(i, 6011)
+    })
+})
+
+describe('int to bytes and back', () => {
+    it('should encode and decode stuff', async () => {
+        let b = intToBytes(0, 8)
+        let n = bytesToInt(b)
+        assert.equal(n, 0)
+        b = intToBytes(1, 8)
+        n = bytesToInt(b)
+        assert.equal(n, 1)
+
+        b = intToBytes(0, 16)
+        n = bytesToInt(b)
+        assert.equal(n, 0)
+        b = intToBytes(1, 16)
+        n = bytesToInt(b)
+        assert.equal(n, 1)
+
+        b = intToBytes(0, 2)
+        n = bytesToInt(b)
+        assert.equal(n, 0)
+        b = intToBytes(1, 2)
+        n = bytesToInt(b)
+        assert.equal(n, 1)
     })
 })

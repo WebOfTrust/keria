@@ -62,6 +62,7 @@
     "collections": "^5.1.12",
     "libsodium-wrappers-sumo": "^0.7.9",
     "lodash": "^4.17.21",
+    "mathjs": "^11.8.2",
     "msgpack5": "^5.3.2",
     "structured-headers": "^0.5.0",
     "text-encoding": "^0.7.0",

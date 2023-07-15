@@ -128,10 +128,6 @@ export class SignifyClient {
         if (_body !== null) {
             headers.set('Content-Length', String(_body.length))
         }
-        else {
-            console.log("setting content length to 0")
-            headers.set('Content-Length', '0')
-        }
         let signed_headers = this.authn.sign(headers, method, path.split('?')[0])
         //END Headers
 
@@ -296,7 +292,7 @@ class Identifier {
         let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
     }
-    //GET  
+    //GET
     async get_identifier(name: string) {
         let path = `/identifiers/${name}`
         let data = null
@@ -513,8 +509,8 @@ class Identifier {
         // if nsith is None:  # compute default from newly rotated digers above
         if (nsith == undefined) nsith = `${Math.max(1, Math.ceil(ncount / 2)).toString(16)}`
 
-        let cst = new Tholder(isith).sith  // current signing threshold
-        let nst = new Tholder(nsith).sith  // next signing threshold
+        let cst = new Tholder({sith: isith}).sith  // current signing threshold
+        let nst = new Tholder({sith: nsith}).sith  // next signing threshold
 
         // Regenerate next keys to sign rotation event
         let keeper = this.client.manager!.get(hab)
@@ -729,18 +725,18 @@ class Credentials {
         let method = 'GET'
         let headers = includeCESR? new Headers({'Accept': 'application/json+cesr'}) : new Headers({'Accept': 'application/json'})
         let res = await this.client.fetch(path, method, null, headers)
-        
+
         return includeCESR? await res.text() : await res.json()
     }
 
     async issue_credential(name: string, registy: string, recipient: string|undefined, schema: string, rules: any, source: any, credentialData: any, _private: boolean=false, estOnly:boolean=false) {
         
-        
+
         // Create Credential
         let hab = await this.client.identifiers().get_identifier(name)
         let pre: string = hab["prefix"]
         const dt = new Date().toISOString().replace('Z', '000+00:00')
-        
+
         const vsacdc = versify(Ident.ACDC, undefined, Serials.JSON, 0)
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
 
@@ -775,8 +771,8 @@ class Credentials {
         // cred['r']= rules
         console.log(rules, source)
         const [, vc] = Saider.saidify(cred)
-        
-        
+
+
         // Create iss
         let _iss = {
             v: vs,
@@ -809,7 +805,7 @@ class Credentials {
         if (estOnly) {
             // TODO implement rotation event
             throw new Error("Establishment only not implemented")
-        
+
         } else {
             let state = hab["state"]
             let sn = Number(state["s"])
@@ -822,16 +818,16 @@ class Credentials {
             }]
 
             let serder = interact({ pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined })
-            
+
             sigs = keeper.sign(b(serder.raw))
             ixn = serder.ked
         }
-        
+
         let body = {
             cred: vc,
             csigs: csigs,
             path: cpath,
-            iss: iss, 
+            iss: iss,
             ixn: ixn,
             sigs: sigs
         }
@@ -848,7 +844,6 @@ class Credentials {
     }
 
     async revoke_credential(name: string, cred: any, estOnly:boolean=false) {
-        
         let hab = await this.client.identifiers().get_identifier(name)
         let pre: string = hab["prefix"]
 
@@ -881,7 +876,7 @@ class Credentials {
         if (estOnly) {
             // TODO implement rotation event
             throw new Error("Establishment only not implemented")
-        
+
         } else {
             let state = hab["state"]
             let sn = Number(state["s"])
@@ -898,9 +893,8 @@ class Credentials {
             sigs = keeper.sign(b(serder.raw))
             ixn = serder.ked
         }
-        
         let body = {
-            rev: rev, 
+            rev: rev,
             ixn: ixn,
             sigs: sigs
         }
@@ -943,7 +937,7 @@ class Credentials {
         }
         const [, sad] = Saider.saidify(_sad)
         const exn = new Serder(sad)
-        
+
         let keeper = this.client!.manager!.get(hab)
 
         let sig = keeper.sign(b(exn.raw),true)
@@ -953,7 +947,7 @@ class Credentials {
         let ims = messagize(exn,[siger],seal, undefined, undefined, true)
         ims = ims.slice(JSON.stringify(exn.ked).length)
 
-        
+
         let body = {
             exn: exn.ked,
             sig: new TextDecoder().decode(ims),
@@ -995,7 +989,7 @@ class Credentials {
         }
         const [, sad] = Saider.saidify(_sad)
         const exn = new Serder(sad)
-        
+
         let keeper = this.client!.manager!.get(hab)
 
         let sig = keeper.sign(b(exn.raw),true)
@@ -1005,7 +999,7 @@ class Credentials {
         let ims = messagize(exn,[siger],seal, undefined, undefined, true)
         ims = ims.slice(JSON.stringify(exn.ked).length)
 
-        
+
         let body = {
             exn: exn.ked,
             sig: new TextDecoder().decode(ims),
@@ -1043,10 +1037,10 @@ class Registries {
         // TODO add backers option
         // TODO get estOnly from get_identifier ?
         // TODO generate random nonce if not provided
-        
+
         let hab = await this.client.identifiers().get_identifier(name)
         let pre: string = hab["prefix"]
-        
+
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
         let vcp = {
             v: vs,
@@ -1058,10 +1052,10 @@ class Registries {
             c: ['NB'],
             bt: "0",
             b: [],
-            n: nonce           
+            n: nonce
         }
 
-        let prefixer = new Prefixer({code: MtrDex.Blake3_256}, vcp) 
+        let prefixer = new Prefixer({code: MtrDex.Blake3_256}, vcp)
         vcp['i'] = prefixer.qb64
         vcp['d'] = prefixer.qb64
 
@@ -1070,7 +1064,7 @@ class Registries {
         if (estOnly) {
             // TODO implement rotation event
             throw new Error("Establishment only not implemented")
-        
+
         } else {
             let state = hab["state"]
             let sn = Number(state["s"])
@@ -1087,8 +1081,8 @@ class Registries {
             sigs = keeper.sign(b(serder.raw))
             ixn = serder.ked
         }
-        
-        
+
+
         let path = `/identifiers/${name}/registries`
         let method = 'POST'
         let data = {
@@ -1108,7 +1102,7 @@ class Schemas {
     constructor(client: SignifyClient) {
         this.client = client
     }
-    //SchemaResourceEnd 
+    //SchemaResourceEnd
     async get_schema(said: string) {
         let path = `/schema/${said}`
         let method = 'GET'
@@ -1166,7 +1160,7 @@ class Challenges {
         }
         const [, sad] = Saider.saidify(_sad)
         const exn = new Serder(sad)
-        
+
         let keeper = this.client!.manager!.get(hab)
 
         let sig = keeper.sign(b(exn.raw),true)
@@ -1216,7 +1210,7 @@ class Contacts {
         let params = new URLSearchParams()
         if (group !== undefined) {params.append('group', group)}
         if (filterField !== undefined && filterValue !== undefined) {params.append(filterField, filterValue)}
-        
+
         let path = `/contacts`+ '?' + params.toString()
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, undefined)
@@ -1225,7 +1219,7 @@ class Contacts {
     }
 
     async get_contact(pre:string) {
-        
+
         let path = `/contacts/`+ pre
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, undefined)
@@ -1269,7 +1263,7 @@ class Notifications {
         let params = new URLSearchParams()
         if (last !== undefined) {params.append('last', last)}
         if (limit !== undefined) {params.append('limit', limit.toString())}
-        
+
         let path = `/notifications` + '?' + params.toString()
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, undefined)
@@ -1278,7 +1272,7 @@ class Notifications {
     }
 
     async mark_notification(said:string) {
-        
+
         let path = `/notifications/`+ said
         let method = 'PUT'
         let res = await this.client.fetch(path, method, null, undefined)
@@ -1287,7 +1281,7 @@ class Notifications {
     }
 
     async delete_notification(said:string) {
-        
+
         let path = `/notifications/`+ said
         let method = 'DELETE'
         let res = await this.client.fetch(path, method, null, undefined)

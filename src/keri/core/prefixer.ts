@@ -135,7 +135,7 @@ export class Prefixer extends Matter {
             throw new Error(`Invalid ilk = ${ilk} to derive pre.`)
         }
 
-        kd["i"] = "".padStart(Matter.Sizes.get(MtrDex.Blake3_256)!.fs, Dummy)
+        kd["i"] = "".padStart(Matter.Sizes.get(MtrDex.Blake3_256)!.fs!, Dummy)
         kd["d"] = ked["i"]
         let [raw] = sizeify(ked)
         const hasher = createHash();

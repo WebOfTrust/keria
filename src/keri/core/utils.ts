@@ -99,14 +99,21 @@ export function range(start: number, stop: number, step: number) {
 
 export function intToBytes(value: number, length: number): Uint8Array {
   const byteArray = new Uint8Array(length); // Assuming a 4-byte integer (32 bits)
-  
-  for (let i = 0; i < length; i++) {
-    byteArray[i] = (value >> (i * 8)) & 0xff;
+
+  for ( let index = 0; index < byteArray.length; index ++ ) {
+    let byte = value & 0xff;
+    byteArray [ index ] = byte;
+    value = (value - byte) / 256 ;
   }
   
   return byteArray;
 }
 
-export function bytesToInt(buffer: Buffer): number {
-  return buffer.readInt32BE(0);
+export function bytesToInt(ar: Uint8Array): number {
+  let value = 0;
+  for (let i = ar.length - 1; i >= 0; i--) {
+    value = (value * 256) + ar[i];
+  }
+
+  return value;
 }

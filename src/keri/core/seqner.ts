@@ -19,7 +19,7 @@ export class Seqner extends Matter {
                 }
             }
 
-            raw = intToBytes(sn,Matter._rawSize(MtrDex.Salt_128))
+            raw = intToBytes(sn, Matter._rawSize(MtrDex.Salt_128))
         }
 
         super({raw, code, qb64, qb64b, qb2, ...kwa});
@@ -30,7 +30,7 @@ export class Seqner extends Matter {
     }
 
     get sn(): number {
-        return bytesToInt(Buffer.from(this.raw))//To check if other readUInt64 is needed
+        return bytesToInt(this.raw)  //To check if other readUInt64 is needed
     }
 
     get snh(): string {
