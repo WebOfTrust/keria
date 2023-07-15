@@ -593,10 +593,8 @@ class CredentialResourceEnd:
 
         try:
             agent.registrar.revoke(regk, rserder)
-        except kering.ConfigurationError as e:
-            rep.status = falcon.HTTP_400
-            rep.text = e.args[0]
-            return
+        except:
+            raise falcon.HTTPBadRequest(description=f"invalid revocation event.")
 
         rep.status = falcon.HTTP_200
         rep.data = op.to_json().encode("utf-8")

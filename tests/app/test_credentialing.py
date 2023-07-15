@@ -452,6 +452,16 @@ def test_revoke_credential(helpers, seeder):
         assert res.status_code == 404
         assert res.json == {'description': f"revocation against invalid registry SAID badregk",
                             'title': '404 Not Found'}
+        
+        badbody = dict(
+            rev=regser.ked.copy(),
+            ixn=serder.ked,
+            sigs=sigers)
+        badbody["rev"]["i"] = "EMgdjM1qALk3jlh4P2YyLRSTcjSOjLXD3e_uYpxbdbg6"
+        res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}", body=json.dumps(badbody).encode("utf-8"))
+        assert res.status_code == 400
+        assert res.json == {'description': "invalid revocation event.",
+                            'title': '400 Bad Request'}
 
         res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}", body=json.dumps(body).encode("utf-8"))        
         assert res.status_code == 200
