@@ -593,8 +593,6 @@ class CredentialResourceEnd:
 
         try:
             agent.registrar.revoke(regk, rserder)
-
-
         except kering.ConfigurationError as e:
             rep.status = falcon.HTTP_400
             rep.text = e.args[0]

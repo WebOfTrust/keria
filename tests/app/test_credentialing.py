@@ -212,6 +212,12 @@ def test_issue_credential(helpers, seeder):
             cred=creder.ked,
             csigs=csigers,
             path=pather.qb64)
+        
+        result = client.simulate_post(path="/identifiers/badname/credentials", body=json.dumps(body).encode("utf-8"))
+        assert result.status_code == 404
+        assert result.json == {'description': "name is not a valid reference to an identfier",
+                            'title': '404 Not Found'}
+
         result = client.simulate_post(path="/identifiers/issuer/credentials", body=json.dumps(body).encode("utf-8"))
         op = result.json
 
