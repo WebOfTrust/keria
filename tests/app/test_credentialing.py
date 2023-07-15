@@ -390,6 +390,12 @@ def test_revoke_credential(helpers, seeder):
             cred=creder.ked,
             csigs=csigers,
             path=pather.qb64)
+        
+        result = client.simulate_post(path="/identifiers/badname/credentials", body=json.dumps(body).encode("utf-8"))
+        assert result.status_code == 404
+        assert result.json == {'description': "name is not a valid reference to an identfier",
+                            'title': '404 Not Found'}
+        
         result = client.simulate_post(path="/identifiers/issuer/credentials", body=json.dumps(body).encode("utf-8"))
         op = result.json
 
@@ -431,7 +437,16 @@ def test_revoke_credential(helpers, seeder):
         assert res.json == {'description': f"credential for said {regser.said} not found.",
                             'title': '404 Not Found'}
         
-        
+        badbody = dict(
+            rev=regser.ked.copy(),
+            ixn=serder.ked,
+            sigs=sigers)
+        badbody["rev"]["ri"] = "badregk"
+        res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}", body=json.dumps(badbody).encode("utf-8"))
+        assert res.status_code == 404
+        assert res.json == {'description': f"revocation against invalid registry SAID badregk",
+                            'title': '404 Not Found'}
+
         res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}", body=json.dumps(body).encode("utf-8"))        
         assert res.status_code == 200
         
