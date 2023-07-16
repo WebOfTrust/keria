@@ -11,7 +11,7 @@ import { Verfer } from "../core/verfer";
 import { Encrypter } from "../core/encrypter";
 import { Decrypter } from "../core/decrypter";
 import { Cipher } from "../core/cipher";
-import {Seqner } from "../core/seqner";
+import { Seqner } from "../core/seqner";
 import { CesrNumber } from "../core/number";
 
 export class Agent {
@@ -19,8 +19,8 @@ export class Agent {
     anchor: string;
     verfer: Verfer | null;
     state: any | null;
-    sn : number | undefined;
-    said : string | undefined;
+    sn: number | undefined;
+    said: string | undefined;
 
     constructor(agent: any) {
         this.pre = "";
@@ -36,7 +36,7 @@ export class Agent {
         // if (kel.length < 1) {
         //     throw new Error("invalid empty KEL");
         // }
-        let [state, verfer, ] = this.event(agent);
+        let [state, verfer,] = this.event(agent);
 
         this.sn = new CesrNumber({}, undefined, state['s']).num
         this.said = state['d']
@@ -82,20 +82,20 @@ export class Agent {
         //     throw new Error(`invalid signature on evt ${serder.ked['d']}`);
         // }
 
-        let verfer = new Verfer({qb64: evt['k'][0]})
+        let verfer = new Verfer({ qb64: evt['k'][0] })
 
         if (evt['n'].length !== 1) {
             throw new Error(`agent inception event can only have one next key`);
         }
 
-        let diger = new Diger({qb64: evt['n'][0]});
+        let diger = new Diger({ qb64: evt['n'][0] });
 
-        let tholder = new Tholder({sith: evt["kt"]});
+        let tholder = new Tholder({ sith: evt["kt"] });
         if (tholder.num !== 1) {
             throw new Error(`invalid threshold ${tholder.num}, must be 1`);
         }
 
-        let ntholder = new Tholder({sith: evt["nt"]});
+        let ntholder = new Tholder({ sith: evt["nt"] });
         if (ntholder.num !== 1) {
             throw new Error(`invalid next threshold ${ntholder.num}, must be 1`);
         }
@@ -119,7 +119,7 @@ export class Controller {
     private keys: string[];
     public ndigs: string[];
 
-    constructor(bran: string, tier: Tier, ridx: number = 0, state: any|null = null) {
+    constructor(bran: string, tier: Tier, ridx: number = 0, state: any | null = null) {
         this.bran = MtrDex.Salt_128 + 'A' + bran.substring(0, 21)  // qb64 salt for seed
         this.stem = "signify:controller"
         this.tier = tier
@@ -134,7 +134,7 @@ export class Controller {
         this.keys = [this.signer.verfer.qb64]
         this.ndigs = [new Diger({ code: MtrDex.Blake3_256 }, this.nsigner.verfer.qb64b).qb64]
 
-        if (state == null || state['ee']['s'] == 0){
+        if (state == null || state['ee']['s'] == 0) {
             this.serder = incept({
                 keys: this.keys,
                 isith: "1",
@@ -149,19 +149,19 @@ export class Controller {
         }
     }
     approveDelegation(_agent: Agent) {
-
-        let seqner = new Seqner({sn: _agent.sn})
-        let anchor = {i: _agent.pre, s: seqner.snh, d: _agent.said}
+        let seqner = new Seqner({ sn: _agent.sn })
+        let anchor = { i: _agent.pre, s: seqner.snh, d: _agent.said }
         console.log(new CesrNumber({}, undefined, this.serder.ked["s"]).num)
         let sn = new CesrNumber({}, undefined, this.serder.ked["s"]).num + 1
         console.log(sn)
         this.serder = interact({
-            pre:this.serder.pre, 
-            dig: this.serder.ked["d"], 
+            pre: this.serder.pre,
+            dig: this.serder.ked["d"],
             sn: sn,
-            data:[anchor],
+            data: [anchor],
             version: Versionage,
-            kind: Serials.JSON})
+            kind: Serials.JSON
+        })
         console.log("SENDING EVENT")
         console.log(this.serder.pretty())
         return [this.signer.sign(this.serder.raw, 0).qb64]
@@ -198,9 +198,10 @@ export class Controller {
     }
 
     rotate(bran: string, aids: Array<any>) {
-        let nbran = MtrDex.Salt_128 + 'A' + bran.substring(21)  // qb64 salt for seed
-        let nsalter = new Salter({ qb64: nbran, tier:this.tier })
-        let nsigner = this.salter.signer({ transferable: false })
+        let nbran = MtrDex.Salt_128 + 'A' + bran.substring(0, 21)  // qb64 salt for seed
+        let nsalter = new Salter({ qb64: nbran, tier: this.tier })
+        let nsigner = this.salter.signer(undefined, false)
+
 
         let creator = new SaltyCreator(this.salter.qb64, this.tier, this.stem)
         let signer = creator.create(undefined, 1, MtrDex.Ed25519_Seed, true, 0, this.ridx + 1, 0, false).signers.pop()
@@ -210,7 +211,7 @@ export class Controller {
         this.nsigner = ncreator.create(undefined, 1, MtrDex.Ed25519_Seed, true, 0, this.ridx + 1, 0, false).signers.pop()
 
         this.keys = [this.signer.verfer.qb64, signer?.verfer.qb64]
-        this.ndigs = [new Diger({ qb64: this.nsigner.verfer.qb64b }).qb64]
+        this.ndigs = [new Diger({}, this.nsigner.verfer.qb64b).qb64]
 
         let rot = rotate(
             {
@@ -223,29 +224,41 @@ export class Controller {
             })
 
         let sigs = [signer?.sign(b(rot.raw), 1, false, 0).qb64, this.signer.sign(rot.raw, 0).qb64]
-
-        let encrypter = new Encrypter({ qb64: nsigner.verfer.qb64 })
-        let decrypter = new Decrypter({ qb64: nsigner.qb64 })
-
+        let encrypter = new Encrypter({}, b(nsigner.verfer.qb64))
+        let decrypter = new Decrypter({}, nsigner.qb64b)
         let sxlt = encrypter.encrypt(b(this.bran)).qb64
 
 
-        let keys : Record<any, any> = {}
+        let keys: Record<any, any> = {}
 
         for (let aid of aids) {
-            let pre: string = aid["prefix"] as string 
+            let pre: string = aid["prefix"] as string
             if ("salty" in aid) {
+                console.log("salty aid to rotate")
+                console.log(aid)
                 let salty: any = aid["salty"]
                 let cipher = new Cipher({ qb64: salty["sxlt"] })
                 let dnxt = decrypter.decrypt(null, cipher).qb64
 
                 // Now we have the AID salt, use it to verify against the current public keys
-                let acreator = new SaltyCreator(dnxt, salty["stem"], salty["tier"])
-                let signers = acreator.create(salty["icodes"], salty["pidx"], salty["kidx"], salty["transferable"])
+                let acreator = new SaltyCreator(dnxt, salty["tier"], salty["stem"])
+                let signers = acreator.create(
+                    salty["icodes"], 
+                    undefined, 
+                    MtrDex.Ed25519_Seed, 
+                    salty["transferable"], 
+                    salty["pidx"], 
+                    0, 
+                    salty["kidx"], 
+                    false)
+                let _signers = []
+                for (let signer of signers.signers) {
+                    _signers.push(signer.verfer.qb64)
+                }
                 let pubs = aid["state"]["k"]
 
-                if (pubs != signers.signers.forEach((signer) => { return signer.verfer.qb64 })) {
-                    throw new Error(`unable to rotate, validation of salt to public keys ${pubs} failed`)
+                if (pubs.join(",") != _signers.join(",")) {
+                    throw new Error("Invalid Salty AID")
                 }
 
                 let asxlt = encrypter.encrypt(b(dnxt)).qb64
@@ -262,12 +275,17 @@ export class Controller {
                 let signers = []
                 for (let prx of prxs) {
                     let cipher = new Cipher({ qb64: prx })
-                    let dsigner = decrypter.decrypt(null,cipher,true)
+                    let dsigner = decrypter.decrypt(null, cipher, true)
                     signers.push(dsigner)
                     nprxs.push(encrypter.encrypt(b(dsigner.qb64)).qb64)
                 }
                 let pubs = aid["state"]["k"]
-                if (pubs != signers.forEach((signer) => { return signer.verfer.qb64 })) {
+                let _signers = []
+                for (let signer of signers) {
+                    _signers.push(signer.verfer.qb64)
+                }
+       
+                if (pubs.join(",") != _signers.join(",")) {
                     throw new Error(`unable to rotate, validation of encrypted public keys ${pubs} failed`)
                 }
 
@@ -292,7 +310,7 @@ export class Controller {
             sigs: sigs,
             sxlt: sxlt,
             keys: keys
-        }        
+        }
         return data
     }
 

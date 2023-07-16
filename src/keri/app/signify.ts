@@ -233,6 +233,18 @@ export class SignifyClient {
             }
         })
     }
+ 
+    async rotate(nbran: string, aids: [string] ){
+        let data = this.controller.rotate(nbran, aids)
+        await fetch(this.url + "/agent/" + this.controller.pre, {
+            method: "PUT",
+            body: JSON.stringify(data),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        })
+        
+    }
 
     identifiers() {
         return new Identifier(this)
