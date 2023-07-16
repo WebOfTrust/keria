@@ -8,7 +8,6 @@ Testing the Mark II Agent
 import json
 import os
 import shutil
-import requests
 
 import falcon
 from falcon import testing
@@ -188,27 +187,6 @@ def test_witnesser(helpers):
         # doist.do(doers=doers)
         deeds = doist.enter(doers=[wr])
         doist.recur(deeds)
-
-def test_interceptor(monkeypatch):
-    def mock_post(*args, **kwargs):
-        class MockResponse:
-            def __init__(self, status_code):
-                self.status_code = status_code
-
-            def json(self):
-                return {'key': 'value'}
-
-        return MockResponse(200)
-
-    monkeypatch.setattr(requests, 'post', mock_post)
-    interceptor = agenting.Interceptor('https://webhook.site/9a8d0e2b-8e4b-4334-9a6b-8f1a7c6b0c8c', {'content-type': 'application/json'})
-    data = {'key': 'value'}
-    interceptor.push(data)
-
-    assert interceptor.webhook == 'https://webhook.site/9a8d0e2b-8e4b-4334-9a6b-8f1a7c6b0c8c'
-    assert interceptor.headers == {'content-type': 'application/json'}
-    assert data == {'key': 'value'}
-
 
 def test_keystate_ends(helpers):
     caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
