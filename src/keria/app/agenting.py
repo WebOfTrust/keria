@@ -15,7 +15,6 @@ from keri.app.storing import Mailboxer
 from ordered_set import OrderedSet as oset
 
 import falcon
-import requests
 from falcon import media
 from hio.base import doing
 from hio.core import http
