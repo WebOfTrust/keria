@@ -823,7 +823,6 @@ class OOBICollectionEnd:
                 obr.oobialias = body["oobialias"]
 
             agent.hby.db.oobis.pin(keys=(oobi,), val=obr)
-            agent.hby.db.oobis.pin(keys=(oobi,), val=obr)
 
         elif "rpy" in body:
             raise falcon.HTTPNotImplemented(description="'rpy' support not implemented yet")
