@@ -255,7 +255,7 @@ class Agent(doing.DoDoer):
         self.anchors = decking.Deck()
         self.witners = decking.Deck()
         self.queries = decking.Deck()
-        self.metrics = self.agency.metrics
+        self.agency.metrics
 
         receiptor = agenting.Receiptor(hby=hby)
         self.postman = forwarding.Poster(hby=hby)
@@ -312,15 +312,15 @@ class Agent(doing.DoDoer):
                                      vry=self.verifier)
 
         doers.extend([
-            Initer(agentHab=agentHab, caid=caid),
+            Initer(agentHab=agentHab, caid=caid, metrics = self.agency.metrics),
             Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries),
             Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc, vry=self.verifier,
                      registrar=self.registrar, credentialer=self.credentialer),
             Messager(kvy=self.kvy, parser=self.parser),
-            Witnesser(receiptor=receiptor, witners=self.witners, metrics=self.metrics),
-            Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors, metrics=self.metrics),
+            Witnesser(receiptor=receiptor, witners=self.witners, metrics=self.agency.metrics),
+            Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors, metrics=self.agency.metrics),
             GroupRequester(hby=hby, agentHab=agentHab, postman=self.postman, counselor=self.counselor,
-                           groups=self.groups, metrics=self.metrics),
+                           groups=self.groups, metrics=self.agency.metrics),
         ])
 
         super(Agent, self).__init__(doers=doers, always=True, **opts)
@@ -360,7 +360,6 @@ class InterceptorDoer(doing.DoDoer):
         self.headers = headers
         self.cues = cues if cues is not None else decking.Deck()
         self.clienter = khttping.Clienter()
-
         super(InterceptorDoer, self).__init__(doers=[self.clienter], always=True)
 
     def recur(self, tyme, deeds=None):
@@ -443,18 +442,19 @@ class Delegator(doing.Doer):
 
 
 class Initer(doing.Doer):
-    def __init__(self, agentHab, caid):
+    def __init__(self, agentHab, caid, metrics):
         self.agentHab = agentHab
         self.caid = caid
+        self.metrics = metrics
         super(Initer, self).__init__()
 
     def recur(self, tyme):
         """ Prints Agent name and prefix """
         if not self.agentHab.inited:
             return False
-
+        self.metrics.append(dict(evt="init", data=dict(aid=self.agentHab.pre)))
         print("  Agent:", self.agentHab.pre, "  Controller:", self.caid)
-
+        
         return True
 
 
