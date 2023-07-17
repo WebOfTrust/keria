@@ -6,7 +6,6 @@ keria.app.credentialing module
 services and endpoint for ACDC credential managements
 """
 import json
-from dataclasses import asdict
 
 import falcon
 from keri import kering
@@ -34,6 +33,9 @@ def loadEnds(app, identifierResource):
     
     credentialResourceEnd = CredentialResourceEnd(identifierResource)
     app.add_route("/identifiers/{name}/credentials/{said}", credentialResourceEnd)
+
+    queryCollectionEnd = CredentialQueryCollectionEnd()
+    app.add_route("/identifiers/{name}/credentials/query", queryCollectionEnd)
 
 
 class RegistryCollectionEnd:
@@ -238,19 +240,19 @@ class SchemaCollectionEnd:
         rep.data = json.dumps(data).encode("utf-8")
 
 
-class CredentialCollectionEnd:
+class CredentialQueryCollectionEnd:
+    """ This class provides a collection endpoint for creating credential queries.
 
-    def __init__(self, identifierResource):
-        """
+    I fully admit that the semantics here are a big stretch.  I would rather have this as a GET against the
+    credential collection endpoint, but the nature of the complicated input to this endpoint dictate a BODY
+    and certain client libraries (and possibly reverse proxies) don't support a BODY in a GET request.  So
+    I'm moving the credential query code to this endpoint class and mapping to `.../credentials/queries` and
+    making it a post against that path and calling it "creating a creaential query".  Meh.
 
-        Parameters:
-            identifierResource (IdentifierResourceEnd): endpoint class for creating rotation and interaction events
-
-        """
-        self.identifierResource = identifierResource
+    """
 
     @staticmethod
-    def on_get(req, rep, name):
+    def on_post(req, rep, name):
         """ Credentials GET endpoint
 
         Parameters:
@@ -324,6 +326,18 @@ class CredentialCollectionEnd:
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(creds).encode("utf-8")
+
+
+class CredentialCollectionEnd:
+
+    def __init__(self, identifierResource):
+        """
+
+        Parameters:
+            identifierResource (IdentifierResourceEnd): endpoint class for creating rotation and interaction events
+
+        """
+        self.identifierResource = identifierResource
 
     def on_post(self, req, rep, name):
         """ Initiate a credential issuance
