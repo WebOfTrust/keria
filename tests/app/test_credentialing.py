@@ -239,6 +239,8 @@ def test_credentialing_ends(helpers, seeder):
         idResEnd = aiding.IdentifierResourceEnd()
         credEnd = credentialing.CredentialCollectionEnd(idResEnd)
         app.add_route("/identifiers/{name}/credentials", credEnd)
+        credResEnd = credentialing.CredentialQueryCollectionEnd()
+        app.add_route("/identifiers/{name}/credentials/query", credResEnd)
         credResEnd = credentialing.CredentialResourceEnd(idResEnd)
         app.add_route("/identifiers/{name}/credentials/{said}", credResEnd)
 
@@ -281,37 +283,37 @@ def test_credentialing_ends(helpers, seeder):
         for said in saids:
             agent.seeker.index(said)
 
-        res = client.simulate_get(f"/identifiers/{hab.name}/credentials")
+        res = client.simulate_post(f"/identifiers/{hab.name}/credentials/query")
         assert res.status_code == 404
         assert res.json == {'description': 'name is not a valid reference to an identfier',
                             'title': '404 Not Found'}
 
-        res = client.simulate_get(f"/identifiers/test/credentials")
+        res = client.simulate_post(f"/identifiers/test/credentials/query")
         assert res.status_code == 200
         assert len(res.json) == 5
 
         body = json.dumps({'filter': {'-i': issuee}}).encode("utf-8")
-        res = client.simulate_get(f"/identifiers/test/credentials", body=body)
+        res = client.simulate_post(f"/identifiers/test/credentials/query", body=body)
         assert res.status_code == 200
         assert res.json == []
 
         body = json.dumps({'filter': {'-a-i': issuee}}).encode("utf-8")
-        res = client.simulate_get(f"/identifiers/test/credentials", body=body)
+        res = client.simulate_post(f"/identifiers/test/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 5
 
         body = json.dumps({'filter': {'-i': hab.pre}}).encode("utf-8")
-        res = client.simulate_get(f"/identifiers/test/credentials", body=body)
+        res = client.simulate_post(f"/identifiers/test/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 5
 
         body = json.dumps({'filter': {'-s': {'$eq': issuer.LE}}}).encode("utf-8")
-        res = client.simulate_get(f"/identifiers/test/credentials", body=body)
+        res = client.simulate_post(f"/identifiers/test/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 3
 
         body = json.dumps({'filter': {'-s': {'$eq': issuer.QVI}}}).encode("utf-8")
-        res = client.simulate_get(f"/identifiers/test/credentials", body=body)
+        res = client.simulate_post(f"/identifiers/test/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 2
 
@@ -327,6 +329,7 @@ def test_credentialing_ends(helpers, seeder):
         res = client.simulate_get(f"/identifiers/test/credentials/{saids[0]}", headers=headers)
         assert res.status_code == 200
         assert res.headers['content-type'] == "application/json+cesr"
+
 
 def test_revoke_credential(helpers, seeder):
     with helpers.openKeria() as (agency, agent, app, client):
@@ -344,6 +347,8 @@ def test_revoke_credential(helpers, seeder):
         app.add_route("/identifiers/{name}/endroles", endRolesEnd)
         credResEnd = credentialing.CredentialResourceEnd(idResEnd)
         app.add_route("/identifiers/{name}/credentials/{said}", credResEnd)
+        credResEnd = credentialing.CredentialQueryCollectionEnd()
+        app.add_route("/identifiers/{name}/credentials/query", credResEnd)
 
         seeder.seedSchema(agent.hby.db)
 
@@ -413,13 +418,13 @@ def test_revoke_credential(helpers, seeder):
 
         assert agent.credentialer.complete(creder.said) is True
 
-        res = client.simulate_get(f"/identifiers/issuer/credentials")
+        res = client.simulate_post(f"/identifiers/issuer/credentials/query")
         assert res.status_code == 200
         assert len(res.json) == 1
         assert res.json[0]['sad']['d'] == creder.said
         assert res.json[0]['status']['s'] == "0"
 
-        res = client.simulate_get(f"/identifiers/recipient/credentials")
+        res = client.simulate_post(f"/identifiers/recipient/credentials/query")
         assert res.status_code == 200
         assert len(res.json) == 1
         assert res.json[0]['sad']['d'] == creder.said
@@ -469,13 +474,13 @@ def test_revoke_credential(helpers, seeder):
         while not agent.registrar.complete(creder.said, sn=1):
             doist.recur(deeds=deeds)
         
-        res = client.simulate_get(f"/identifiers/issuer/credentials")
+        res = client.simulate_post(f"/identifiers/issuer/credentials/query")
         assert res.status_code == 200
         assert len(res.json) == 1
         assert res.json[0]['sad']['d'] == creder.said
         assert res.json[0]['status']['s'] == "1"
 
-        res = client.simulate_get(f"/identifiers/recipient/credentials")
+        res = client.simulate_post(f"/identifiers/recipient/credentials/query")
         assert res.status_code == 200
         assert len(res.json) == 1
         assert res.json[0]['sad']['d'] == creder.said
