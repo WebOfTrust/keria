@@ -92,7 +92,7 @@ export function Multisig() {
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
                             const ixn = new Serder(op["response"])
-                            const events = await client.key_events()
+                            const events = await client.keyEvents()
                             const log = await events.get(ixn.pre)
                             assert.equal(log.length, 2)
                             op = await identifiers.rotate("aid1",{})
@@ -102,7 +102,7 @@ export function Multisig() {
 
                             aid1 = await identifiers.get_identifier("aid1")
                             agent0 = aid1["state"]
-                            const keyState = await client.key_states()
+                            const keyState = await client.keyStates()
                             op = await keyState.query("EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4",0)
                             while (!op["done"]) {
                                 op = await operations.get(op["name"]);

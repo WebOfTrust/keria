@@ -2,16 +2,17 @@ import { Controller, Agent } from "./controller"
 import { Tier } from "../core/salter"
 import { Authenticater } from "../core/authing"
 import { KeyManager } from "../core/keeping"
-import { Algos } from '../core/manager';
+import { Algos } from '../core/manager'
 import { incept, rotate, interact, reply, messagize } from "../core/eventing"
-import { b, Serials, Versionage, Ilks, versify, Ident} from "../core/core";
-import { Tholder } from "../core/tholder";
-import { MtrDex } from "../core/matter";
-import { Saider } from "../core/saider";
-import { Serder } from "../core/serder";
-import { Siger } from "../core/siger";
-import { Prefixer } from "../core/prefixer";
-import { Salter } from "../core/salter";
+import { b, Serials, Versionage, Ilks, versify, Ident} from "../core/core"
+import { Tholder } from "../core/tholder"
+import { MtrDex } from "../core/matter"
+import { Saider } from "../core/saider"
+import { Serder } from "../core/serder"
+import { Siger } from "../core/siger"
+import { Prefixer } from "../core/prefixer"
+import { Salter } from "../core/salter"
+
 const KERIA_BOOT_URL = "http://localhost:3903"
 
 export class CredentialTypes {
@@ -39,24 +40,24 @@ export class SignifyClient {
     public bran: string
     public pidx: number
     public agent: Agent | null
-    public authn: any
-    public session: any
+    public authn: Authenticater | null
     public manager: KeyManager | null
     public tier: Tier
+    public bootUrl: string
 
-    constructor(url: string, bran: string, tier: Tier = Tier.low) {
-        this.url = url;
+    constructor(url: string, bran: string, tier: Tier = Tier.low, bootUrl: string = KERIA_BOOT_URL) {
+        this.url = url
         if (bran.length < 21) {
             throw Error("bran must be 21 characters")
         }
-        this.bran = bran;
-        this.pidx = 0;
+        this.bran = bran
+        this.pidx = 0
         this.controller = new Controller(bran, tier)
         this.authn = null
         this.agent = null
         this.manager = null
         this.tier = tier
-
+        this.bootUrl = bootUrl
     }
 
     get data() {
@@ -72,8 +73,7 @@ export class SignifyClient {
             pidx: 1,
             tier: this.controller?.tier
         };
-        let _url = this.url.includes("localhost") ? KERIA_BOOT_URL : this.url;
-        const res = await fetch(_url + "/boot", {
+        const res = await fetch(this.bootUrl + "/boot", {
             method: "POST",
             body: JSON.stringify(data),
             headers: {
@@ -102,10 +102,10 @@ export class SignifyClient {
     async connect() {
         let state = await this.state()
         this.pidx = state.pidx
-        //Create controller representing local auth AID
+        //Create controller representing the local client AID
         this.controller = new Controller(this.bran, this.tier, 0, state.controller)
         this.controller.ridx = state.ridx !== undefined ? state.ridx : 0
-        // Create agent representing the AID of the cloud agent
+        // Create agent representing the AID of KERIA cloud agent
         this.agent = new Agent(state.agent)
         if (this.agent.anchor != this.controller.pre) {
             throw Error("commitment to controller AID missing in agent inception event")
@@ -118,8 +118,10 @@ export class SignifyClient {
     }
 
     async fetch(path: string, method: string, data: any, _headers: any) {
-        //BEGIN Headers
         let headers = new Headers()
+        let signed_headers = new Headers()
+        let final_headers = new Headers()
+
         headers.set('Signify-Resource', this.controller.pre)
         headers.set('Signify-Timestamp', new Date().toISOString().replace('Z', '000+00:00'))
         headers.set('Content-Type', 'application/json')
@@ -128,11 +130,12 @@ export class SignifyClient {
         if (_body !== null) {
             headers.set('Content-Length', String(_body.length))
         }
-        let signed_headers = this.authn.sign(headers, method, path.split('?')[0])
-        //END Headers
-
-        //add _headers to signed_headers
-        let final_headers = new Headers()
+        if (this.authn) {
+            signed_headers = this.authn.sign(headers, method, path.split('?')[0])
+        } else {
+            throw new Error('client need to call connect first')
+        }
+        
         for (let [key, value] of signed_headers.entries()) {
             final_headers.set(key, value)
         }
@@ -148,21 +151,19 @@ export class SignifyClient {
             headers: final_headers
         });
 
-
-        //BEGIN Verification
         if (!(res.status == 200 || res.status == 202)) {
-            throw new Error('Response status is not 200');
+            throw new Error('response status is not 200');
         }
         const isSameAgent = this.agent?.pre === res.headers.get('signify-resource');
         if (!isSameAgent) {
-            throw new Error('Message from a different remote agent');
+            throw new Error('message from a different remote agent');
         }
 
         const verification = this.authn.verify(res.headers, method, path.split('?')[0]);
         if (verification) {
             return res;
         } else {
-            throw new Error('Response verification failed');
+            throw new Error('response verification failed');
         }
     }
 
@@ -246,11 +247,11 @@ export class SignifyClient {
         return new Operations(this)
     }
 
-    key_events() {
+    keyEvents() {
         return new KeyEvents(this)
     }
 
-    key_states() {
+    keyStates() {
         return new KeyStates(this)
     }
 

@@ -102,7 +102,7 @@ export function Salty() {
                             assert.equal(state['d'], ixn.ked['d'])
                             assert.equal(state['ee']['d'], rot.ked['d'])
 
-                            const events = client.key_events()
+                            const events = client.keyEvents()
                             const log = await events.get(aid["prefix"])
                             assert.equal(log.length, 3)
                             let serder = new Serder(log[0])

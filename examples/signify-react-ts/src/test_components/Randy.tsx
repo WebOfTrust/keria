@@ -60,7 +60,7 @@ export function Randy() {
                             assert.equal(aids.length, 1)
                             aid = aids[0]
 
-                            const events = client.key_events()
+                            const events = client.keyEvents()
                             let log = await events.get(aid["prefix"])
                             assert.equal(log.length, 2)
 
