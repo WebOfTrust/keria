@@ -40,13 +40,14 @@ def create_multisig_aid():
         print(json.dumps(state, indent=2))
 
     op = identifiers.create("multisig", algo=Algos.group, mhab=aid,
-                            isith=["1/2", "1/2", "1/2"], nsith=["1/2", "1/2", "1/2"],
+                            delpre="EHpD0-CDWOdu5RJ8jHBSUkOqBZ3cXeDVHWNb_Ul89VI7",
                             toad=2,
                             wits=[
                                 "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
                                 "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
                                 "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"
                             ],
+                            isith=["1/3", "1/3", "1/3"], nsith=["1/3", "1/3", "1/3"],
                             states=states,
                             rstates=rstates)
     print("waiting on multisig creation...")
