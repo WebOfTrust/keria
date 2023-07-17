@@ -203,10 +203,10 @@ class Monitor:
                 operation.done = False
             elif obr.state == Result.resolved:
                 operation.done = True
-                try:
+                if obr.cid and obr.cid in self.hby.kevers:
                     kever = self.hby.kevers[obr.cid]
                     operation.response = asdict(kever.state())
-                except:
+                else:
                     operation.response = dict(oobi=oobi)
 
             elif obr.state == Result.failed:
