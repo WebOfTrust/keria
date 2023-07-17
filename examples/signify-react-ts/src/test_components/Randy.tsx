@@ -30,7 +30,7 @@ export function Randy() {
                             assert.equal(client.agent?.pre, 'EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei')
                             assert.equal(client.agent?.anchor, 'ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose')
                             const identifiers = client.identifiers()
-                            let aids = await identifiers.list_identifiers()
+                            let aids = await identifiers.list()
                             assert.equal(aids.length, 0)
 
                             let op = await identifiers.create('aid1', {algo: 'randy'})
@@ -43,7 +43,7 @@ export function Randy() {
                             assert.equal(icp.ked['nt'], '1')
 
 
-                            aids = await identifiers.list_identifiers()
+                            aids = await identifiers.list()
                             assert.equal(aids.length, 1)
                             aid = aids[0]
                             assert.equal(aid.name, 'aid1')
@@ -56,7 +56,7 @@ export function Randy() {
                             assert.equal(ixn.ked['s'], '1')
                             assert.deepEqual(ixn.ked['a'], [icp.pre])
 
-                            aids = await identifiers.list_identifiers()
+                            aids = await identifiers.list()
                             assert.equal(aids.length, 1)
                             aid = aids[0]
 

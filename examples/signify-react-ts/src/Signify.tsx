@@ -92,7 +92,7 @@ export function Signify() {
                                 console.log('booted and connected up')
                             }
                             const identifiers = client.identifiers()
-                            const resp = await identifiers.list_identifiers()
+                            const resp = await identifiers.list()
                             return JSON.stringify(resp, null, 2)
                         }
                         catch (e) {
@@ -164,7 +164,7 @@ export function Signify() {
                                 console.log('booted and connected up')
                             }
                             const identifiers = client.identifiers()
-                            const aids = await identifiers.list_identifiers()
+                            const aids = await identifiers.list()
                             const resp = await identifiers.rotate(aids[0]["name"], {})
                             return JSON.stringify(resp, null, 2)
                         }
@@ -189,8 +189,8 @@ export function Signify() {
                                 console.log('booted and connected up')
                             }
                             const identifiers = client.identifiers()
-                            const aids = await identifiers.list_identifiers()
-                            const resp = await identifiers.get_identifier(aids[0]["name"])
+                            const aids = await identifiers.list()
+                            const resp = await identifiers.get(aids[0]["name"])
                             return JSON.stringify(resp, null, 2)
                         }
                         catch (e) {

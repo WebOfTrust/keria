@@ -330,7 +330,7 @@ const IdentifiersComponent = ({ client }) => {
   const [identifiers, setIdentifiers] = useState(null)
   //async useeffect
   const getIdentifiers = async () => {
-    const list_identifiers = await client.list_identifiers()
+    const list_identifiers = await client.list()
     setIdentifiers(list_identifiers)
     console.log(list_identifiers)
   }
@@ -399,7 +399,7 @@ const IdentifiersComponent = ({ client }) => {
         onClick={async () => {
           const length = identifiers.length.toString()
           await client.create(`aid${length}`, {})
-          const list_identifiers = await client.list_identifiers()
+          const list_identifiers = await client.list()
           setIdentifiers(list_identifiers)
         }}
       >
@@ -457,7 +457,7 @@ const IdentifierTable = ({ client }) => {
   const [selectedField, setSelectedField] = useState('');
   //async useeffect
   const getIdentifiers = async () => {
-    const list_identifiers = await client.list_identifiers()
+    const list_identifiers = await client.list()
     setIdentifiers(list_identifiers)
     console.log(list_identifiers)
   }
@@ -543,7 +543,7 @@ const IdentifierTable = ({ client }) => {
 
     //create identifier
     let _res = client.create(name, fields)
-    const list_identifiers = await client.list_identifiers()
+    const list_identifiers = await client.list()
     setIdentifiers(list_identifiers)
     handleClose();
   };
@@ -731,7 +731,7 @@ const IdentifierTable = ({ client }) => {
           // onClick={async () => {
           //   const length = identifiers.length.toString()
           //   await client.create(`aid${length}`, {})
-          //   const list_identifiers = await client.list_identifiers()
+          //   const list_identifiers = await client.list()
           //   setIdentifiers(list_identifiers)
           // }}
           onClick={handleOpenCreate}

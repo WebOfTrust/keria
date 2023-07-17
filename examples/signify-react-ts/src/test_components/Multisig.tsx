@@ -60,7 +60,7 @@ export function Multisig() {
                             }
                             let multisig2 = op["response"]
 
-                            let aid1 = await identifiers.get_identifier("aid1")
+                            let aid1 = await identifiers.get("aid1")
                             let agent0 = aid1["state"]
                             let rstates = [multisig2, multisig1, agent0]
                             let states = rstates
@@ -100,7 +100,7 @@ export function Multisig() {
                             const rot = op['response']
                             serder = new Serder(rot)
 
-                            aid1 = await identifiers.get_identifier("aid1")
+                            aid1 = await identifiers.get("aid1")
                             agent0 = aid1["state"]
                             const keyState = await client.keyStates()
                             op = await keyState.query("EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4",0)

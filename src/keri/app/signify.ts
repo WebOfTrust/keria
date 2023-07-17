@@ -13,7 +13,7 @@ import { Siger } from "../core/siger"
 import { Prefixer } from "../core/prefixer"
 import { Salter } from "../core/salter"
 
-const KERIA_BOOT_URL = "http://localhost:3903"
+const DEFAULT_BOOT_URL = "http://localhost:3903"
 
 export class CredentialTypes {
     static issued = "issued"
@@ -45,7 +45,7 @@ export class SignifyClient {
     public tier: Tier
     public bootUrl: string
 
-    constructor(url: string, bran: string, tier: Tier = Tier.low, bootUrl: string = KERIA_BOOT_URL) {
+    constructor(url: string, bran: string, tier: Tier = Tier.low, bootUrl: string = DEFAULT_BOOT_URL) {
         this.url = url
         if (bran.length < 21) {
             throw Error("bran must be 21 characters")
@@ -168,7 +168,7 @@ export class SignifyClient {
     }
 
     async signedFetch(url: string, path: string, method: string, data: any, aidName: string) {
-        const hab = await this.identifiers().get_identifier(aidName)
+        const hab = await this.identifiers().get(aidName)
         const keeper = this.manager!.get(hab)
 
         const authenticator = new Authenticater(keeper.signers[0], keeper.signers[0].verfer)
@@ -285,23 +285,23 @@ class Identifier {
     constructor(client: SignifyClient) {
         this.client = client
     }
-    //GET IdentifierCollectionEnd
-    async list_identifiers() {
+
+    async list() {
         let path = `/identifiers`
         let data = null
         let method = 'GET'
         let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
     }
-    //GET
-    async get_identifier(name: string) {
+
+    async get(name: string) {
         let path = `/identifiers/${name}`
         let data = null
         let method = 'GET'
         let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
     }
-    //POST
+
     async create(name: string,
         kargs: {
             transferable: boolean,
@@ -443,10 +443,10 @@ class Identifier {
         let res = await this.client.fetch("/identifiers", "POST", jsondata, undefined)
         return res.json()
     }
-    //PUT IdentifierResourceEnd
+
     async interact(name: string, data: any | undefined = undefined) {
 
-        let hab = await this.get_identifier(name)
+        let hab = await this.get(name)
         let pre: string = hab["prefix"]
 
         let state = hab["state"]
@@ -469,7 +469,7 @@ class Identifier {
         return res.json()
 
     }
-    //PUT IdentifierResourceEnd
+
     async rotate(
         name: string,
         kargs: {
@@ -491,7 +491,7 @@ class Identifier {
         let ncount = kargs["ncount"] ?? 1
 
 
-        let hab = await this.get_identifier(name)
+        let hab = await this.get(name)
         let pre = hab["prefix"]
 
         let state = hab["state"]
@@ -554,9 +554,8 @@ class Identifier {
         let res = await this.client.fetch("/identifiers/" + name, "PUT", jsondata, undefined)
         return res.json()
     }
-    //POST EndRoleCollectionEnd
     async addEndRole(name: string, role: string, eid: string | undefined) {
-        const hab = await this.get_identifier(name)
+        const hab = await this.get(name)
         const pre = hab["prefix"]
 
         const rpy = this.makeEndRole(pre, role, eid)
@@ -572,7 +571,6 @@ class Identifier {
         return res.json()
 
     }
-    //POST /end/role/add
     makeEndRole(pre: string, role: string, eid: string | undefined) {
         const data: any = {
             cid: pre,
@@ -583,9 +581,7 @@ class Identifier {
         }
         const route = "/end/role/add"
         return reply(route, data, undefined, undefined, Serials.JSON)
-
     }
-
 }
 
 class Oobis {
@@ -721,7 +717,7 @@ class Credentials {
         return await res.json()
     }
     //CredentialResourceEnd
-    async get_credential(name: string, said: string, includeCESR: boolean = false) {
+    async get(name: string, said: string, includeCESR: boolean = false) {
         let path = `/identifiers/${name}/credentials/${said}`
         let method = 'GET'
         let headers = includeCESR? new Headers({'Accept': 'application/json+cesr'}) : new Headers({'Accept': 'application/json'})
@@ -730,11 +726,11 @@ class Credentials {
         return includeCESR? await res.text() : await res.json()
     }
 
-    async issue_credential(name: string, registy: string, recipient: string|undefined, schema: string, rules: any, source: any, credentialData: any, _private: boolean=false, estOnly:boolean=false) {
+    async issue(name: string, registy: string, recipient: string|undefined, schema: string, rules: any, source: any, credentialData: any, _private: boolean=false, estOnly:boolean=false) {
         
 
         // Create Credential
-        let hab = await this.client.identifiers().get_identifier(name)
+        let hab = await this.client.identifiers().get(name)
         let pre: string = hab["prefix"]
         const dt = new Date().toISOString().replace('Z', '000+00:00')
 
@@ -844,8 +840,8 @@ class Credentials {
 
     }
 
-    async revoke_credential(name: string, cred: any, estOnly:boolean=false) {
-        let hab = await this.client.identifiers().get_identifier(name)
+    async revoke(name: string, cred: any, estOnly:boolean=false) {
+        let hab = await this.client.identifiers().get(name)
         let pre: string = hab["prefix"]
 
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
@@ -913,12 +909,12 @@ class Credentials {
     }
 
 
-    async present_credential(name: string, said: string, recipient: string, include: boolean=true) {
+    async present(name: string, said: string, recipient: string, include: boolean=true) {
 
-        let hab = await this.client.identifiers().get_identifier(name)
+        let hab = await this.client.identifiers().get(name)
         let pre: string = hab["prefix"]
 
-        let cred = await this.get_credential(name, said)
+        let cred = await this.get(name, said)
         let data = {
             i: cred.sad.i,
             s: cred.sad.s,
@@ -967,9 +963,9 @@ class Credentials {
 
     }
 
-    async request_credential(name: string, recipient: string, schema: string, issuer: string) {
+    async request(name: string, recipient: string, schema: string, issuer: string) {
 
-        let hab = await this.client.identifiers().get_identifier(name)
+        let hab = await this.client.identifiers().get(name)
         let pre: string = hab["prefix"]
 
         let data = {
@@ -1039,7 +1035,7 @@ class Registries {
         // TODO get estOnly from get_identifier ?
         // TODO generate random nonce if not provided
 
-        let hab = await this.client.identifiers().get_identifier(name)
+        let hab = await this.client.identifiers().get(name)
         let pre: string = hab["prefix"]
 
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
@@ -1104,7 +1100,7 @@ class Schemas {
         this.client = client
     }
     //SchemaResourceEnd
-    async get_schema(said: string) {
+    async get(said: string) {
         let path = `/schema/${said}`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, undefined)
@@ -1113,7 +1109,7 @@ class Schemas {
 
     //SchemaCollectionEnd
 
-    async list_all_schemas() {
+    async list() {
         let path = `/schema`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, undefined)
@@ -1130,18 +1126,18 @@ class Challenges {
         this.client = client
     }
     //ChallengeCollectionEnd
-    async generate_challenge(strength: number = 128) {
+    async generate(strength: number = 128) {
         let path = `/challenges?strength=${strength.toString()}`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, undefined)
         return await res.json()
     }
     //ChallengeResourceEnd
-    async respond_challenge(alias: string, recipient: string, words: string[]) {
+    async respond(alias: string, recipient: string, words: string[]) {
         let path = `/challenges/${alias}`
         let method = 'POST'
 
-        let hab = await this.client.identifiers().get_identifier(alias)
+        let hab = await this.client.identifiers().get(alias)
         let pre: string = hab["prefix"]
         let data = {
             i: pre,
@@ -1187,7 +1183,7 @@ class Challenges {
         }
     }
     //ChallengeResourceEnd
-    async accept_challenge_response(alias: string, pre: string, said: string) {
+    async accept(alias: string, pre: string, said: string) {
         let path = `/challenges/${alias}`
         let method = 'PUT'
         let data = {
@@ -1207,7 +1203,7 @@ class Contacts {
         this.client = client
     }
 
-    async list_contacts(group:string|undefined, filterField:string|undefined, filterValue:string|undefined) {
+    async list(group:string|undefined, filterField:string|undefined, filterValue:string|undefined) {
         let params = new URLSearchParams()
         if (group !== undefined) {params.append('group', group)}
         if (filterField !== undefined && filterValue !== undefined) {params.append(filterField, filterValue)}
@@ -1219,7 +1215,7 @@ class Contacts {
 
     }
 
-    async get_contact(pre:string) {
+    async get(pre:string) {
 
         let path = `/contacts/`+ pre
         let method = 'GET'
@@ -1228,7 +1224,7 @@ class Contacts {
 
     }
 
-    async add_contact(pre: string, info: any) {
+    async add(pre: string, info: any) {
         let path = `/contacts/`+ pre
         let method = 'POST'
 
@@ -1236,7 +1232,7 @@ class Contacts {
         return await res.json()
     }
 
-    async delete_contact(pre: string) {
+    async delete(pre: string) {
         let path = `/contacts/`+ pre
         let method = 'DELETE'
 
@@ -1244,7 +1240,7 @@ class Contacts {
         return await res.json()
     }
 
-    async update_contact(pre: string, info: any) {
+    async update(pre: string, info: any) {
         let path = `/contacts/`+pre
         let method = 'PUT'
 
@@ -1260,7 +1256,7 @@ class Notifications {
         this.client = client
     }
 
-    async list_notifications(last:string|undefined, limit:number|undefined) {
+    async list(last:string|undefined, limit:number|undefined) {
         let params = new URLSearchParams()
         if (last !== undefined) {params.append('last', last)}
         if (limit !== undefined) {params.append('limit', limit.toString())}
@@ -1272,7 +1268,7 @@ class Notifications {
 
     }
 
-    async mark_notification(said:string) {
+    async mark(said:string) {
 
         let path = `/notifications/`+ said
         let method = 'PUT'
@@ -1281,7 +1277,7 @@ class Notifications {
 
     }
 
-    async delete_notification(said:string) {
+    async delete(said:string) {
 
         let path = `/notifications/`+ said
         let method = 'DELETE'

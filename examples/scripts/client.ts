@@ -75,7 +75,7 @@ async function connect() {
     console.log("done.")
     let sigPy = op['response']
 
-    aid = await identifiers.get_identifier("multisig-ts")
+    aid = await identifiers.get("multisig-ts")
     let sigTs = aid['state']
 
     let states = [sigPy, kli, sigTs]

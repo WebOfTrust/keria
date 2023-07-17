@@ -30,9 +30,9 @@ export function Challenges() {
                             const contacts1 = client1.contacts()
                             const challenges1 = client1.challenges()
                             const notifications1 = client1.notifications()
-                            let challenge1_small = await challenges1.generate_challenge(128)
+                            let challenge1_small = await challenges1.generate(128)
                             assert.equal(challenge1_small.words.length, 12)
-                            let challenge1_big = await challenges1.generate_challenge(256)
+                            let challenge1_big = await challenges1.generate(256)
                             assert.equal(challenge1_big.words.length, 24)
                             let op1 = await identifiers1.create('alex',  {
                                 toad: 2,
@@ -82,13 +82,13 @@ export function Challenges() {
                                 op2 = await operations2.get(op2["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
-                            await contacts1.list_contacts(undefined, undefined, undefined)
-                            await challenges2.respond_challenge('rodo', aid1.i, challenge1_small.words)
+                            await contacts1.list(undefined, undefined, undefined)
+                            await challenges2.respond('rodo', aid1.i, challenge1_small.words)
 
                             let challenge_received = false
                             let contacts = []
                             while (!challenge_received) {
-                                contacts = await contacts1.list_contacts(undefined, undefined, undefined)
+                                contacts = await contacts1.list(undefined, undefined, undefined)
                                 if (contacts[0].challenges.length > 0 ){
                                     if (JSON.stringify(contacts[0].challenges[0].words) == JSON.stringify(challenge1_small.words)) {
                                         challenge_received = true
@@ -96,8 +96,8 @@ export function Challenges() {
                                 }
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
-                            await challenges1.accept_challenge_response('alex', aid2.i, contacts[0].challenges[0].said)
-                            await contacts1.list_contacts(undefined, undefined, undefined)
+                            await challenges1.accept('alex', aid2.i, contacts[0].challenges[0].said)
+                            await contacts1.list(undefined, undefined, undefined)
                             setTestResult("Passed")
                         }
                         catch (e) {
