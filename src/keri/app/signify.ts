@@ -700,23 +700,22 @@ class Credentials {
     }
     //CredentialCollectionEnd
     //todo rename to list_credentials
-    async list(name: string, typ: CredentialTypes, schema: string) {
-        let path = `/identifiers/${name}/credentials`
-        //if type is not in the credential types, throw an error
-        if (!Object.values(CredentialTypes).includes(typ)) {
-            throw new Error("Invalid Credential Type")
-        }
-        //add typ and schema as query params
-        let params = new URLSearchParams()
-        params.append('type', typ.toString())
-        if (schema !== '') {
-            params.append('schema', schema)
-        }
-        path = path + '?' + params.toString()
+    async list(name: string, kargs: {filter: object, sort: object[], skip: number, limit: number}) {
+        let path = `/identifiers/${name}/credentials/query`
+        let filtr = kargs.filter === undefined ? {} : kargs.filter;
+        let sort = kargs.sort === undefined ? [] : kargs.sort;
+        let limit = kargs.limit === undefined ? 25 : kargs.limit;
+        let skip = kargs.skip === undefined ? 0 : kargs.skip;
 
-        let method = 'GET'
+        let data = {
+            filter: filtr,
+            sort: sort,
+            skip: skip,
+            limt: limit
+        }
+        let method = 'POST'
 
-        let res = await this.client.fetch(path, method, null, undefined)
+        let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
     }
     //CredentialResourceEnd

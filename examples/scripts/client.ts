@@ -52,6 +52,18 @@ async function connect() {
 
     console.log("Created AID: ", aid)
 
+    console.log("Resolving delegator...")
+    op = await oobis.resolve(
+        "http://127.0.0.1:5642/oobi/EHpD0-CDWOdu5RJ8jHBSUkOqBZ3cXeDVHWNb_Ul89VI7/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv" +
+        "_VmF_dJNN6vkf2Ha",
+        "delegator");
+    while (!op["done"]) {
+        op = await operations.get(op["name"]);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
+    }
+    console.log("done.")
+    // let delegator = op['response']
+
     console.log("Resolving multisig-kli...")
     op = await oobis.resolve(
         "http://127.0.0.1:5642/oobi/EFBmwh8vdPTofoautCiEjjuA17gSlEnE3xc-xy-fGzWZ/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv" +
@@ -67,7 +79,7 @@ async function connect() {
     console.log("Resolving multisig-sigpy...")
     op = await oobis.resolve(
         "http://127.0.0.1:3902/oobi/EBcIURLpxmVwahksgrsGW6_dUw0zBhyEHYFk17eWrZfk/agent/EERMVxqeHfFo_eIvyzBXaKdT1EyobZdSs1QXuFyYLjmz",
-        "internal");
+        "multisig-sigpy");
     while (!op["done"]) {
         op = await operations.get(op["name"]);
         await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
@@ -81,13 +93,14 @@ async function connect() {
     let states = [sigPy, kli, sigTs]
     identifiers.create("multisig", {
         algo: "group", mhab: aid,
-        isith: ["1/2", "1/2", "1/2"], nsith: ["1/2", "1/2", "1/2"],
+        delpre: "EHpD0-CDWOdu5RJ8jHBSUkOqBZ3cXeDVHWNb_Ul89VI7",
         toad: 2,
         wits: [
             "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
             "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"
         ],
+        isith: ["1/3", "1/3", "1/3"], nsith: ["1/3", "1/3", "1/3"],
         states: states,
         rstates: states
     })

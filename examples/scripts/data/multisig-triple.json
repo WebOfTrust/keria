@@ -1,4 +1,5 @@
 {
+  "delpre": "EHpD0-CDWOdu5RJ8jHBSUkOqBZ3cXeDVHWNb_Ul89VI7",
   "aids": [
     "EBcIURLpxmVwahksgrsGW6_dUw0zBhyEHYFk17eWrZfk",
     "EFBmwh8vdPTofoautCiEjjuA17gSlEnE3xc-xy-fGzWZ",
@@ -11,6 +12,6 @@
     "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"
   ],
   "toad": 2,
-  "isith": ["1/2", "1/2", "1/2"],
-  "nsith": ["1/2", "1/2", "1/2"]
+  "isith": ["1/3", "1/3", "1/3"],
+  "nsith": ["1/3", "1/3", "1/3"]
 }
