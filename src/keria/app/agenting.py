@@ -241,8 +241,8 @@ class Agent(doing.DoDoer):
         self.agency = agency
         self.caid = caid
 
-        self.swain = delegating.Boatswain(hby=hby)
-        self.counselor = Counselor(hby=hby)
+        self.swain = delegating.Boatswain(hby=hby, proxy=agentHab)
+        self.counselor = Counselor(hby=hby, swain=self.swain)
         self.org = connecting.Organizer(hby=hby)
 
         oobiery = oobiing.Oobiery(hby=hby)
