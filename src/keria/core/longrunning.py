@@ -203,7 +203,7 @@ class Monitor:
                 operation.done = False
             elif obr.state == Result.resolved:
                 operation.done = True
-                if obr.cid:
+                if obr.cid and obr.cid in self.hby.kevers:
                     kever = self.hby.kevers[obr.cid]
                     operation.response = asdict(kever.state())
                 else:
