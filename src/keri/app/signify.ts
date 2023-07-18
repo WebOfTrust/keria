@@ -93,10 +93,10 @@ export class SignifyClient {
         }
         const data = await res.json();
         let state = new State();
-        state.agent = data["agent"] ?? {};
-        state.controller = data["controller"] ?? {};
-        state.ridx = data["ridx"] ?? 0;
-        state.pidx = data["pidx"] ?? 0;
+        state.agent = data.agent ?? {};
+        state.controller = data.controller ?? {};
+        state.ridx = data.ridx ?? 0;
+        state.pidx = data.pidx ?? 0;
         return state;
     }
 
@@ -175,7 +175,7 @@ export class SignifyClient {
         const authenticator = new Authenticater(keeper.signers[0], keeper.signers[0].verfer)
 
         let headers = new Headers()
-        headers.set('Signify-Resource', hab["prefix"])
+        headers.set('Signify-Resource', hab.prefix)
         headers.set('Signify-Timestamp', new Date().toISOString().replace('Z', '000+00:00'))
         headers.set('Content-Type', 'application/json')
 
@@ -543,7 +543,7 @@ class Identifier {
     }
     async addEndRole(name: string, role: string, eid?: string) {
         const hab = await this.get(name)
-        const pre = hab["prefix"]
+        const pre = hab.prefix
 
         const rpy = this.makeEndRole(pre, role, eid)
         const keeper = this.client.manager!.get(hab)
@@ -591,7 +591,7 @@ class Oobis {
             url: oobi
         }
         if (alias !== undefined) {
-            data['oobialias'] = alias
+            data.oobialias = alias
         }
         let method = 'POST'
         let res = await this.client.fetch(path, method, data)
@@ -681,23 +681,22 @@ class Credentials {
         this.client = client
     }
 
-    async list(name: string, typ: CredentialTypes, schema: string) {
-        let path = `/identifiers/${name}/credentials`
+    async list(name: string, kargs: {filter: object, sort: object[], skip: number, limit: number}) {
+        let path = `/identifiers/${name}/credentials/query`
+        let filtr = kargs.filter === undefined ? {} : kargs.filter;
+        let sort = kargs.sort === undefined ? [] : kargs.sort;
+        let limit = kargs.limit === undefined ? 25 : kargs.limit;
+        let skip = kargs.skip === undefined ? 0 : kargs.skip;
 
-        if (!Object.values(CredentialTypes).includes(typ)) {
-            throw new Error("Invalid Credential Type")
+        let data = {
+            filter: filtr,
+            sort: sort,
+            skip: skip,
+            limt: limit
         }
-        //add typ and schema as query params
-        let params = new URLSearchParams()
-        params.append('type', typ.toString())
-        if (schema !== '') {
-            params.append('schema', schema)
-        }
-        path = path + '?' + params.toString()
+        let method = 'POST'
 
-        let method = 'GET'
-
-        let res = await this.client.fetch(path, method, null)
+        let res = await this.client.fetch(path, method, data, undefined)
         return await res.json()
     }
 
@@ -714,7 +713,7 @@ class Credentials {
         
         // Create Credential
         let hab = await this.client.identifiers().get(name)
-        let pre: string = hab["prefix"]
+        let pre: string = hab.prefix
         const dt = new Date().toISOString().replace('Z', '000+00:00')
 
         const vsacdc = versify(Ident.ACDC, undefined, Serials.JSON, 0)
@@ -728,26 +727,26 @@ class Credentials {
             d: "",
         }
         if (priv) {
-            cred['u'] = new Salter({})
-            subject['u'] = new Salter({})
+            cred.u = new Salter({})
+            subject.u = new Salter({})
         }
         if (recipient != undefined) {
-            subject['i'] = recipient
+            subject.i = recipient
         }
-        subject['dt'] = dt
+        subject.dt = dt
         subject = {...subject, ...credentialData}
 
         const [, a] = Saider.saidify(subject,undefined,undefined,"d")
 
         cred = {...cred, i:pre}
-        cred['ri'] = registy
+        cred.ri = registy
         cred = {...cred,...{s: schema}, ...{a: a}}
 
         if (source !== undefined ) {
-            cred['e'] = source
+            cred.e = source
         }
         if (rules !== undefined) {
-            cred['r']= rules
+            cred.r = rules
         }
         const [, vc] = Saider.saidify(cred)
 
@@ -822,7 +821,7 @@ class Credentials {
 
     async revoke(name: string, said: string) {
         let hab = await this.client.identifiers().get(name)
-        let pre: string = hab["prefix"]
+        let pre: string = hab.prefix
 
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
         const dt = new Date().toISOString().replace('Z', '000+00:00')
@@ -1011,7 +1010,7 @@ class Registries {
         return await res.json()
 
     }
-    async create(name: string, registryName: string, nonce?:string, estOnly: boolean=false) {
+    async create(name: string, registryName: string, nonce?:string) {
         // TODO add backers option
         // TODO get estOnly from get_identifier ?
 
@@ -1035,19 +1034,27 @@ class Registries {
         }
 
         let prefixer = new Prefixer({code: MtrDex.Blake3_256}, vcp)
-        vcp['i'] = prefixer.qb64
-        vcp['d'] = prefixer.qb64
+        vcp.i = prefixer.qb64
+        vcp.d = prefixer.qb64
 
         let ixn = {}
         let sigs = []
+
+        let state = hab.state
+        if (state.c !== undefined && state.c.includes("EO")) {
+            var estOnly = true
+        }
+        else {
+            var estOnly = false
+        }
         if (estOnly) {
             // TODO implement rotation event
             throw new Error("establishment only not implemented")
 
         } else {
-            let state = hab["state"]
-            let sn = Number(state["s"])
-            let dig = state["d"]
+            let state = hab.state
+            let sn = Number(state.s)
+            let dig = state.d
 
             let data:any = [{
                 i: prefixer.qb64,
@@ -1114,7 +1121,7 @@ class Challenges {
         let method = 'POST'
 
         let hab = await this.client.identifiers().get(name)
-        let pre: string = hab["prefix"]
+        let pre: string = hab.prefix
         let data = {
             i: pre,
             words: words

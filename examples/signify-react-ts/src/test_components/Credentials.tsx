@@ -141,7 +141,7 @@ export function Credentials() {
                             }
 
 
-                            op1 = await client1.registries().create('issuer','vLEI', "AOLPzF1vRwMPo6tDfoxba1udvpu0jG_BCP_CI49rpMxK", false)
+                            op1 = await client1.registries().create('issuer','vLEI', "AOLPzF1vRwMPo6tDfoxba1udvpu0jG_BCP_CI49rpMxK")
                             while (!op1["done"]) {
                                 op1 = await operations1.get(op1["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
