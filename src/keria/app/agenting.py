@@ -7,6 +7,7 @@ keria.app.agenting module
 import json
 import os
 from dataclasses import asdict
+from urllib import parse
 from urllib.parse import urlparse
 
 from keri import kering
@@ -34,7 +35,6 @@ from keri.vc import protocoling
 from keri.vdr import verifying
 from keri.vdr.credentialing import Regery
 from keri.vdr.eventing import Tevery
-from keri.app import httping as khttping
 
 from . import aiding, notifying, indirecting, credentialing
 from .specing import AgentSpecResource
@@ -46,10 +46,12 @@ from ..db import basing
 logger = ogler.getLogger()
 
 
-def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=None, configDir=None,interceptor_webhook=None, interceptor_headers=None):
+def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=None, configDir=None,
+          interceptor_webhook=None, interceptor_headers=None):
     """ Set up an ahab in Signify mode """
 
-    agency = Agency(name=name, base=base, bran=bran, configFile=configFile, configDir=configDir,interceptor_webhook=interceptor_webhook, interceptor_headers=interceptor_headers)
+    agency = Agency(name=name, base=base, bran=bran, configFile=configFile, configDir=configDir,
+                    interceptor_webhook=interceptor_webhook, interceptor_headers=interceptor_headers)
     bootApp = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*',
         expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input',
@@ -108,7 +110,8 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
 
 
 class Agency(doing.DoDoer):
-    def __init__(self, name, bran, base="", configFile=None, configDir=None, adb=None, temp=False,interceptor_webhook=None, interceptor_headers=None):
+    def __init__(self, name, bran, base="", configFile=None, configDir=None, adb=None, temp=False,
+                 interceptor_webhook=None, interceptor_headers=None):
         self.name = name
         self.base = base
         self.bran = bran
@@ -117,7 +120,11 @@ class Agency(doing.DoDoer):
         self.configDir = configDir
         self.cf = None
         self.metrics = decking.Deck()
-        self.interceptor = InterceptorDoer(interceptor_webhook, interceptor_headers, cues=self.metrics)
+        doers = []
+        if interceptor_webhook is not None:
+            self.interceptor = InterceptorDoer(interceptor_webhook, interceptor_headers, cues=self.metrics)
+            doers.append(self.interceptor)
+
         if self.configFile is not None:  # Load config file if creating database
             self.cf = configing.Configer(name=self.configFile,
                                          base="",
@@ -129,7 +136,7 @@ class Agency(doing.DoDoer):
         self.agents = dict()
 
         self.adb = adb if adb is not None else basing.AgencyBaser(name="TheAgency", base=base, reopen=True, temp=temp)
-        super(Agency, self).__init__(doers=[self.interceptor], always=True)
+        super(Agency, self).__init__(doers=doers, always=True)
 
     def create(self, caid):
         ks = keeping.Keeper(name=caid,
@@ -312,7 +319,7 @@ class Agent(doing.DoDoer):
                                      vry=self.verifier)
 
         doers.extend([
-            Initer(agentHab=agentHab, caid=caid, metrics = self.agency.metrics),
+            Initer(agentHab=agentHab, caid=caid, metrics=self.agency.metrics),
             self.agency.interceptor,
             Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries),
             Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc, vry=self.verifier,
@@ -354,29 +361,34 @@ class Agent(doing.DoDoer):
 
         self.agency.incept(self.caid, pre)
 
+
 class InterceptorDoer(doing.DoDoer):
 
     def __init__(self, webhook, headers, cues=None):
         self.webhook = webhook
         self.headers = headers
         self.cues = cues if cues is not None else decking.Deck()
-        self.clienter = khttping.Clienter()
-        print('InterceptorDoer')
-        super(InterceptorDoer, self).__init__(doers=[self.clienter], always=True)
+        self.purl = parse.urlparse(webhook)
+        self.client = http.clienting.Client(scheme=self.purl.scheme,
+                                            hostname=self.purl.hostname,
+                                            port=self.purl.port,
+                                            portOptional=True)
+        clientDoer = http.clienting.ClientDoer(client=self.client)
+
+        super(InterceptorDoer, self).__init__(doers=[clientDoer], always=True)
 
     def recur(self, tyme, deeds=None):
-        print('InterceptorDoer recur')
         if self.cues:
             msg = self.cues.popleft()
+            body = json.dumps(msg).encode("utf-8")
             # TODO: Sent the message somewhere
-            client = self.clienter.request("POST", self.webhook, body=msg, headers=self.headers)
-            while not client.responses:
-                yield self.tock
-
-            rep = client.respond()
-
-            self.clienter.remove(client)
-            return rep.status == 200
+            self.client.request(
+                method="POST",
+                path=f"{self.purl.path}?{self.purl.query}",
+                qargs=None,
+                headers=self.headers,
+                body=body
+            )
 
         return super(InterceptorDoer, self).recur(tyme, deeds)
 
@@ -408,9 +420,7 @@ class Witnesser(doing.Doer):
             if self.witners:
                 msg = self.witners.popleft()
                 serder = msg["serder"]
-                if self.interceptor:
-                    data = serder.pretty() 
-                    self.interceptor.push(data)
+                self.metrics.append(dict(evt="witnessed", ked=serder.ked))
                 # If we are a rotation event, may need to catch new witnesses up to current key state
                 if serder.ked['t'] in (Ilks.rot, Ilks.drt):
                     adds = serder.ked["ba"]
@@ -457,7 +467,7 @@ class Initer(doing.Doer):
             return False
         self.metrics.append(dict(evt="init", data=dict(aid=self.agentHab.pre)))
         print("  Agent:", self.agentHab.pre, "  Controller:", self.caid)
-        
+
         return True
 
 
@@ -935,7 +945,6 @@ class OobiResourceEnd:
         else:
             rep.status = falcon.HTTP_404
             return
-
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
