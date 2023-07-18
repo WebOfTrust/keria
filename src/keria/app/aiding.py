@@ -272,6 +272,10 @@ class IdentifierCollectionEnd:
 
         """
         agent = req.context.agent
+        deserialized_media = req.get_media()
+        print(deserialized_media)
+        print(type(agent.agency.metrics))
+        agent.agency.metrics.append(dict(name="identifier_update", data = deserialized_media))
         try:
             body = req.get_media()
             icp = httping.getRequiredParam(body, "icp")
