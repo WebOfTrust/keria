@@ -710,9 +710,8 @@ class Credentials {
         return includeCESR? await res.text() : await res.json()
     }
 
-    async issue(name: string, registy: string, recipient: string|undefined, schema: string, rules: any, source: any, credentialData: any, _private: boolean=false, estOnly:boolean=false) {
+    async issue(name: string, registy: string, schema: string, recipient?: string, credentialData?: any, rules?: any, source?: any, priv: boolean=false) {
         
-
         // Create Credential
         let hab = await this.client.identifiers().get(name)
         let pre: string = hab["prefix"]
@@ -721,25 +720,20 @@ class Credentials {
         const vsacdc = versify(Ident.ACDC, undefined, Serials.JSON, 0)
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
 
-
         let cred: any = {
             v: vsacdc,
             d: ""
         }
-
         let subject: any = {
             d: "",
         }
-
-        if (_private) {
+        if (priv) {
             cred['u'] = new Salter({})
             subject['u'] = new Salter({})
         }
-
         if (recipient != undefined) {
             subject['i'] = recipient
         }
-
         subject['dt'] = dt
         subject = {...subject, ...credentialData}
 
@@ -748,11 +742,14 @@ class Credentials {
         cred = {...cred, i:pre}
         cred['ri'] = registy
         cred = {...cred,...{s: schema}, ...{a: a}}
-        // cred['e'] = source
-        // cred['r']= rules
-        console.log(rules, source)
-        const [, vc] = Saider.saidify(cred)
 
+        if (source !== undefined ) {
+            cred['e'] = source
+        }
+        if (rules !== undefined) {
+            cred['r']= rules
+        }
+        const [, vc] = Saider.saidify(cred)
 
         // Create iss
         let _iss = {
@@ -768,38 +765,37 @@ class Credentials {
 
         let [, iss] = Saider.saidify(_iss)
 
-
         // Create paths and sign
-
         let cpath = '6AABAAA-'
-
         let keeper = this.client!.manager!.get(hab)
-
         let csigs = keeper.sign(b(JSON.stringify(vc)))
 
-
-        // create ixn
-        // TODO FIX NONCE
-
+        // Create ixn
         let ixn = {}
         let sigs = []
+
+        let state = hab.state
+        if (state.c !== undefined && state.c.includes("EO")) {
+            var estOnly = true
+        }
+        else {
+            var estOnly = false
+        }
+        let sn = Number(state.s)
+        let dig = state.d
+
+        let data:any = [{
+            i: iss.i,
+            s: iss.s,
+            d: iss.d
+        }]
+
         if (estOnly) {
             // TODO implement rotation event
             throw new Error("Establishment only not implemented")
 
         } else {
-            let state = hab["state"]
-            let sn = Number(state["s"])
-            let dig = state["d"]
-
-            let data:any = [{
-                i: iss.i,
-                s: iss.s,
-                d: iss.d
-            }]
-
             let serder = interact({ pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined })
-
             sigs = keeper.sign(b(serder.raw))
             ixn = serder.ked
         }
@@ -824,14 +820,14 @@ class Credentials {
 
     }
 
-    async revoke(name: string, cred: any, estOnly:boolean=false) {
+    async revoke(name: string, said: string) {
         let hab = await this.client.identifiers().get(name)
         let pre: string = hab["prefix"]
 
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
         const dt = new Date().toISOString().replace('Z', '000+00:00')
 
-        const said = cred.sad.d
+        let cred = await this.get(name, said)
 
         // Create rev
         let _rev = {
@@ -843,43 +839,46 @@ class Credentials {
             p: cred.status.d,
             ri: cred.sad.ri,
             dt: dt
-
         }
 
         let [, rev] = Saider.saidify(_rev)
 
-
         // create ixn
-        // TODO FIX NONCE
-
         let ixn = {}
         let sigs = []
+
+        let state = hab.state
+        if (state.c !== undefined && state.c.includes("EO")) {
+            var estOnly = true
+        }
+        else {
+            var estOnly = false
+        }
+
+        let sn = Number(state.s)
+        let dig = state.d
+
+        let data:any = [{
+            i: rev.i,
+            s: rev.s,
+            d: rev.d
+        }]
         if (estOnly) {
             // TODO implement rotation event
             throw new Error("Establishment only not implemented")
 
         } else {
-            let state = hab["state"]
-            let sn = Number(state["s"])
-            let dig = state["d"]
-
-            let data:any = [{
-                i: rev.i,
-                s: rev.s,
-                d: rev.d
-            }]
-
             let serder = interact({ pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined })
             let keeper = this.client!.manager!.get(hab)
             sigs = keeper.sign(b(serder.raw))
             ixn = serder.ked
         }
+
         let body = {
             rev: rev,
             ixn: ixn,
             sigs: sigs
         }
-
 
         let path = `/identifiers/${name}/credentials/${said}`
         let method = 'DELETE'
@@ -896,7 +895,7 @@ class Credentials {
     async present(name: string, said: string, recipient: string, include: boolean=true) {
 
         let hab = await this.client.identifiers().get(name)
-        let pre: string = hab["prefix"]
+        let pre: string = hab.prefix
 
         let cred = await this.get(name, said)
         let data = {
@@ -950,7 +949,7 @@ class Credentials {
     async request(name: string, recipient: string, schema: string, issuer: string) {
 
         let hab = await this.client.identifiers().get(name)
-        let pre: string = hab["prefix"]
+        let pre: string = hab.prefix
 
         let data = {
             i: issuer,
@@ -997,8 +996,6 @@ class Credentials {
         return await res.text()
 
     }
-
-
 }
 
 class Registries {

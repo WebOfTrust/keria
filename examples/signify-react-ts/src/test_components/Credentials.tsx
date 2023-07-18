@@ -154,7 +154,7 @@ export function Credentials() {
                             const vcdata = {
                                 "LEI": "5493001KJTIIGC8Y1R17"
                               }
-                            op1 = await client1.credentials().issue('issuer',registries[0].regk, aid2.i,'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao',{},{},vcdata,false)
+                            op1 = await client1.credentials().issue('issuer',registries[0].regk, 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao',aid2.i,vcdata)
                             while (!op1["done"]) {
                                 op1 = await operations1.get(op1["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
@@ -168,7 +168,7 @@ export function Credentials() {
                             await new Promise(resolve => setTimeout(resolve, 5000))
                             await client3.credentials().list('verifier',CredentialTypes.received,'')
 
-                            op1 = await client1.credentials().revoke('issuer', creds[0], false)
+                            op1 = await client1.credentials().revoke('issuer', creds[0].sad.d)
                             // while (!op1["done"]) {
                             //     op1 = await operations1.get(op1["name"]);
                             //     await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
