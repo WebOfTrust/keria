@@ -1,9 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-import { SignifyClient, ready, Serder, Diger, MtrDex } from "signify-ts";
+import { SignifyClient, ready, Serder, Diger, MtrDex, Algos } from "signify-ts";
 import {strict as assert} from "assert";
 import { useState, useEffect } from 'react';
-
 
 export function Randy() {
     const [testResult, setTestResult] = useState('');
@@ -30,10 +29,10 @@ export function Randy() {
                             assert.equal(client.agent?.pre, 'EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei')
                             assert.equal(client.agent?.anchor, 'ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose')
                             const identifiers = client.identifiers()
-                            let aids = await identifiers.list_identifiers()
+                            let aids = await identifiers.list()
                             assert.equal(aids.length, 0)
 
-                            let op = await identifiers.create('aid1', {algo: 'randy'})
+                            let op = await identifiers.create('aid1', {algo: Algos.randy})
                             assert.equal(op['done'], true)
                             let aid = op['response']
                             const icp = new Serder(aid)
@@ -43,7 +42,7 @@ export function Randy() {
                             assert.equal(icp.ked['nt'], '1')
 
 
-                            aids = await identifiers.list_identifiers()
+                            aids = await identifiers.list()
                             assert.equal(aids.length, 1)
                             aid = aids[0]
                             assert.equal(aid.name, 'aid1')
@@ -56,15 +55,15 @@ export function Randy() {
                             assert.equal(ixn.ked['s'], '1')
                             assert.deepEqual(ixn.ked['a'], [icp.pre])
 
-                            aids = await identifiers.list_identifiers()
+                            aids = await identifiers.list()
                             assert.equal(aids.length, 1)
                             aid = aids[0]
 
-                            const events = client.key_events()
+                            const events = client.keyEvents()
                             let log = await events.get(aid["prefix"])
                             assert.equal(log.length, 2)
 
-                            op = await identifiers.rotate('aid1',{})
+                            op = await identifiers.rotate('aid1')
                             assert.equal(op['done'], true)
                             ked = op['response']
                             let rot = new Serder(ked)
@@ -89,5 +88,3 @@ export function Randy() {
         </>
     )
 }
-
-

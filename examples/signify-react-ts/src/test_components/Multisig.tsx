@@ -1,6 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-import { SignifyClient, ready, Serder, Diger, MtrDex } from "signify-ts";
+import { SignifyClient, ready, Serder, Diger, MtrDex, Algos } from "signify-ts";
 import {strict as assert} from "assert";
 import { useState, useEffect } from 'react';
 
@@ -60,13 +60,13 @@ export function Multisig() {
                             }
                             let multisig2 = op["response"]
 
-                            let aid1 = await identifiers.get_identifier("aid1")
+                            let aid1 = await identifiers.get("aid1")
                             let agent0 = aid1["state"]
                             let rstates = [multisig2, multisig1, agent0]
                             let states = rstates
 
                             op = await identifiers.create("multisig",{
-                                algo: "group",
+                                algo: Algos.group,
                                 mhab: aid1,
                                 isith: 3, 
                                 nsith: 3,
@@ -92,7 +92,7 @@ export function Multisig() {
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
                             const ixn = new Serder(op["response"])
-                            const events = await client.key_events()
+                            const events = await client.keyEvents()
                             const log = await events.get(ixn.pre)
                             assert.equal(log.length, 2)
                             op = await identifiers.rotate("aid1",{})
@@ -100,9 +100,9 @@ export function Multisig() {
                             const rot = op['response']
                             serder = new Serder(rot)
 
-                            aid1 = await identifiers.get_identifier("aid1")
+                            aid1 = await identifiers.get("aid1")
                             agent0 = aid1["state"]
-                            const keyState = await client.key_states()
+                            const keyState = await client.keyStates()
                             op = await keyState.query("EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4",0)
                             while (!op["done"]) {
                                 op = await operations.get(op["name"]);

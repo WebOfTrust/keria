@@ -21,6 +21,7 @@ export * from './keri/core/diger'
 export * from './keri/app/habery'
 export * from './keri/app/signify'
 export * from './keri/app/apping';
+export { Algos } from './keri/core/manager';
 
 import { Buffer } from 'buffer';
 

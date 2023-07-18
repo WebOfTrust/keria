@@ -25,7 +25,7 @@ export function Witnesses() {
                             assert.equal(client.agent?.anchor, 'ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose')
                             const identifiers = client.identifiers()
                             const operations = client.operations()
-                            let aids = await identifiers.list_identifiers()
+                            let aids = await identifiers.list()
                             assert.equal(aids.length, 0)
 
                             let op = await identifiers.create('aid1', {
@@ -51,12 +51,12 @@ export function Witnesses() {
                                             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"])
                             assert.equal(icp1.ked['bt'], '2')
 
-                            const aid1 = await identifiers.get_identifier("aid1")
+                            const aid1 = await identifiers.get("aid1")
                             assert.equal(aid1.name, 'aid1')
                             assert.equal(aid1.prefix, icp1.pre)
                             assert.equal(aid1.windexes.length, 3)
 
-                            aids = await identifiers.list_identifiers()
+                            aids = await identifiers.list()
                             assert.equal(aids.length, 1)
                             const aid = aids.pop()
                             assert.equal(aid.prefix, icp1.pre)
