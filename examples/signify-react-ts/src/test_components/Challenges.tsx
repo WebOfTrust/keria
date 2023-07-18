@@ -29,7 +29,6 @@ export function Challenges() {
                             const oobis1 = client1.oobis()
                             const contacts1 = client1.contacts()
                             const challenges1 = client1.challenges()
-                            const notifications1 = client1.notifications()
                             let challenge1_small = await challenges1.generate(128)
                             assert.equal(challenge1_small.words.length, 12)
                             let challenge1_big = await challenges1.generate(256)

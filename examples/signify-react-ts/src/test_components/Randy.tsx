@@ -1,9 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-import { SignifyClient, ready, Serder, Diger, MtrDex } from "signify-ts";
+import { SignifyClient, ready, Serder, Diger, MtrDex, Algos } from "signify-ts";
 import {strict as assert} from "assert";
 import { useState, useEffect } from 'react';
-
 
 export function Randy() {
     const [testResult, setTestResult] = useState('');
@@ -33,7 +32,7 @@ export function Randy() {
                             let aids = await identifiers.list()
                             assert.equal(aids.length, 0)
 
-                            let op = await identifiers.create('aid1', {algo: 'randy'})
+                            let op = await identifiers.create('aid1', {algo: Algos.randy})
                             assert.equal(op['done'], true)
                             let aid = op['response']
                             const icp = new Serder(aid)
@@ -64,7 +63,7 @@ export function Randy() {
                             let log = await events.get(aid["prefix"])
                             assert.equal(log.length, 2)
 
-                            op = await identifiers.rotate('aid1',{})
+                            op = await identifiers.rotate('aid1')
                             assert.equal(op['done'], true)
                             ked = op['response']
                             let rot = new Serder(ked)
@@ -89,5 +88,3 @@ export function Randy() {
         </>
     )
 }
-
-

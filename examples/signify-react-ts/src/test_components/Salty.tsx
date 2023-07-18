@@ -74,7 +74,7 @@ export function Salty() {
                             assert.equal(salt.stem, 'signify:aid')
                             assert.equal(aid.prefix, icp2.pre)
 
-                            op = await identifiers.rotate('aid1',{})
+                            op = await identifiers.rotate('aid1')
                             assert.equal(op['done'], true)
                             let ked = op['response']
                             let rot = new Serder(ked)

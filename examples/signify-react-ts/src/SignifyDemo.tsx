@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export function SignifyDemo(args:{ text:string, onClick }) {
+export function SignifyDemo(args:{ text:string, onClick:any }) {
   const [response, setResponse] = useState('');
   const text = args.text;
   const onClick = args.onClick;

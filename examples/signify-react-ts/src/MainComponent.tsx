@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import { SignifyClient, Identifier} from 'signify-ts';
+import  { SetStateAction, useEffect, useState } from 'react';
 import {
   AppBar,
   Paper,
   Toolbar,
   DialogTitle,
-  DialogContentText,
   DialogContent,
   Modal,
   DialogActions,
@@ -34,9 +36,9 @@ import { Circle, Delete, Menu } from '@mui/icons-material';
 import AddIcon from '@mui/icons-material/Add';
 import { TestsComponent } from './TestsComponent';
 
-import { SignifyClient } from 'signify-ts';
 
-const tableObject = {
+
+const tableObject:any = {
   v: {
     title: "Version String",
     description: "",
@@ -156,14 +158,14 @@ const tableObject = {
 
 const MainComponent = () => {
   const [selectedComponent, setSelectedComponent] = useState(null);
-  const [client, setClient] = useState(null); // [pre, icp, key
+  const [client, setClient] = useState<SignifyClient|null>(null); 
   const [open, setOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false); // Open drawer by default
   const [url, setUrl] = useState('');
   const [passcode, setPasscode] = useState('');
   const [status, setStatus] = useState('Not Connected');
 
-  const toggleDrawer = (open) => (event) => {
+  const toggleDrawer = (open:boolean) => (event:any) => {
     if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
       return;
     }
@@ -179,7 +181,7 @@ const MainComponent = () => {
     setOpen(false);
   };
 
-  const renderComponent = (componentName) => {
+  const renderComponent = (componentName: SetStateAction<any>) => {
     setSelectedComponent(componentName);
   };
 
@@ -221,13 +223,13 @@ const MainComponent = () => {
 
       <Drawer open={drawerOpen} onClose={toggleDrawer(false)}>
         <div
-          width='250px'
+          // width='250px'
           role="presentation"
           onClick={toggleDrawer(false)}
           onKeyDown={toggleDrawer(false)}
         >
           <List>
-            {['Identifiers', 'Credentials', 'Client', 'Tests'].map((text, index) => (
+            {['Identifiers', 'Credentials', 'Client', 'Tests'].map((text) => (
               <ListItem key={text} onClick={() => renderComponent(text)}>
                 <ListItemText primary={text} />
               </ListItem>
@@ -252,8 +254,8 @@ const MainComponent = () => {
               sx={{ width: 300 }}
               value={url}
               fullWidth
-              onChange={(event, newValue) => {
-                setUrl(newValue);
+              onChange={(_event, newValue) => {
+                setUrl(newValue!);
               }}
 
             />
@@ -296,7 +298,7 @@ const MainComponent = () => {
           <Divider />
         </Box>
         <DialogActions>
-          <Grid container justify="center" spacing={2}>
+          <Grid container spacing={2}>
             <Grid item xs={12}>
               <Button fullWidth disabled
                 sx={{
@@ -317,7 +319,7 @@ const MainComponent = () => {
           </Grid>
         </DialogActions>
       </Dialog>
-      {selectedComponent === 'Identifiers' && <IdentifierTable client={client.identifiers()} />}
+      {selectedComponent === 'Identifiers' && <IdentifierTable client={client!.identifiers()} />}
 
       {selectedComponent === 'Credentials' && <CredentialsComponent />}
       {selectedComponent === 'Client' && <ClientComponent client={client} />}
@@ -326,8 +328,8 @@ const MainComponent = () => {
   );
 };
 
-const IdentifiersComponent = ({ client }) => {
-  const [identifiers, setIdentifiers] = useState(null)
+({ client }: { client:Identifier}) => {
+  const [identifiers, setIdentifiers] = useState<any[]>([])
   //async useeffect
   const getIdentifiers = async () => {
     const list_identifiers = await client.list()
@@ -347,7 +349,7 @@ const IdentifiersComponent = ({ client }) => {
 
   //render the identifiers
   if (!identifiers) return <div>Loading...</div>
-  const data = JSON.stringify(identifiers, null, 2)
+  // const data = JSON.stringify(identifiers, null, 2)
 
 
   return <>
@@ -398,7 +400,7 @@ const IdentifiersComponent = ({ client }) => {
         style={{ position: 'fixed', bottom: '20px', right: '20px' }}
         onClick={async () => {
           const length = identifiers.length.toString()
-          await client.create(`aid${length}`, {})
+          await client.create(`aid${length}`)
           const list_identifiers = await client.list()
           setIdentifiers(list_identifiers)
         }}
@@ -412,15 +414,15 @@ const IdentifiersComponent = ({ client }) => {
 
 
 };
-const getTypeDetails = (identifierType, data) => {
+(identifierType:any, data:any) => {
   switch (identifierType) {
     case 'randy':
       return (
         <>
           <Typography variant="h6">PRXS:</Typography>
-          {data.prxs.map((prx, index) => <Typography key={index}>{prx}</Typography>)}
+          {data.prxs.map((prx:string, index:string) => <Typography key={index}>{prx}</Typography>)}
           <Typography variant="h6">NXTS:</Typography>
-          {data.nxts.map((nxt, index) => <Typography key={index}>{nxt}</Typography>)}
+          {data.nxts.map((nxt:string, index:string) => <Typography key={index}>{nxt}</Typography>)}
         </>
       );
     case 'salty':
@@ -433,9 +435,9 @@ const getTypeDetails = (identifierType, data) => {
           <Typography variant="h6">Tier: {data.tier}</Typography>
           <Typography variant="h6">DCode: {data.dcode}</Typography>
           <Typography variant="h6">ICodes:</Typography>
-          {data.icodes.map((icode, index) => <Typography key={index}>{icode}</Typography>)}
+          {data.icodes.map((icode:string, index:string) => <Typography key={index}>{icode}</Typography>)}
           <Typography variant="h6">NCodes:</Typography>
-          {data.ncodes.map((ncode, index) => <Typography key={index}>{ncode}</Typography>)}
+          {data.ncodes.map((ncode:string, index:string) => <Typography key={index}>{ncode}</Typography>)}
           <Typography variant="h6">Transferable: {data.transferable ? 'Yes' : 'No'}</Typography>
         </>
       );
@@ -444,16 +446,16 @@ const getTypeDetails = (identifierType, data) => {
   }
 };
 
-const IdentifierTable = ({ client }) => {
+const IdentifierTable = ({ client }:{client:Identifier}) => {
   const [open, setOpen] = useState(false);
-  const [currentIdentifier, setCurrentIdentifier] = useState({});
+  const [currentIdentifier, setCurrentIdentifier] = useState<any>({});
   const [identifiers, setIdentifiers] = useState([])
 
   const [openCreate, setOpenCreate] = useState(false);
   const [type, setType] = useState('salty');
   const [name, setName] = useState('');
-  const [dynamicFields, setDynamicFields] = useState([]);
-  const [dynamicFieldsValues, setDynamicFieldsValues] = useState([]);
+  const [dynamicFields, setDynamicFields] = useState<any[]>([]);
+  const [dynamicFieldsValues, setDynamicFieldsValues] = useState<any[]>([]);
   const [selectedField, setSelectedField] = useState('');
   //async useeffect
   const getIdentifiers = async () => {
@@ -465,7 +467,7 @@ const IdentifierTable = ({ client }) => {
 
     getIdentifiers()
   }, [])
-  const handleOpen = (identifier) => {
+  const handleOpen = (identifier:any) => {
     setCurrentIdentifier(identifier);
     setOpen(true);
   };
@@ -520,7 +522,7 @@ const IdentifierTable = ({ client }) => {
     console.log('Dynamic Fields:', dynamicFields);
     console.log('Dynamic Fields Values:', dynamicFieldsValues);
     
-    let fields = {
+    let fields:any = {
       algo: type,
     }
     dynamicFields.forEach((field, index) => {
@@ -542,24 +544,24 @@ const IdentifierTable = ({ client }) => {
     console.log('Fields:', fields);
 
     //create identifier
-    let _res = client.create(name, fields)
+    client.create(name, fields)
     const list_identifiers = await client.list()
     setIdentifiers(list_identifiers)
     handleClose();
   };
 
-  const handleTypeChange = (event) => {
+  const handleTypeChange = (event:any) => {
     setType(event.target.value);
   };
 
-  const handleFieldChange = (event) => {
-    const prevFields = [...dynamicFields];
+  const handleFieldChange = (event:any) => {
+    const prevFields:any[] = [...dynamicFields];
     //add field to array
     prevFields.push(event.target.value);
     setSelectedField(event.target.value);
     setDynamicFields(prevFields);
 
-    const prevFieldsValues = [...dynamicFieldsValues];
+    const prevFieldsValues:any[] = [...dynamicFieldsValues];
     //add field to array
     prevFieldsValues.push('');
     setDynamicFieldsValues(prevFieldsValues);
@@ -567,8 +569,8 @@ const IdentifierTable = ({ client }) => {
 
   };
 
-  const handleFieldValueChange = (index, event) => {
-    const prevFieldsValues = [...dynamicFieldsValues];
+  const handleFieldValueChange = (index:number, event:any) => {
+    const prevFieldsValues:any[] = [...dynamicFieldsValues];
     //add field to array
     prevFieldsValues[index] = event.target.value;
     setDynamicFieldsValues(prevFieldsValues);
@@ -576,7 +578,7 @@ const IdentifierTable = ({ client }) => {
 
 
 
-    const handleNameChange = (event) => {
+    const handleNameChange = (event:any) => {
       setName(event.target.value);
     };
 
@@ -631,7 +633,7 @@ const IdentifierTable = ({ client }) => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {identifiers.map((identifier) => (
+              {identifiers.map((identifier:any) => (
                 <TableRow
                   key={identifier.name}
                   sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
@@ -745,7 +747,7 @@ const IdentifierTable = ({ client }) => {
 
   //make it component 
   const CredentialsComponent = () => <div>Credentials Component</div>;
-  const AidComponent = ({ data, text }) => {
+  const AidComponent = ({ data, text }:{data:any, text:string}) => {
 
     return (<Card sx={{ maxWidth: 545, marginX: 4 }}>
       <CardContent>
@@ -767,15 +769,17 @@ const IdentifierTable = ({ client }) => {
       </CardContent>
     </Card>)
   }
-  const ClientComponent = ({ client }) => {
+  const ClientComponent = ({ client }:{client:SignifyClient|null}) => {
     //write an async function to get the client in the client component
     const [controller, setController] = useState(null)
     const [agent, setAgent] = useState(null)
     useEffect(() => {
       const getController = async () => {
-        const controller = await client.state();
-        setAgent(controller.agent)
-        setController(controller.controller.state)
+        if (client !== null) {
+          const controller = await client.state();
+          setAgent(controller.agent)
+          setController(controller.controller.state)
+        }
       }
       getController();
     }
