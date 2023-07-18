@@ -160,13 +160,13 @@ export function Credentials() {
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
                             // await new Promise(resolve => setTimeout(resolve, 20000))
-                            let creds = await client1.credentials().list('issuer',CredentialTypes.received,'')
-                            await client1.credentials().list('issuer',CredentialTypes.issued,'')
-                            await client2.credentials().list('recipient',CredentialTypes.received,'')
+                            let creds = await client1.credentials().list('issuer')
+                            await client1.credentials().list('issuer')
+                            await client2.credentials().list('recipient')
                             
                             await client1.credentials().present('issuer', creds[0].sad.d, 'verifier', true)
                             await new Promise(resolve => setTimeout(resolve, 5000))
-                            await client3.credentials().list('verifier',CredentialTypes.received,'')
+                            await client3.credentials().list('verifier')
 
                             op1 = await client1.credentials().revoke('issuer', creds[0].sad.d)
                             // while (!op1["done"]) {
@@ -174,13 +174,13 @@ export function Credentials() {
                             //     await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             // }
                             await new Promise(resolve => setTimeout(resolve, 5000))
-                            await client1.credentials().list('issuer',CredentialTypes.issued,'')
-                            await client2.credentials().list('recipient',CredentialTypes.issued,'')
-                            await client3.credentials().list('verifier',CredentialTypes.issued,'')
+                            await client1.credentials().list('issuer')
+                            await client2.credentials().list('recipient')
+                            await client3.credentials().list('verifier')
 
                             await client1.credentials().present('issuer', creds[0].sad.d, 'verifier', true)
                             await new Promise(resolve => setTimeout(resolve, 5000))
-                            await client3.credentials().list('verifier',CredentialTypes.received,'')
+                            await client3.credentials().list('verifier')
                             setTestResult("Passed")
                         }
                         catch (e) {
