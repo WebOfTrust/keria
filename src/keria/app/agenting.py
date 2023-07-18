@@ -129,7 +129,7 @@ class Agency(doing.DoDoer):
         self.agents = dict()
 
         self.adb = adb if adb is not None else basing.AgencyBaser(name="TheAgency", base=base, reopen=True, temp=temp)
-        super(Agency, self).__init__(doers=[], always=True)
+        super(Agency, self).__init__(doers=[self.interceptor], always=True)
 
     def create(self, caid):
         ks = keeping.Keeper(name=caid,
@@ -313,6 +313,7 @@ class Agent(doing.DoDoer):
 
         doers.extend([
             Initer(agentHab=agentHab, caid=caid, metrics = self.agency.metrics),
+            self.agency.interceptor,
             Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries),
             Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc, vry=self.verifier,
                      registrar=self.registrar, credentialer=self.credentialer),
@@ -360,9 +361,11 @@ class InterceptorDoer(doing.DoDoer):
         self.headers = headers
         self.cues = cues if cues is not None else decking.Deck()
         self.clienter = khttping.Clienter()
+        print('InterceptorDoer')
         super(InterceptorDoer, self).__init__(doers=[self.clienter], always=True)
 
     def recur(self, tyme, deeds=None):
+        print('InterceptorDoer recur')
         if self.cues:
             msg = self.cues.popleft()
             # TODO: Sent the message somewhere
