@@ -680,8 +680,6 @@ class Credentials {
     constructor(client: SignifyClient) {
         this.client = client
     }
-    //CredentialCollectionEnd
-    //todo rename to list_credentials
     async list(name: string, kargs: {filter: object, sort: object[], skip: number, limit: number}) {
         let path = `/identifiers/${name}/credentials/query`
         let filtr = kargs.filter === undefined ? {} : kargs.filter;
