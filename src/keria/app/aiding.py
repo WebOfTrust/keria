@@ -282,6 +282,12 @@ class IdentifierCollectionEnd:
 
             sigers = [coring.Siger(qb64=sig) for sig in sigs]
 
+            if 'b' in icp:
+                for wit in icp['b']:
+                    urls = agent.agentHab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+                    if not urls and wit not in agent.hby.kevers:
+                        raise falcon.HTTPBadRequest(description=f'unknown witness {wit}')
+
             # client is requesting agent to join multisig group
             if "group" in body:
                 group = body["group"]
@@ -446,6 +452,12 @@ class IdentifierResourceEnd:
         if rot is None:
             raise falcon.HTTPBadRequest(title="invalid rotation",
                                         description=f"required field 'rot' missing from request")
+        
+        if 'ba' in rot:
+            for wit in rot['ba']:
+                urls = agent.agentHab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+                if not urls and wit not in agent.hby.kevers:
+                    raise falcon.HTTPBadRequest(description=f'unknown witness {wit}')
 
         sigs = body.get("sigs")
         if sigs is None or len(sigs) == 0:
