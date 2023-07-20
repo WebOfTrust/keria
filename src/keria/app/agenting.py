@@ -123,6 +123,7 @@ class Agency(doing.DoDoer):
         self.cf = None
         self.intercepts = decking.Deck()
         doers = []
+        self.interceptor = None
         if interceptor_webhook is not None:
             self.interceptor = InterceptorDoer(interceptor_webhook, interceptor_headers, cues=self.intercepts)
             doers.append(self.interceptor)
@@ -415,7 +416,7 @@ class Messager(doing.Doer):
 
 class Witnesser(doing.Doer):
 
-    def __init__(self, receiptor, witners, intercepts):
+    def __init__(self, receiptor, witners, intercepts=None):
         self.receiptor = receiptor
         self.witners = witners
         self.intercepts = intercepts
@@ -426,7 +427,8 @@ class Witnesser(doing.Doer):
             if self.witners:
                 msg = self.witners.popleft()
                 serder = msg["serder"]
-                self.intercepts.append(dict(evt="witnessed", ked=serder.ked))
+                if self.intercepts is not None:
+                    self.intercepts.append(dict(evt="witnessed", ked=serder.ked))
                 # If we are a rotation event, may need to catch new witnesses up to current key state
                 if serder.ked['t'] in (Ilks.rot, Ilks.drt):
                     adds = serder.ked["ba"]
@@ -434,14 +436,15 @@ class Witnesser(doing.Doer):
                         yield from self.receiptor.catchup(serder.pre, wit)
 
                 yield from self.receiptor.receipt(serder.pre, serder.sn)
-                self.intercepts.append(dict(evt="witnessing", data=dict(aid=serder.pre)))
+                if self.intercepts is not None:
+                    self.intercepts.append(dict(evt="witnessing", data=dict(aid=serder.pre)))
 
             yield self.tock
 
 
 class Delegator(doing.Doer):
 
-    def __init__(self, agentHab, swain, anchors, intercepts):
+    def __init__(self, agentHab, swain, anchors, intercepts=None):
         self.agentHab = agentHab
         self.swain = swain
         self.anchors = anchors
@@ -451,10 +454,10 @@ class Delegator(doing.Doer):
     def recur(self, tyme=None):
         if self.anchors:
             msg = self.anchors.popleft()
-
             sn = msg["sn"] if "sn" in msg else None
             self.swain.delegation(pre=msg["pre"], sn=sn, proxy=self.agentHab)
-            self.intercepts.append(dict(msg))
+            if self.intercepts is not None:
+                self.intercepts.append(dict(msg))
 
         return False
 
