@@ -273,9 +273,6 @@ class IdentifierCollectionEnd:
         """
         agent = req.context.agent
         deserialized_media = req.get_media()
-        print(deserialized_media)
-        print(type(agent.agency.metrics))
-        agent.agency.metrics.append(dict(name="identifier_update", data = deserialized_media))
         try:
             body = req.get_media()
             icp = httping.getRequiredParam(body, "icp")
@@ -288,6 +285,7 @@ class IdentifierCollectionEnd:
 
             # client is requesting agent to join multisig group
             if "group" in body:
+                agent.agency.intercepts.append(dict(event="creat multisig aid", data=deserialized_media))
                 group = body["group"]
 
                 if "mhab" not in group:
@@ -321,7 +319,7 @@ class IdentifierCollectionEnd:
                 except ValueError as e:
                     agent.hby.deleteHab(name=name)
                     raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
-
+                agent.agency.intercepts.append(dict(event="multisig created", data=serder.pretty()))
                 # Generate response, a long running operaton indicator for the type
                 agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
                 op = agent.monitor.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=0))
@@ -333,6 +331,7 @@ class IdentifierCollectionEnd:
             else:
                 # client is requesting that the Agent track the Salty parameters
                 if Algos.salty in body:
+                    agent.agency.intercepts.append(dict(event="create salty aid", data=serder.pretty()))
                     salt = body[Algos.salty]
                     hab = agent.hby.makeSignifyHab(name, serder=serder, sigers=sigers)
                     try:
@@ -343,6 +342,7 @@ class IdentifierCollectionEnd:
 
                 # client is storing encrypted randomly generated key material on agent
                 elif Algos.randy in body:
+                    agent.agency.intercepts.append(dict(event="create randy aid", data=serder.pretty()))
                     rand = body[Algos.randy]
                     hab = agent.hby.makeSignifyHab(name, serder=serder, sigers=sigers)
                     try:
@@ -352,6 +352,7 @@ class IdentifierCollectionEnd:
                         raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
 
                 elif Algos.extern in body:
+                    agent.agency.intercepts.append(dict(event="create extern aid", data=serder.pretty()))
                     extern = body[Algos.extern]
                     hab = agent.hby.makeSignifyHab(name, serder=serder, sigers=sigers)
                     try:

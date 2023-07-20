@@ -119,10 +119,10 @@ class Agency(doing.DoDoer):
         self.configFile = configFile
         self.configDir = configDir
         self.cf = None
-        self.metrics = decking.Deck()
+        self.intercepts = decking.Deck()
         doers = []
         if interceptor_webhook is not None:
-            self.interceptor = InterceptorDoer(interceptor_webhook, interceptor_headers, cues=self.metrics)
+            self.interceptor = InterceptorDoer(interceptor_webhook, interceptor_headers, cues=self.intercepts)
             doers.append(self.interceptor)
 
         if self.configFile is not None:  # Load config file if creating database
@@ -262,7 +262,7 @@ class Agent(doing.DoDoer):
         self.anchors = decking.Deck()
         self.witners = decking.Deck()
         self.queries = decking.Deck()
-        self.agency.metrics
+        self.agency.intercepts
 
         receiptor = agenting.Receiptor(hby=hby)
         self.postman = forwarding.Poster(hby=hby)
@@ -319,16 +319,16 @@ class Agent(doing.DoDoer):
                                      vry=self.verifier)
 
         doers.extend([
-            Initer(agentHab=agentHab, caid=caid, metrics=self.agency.metrics),
+            Initer(agentHab=agentHab, caid=caid, intercepts=self.agency.intercepts),
             self.agency.interceptor,
             Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries),
             Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc, vry=self.verifier,
                      registrar=self.registrar, credentialer=self.credentialer),
             Messager(kvy=self.kvy, parser=self.parser),
-            Witnesser(receiptor=receiptor, witners=self.witners, metrics=self.agency.metrics),
-            Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors, metrics=self.agency.metrics),
+            Witnesser(receiptor=receiptor, witners=self.witners, intercepts=self.agency.intercepts),
+            Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors, intercepts=self.agency.intercepts),
             GroupRequester(hby=hby, agentHab=agentHab, postman=self.postman, counselor=self.counselor,
-                           groups=self.groups, metrics=self.agency.metrics),
+                           groups=self.groups, intercepts=self.agency.intercepts),
         ])
 
         super(Agent, self).__init__(doers=doers, always=True, **opts)
@@ -409,10 +409,10 @@ class Messager(doing.Doer):
 
 class Witnesser(doing.Doer):
 
-    def __init__(self, receiptor, witners, metrics):
+    def __init__(self, receiptor, witners, intercepts):
         self.receiptor = receiptor
         self.witners = witners
-        self.metrics = metrics
+        self.intercepts = intercepts
         super(Witnesser, self).__init__()
 
     def recur(self, tyme=None):
@@ -420,7 +420,7 @@ class Witnesser(doing.Doer):
             if self.witners:
                 msg = self.witners.popleft()
                 serder = msg["serder"]
-                self.metrics.append(dict(evt="witnessed", ked=serder.ked))
+                self.intercepts.append(dict(evt="witnessed", ked=serder.ked))
                 # If we are a rotation event, may need to catch new witnesses up to current key state
                 if serder.ked['t'] in (Ilks.rot, Ilks.drt):
                     adds = serder.ked["ba"]
@@ -428,44 +428,43 @@ class Witnesser(doing.Doer):
                         yield from self.receiptor.catchup(serder.pre, wit)
 
                 yield from self.receiptor.receipt(serder.pre, serder.sn)
-                self.metrics.append(dict(evt="witnessing", data=dict(aid=serder.pre)))
+                self.intercepts.append(dict(evt="witnessing", data=dict(aid=serder.pre)))
 
             yield self.tock
 
 
 class Delegator(doing.Doer):
 
-    def __init__(self, agentHab, swain, anchors, metrics):
+    def __init__(self, agentHab, swain, anchors, intercepts):
         self.agentHab = agentHab
         self.swain = swain
         self.anchors = anchors
-        self.metrics = metrics
+        self.intercepts = intercepts
         super(Delegator, self).__init__()
 
     def recur(self, tyme=None):
         if self.anchors:
             msg = self.anchors.popleft()
-            if self.interceptor:
-                self.interceptor.push(msg)
+
             sn = msg["sn"] if "sn" in msg else None
             self.swain.delegation(pre=msg["pre"], sn=sn, proxy=self.agentHab)
-            self.metrics.append(dict(msg))
+            self.intercepts.append(dict(msg))
 
         return False
 
 
 class Initer(doing.Doer):
-    def __init__(self, agentHab, caid, metrics):
+    def __init__(self, agentHab, caid, intercepts):
         self.agentHab = agentHab
         self.caid = caid
-        self.metrics = metrics
+        self.intercepts = intercepts
         super(Initer, self).__init__()
 
     def recur(self, tyme):
         """ Prints Agent name and prefix """
         if not self.agentHab.inited:
             return False
-        self.metrics.append(dict(evt="init", data=dict(aid=self.agentHab.pre)))
+        self.intercepts.append(dict(evt="init", data=dict(aid=self.agentHab.pre)))
         print("  Agent:", self.agentHab.pre, "  Controller:", self.caid)
 
         return True
@@ -473,13 +472,13 @@ class Initer(doing.Doer):
 
 class GroupRequester(doing.Doer):
 
-    def __init__(self, hby, agentHab, postman, counselor, groups, metrics):
+    def __init__(self, hby, agentHab, postman, counselor, groups, intercepts):
         self.hby = hby
         self.agentHab = agentHab
         self.postman = postman
         self.counselor = counselor
         self.groups = groups
-        self.metrics = metrics
+        self.intercepts = intercepts
 
         super(GroupRequester, self).__init__()
 
@@ -489,7 +488,7 @@ class GroupRequester(doing.Doer):
             msg = self.groups.popleft()
             serder = msg["serder"]
             sigers = msg["sigers"]
-            self.metrics.append(dict(evt="group", data=dict(msg)))
+            self.intercepts.append(dict(evt="group", data=dict(msg)))
             ghab = self.hby.habs[serder.pre]
             if "smids" in msg:
                 smids = msg['smids']
