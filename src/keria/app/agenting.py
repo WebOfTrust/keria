@@ -335,6 +335,8 @@ class Agent(doing.DoDoer):
                            groups=self.groups, intercepts=self.agency.intercepts),
             SeekerDoer(seeker=self.seeker, cues=self.verifier.cues)
         ])
+        if self.agency.interceptor is not None:
+            doers.append(self.agency.interceptor) 
         super(Agent, self).__init__(doers=doers, always=True, **opts)
 
     @property
