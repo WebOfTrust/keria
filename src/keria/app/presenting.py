@@ -77,19 +77,16 @@ class PresentationCollectionEnd:
 
         hab = agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPBadRequest(f"Invalid alias {name} for credential presentation")
+            raise falcon.HTTPBadRequest(description=f"Invalid alias {name} for credential presentation")
 
         body = req.get_media()
 
         exn = httping.getRequiredParam(body, "exn")
-        sigs = httping.getRequiredParam(body, 'sigs')
+        sig = httping.getRequiredParam(body, 'sig')
         recipient = httping.getRequiredParam(body, 'recipient')
 
         serder = coring.Serder(ked=exn)
-        sigers = [coring.Siger(qb64=sig) for sig in sigs]
-        msg = eventing.messagize(serder=serder, sigers=sigers)
-
-        atc = msg[serder.size:]
+        atc = bytearray(sig.encode("utf-8"))
 
         creder = agent.rgy.reger.creds.get(said)
         if creder is None:
@@ -108,7 +105,7 @@ class PresentationCollectionEnd:
             credentialing.sendCredential(agent.hby, hab=hab, reger=agent.rgy.reger, postman=agent.postman,
                                          creder=creder, recp=recp)
 
-        agent.postman.send(src=hab.pre, dest=recp, topic="credential", serder=exn, attachment=atc)
+        agent.postman.send(src=hab.pre, dest=recp, topic="credential", serder=serder, attachment=atc)
 
         rep.status = falcon.HTTP_202
 
@@ -168,15 +165,20 @@ class PresentationRequestsCollectionEnd:
 
         body = req.get_media()
         exn = httping.getRequiredParam(body, "exn")
-        sigs = httping.getRequiredParam(body, 'sigs')
-        recp = httping.getRequiredParam(body, 'recipient')
+        sig = httping.getRequiredParam(body, 'sig')
+        recipient = httping.getRequiredParam(body, 'recipient')
 
         serder = coring.Serder(ked=exn)
-        sigers = [coring.Siger(qb64=sig) for sig in sigs]
-        msg = eventing.messagize(serder=serder, sigers=sigers)
+        atc = bytearray(sig.encode("utf-8"))
 
-        atc = msg[serder.size:]
+        if recipient in agent.hby.kevers:
+            recp = recipient
+        else:
+            recp = agent.org.find("alias", recipient)
+            if len(recp) != 1:
+                raise falcon.HTTPBadRequest(description=f"invalid recipient {recipient}")
+            recp = recp[0]['id']
 
-        agent.postman.send(src=hab.pre, dest=recp, topic="credential", serder=exn, attachment=atc)
+        agent.postman.send(src=hab.pre, dest=recp, topic="credential", serder=serder, attachment=atc)
 
         rep.status = falcon.HTTP_202

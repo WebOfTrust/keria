@@ -35,8 +35,9 @@ from keri.vc import protocoling
 from keri.vdr import verifying
 from keri.vdr.credentialing import Regery
 from keri.vdr.eventing import Tevery
+from keri.app import challenging
 
-from . import aiding, notifying, indirecting, credentialing
+from . import aiding, notifying, indirecting, credentialing, presenting
 from .specing import AgentSpecResource
 from ..core import authing, longrunning, httping
 from ..core.authing import Authenticater
@@ -81,6 +82,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
     loadEnds(app=app)
     aidEnd = aiding.loadEnds(app=app, agency=agency, authn=authn)
     credentialing.loadEnds(app=app, identifierResource=aidEnd)
+    presenting.loadEnds(app=app)
     notifying.loadEnds(app=app)
 
     if httpPort:
@@ -249,8 +251,8 @@ class Agent(doing.DoDoer):
         self.agency = agency
         self.caid = caid
 
-        self.swain = delegating.Boatswain(hby=hby)
-        self.counselor = Counselor(hby=hby)
+        self.swain = delegating.Boatswain(hby=hby, proxy=agentHab)
+        self.counselor = Counselor(hby=hby, swain=self.swain)
         self.org = connecting.Organizer(hby=hby)
 
         oobiery = oobiing.Oobiery(hby=hby)
@@ -272,21 +274,22 @@ class Agent(doing.DoDoer):
         self.rep = storing.Respondant(hby=hby, cues=self.cues, mbx=Mailboxer(name=self.hby.name, temp=self.hby.temp))
 
         doers = [habbing.HaberyDoer(habery=hby), receiptor, self.postman, self.witPub, self.rep, self.swain,
-                 self.counselor, *oobiery.doers]
+                 self.counselor, self.witDoer, *oobiery.doers]
 
         signaler = signaling.Signaler()
         self.notifier = Notifier(hby=hby, signaler=signaler)
 
         # Initialize all the credential processors
         self.verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
-        self.registrar = credentialing.Registrar(hby=hby, rgy=rgy, counselor=self.counselor, witPub=self.witPub,
-                                                 witDoer=self.witDoer)
+        self.registrar = credentialing.Registrar(agentHab=agentHab, hby=hby, rgy=rgy, counselor=self.counselor, witPub=self.witPub,
+                                                 witDoer=self.witDoer, postman=self.postman, verifier=self.verifier)
         self.credentialer = credentialing.Credentialer(agentHab=agentHab, hby=self.hby, rgy=self.rgy,
                                                        postman=self.postman, registrar=self.registrar,
                                                        verifier=self.verifier, notifier=self.notifier)
 
         self.monitor = longrunning.Monitor(hby=hby, swain=self.swain, counselor=self.counselor, temp=hby.temp,
                                            registrar=self.registrar, credentialer=self.credentialer)
+        self.seeker = basing.Seeker(name=hby.name, db=hby.db, reger=self.rgy.reger, reopen=True, temp=self.hby.temp)
 
         issueHandler = protocoling.IssueHandler(hby=hby, rgy=rgy, notifier=self.notifier)
         requestHandler = protocoling.PresentationRequestHandler(hby=hby, notifier=self.notifier)
@@ -294,7 +297,9 @@ class Agent(doing.DoDoer):
                                                 name=agentHab.name)
         proofHandler = protocoling.PresentationProofHandler(notifier=self.notifier)
 
-        handlers = [issueHandler, requestHandler, proofHandler, applyHandler]
+        challengeHandler = challenging.ChallengeHandler(db=hby.db, signaler=signaler)
+
+        handlers = [issueHandler, requestHandler, proofHandler, applyHandler, challengeHandler]
         self.exc = exchanging.Exchanger(db=hby.db, handlers=handlers)
 
         self.rvy = routing.Revery(db=hby.db, cues=self.cues)
@@ -321,6 +326,7 @@ class Agent(doing.DoDoer):
         doers.extend([
             Initer(agentHab=agentHab, caid=caid, intercepts=self.agency.intercepts),
             self.agency.interceptor,
+
             Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries),
             Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc, vry=self.verifier,
                      registrar=self.registrar, credentialer=self.credentialer),
@@ -329,6 +335,7 @@ class Agent(doing.DoDoer):
             Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors, intercepts=self.agency.intercepts),
             GroupRequester(hby=hby, agentHab=agentHab, postman=self.postman, counselor=self.counselor,
                            groups=self.groups, intercepts=self.agency.intercepts),
+            SeekerDoer(seeker=self.seeker, cues=self.verifier.cues)
         ])
 
         super(Agent, self).__init__(doers=doers, always=True, **opts)
@@ -451,6 +458,23 @@ class Delegator(doing.Doer):
             self.intercepts.append(dict(msg))
 
         return False
+
+
+class SeekerDoer(doing.Doer):
+
+    def __init__(self, seeker, cues):
+        self.seeker = seeker
+        self.cues = cues
+
+        super(SeekerDoer, self).__init__()
+
+    def recur(self, tyme=None):
+        if self.cues:
+            cue = self.cues.popleft()
+            if cue["kin"] == "saved":
+                creder = cue["creder"]
+                print(f"indexing {creder.said}")
+                self.seeker.index(said=creder.said)
 
 
 class Initer(doing.Doer):
@@ -849,7 +873,6 @@ class OOBICollectionEnd:
             if "oobialias" in body:
                 obr.oobialias = body["oobialias"]
 
-            agent.hby.db.oobis.pin(keys=(oobi,), val=obr)
             agent.hby.db.oobis.pin(keys=(oobi,), val=obr)
 
         elif "rpy" in body:

@@ -79,7 +79,8 @@ def test_presentation(helpers, seeder, mockHelpingNowUTC):
         res = client.simulate_post(path=f"/identifiers/BadUser/credentials/{said}/presentations",
                                    body=json.dumps(body).encode("utf-8"))
         assert res.status_code == 400
-        assert res.json == {'title': 'Invalid alias BadUser for credential presentation'}
+        assert res.json == {'description': 'Invalid alias BadUser for credential presentation',
+                            'title': '400 Bad Request'}
 
         res = client.simulate_post(path=f"/identifiers/test/credentials/{said}/presentations",
                                    body=json.dumps(body).encode("utf-8"))
@@ -88,29 +89,31 @@ def test_presentation(helpers, seeder, mockHelpingNowUTC):
                             'title': '400 Bad Request'}
 
         exn = exchanging.exchange(route="/presentation", payload=data)
-        sigs = helpers.sign(bran=salt, pidx=0, ridx=0, ser=exn.raw)
+        ims = agent.agentHab.endorse(serder=exn, last=True, pipelined=False)
+        del ims[:exn.size]
+        sig = ims.decode("utf-8")
 
         body = dict(exn=exn.ked)
         res = client.simulate_post(path=f"/identifiers/test/credentials/{said}/presentations",
                                    body=json.dumps(body).encode("utf-8"))
         assert res.status_code == 400
-        assert res.json == {'description': "required field 'sigs' missing from request",
+        assert res.json == {'description': "required field 'sig' missing from request",
                             'title': '400 Bad Request'}
 
-        body = dict(exn=exn.ked, sigs=sigs)
+        body = dict(exn=exn.ked, sig=sig)
         res = client.simulate_post(path=f"/identifiers/test/credentials/{said}/presentations",
                                    body=json.dumps(body).encode("utf-8"))
         assert res.status_code == 400
         assert res.json == {'description': "required field 'recipient' missing from request",
                             'title': '400 Bad Request'}
 
-        body = dict(exn=exn.ked, sigs=sigs, recipient="BadRecipient")
+        body = dict(exn=exn.ked, sig=sig, recipient="BadRecipient")
         res = client.simulate_post(path=f"/identifiers/test/credentials/{said}/presentations",
                                    body=json.dumps(body).encode("utf-8"))
         assert res.status_code == 400
         assert res.json == {'description': 'invalid recipient BadRecipient', 'title': '400 Bad Request'}
 
-        body = dict(exn=exn.ked, sigs=sigs, recipient=hab.pre)
+        body = dict(exn=exn.ked, sig=sig, recipient=hab.pre)
         res = client.simulate_post(path=f"/identifiers/test/credentials/BADCREDENTIALSAID/presentations",
                                    body=json.dumps(body).encode("utf-8"))
         assert res.status_code == 404
@@ -119,7 +122,7 @@ def test_presentation(helpers, seeder, mockHelpingNowUTC):
 
         body = dict(
             exn=exn.ked,
-            sigs=sigs,
+            sig=sig,
             recipient=hab.pre,
             include=False
         )
@@ -130,10 +133,11 @@ def test_presentation(helpers, seeder, mockHelpingNowUTC):
         assert len(agent.postman.evts) == 1
 
         evt = agent.postman.evts.popleft()
-        assert evt == {'attachment': bytearray(b'-AABAAC1MeGERqHDiff6IBbeYJwXJlXFriDhrQrWYyfef7jnAjMx'
-                                               b'wNrMLEoPZjUJtIrsrch46maUizdJnmgNWWR-9VAP'),
-                       'dest': 'EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze',
-                       'serder': {'a': {'i': 'EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze',
+        assert evt["attachment"] == bytearray(b'-HABEI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9'
+                                               b'-AABAACVNgeDsAZb6eQYApxOMGMmUYacxJQYNeodMoN2KCfHziv_'
+                                               b'-7C1LkvXyUa2iMyT01QkselieT0plM_Ar504aWIL')
+        assert evt["dest"] == 'EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze'
+        assert evt["serder"].ked == {'a': {'i': 'EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze',
                                         'n': 'EIO9uC3K6MvyjFD-RB3RYW3dfL49kCyz3OPqv3gi1dek',
                                         's': 'EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs'},
                                   'd': 'EOkCRLwEjc7Bkn3wVZkoUXneD0ZiAX6R0MI-CcGaLdfE',
@@ -141,9 +145,9 @@ def test_presentation(helpers, seeder, mockHelpingNowUTC):
                                   'q': {},
                                   'r': '/presentation',
                                   't': 'exn',
-                                  'v': 'KERI10JSON000138_'},
-                       'src': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
-                       'topic': 'credential'}
+                                  'v': 'KERI10JSON000138_'}
+        assert evt["src"] == 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY'
+        assert evt["topic"] == 'credential'
 
         body["include"] = True
         res = client.simulate_post(path=f"/identifiers/test/credentials/{said}/presentations",
@@ -155,10 +159,11 @@ def test_presentation(helpers, seeder, mockHelpingNowUTC):
         assert evt["serder"].raw == creder.raw
 
         evt = agent.postman.evts[8]
-        assert evt == {'attachment': bytearray(b'-AABAAC1MeGERqHDiff6IBbeYJwXJlXFriDhrQrWYyfef7jnAjMx'
-                                               b'wNrMLEoPZjUJtIrsrch46maUizdJnmgNWWR-9VAP'),
-                       'dest': 'EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze',
-                       'serder': {'a': {'i': 'EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze',
+        assert evt["attachment"] == bytearray(b'-HABEI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9'
+                                               b'-AABAACVNgeDsAZb6eQYApxOMGMmUYacxJQYNeodMoN2KCfHziv_'
+                                               b'-7C1LkvXyUa2iMyT01QkselieT0plM_Ar504aWIL')
+        assert evt["dest"] == 'EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze'
+        assert evt["serder"].ked == {'a': {'i': 'EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze',
                                         'n': 'EIO9uC3K6MvyjFD-RB3RYW3dfL49kCyz3OPqv3gi1dek',
                                         's': 'EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs'},
                                   'd': 'EOkCRLwEjc7Bkn3wVZkoUXneD0ZiAX6R0MI-CcGaLdfE',
@@ -166,9 +171,9 @@ def test_presentation(helpers, seeder, mockHelpingNowUTC):
                                   'q': {},
                                   'r': '/presentation',
                                   't': 'exn',
-                                  'v': 'KERI10JSON000138_'},
-                       'src': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
-                       'topic': 'credential'}
+                                  'v': 'KERI10JSON000138_'}
+        assert evt["src"] == 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY'
+        assert evt["topic"] == 'credential'
 
 
 def test_presentation_request(helpers):
@@ -192,15 +197,23 @@ def test_presentation_request(helpers):
         )
 
         exn = exchanging.exchange(route="/presentation/request", payload=pl)
-        sigs = helpers.sign(bran=salt, pidx=0, ridx=0, ser=exn.raw)
+        ims = agent.agentHab.endorse(serder=exn, last=True, pipelined=False)
+        del ims[:exn.size]
+        sig = ims.decode("utf-8")
 
         body = dict(
             exn=exn.ked,
-            sigs=sigs,
+            sig=sig,
             recipient=issuee
         )
 
         res = client.simulate_post(path=f"/identifiers/test/requests",
                                    body=json.dumps(body).encode("utf-8"))
         assert res.status_code == 202
+
+        body = dict(exn=exn.ked, sig=sig, recipient="BadRecipient")
+        res = client.simulate_post(path=f"/identifiers/test/requests",
+                                   body=json.dumps(body).encode("utf-8"))
+        assert res.status_code == 400
+        assert res.json == {'description': 'invalid recipient BadRecipient', 'title': '400 Bad Request'}
 
