@@ -123,6 +123,7 @@ class Agency(doing.DoDoer):
         self.cf = None
         self.intercepts = decking.Deck()
         doers = []
+        self.interceptor = None
         if interceptor_webhook is not None:
             self.interceptor = InterceptorDoer(interceptor_webhook, interceptor_headers, cues=self.intercepts)
             doers.append(self.interceptor)
@@ -325,8 +326,6 @@ class Agent(doing.DoDoer):
 
         doers.extend([
             Initer(agentHab=agentHab, caid=caid, intercepts=self.agency.intercepts),
-            self.agency.interceptor,
-
             Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries),
             Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc, vry=self.verifier,
                      registrar=self.registrar, credentialer=self.credentialer),
@@ -337,6 +336,8 @@ class Agent(doing.DoDoer):
                            groups=self.groups, intercepts=self.agency.intercepts),
             SeekerDoer(seeker=self.seeker, cues=self.verifier.cues)
         ])
+        if self.agency.interceptors:
+            doers.extend(self.agency.interceptors)
 
         super(Agent, self).__init__(doers=doers, always=True, **opts)
 
