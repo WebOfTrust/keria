@@ -186,7 +186,14 @@ export class SignifyClient {
             headers.set('Content-Length', '0')
         }
         let signed_headers = authenticator.sign(headers, method, path.split('?')[0])
-        let _body = method == 'GET' ? null : JSON.stringify(data)
+        let _body = null
+        if(method != 'GET') {
+            if(data instanceof FormData) {
+                _body = data
+            } else {
+                _body = JSON.stringify(data)
+            }
+        }
 
         return await fetch(url + path, {
             method: method,
