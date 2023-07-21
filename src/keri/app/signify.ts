@@ -177,7 +177,6 @@ export class SignifyClient {
         let headers = new Headers()
         headers.set('Signify-Resource', hab.prefix)
         headers.set('Signify-Timestamp', new Date().toISOString().replace('Z', '000+00:00'))
-        headers.set('Content-Type', 'application/json')
 
         if (data !== null) {
             headers.set('Content-Length', data.length)
@@ -190,8 +189,10 @@ export class SignifyClient {
         if(method != 'GET') {
             if(data instanceof FormData) {
                 _body = data
+                headers.set('Content-Type', 'multipart/form-data')
             } else {
                 _body = JSON.stringify(data)
+                headers.set('Content-Type', 'application/json')
             }
         }
 
