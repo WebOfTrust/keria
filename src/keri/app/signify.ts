@@ -177,7 +177,6 @@ export class SignifyClient {
         let headers = new Headers()
         headers.set('Signify-Resource', hab.prefix)
         headers.set('Signify-Timestamp', new Date().toISOString().replace('Z', '000+00:00'))
-        headers.set('Content-Type', 'application/json')
 
         if (data !== null) {
             headers.set('Content-Length', data.length)
@@ -186,7 +185,19 @@ export class SignifyClient {
             headers.set('Content-Length', '0')
         }
         let signed_headers = authenticator.sign(headers, method, path.split('?')[0])
-        let _body = method == 'GET' ? null : JSON.stringify(data)
+        let _body = null
+        if(method != 'GET') {
+            if(data instanceof FormData) {
+                _body = data
+                // do not set the content type, let the browser do it
+                // headers.set('Content-Type', 'multipart/form-data')
+            } else {
+                _body = JSON.stringify(data)
+                headers.set('Content-Type', 'application/json')
+            }
+        } else {
+            headers.set('Content-Type', 'application/json')
+        }
 
         return await fetch(url + path, {
             method: method,
