@@ -287,6 +287,9 @@ class IdentifierCollectionEnd:
                     urls = agent.agentHab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
                     if not urls and wit not in agent.hby.kevers:
                         raise falcon.HTTPBadRequest(description=f'unknown witness {wit}')
+            
+            if 'di' in icp and icp["di"] not in agent.hby.kevers:
+                raise falcon.HTTPBadRequest(description=f'unknown delegator {icp["di"]}')
 
             # client is requesting agent to join multisig group
             if "group" in body:
@@ -459,6 +462,9 @@ class IdentifierResourceEnd:
                 if not urls and wit not in agent.hby.kevers:
                     raise falcon.HTTPBadRequest(description=f'unknown witness {wit}')
 
+        if 'di' in rot and rot["di"] not in agent.hby.kevers:
+            raise falcon.HTTPBadRequest(description=f'unknown delegator {rot["di"]}')
+        
         sigs = body.get("sigs")
         if sigs is None or len(sigs) == 0:
             raise falcon.HTTPBadRequest(title="invalid rotation",
