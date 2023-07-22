@@ -189,11 +189,14 @@ export class SignifyClient {
         if(method != 'GET') {
             if(data instanceof FormData) {
                 _body = data
-                headers.set('Content-Type', 'multipart/form-data')
+                // do not set the content type, let the browser do it
+                // headers.set('Content-Type', 'multipart/form-data')
             } else {
                 _body = JSON.stringify(data)
                 headers.set('Content-Type', 'application/json')
             }
+        } else {
+            headers.set('Content-Type', 'application/json')
         }
 
         return await fetch(url + path, {
