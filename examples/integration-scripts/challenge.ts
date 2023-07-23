@@ -94,11 +94,11 @@ async function run() {
 
     // Bob responds to Alice challenge
     await client2.challenges().respond('bob', aid1.i, challenge1_small.words)
-    console.log("Bob responded to Alice challenge")
+    console.log("Bob responded to Alice challenge with signed words")
 
     // Alice check response, compare challenge words and accept the challenge
     let challenge_received = false
-    let contacts = []
+    let contacts:any = []
     while (!challenge_received) {
         contacts = await client1.contacts().list(undefined, undefined, undefined)
         if (contacts[0].challenges.length > 0 ){
