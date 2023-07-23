@@ -152,9 +152,7 @@ export class Controller {
 
         let seqner = new Seqner({sn: _agent.sn})
         let anchor = {i: _agent.pre, s: seqner.snh, d: _agent.said}
-        console.log(new CesrNumber({}, undefined, this.serder.ked["s"]).num)
         let sn = new CesrNumber({}, undefined, this.serder.ked["s"]).num + 1
-        console.log(sn)
         this.serder = interact({
             pre:this.serder.pre, 
             dig: this.serder.ked["d"], 
@@ -162,8 +160,6 @@ export class Controller {
             data:[anchor],
             version: Versionage,
             kind: Serials.JSON})
-        console.log("SENDING EVENT")
-        console.log(this.serder.pretty())
         return [this.signer.sign(this.serder.raw, 0).qb64]
     }
 
