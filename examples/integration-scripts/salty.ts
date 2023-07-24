@@ -111,5 +111,6 @@ async function run() {
     serder = new signify.Serder(log[2])
     assert.equal(serder.pre, ixn.pre)
     assert.equal(serder.ked['d'], ixn.ked['d'])
+    console.log("Salty test passed")
 
 }
