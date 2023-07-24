@@ -9,9 +9,9 @@ import('signify-ts').then(
     (module) => {
         signify = module
         signify.ready().then(() => {
-            console.log("Signify client ready!");
+            console.log("*** Starting CHALLENGE test ***");
             run().then(() => {
-                console.log("Test complete.")
+                console.log("*** Test complete ***")
             });
         });
     }
