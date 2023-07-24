@@ -153,7 +153,8 @@ export class SignifyClient {
         });
 
         if (!(res.status == 200 || res.status == 202)) {
-            throw new Error('response status is not 200');
+            const error = await res.text()
+            throw new Error(error)
         }
         const isSameAgent = this.agent?.pre === res.headers.get('signify-resource');
         if (!isSameAgent) {
@@ -896,7 +897,7 @@ class Credentials {
 
         })
         let res = await this.client.fetch(path, method, body, headers)
-        return await res.text()
+        return await res.json()
 
     }
 

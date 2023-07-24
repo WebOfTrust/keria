@@ -9,9 +9,9 @@ import('signify-ts').then(
     (module) => {
         signify = module
         signify.ready().then(() => {
-            console.log("Signify client ready!");
+            console.log("*** Starting MULTISIG test ***");
             run().then(() => {
-                console.log("Test complete.")
+                console.log("*** Test complete ***")
             });
         });
     }
@@ -49,7 +49,7 @@ async function run() {
             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"]
         })
     while (!op1["done"] ) {
-            op1 = await client1.operations().get(op1["name"]);
+            op1 = await client1.operations().get(op1.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
     const aid1 = await client1.identifiers().get("multisig1")
@@ -64,7 +64,7 @@ async function run() {
             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"]
         })
     while (!op2["done"] ) {
-            op2 = await client2.operations().get(op2["name"]);
+            op2 = await client2.operations().get(op2.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
     const aid2 = await client2.identifiers().get("multisig2")
@@ -79,7 +79,7 @@ async function run() {
             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"]
         })
     while (!op3["done"] ) {
-            op3 = await client3.operations().get(op3["name"]);
+            op3 = await client3.operations().get(op3.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
     const aid3 = await client3.identifiers().get("multisig3")
@@ -94,36 +94,36 @@ async function run() {
     
     op1 = await client1.oobis().resolve(oobi2.oobis[0],"multisig2")
     while (!op1["done"]) {
-        op1 = await client1.operations().get(op1["name"]);
+        op1 = await client1.operations().get(op1.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     op1 = await client1.oobis().resolve(oobi3.oobis[0],"multisig3")
     while (!op1["done"]) {
-        op1 = await client1.operations().get(op1["name"]);
+        op1 = await client1.operations().get(op1.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     console.log("Multisig1 resolved 2 OOBIs")
     
     op2 = await client2.oobis().resolve(oobi1.oobis[0],"multisig1")
     while (!op2["done"]) {
-        op2 = await client2.operations().get(op2["name"]);
+        op2 = await client2.operations().get(op2.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     op2 = await client2.oobis().resolve(oobi3.oobis[0],"multisig3")
     while (!op2["done"]) {
-        op2 = await client2.operations().get(op2["name"]);
+        op2 = await client2.operations().get(op2.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     console.log("Multisig2 resolved 2 OOBIs")
 
     op3 = await client3.oobis().resolve(oobi1.oobis[0],"multisig1")
     while (!op3["done"]) {
-        op3 = await client3.operations().get(op3["name"]);
+        op3 = await client3.operations().get(op3.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     op3 = await client3.oobis().resolve(oobi2.oobis[0],"multisig2")
     while (!op3["done"]) {
-        op3 = await client3.operations().get(op3["name"]);
+        op3 = await client3.operations().get(op3.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     console.log("Multisig3 resolved 2 OOBIs")
@@ -177,15 +177,15 @@ async function run() {
     console.log("Multisig3 joined multisig waiting for others...")
 
     while (!op1["done"]) {
-        op1 = await client1.operations().get(op1["name"]);
+        op1 = await client1.operations().get(op1.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     while (!op2["done"]) {
-        op2 = await client2.operations().get(op2["name"]);
+        op2 = await client2.operations().get(op2.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     while (!op3["done"]) {
-        op3 = await client3.operations().get(op3["name"]);
+        op3 = await client3.operations().get(op3.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     console.log("Multisig created!")

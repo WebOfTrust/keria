@@ -9,9 +9,9 @@ import('signify-ts').then(
     (module) => {
         signify = module
         signify.ready().then(() => {
-            console.log("Signify client ready!");
+            console.log("*** Starting DELEGATION test ***");
             run().then(() => {
-                console.log("Test complete.")
+                console.log("*** Test complete ***")
             });
         });
     }
@@ -42,7 +42,7 @@ async function run() {
             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"]
         })
     while (!op1["done"] ) {
-            op1 = await client1.operations().get(op1["name"]);
+            op1 = await client1.operations().get(op1.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
     const aid1 = await client1.identifiers().get("delegator")
@@ -54,7 +54,7 @@ async function run() {
     let oobi1 = await client1.oobis().get("delegator","agent")
     let op2 = await client2.oobis().resolve(oobi1.oobis[0],"delegator")
     while (!op2["done"]) {
-        op2 = await client2.operations().get(op2["name"]);
+        op2 = await client2.operations().get(op2.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     console.log("OOBI resolved")
@@ -76,7 +76,7 @@ async function run() {
 
     // Client 2 check approval
     while (!op2["done"] ) {
-        op2 = await client2.operations().get(op2["name"]);
+        op2 = await client2.operations().get(op2.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     const aid2 = await client2.identifiers().get("delegate")

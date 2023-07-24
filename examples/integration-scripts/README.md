@@ -12,3 +12,6 @@ If the script depends on witnesses, you need to have [keripy](https://github.com
 Additionally, if the script also depends on schemas you need to have [vLEI server](https://github.com/WebOfTrust/vLEI) installed and running with:
 `vLEI-server -s ./schema/acdc -c ./samples/acdc/ -o ./samples/oobis/`
 
+You can also execute all script the scrip:
+`run_all.sh`
+

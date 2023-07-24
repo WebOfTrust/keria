@@ -9,9 +9,9 @@ import('signify-ts').then(
     (module) => {
         signify = module
         signify.ready().then(() => {
-            console.log("Signify client ready!");
+            console.log("*** Starting CREDENTIALS test ***");
             run().then(() => {
-                console.log("Test complete.")
+                console.log("*** Test complete ***")
             });
         });
     }
@@ -49,7 +49,7 @@ async function run() {
             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"]
         })
     while (!op1["done"] ) {
-            op1 = await client1.operations().get(op1["name"]);
+            op1 = await client1.operations().get(op1.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
     const aid1 = await client1.identifiers().get("issuer")
@@ -64,7 +64,7 @@ async function run() {
             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"]
         })
     while (!op2["done"] ) {
-            op2 = await client2.operations().get(op2["name"]);
+            op2 = await client2.operations().get(op2.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
     const aid2 = await client2.identifiers().get("recipient")
@@ -79,7 +79,7 @@ async function run() {
             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"]
         })
     while (!op3["done"] ) {
-            op3 = await client3.operations().get(op3["name"]);
+            op3 = await client3.operations().get(op3.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
     const aid3 = await client3.identifiers().get("verifier")
@@ -97,51 +97,51 @@ async function run() {
     
     op1 = await client1.oobis().resolve(oobi2.oobis[0],"recipient")
     while (!op1["done"]) {
-        op1 = await client1.operations().get(op1["name"]);
+        op1 = await client1.operations().get(op1.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     op1 = await client1.oobis().resolve(oobi3.oobis[0],"verifier")
     while (!op1["done"]) {
-        op1 = await client1.operations().get(op1["name"]);
+        op1 = await client1.operations().get(op1.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     op1 = await client1.oobis().resolve(schemaOobi,"schema")
     while (!op1["done"]) {
-        op1 = await client1.operations().get(op1["name"]);
+        op1 = await client1.operations().get(op1.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     console.log("Issuer resolved 3 OOBIs")
     
     op2 = await client2.oobis().resolve(oobi1.oobis[0],"issuer")
     while (!op2["done"]) {
-        op2 = await client2.operations().get(op2["name"]);
+        op2 = await client2.operations().get(op2.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     op2 = await client2.oobis().resolve(oobi3.oobis[0],"verifier")
     while (!op2["done"]) {
-        op2 = await client2.operations().get(op2["name"]);
+        op2 = await client2.operations().get(op2.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     op2 = await client2.oobis().resolve(schemaOobi,"schema")
     while (!op2["done"]) {
-        op2 = await client2.operations().get(op2["name"]);
+        op2 = await client2.operations().get(op2.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     console.log("Recipient resolved 3 OOBIs")
 
     op3 = await client3.oobis().resolve(oobi1.oobis[0],"issuer")
     while (!op3["done"]) {
-        op3 = await client3.operations().get(op3["name"]);
+        op3 = await client3.operations().get(op3.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     op3 = await client3.oobis().resolve(oobi2.oobis[0],"recipient")
     while (!op3["done"]) {
-        op3 = await client3.operations().get(op3["name"]);
+        op3 = await client3.operations().get(op3.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     op3 = await client3.oobis().resolve(schemaOobi,"schema")
     while (!op3["done"]) {
-        op3 = await client3.operations().get(op3["name"]);
+        op3 = await client3.operations().get(op3.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     console.log("Verifier resolved 3 OOBIs")
@@ -149,7 +149,7 @@ async function run() {
     // Create registry for issuer
     op1 = await client1.registries().create('issuer','vLEI')
     while (!op1["done"]) {
-        op1 = await client1.operations().get(op1["name"]);
+        op1 = await client1.operations().get(op1.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     let registries = await client1.registries().list('issuer')
@@ -168,10 +168,9 @@ async function run() {
       }
     op1 = await client1.credentials().issue('issuer',registries[0].regk, schemaSAID,aid2.prefix,vcdata)
     while (!op1["done"]) {
-        op1 = await client1.operations().get(op1["name"]);
+        op1 = await client1.operations().get(op1.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
-    // await new Promise(resolve => setTimeout(resolve, 20000))
     let creds1 = await client1.credentials().list('issuer')
     assert.equal(creds1.length, 1)
     assert.equal(creds1[0].sad.s, schemaSAID)
@@ -199,7 +198,10 @@ async function run() {
 
     // Revoke credential
     op1 = await client1.credentials().revoke('issuer', creds1[0].sad.d)
-    await new Promise(resolve => setTimeout(resolve, 5000))
+    while (!op1["done"]) {
+        op1 = await client1.operations().get(op1.name);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
     creds1 = await client1.credentials().list('issuer')
     assert.equal(creds1.length, 1)
     assert.equal(creds1[0].sad.s, schemaSAID)
@@ -208,6 +210,13 @@ async function run() {
     console.log("Credential revoked")
 
     // Recipient check revoked credential
+    let revoked = false
+    while (!revoked) {
+        let cred2 = await client2.credentials().get('recipient', creds1[0].sad.d)
+        if (cred2.status.s == "1") {
+            revoked = true
+        }
+    }
     creds2 = await client2.credentials().list('recipient')
     assert.equal(creds2.length, 1)
     assert.equal(creds2[0].sad.s, schemaSAID)
