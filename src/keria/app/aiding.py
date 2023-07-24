@@ -282,6 +282,9 @@ class IdentifierCollectionEnd:
 
             sigers = [coring.Siger(qb64=sig) for sig in sigs]
 
+            if agent.hby.habByName(name) is not None:
+                raise falcon.HTTPBadRequest(title=f"AID with name {name} already incepted")
+
             if 'b' in icp:
                 for wit in icp['b']:
                     urls = agent.agentHab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
