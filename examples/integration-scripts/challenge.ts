@@ -48,7 +48,7 @@ async function run() {
             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"]
         })
     while (!op1["done"] ) {
-            op1 = await client1.operations().get(op1["name"]);
+            op1 = await client1.operations().get(op1.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
     const aid1 = op1['response']
@@ -63,7 +63,7 @@ async function run() {
             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"]
         })
     while (!op2["done"] ) {
-            op2 = await client2.operations().get(op2["name"]);
+            op2 = await client2.operations().get(op2.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
     const aid2 = op2['response']
@@ -76,13 +76,13 @@ async function run() {
     
     op1 = await client1.oobis().resolve(oobi2.oobis[0],"bob")
     while (!op1["done"]) {
-        op1 = await client1.operations().get(op1["name"]);
+        op1 = await client1.operations().get(op1.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     console.log("Client 1 resolved Bob's OOBI")
     op2 = await client2.oobis().resolve(oobi1.oobis[0],"alice")
     while (!op2["done"]) {
-        op2 = await client2.operations().get(op2["name"]);
+        op2 = await client2.operations().get(op2.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     console.log("Client 2 resolved Alice's OOBI")

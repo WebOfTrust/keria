@@ -33,7 +33,7 @@ async function run() {
     // Client 1 resolves witness OOBI
     let op1 = await client1.oobis().resolve("http://127.0.0.1:5642/oobi/" + witness,"wit")
     while (!op1["done"]) {
-        op1 = await client1.operations().get(op1["name"]);
+        op1 = await client1.operations().get(op1.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     console.log("Witness OOBI resolved")
@@ -44,7 +44,7 @@ async function run() {
         wits: ["BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha"]
         })
     while (!op1["done"] ) {
-            op1 = await client1.operations().get(op1["name"]);
+            op1 = await client1.operations().get(op1.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
     const aid1 = await client1.identifiers().get("aid1")
