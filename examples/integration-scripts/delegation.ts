@@ -1,4 +1,4 @@
-// import { strict as assert } from "assert";
+import { strict as assert } from "assert";
 
 let signify: any;
 const url = "http://127.0.0.1:3901"
@@ -80,6 +80,7 @@ async function run() {
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     const aid2 = await client2.identifiers().get("delegate")
+    assert.equal(aid2.prefix, delegatePrefix)
     console.log("Delegation approved for aid:", aid2.prefix)
 
 }
