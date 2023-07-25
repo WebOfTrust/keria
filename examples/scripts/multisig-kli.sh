@@ -12,6 +12,7 @@ kli incept --name multisig-kli --alias multisig-kli --file "${KERI_DEMO_SCRIPT_D
 
 read  -n 1 -r -p "Press any key after multisig-sigpy and multisig-sigts have been created:"
 
+kli oobi resolve --name multisig-kli --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/EHpD0-CDWOdu5RJ8jHBSUkOqBZ3cXeDVHWNb_Ul89VI7/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 kli oobi resolve --name multisig-kli --oobi-alias multisig-sigpy --oobi http://127.0.0.1:3902/oobi/EBcIURLpxmVwahksgrsGW6_dUw0zBhyEHYFk17eWrZfk/agent/EERMVxqeHfFo_eIvyzBXaKdT1EyobZdSs1QXuFyYLjmz
 kli oobi resolve --name multisig-kli --oobi-alias multisig-sigts --oobi http://127.0.0.1:3902/oobi/ELViLL4JCh-oktYca-pmPLwkmUaeYjyPmCLxELAKZW8V/agent/EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei
 

@@ -1,9 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import { SignifyClient, ready, Serder, Diger, MtrDex, CredentialTypes } from "signify-ts";
-import {strict as assert} from "assert";
 import { useState, useEffect } from 'react';
-import { UndoRounded } from "@mui/icons-material";
 
 
 export function Credentials() {
@@ -42,7 +40,6 @@ export function Credentials() {
                                     op1 = await operations1.get(op1["name"]);
                                     await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                                 }
-                            const aid1 = op1['response']
 
                             const client2 = new SignifyClient(url, bran2)
                             await client2.boot()
@@ -73,10 +70,6 @@ export function Credentials() {
                             const identifiers3 = client3.identifiers()
                             const operations3 = client3.operations()
                             const oobis3 = client3.oobis()
-                            // let client2 = client1
-                            // let identifiers2 = identifiers1
-                            // let operations2 = operations1
-                            // let oobis2 = oobis1
                             let op3 = await identifiers3.create('verifier', {
                                 toad: 3,
                                 wits: [
@@ -88,7 +81,6 @@ export function Credentials() {
                                     op3 = await operations3.get(op3["name"]);
                                     await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                                 }
-                            const aid3 = op3['response']
                             
                             await identifiers1.addEndRole("issuer", 'agent', client1!.agent!.pre)
                             await identifiers2.addEndRole("recipient", 'agent', client2!.agent!.pre)
@@ -149,7 +141,7 @@ export function Credentials() {
                             }
 
 
-                            op1 = await client1.registries().create('issuer','vLEI', "AOLPzF1vRwMPo6tDfoxba1udvpu0jG_BCP_CI49rpMxK", false)
+                            op1 = await client1.registries().create('issuer','vLEI', "AOLPzF1vRwMPo6tDfoxba1udvpu0jG_BCP_CI49rpMxK")
                             while (!op1["done"]) {
                                 op1 = await operations1.get(op1["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
@@ -157,38 +149,38 @@ export function Credentials() {
 
                             let registries = await client1.registries().list('issuer')
 
-                            await client1.schemas().get_schema("EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
-                            await client2.schemas().list_all_schemas()
+                            await client1.schemas().get("EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
+                            await client2.schemas().list()
                             const vcdata = {
                                 "LEI": "5493001KJTIIGC8Y1R17"
                               }
-                            op1 = await client1.credentials().issue_credential('issuer',registries[0].regk, aid2.i,'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao',{},{},vcdata,false)
+                            op1 = await client1.credentials().issue('issuer',registries[0].regk, 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao',aid2.i,vcdata)
                             while (!op1["done"]) {
                                 op1 = await operations1.get(op1["name"]);
                                 await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             }
                             // await new Promise(resolve => setTimeout(resolve, 20000))
-                            let creds = await client1.credentials().list('issuer',CredentialTypes.received,'')
-                            await client1.credentials().list('issuer',CredentialTypes.issued,'')
-                            await client2.credentials().list('recipient',CredentialTypes.received,'')
+                            let creds = await client1.credentials().list('issuer')
+                            await client1.credentials().list('issuer')
+                            await client2.credentials().list('recipient')
                             
-                            await client1.credentials().present_credential('issuer', creds[0].sad.d, 'verifier', true)
+                            await client1.credentials().present('issuer', creds[0].sad.d, 'verifier', true)
                             await new Promise(resolve => setTimeout(resolve, 5000))
-                            await client3.credentials().list('verifier',CredentialTypes.received,'')
+                            await client3.credentials().list('verifier')
 
-                            op1 = await client1.credentials().revoke_credential('issuer', creds[0], false)
+                            op1 = await client1.credentials().revoke('issuer', creds[0].sad.d)
                             // while (!op1["done"]) {
                             //     op1 = await operations1.get(op1["name"]);
                             //     await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
                             // }
                             await new Promise(resolve => setTimeout(resolve, 5000))
-                            await client1.credentials().list('issuer',CredentialTypes.issued,'')
-                            await client2.credentials().list('recipient',CredentialTypes.issued,'')
-                            await client3.credentials().list('verifier',CredentialTypes.issued,'')
+                            await client1.credentials().list('issuer')
+                            await client2.credentials().list('recipient')
+                            await client3.credentials().list('verifier')
 
-                            await client1.credentials().present_credential('issuer', creds[0].sad.d, 'verifier', true)
+                            await client1.credentials().present('issuer', creds[0].sad.d, 'verifier', true)
                             await new Promise(resolve => setTimeout(resolve, 5000))
-                            await client3.credentials().list('verifier',CredentialTypes.received,'')
+                            await client3.credentials().list('verifier')
                             setTestResult("Passed")
                         }
                         catch (e) {

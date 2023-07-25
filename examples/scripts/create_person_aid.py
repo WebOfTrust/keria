@@ -45,7 +45,17 @@ def create_aid():
 
     identifiers.addEndRole("multisig-sigpy", eid=client.agent.pre)
 
-    print("person resolving multisig-kli...")
+    print("multisig-sigpy resolving delegator...")
+    op = oobis.resolve(
+        oobi="http://127.0.0.1:5642/oobi/EHpD0-CDWOdu5RJ8jHBSUkOqBZ3cXeDVHWNb_Ul89VI7/witness/BBilc4-L3tFUnfM_wJr4S4OJ"
+             "anAv_VmF_dJNN6vkf2Ha",
+        alias="delegator")
+    while not op["done"]:
+        op = operations.get(op["name"])
+        sleep(1)
+    print("... done")
+
+    print("multisig-sigpy resolving multisig-kli...")
     op = oobis.resolve(
         oobi="http://127.0.0.1:5642/oobi/EFBmwh8vdPTofoautCiEjjuA17gSlEnE3xc-xy-fGzWZ/witness/BBilc4"
              "-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
@@ -57,9 +67,10 @@ def create_aid():
 
     input(f"\nPress any key after multisig-sigts is created? ")
 
-    print("person resolving multisig-sigts...")
+    print("multisig-sigpy resolving multisig-sigts...")
     op = oobis.resolve(
-        oobi="http://127.0.0.1:3902/oobi/ELViLL4JCh-oktYca-pmPLwkmUaeYjyPmCLxELAKZW8V/agent/EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei",
+        oobi="http://127.0.0.1:3902/oobi/ELViLL4JCh-oktYca-pmPLwkmUaeYjyPmCLxELAKZW8V/agent/EEXekkGu9IAzav6pZVJhkLnjt"
+             "jM5v3AcyA-pdKUcaGei",
         alias="multisig-sigts")
     while not op["done"]:
         op = operations.get(op["name"])

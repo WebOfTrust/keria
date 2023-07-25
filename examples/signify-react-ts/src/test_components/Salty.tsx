@@ -28,7 +28,7 @@ export function Salty() {
                             assert.equal(client.agent?.pre, 'EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei')
                             assert.equal(client.agent?.anchor, 'ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose')
                             const identifiers = client.identifiers()
-                            let aids = await identifiers.list_identifiers()
+                            let aids = await identifiers.list()
                             assert.equal(aids.length, 0)
                             let op = await identifiers.create('aid1', {bran: '0123456789abcdefghijk'})
                             assert.equal(op['done'], true)
@@ -41,7 +41,7 @@ export function Salty() {
                             assert.equal(icp.digers[0].qb64, 'EAORnRtObOgNiOlMolji-KijC_isa3lRDpHCsol79cOc')
                             assert.equal(icp.ked['kt'], '1')
                             assert.equal(icp.ked['nt'], '1')
-                            aids = await identifiers.list_identifiers()
+                            aids = await identifiers.list()
                             assert.equal(aids.length, 1)
                             let aid = aids.pop()
                             assert.equal(aid.name, 'aid1')
@@ -65,7 +65,7 @@ export function Salty() {
                             assert.equal(icp2.digers[2].qb64, 'ELplTAiEKdobFhlf-dh1vUb2iVDW0dYOSzs1dR7fQo60')
                             assert.equal(icp2.ked['kt'], '2')
                             assert.equal(icp2.ked['nt'], '2')
-                            aids = await identifiers.list_identifiers()
+                            aids = await identifiers.list()
                             assert.equal(aids.length, 2)
                             aid = aids[1]
                             assert.equal(aid.name, 'aid2')
@@ -74,7 +74,7 @@ export function Salty() {
                             assert.equal(salt.stem, 'signify:aid')
                             assert.equal(aid.prefix, icp2.pre)
 
-                            op = await identifiers.rotate('aid1',{})
+                            op = await identifiers.rotate('aid1')
                             assert.equal(op['done'], true)
                             let ked = op['response']
                             let rot = new Serder(ked)
@@ -93,7 +93,7 @@ export function Salty() {
                             assert.equal(ixn.ked['s'], '2')
                             assert.deepEqual(ixn.ked['a'], [icp.pre])
 
-                            aid = await identifiers.get_identifier("aid1")
+                            aid = await identifiers.get("aid1")
                             const state = aid["state"]
 
                             assert.equal(state['s'], '2')
@@ -102,7 +102,7 @@ export function Salty() {
                             assert.equal(state['d'], ixn.ked['d'])
                             assert.equal(state['ee']['d'], rot.ked['d'])
 
-                            const events = client.key_events()
+                            const events = client.keyEvents()
                             const log = await events.get(aid["prefix"])
                             assert.equal(log.length, 3)
                             let serder = new Serder(log[0])

@@ -149,21 +149,17 @@ export class Controller {
         }
     }
     approveDelegation(_agent: Agent) {
-        let seqner = new Seqner({ sn: _agent.sn })
-        let anchor = { i: _agent.pre, s: seqner.snh, d: _agent.said }
-        console.log(new CesrNumber({}, undefined, this.serder.ked["s"]).num)
+
+        let seqner = new Seqner({sn: _agent.sn})
+        let anchor = {i: _agent.pre, s: seqner.snh, d: _agent.said}
         let sn = new CesrNumber({}, undefined, this.serder.ked["s"]).num + 1
-        console.log(sn)
         this.serder = interact({
             pre: this.serder.pre,
             dig: this.serder.ked["d"],
             sn: sn,
             data: [anchor],
             version: Versionage,
-            kind: Serials.JSON
-        })
-        console.log("SENDING EVENT")
-        console.log(this.serder.pretty())
+            kind: Serials.JSON})
         return [this.signer.sign(this.serder.raw, 0).qb64]
     }
 
