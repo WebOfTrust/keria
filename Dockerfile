@@ -1,4 +1,4 @@
-FROM build-keipy
+FROM build-keripy
 
 WORKDIR /keria
 COPY ./ ./
