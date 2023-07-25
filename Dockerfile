@@ -1,11 +1,13 @@
 FROM build-keipy
 
 WORKDIR /keria
-
 COPY ./ ./
-
 RUN pip install -r requirements.txt
 
+WORKDIR /keripy
+RUN pip install -e .
+
+WORKDIR /keria
 RUN mkdir -p /keria/scripts/keri/cf
 COPY ./config/keria/scripts/keri/cf/demo-witness-oobis.json /keria/scripts/keri/cf/demo-witness-oobis.json
 
