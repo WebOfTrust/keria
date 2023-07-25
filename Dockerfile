@@ -1,4 +1,5 @@
 FROM build-keripy
+RUN apk add git
 
 WORKDIR /keria
 COPY ./ ./
