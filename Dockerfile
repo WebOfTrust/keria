@@ -1,5 +1,5 @@
-FROM build-keripy
-RUN apk add git
+ARG BASE_IMAGE=keripy
+FROM ${BASE_IMAGE}
 
 WORKDIR /keria
 COPY ./ ./
