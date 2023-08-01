@@ -38,7 +38,7 @@ export function rotate({
     keys,
     dig = undefined,
     ilk = Ilks.rot,
-    sn = undefined,
+    sn = 1,
     isith = undefined,
     ndigs = undefined,
     nsith = undefined,

@@ -8,10 +8,12 @@ import { Witnesses } from "./test_components/Witnesses";
 import { Multisig } from "./test_components/Multisig";
 import { Credentials } from "./test_components/Credentials";
 import { Challenges } from "./test_components/Challenges";
+import { Rotation } from "./test_components/Rotation";
 export function TestsComponent() {
 
     return (
-        <>  
+        <>
+            < Rotation />
             < Challenges />
             < Credentials />
             < Salty />
