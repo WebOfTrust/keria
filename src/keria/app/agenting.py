@@ -758,8 +758,10 @@ class Escrower(doing.Doer):
 
 
 def loadEnds(app):
-    opEnd = longrunning.OperationResourceEnd()
-    app.add_route("/operations/{name}", opEnd)
+    opColEnd = longrunning.OperationCollectionEnd()
+    app.add_route("/operations", opColEnd)
+    opResEnd = longrunning.OperationResourceEnd()
+    app.add_route("/operations/{name}", opResEnd)
 
     oobiColEnd = OOBICollectionEnd()
     app.add_route("/oobis", oobiColEnd)

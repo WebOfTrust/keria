@@ -9,6 +9,7 @@ from collections import namedtuple
 from dataclasses import dataclass, asdict
 
 import falcon
+import json
 from dataclasses_json import dataclass_json
 from keri import kering
 from keri.app.oobiing import Result
@@ -137,6 +138,10 @@ class Monitor:
         operation = self.status(op)
 
         return operation
+    
+    def getOperations(self):
+        ops = self.opr.ops.getItemIter()
+        return [self.status(op) for (key, op) in ops]
 
     def rem(self, name):
         """ Remove tracking of the long running operation represented by name """
@@ -363,6 +368,16 @@ class Monitor:
                                      message=f"long running operation type {op.type} unknown")
 
         return operation
+
+
+class OperationCollectionEnd:
+    @staticmethod
+    def on_get(req, rep):
+        agent = req.context.agent
+        ops = agent.monitor.getOperations()
+        rep.data = json.dumps(ops, default=lambda o: o.to_dict()).encode("utf-8")
+        rep.content_type = "application/json"
+        rep.status = falcon.HTTP_200
 
 
 class OperationResourceEnd:
