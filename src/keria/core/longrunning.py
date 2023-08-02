@@ -139,9 +139,11 @@ class Monitor:
 
         return operation
     
-    def getOperations(self):
+    def getOperations(self, type=None):
         ops = self.opr.ops.getItemIter()
-        return [self.status(op) for (key, op) in ops]
+        if type != None:
+            ops = filter(lambda i: i[1].type == type, ops)
+        return [self.status(op) for (_, op) in ops]
 
     def rem(self, name):
         """ Remove tracking of the long running operation represented by name """
@@ -374,7 +376,8 @@ class OperationCollectionEnd:
     @staticmethod
     def on_get(req, rep):
         agent = req.context.agent
-        ops = agent.monitor.getOperations()
+        type = req.params.get("type")
+        ops = agent.monitor.getOperations(type=type)
         rep.data = json.dumps(ops, default=lambda o: o.to_dict()).encode("utf-8")
         rep.content_type = "application/json"
         rep.status = falcon.HTTP_200
