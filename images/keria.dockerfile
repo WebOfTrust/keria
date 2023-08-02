@@ -24,10 +24,8 @@ EXPOSE 3901
 EXPOSE 3902
 EXPOSE 3903
 
-ENV KERI_AGENT_CORS=false
+ENV KERI_AGENT_CORS=${KERI_AGENT_CORS:-false}
 
 RUN mkdir -p /usr/local/var/keri
 
 ENTRYPOINT ["keria", "start",  "--config-file", "demo-witness-oobis", "--config-dir", "./scripts"]
-
-
