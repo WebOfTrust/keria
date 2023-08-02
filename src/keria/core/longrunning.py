@@ -362,7 +362,7 @@ class OperationResourceEnd:
         """
 
         agent = req.context.agent
-        if agent.monitor.get(name) is not None:
+        if agent.monitor.get(name) is None:
             raise falcon.HTTPNotFound(f"long running operation '{name}' not found")
 
         deleted = agent.monitor.rem(name)
