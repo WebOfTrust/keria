@@ -968,14 +968,16 @@ class Credentials {
 
     }
 
-    async request(name: string, recipient: string, schema: string, issuer: string) {
+    async request(name: string, recipient: string, schema: string, issuer?: string) {
 
         let hab = await this.client.identifiers().get(name)
         let pre: string = hab.prefix
 
-        let data = {
-            i: issuer,
+        let data:any = {
             s: schema
+        }
+        if (issuer !== undefined) {
+            data["i"] = issuer
         }
 
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
@@ -1277,7 +1279,7 @@ class Notifications {
         let path = `/notifications/`+ said
         let method = 'PUT'
         let res = await this.client.fetch(path, method, null)
-        return await res.json()
+        return await res.text()
     }
 
     async delete(said:string) {
