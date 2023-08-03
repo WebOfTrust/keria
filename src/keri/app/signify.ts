@@ -715,7 +715,7 @@ class Credentials {
             filter: filtr,
             sort: sort,
             skip: skip,
-            limt: limit
+            limit: limit
         }
         let method = 'POST'
 
