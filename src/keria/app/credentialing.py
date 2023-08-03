@@ -325,6 +325,8 @@ class CredentialQueryCollectionEnd:
         except falcon.HTTPError:
             filtr = {}
             sort = {}
+            skip = 0
+            limit = 25
 
         cur = agent.seeker.find(filtr=filtr, sort=sort, skip=skip, limit=limit)
         saids = [coring.Saider(qb64=said) for said in cur]
