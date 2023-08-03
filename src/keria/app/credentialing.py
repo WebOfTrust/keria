@@ -312,12 +312,19 @@ class CredentialQueryCollectionEnd:
                 sort = body["sort"]
             else:
                 sort = None
+
+            if "skip" in body:
+                skip = body["skip"]
+            else:
+                skip = 0
+
+            if "limit" in body:
+                limit = body["limit"]
+            else:
+                limit = 25
         except falcon.HTTPError:
             filtr = {}
             sort = {}
-
-        skip = req.params.get("skip")
-        limit = req.params.get("limit")
 
         cur = agent.seeker.find(filtr=filtr, sort=sort, skip=skip, limit=limit)
         saids = [coring.Saider(qb64=said) for said in cur]
