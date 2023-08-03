@@ -317,6 +317,26 @@ def test_credentialing_ends(helpers, seeder):
         assert res.status_code == 200
         assert len(res.json) == 2
 
+        body = json.dumps({'limit': 1}).encode("utf-8")
+        res = client.simulate_post(f"/identifiers/test/credentials/query", body=body)
+        assert res.status_code == 200
+        assert len(res.json) == 1
+
+        body = json.dumps({'limit': 2}).encode("utf-8")
+        res = client.simulate_post(f"/identifiers/test/credentials/query", body=body)
+        assert res.status_code == 200
+        assert len(res.json) == 2
+
+        body = json.dumps({'limit': 4, 'skip':0}).encode("utf-8")
+        res = client.simulate_post(f"/identifiers/test/credentials/query", body=body)
+        assert res.status_code == 200
+        assert len(res.json) == 4
+
+        body = json.dumps({'limit': 4, 'skip':4}).encode("utf-8")
+        res = client.simulate_post(f"/identifiers/test/credentials/query", body=body)
+        assert res.status_code == 200
+        assert len(res.json) == 1
+
         res = client.simulate_get(f"/identifiers/test/credentials/{saids[0]}")
         assert res.status_code == 200
         assert res.headers['content-type'] == "application/json"
