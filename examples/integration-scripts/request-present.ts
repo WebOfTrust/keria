@@ -220,11 +220,12 @@ async function run() {
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    let creds3 = await client3.credentials().list('verifier')
+    let creds3 = await client3.credentials().list('verifier',{filter:{"-i": {"$eq": aid1.prefix}}}) // filter by issuer
     assert.equal(creds3.length, 1)
     assert.equal(creds3[0].sad.s, schemaSAID)
     assert.equal(creds3[0].sad.i, aid1.prefix)
     assert.equal(creds3[0].status.s, "0") // 0 = issued
+    assert.equal(creds3[0].sad.a.i, aid2.prefix) // verify that the issuee is the same as the presenter
     console.log("Credential presented and received by verifier")
 
 
