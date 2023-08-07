@@ -64,7 +64,7 @@ setup(
         'Topic :: Utilities',
     ],
     project_urls={
-        'Issue Tracker': 'https://github.com/WebOfTrust/cesrpy/issues',
+        'Issue Tracker': 'https://github.com/WebOfTrust/keria/issues',
     },
     keywords=[
         "secure attribution",
@@ -76,7 +76,7 @@ setup(
     python_requires='>=3.10.4',
     install_requires=[
         'hio>=0.6.9',
-        'keri @ git+https://git@github.com/WebOfTrust/keripy.git',
+        'keri>=1.0',
         'mnemonic>=0.20',
         'multicommand>=1.0.0',
         'falcon>=3.1.0',

@@ -209,7 +209,9 @@ class Agency(doing.DoDoer):
 
         agentRgy = Regery(hby=agentHby, name=agentHab.name, base=self.base, temp=self.temp)
         agent = Agent(hby=agentHby, rgy=agentRgy, agentHab=agentHab, agency=self, caid=caid)
+
         self.agents[caid] = agent
+        self.extend([agent])
 
         return agent
 
@@ -247,7 +249,7 @@ class Agent(doing.DoDoer):
         self.caid = caid
 
         self.swain = delegating.Boatswain(hby=hby, proxy=agentHab)
-        self.counselor = Counselor(hby=hby, swain=self.swain)
+        self.counselor = Counselor(hby=hby, swain=self.swain, proxy=agentHab)
         self.org = connecting.Organizer(hby=hby)
 
         oobiery = oobiing.Oobiery(hby=hby)

@@ -5,6 +5,7 @@ keria.app.aiding module
 
 """
 import json
+import time
 from dataclasses import asdict
 from urllib.parse import urlparse
 
@@ -37,9 +38,15 @@ def loadEnds(app, agency, authn):
 
     endRolesEnd = EndRoleCollectionEnd()
     app.add_route("/identifiers/{name}/endroles", endRolesEnd)
+    app.add_route("/identifiers/{name}/endroles/{role}", endRolesEnd)
+    app.add_route("/endroles/{aid}", endRolesEnd)
+    app.add_route("/endroles/{aid}/{role}", endRolesEnd)
 
     endRoleEnd = EndRoleResourceEnd()
-    app.add_route("/identifiers/{name}/endroles/{cid}/{role}/{eid}", endRoleEnd)
+    app.add_route("/identifiers/{name}/endroles/{role}/{eid}", endRoleEnd)
+
+    rpyEscrowEnd = RpyEscrowCollectionEnd()
+    app.add_route("/escrows/rpy", rpyEscrowEnd)
 
     chaEnd = ChallengeCollectionEnd()
     app.add_route("/challenges", chaEnd)
@@ -52,6 +59,9 @@ def loadEnds(app, agency, authn):
     app.add_route("/contacts/{prefix}", contactResEnd)
     contactImgEnd = ContactImageResourceEnd()
     app.add_route("/contacts/{prefix}/img", contactImgEnd)
+
+    agentEnd = GroupMemberCollectionEnd()
+    app.add_route("/identifiers/{name}/members", agentEnd)
 
     return aidEnd
 
@@ -232,6 +242,11 @@ class IdentifierCollectionEnd:
     """ Resource class for creating and managing identifiers """
 
     @staticmethod
+    def on_options(req, rep):
+        rep.add_header("Accept-Ranges", "aids")
+        rep.status = falcon.HTTP_200
+
+    @staticmethod
     def on_get(req, rep):
         """ Identifier List GET endpoint
 
@@ -243,22 +258,36 @@ class IdentifierCollectionEnd:
         agent = req.context.agent
         res = []
 
-        last = req.params.get("last")
-        limit = req.params.get("limit")
+        rng = req.get_header("Range")
+        if rng is None:
+            rep.status = falcon.HTTP_200
+            start = 0
+            end = 9
+        else:
+            rep.status = falcon.HTTP_206
+            start, end = httping.parseRangeHeader(rng, "aids")
 
-        limit = limit if not limit is None else "25"
-        last = last if last is not None else ""
-
-        for name, habord in agent.hby.db.habs.getItemIter(keys=(last,)):
-            name = ".".join(name)  # detupleize the database key name
-            if len(res) == int(limit, 10):
+        count = agent.hby.db.habs.cntAll()
+        it = agent.hby.db.habs.getItemIter()
+        for _ in range(start):
+            try:
+                next(it)
+            except StopIteration:
                 break
+
+        for name, habord in it:
+            name = ".".join(name)  # detupleize the database key name
 
             hab = agent.hby.habByName(name)
             data = info(hab, agent.mgr)
             res.append(data)
 
-        rep.status = falcon.HTTP_200
+            if (not end == -1) and len(res) == (end - start) + 1:
+                break
+
+        end = start + (len(res) - 1) if len(res) > 0 else 0
+        rep.set_header("Accept-Ranges", "aids")
+        rep.set_header("Content-Range", f"aids {start}-{end}/{count}")
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
 
@@ -546,8 +575,8 @@ def info(hab, rm, full=False):
         prefix=hab.pre,
     )
 
-    if not isinstance(hab, habbing.SignifyHab):
-        raise kering.ConfigurationError("agent only allows SignifyHab instances")
+    if not isinstance(hab, habbing.SignifyHab) and not isinstance(hab, habbing.SignifyGroupHab):
+        raise kering.ConfigurationError(f"agent only allows SignifyHab instances, {type(hab)}")
 
     keeper = rm.get(pre=hab.pre)
     data.update(keeper.params(pre=hab.pre))
@@ -635,15 +664,47 @@ class IdentifierOOBICollectionEnd:
 class EndRoleCollectionEnd:
 
     @staticmethod
-    def on_post(req, rep, name):
+    def on_get(req, rep, name=None, aid=None, role=None):
+        agent = req.context.agent
+
+        if name is not None:
+            hab = agent.hby.habByName(name)
+            if hab is None:
+                raise falcon.errors.HTTPNotFound(f"invalid alias {name}")
+            pre = hab.pre
+        elif aid is not None:
+            pre = aid
+        else:
+            raise falcon.HTTPBadRequest("either `aid` or `name` are required in the path")
+
+        if role is not None:
+            keys = (pre, role,)
+        else:
+            keys = (pre,)
+
+        ends = []
+        for (_, erole, eid), end in agent.hby.db.ends.getItemIter(keys=keys):
+            ends.append(dict(cid=pre, role=erole, eid=eid))
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(ends).encode("utf-8")
+
+    @staticmethod
+    def on_post(req, rep, name, aid=None, role=None):
         """
 
         Args:
             req (Request): Falcon HTTP request object
             rep (Response): Falcon HTTP response object
             name (str): human readable alias for AID
+            aid (str): Not supported for POST.  If provided, a 404 is returned
+            role (str): Not supported for POST.  If provided, a 404 is returned
 
         """
+        if role is not None or aid is not None:
+            raise falcon.HTTPNotFound("route not found")
+
         agent = req.context.agent
         body = req.get_media()
 
@@ -680,6 +741,19 @@ class EndRoleResourceEnd:
 
     def on_delete(self, req, rep):
         pass
+
+
+class RpyEscrowCollectionEnd:
+    @staticmethod
+    def on_get(req, rep):
+        agent = req.context.agent
+
+        # Optional Route parameter
+        route = req.params.get("route")
+
+        rep.set_header('Content-Type', "text/event-stream")
+        rep.status = falcon.HTTP_200
+        rep.stream = ReplyEscrowIterable(db=agent.hby.db, route=route)
 
 
 class ChallengeCollectionEnd:
@@ -1237,3 +1311,70 @@ class ContactResourceEnd:
 
         rep.status = falcon.HTTP_202
 
+
+class ReplyEscrowIterable:
+    TimeoutMBX = 300000
+
+    def __init__(self, db, route=None, retry=5000):
+        self.db = db
+        self.keys = (route,) if route is not None else ()
+        self.retry = retry
+        self.sent = []
+
+    def __iter__(self):
+        self.start = self.end = time.perf_counter()
+        return self
+
+    def __next__(self):
+        if self.end - self.start < self.TimeoutMBX:
+            if self.start == self.end:
+                self.end = time.perf_counter()
+                return bytearray(f"retry: {self.retry}\n\n".encode("utf-8"))
+
+            data = bytearray()
+            for saider in self.db.rpes.get(keys=self.keys):
+                if saider.qb64 in self.sent:  # Send each event only once per connection
+                    continue
+
+                serder = self.db.rpys.get(keys=(saider.qb64,))
+                data.extend(bytearray("id: {}\nevent: {}\nretry: {}\ndata: ".format(serder.said, serder.said, self.retry)
+                                      .encode("utf-8")))
+                data.extend(serder.raw)
+                data.extend(b'\n\n')
+                self.sent.append(serder.said)
+                self.start = time.perf_counter()
+            self.end = time.perf_counter()
+            return data
+
+        raise StopIteration
+
+
+class GroupMemberCollectionEnd:
+
+    @staticmethod
+    def on_get(req, rep, name):
+        agent = req.context.agent
+
+        hab = agent.hby.habByName(name)
+        if hab is None:
+            raise falcon.errors.HTTPNotFound(description=f"invalid alias {name}")
+
+        if not isinstance(hab, habbing.SignifyGroupHab):
+            raise falcon.HTTPBadRequest(description="members endpoint only available for group AIDs")
+
+        smids = hab.db.signingMembers(hab.pre)
+        rmids = hab.db.rotationMembers(hab.pre)
+
+        signing = []
+        for smid in smids:
+            ends = hab.endsFor(smid)
+            signing.append(dict(aid=smid, ends=ends))
+
+        rotation = []
+        for rmid in rmids:
+            ends = hab.endsFor(rmid)
+            rotation.append(dict(aid=rmid, ends=ends))
+
+        data = dict(signing=signing, rotation=rotation)
+        rep.status = falcon.HTTP_200
+        rep.data = json.dumps(data).encode("utf-8")
