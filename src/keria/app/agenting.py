@@ -109,6 +109,10 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
 
 
 class Agency(doing.DoDoer):
+    """
+    Agency doc test
+    """
+    
     def __init__(self, name, bran, base="", configFile=None, configDir=None, adb=None, temp=False):
         self.name = name
         self.base = base

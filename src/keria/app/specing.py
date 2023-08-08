@@ -2,7 +2,12 @@ import copy
 import falcon
 from apispec import yaml_utils
 from apispec.core import VALID_METHODS, APISpec
+"""
+KERIA
+keria.app.specing module
 
+OpenAPI Description Resource for the KERI and ACDC ReST interface
+"""
 
 class AgentSpecResource:
     """

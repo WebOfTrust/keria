@@ -1,3 +1,10 @@
+# -*- encoding: utf-8 -*-
+"""
+KERIA
+keria.core.httping module
+
+"""
+
 import falcon
 from falcon.http_status import HTTPStatus
 
