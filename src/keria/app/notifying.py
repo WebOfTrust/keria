@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-KERI
+KERIA
 keria.app.notifying module
 
 """

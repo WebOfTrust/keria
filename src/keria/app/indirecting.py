@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-KERI
+KERIA
 keria.app.indirecting module
 
 simple indirect mode demo support classes

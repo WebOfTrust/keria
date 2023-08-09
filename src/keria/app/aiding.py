@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 KERIA
-keria.app.ending module
+keria.app.aiding module
 
 """
 import json
