@@ -123,6 +123,8 @@ def test_agency():
         # Rcreate the agency to see if agent is reloaded from disk
         agency = agenting.Agency(name="agency", base=base, bran=None, configFile="keria",
                                  configDir="scripts")
+        doist.enter(doers=[agency])
+
         agent = agency.get(caid)
         assert agent.pre == "EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei"
 

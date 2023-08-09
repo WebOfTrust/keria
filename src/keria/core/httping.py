@@ -45,8 +45,11 @@ def parseRangeHeader(header, name, start=0, end=9):
 
     header = header.strip(f"{name}=")
     try:
+        if header.startswith("-"):
+            return start, int(header[1:])
+
         if header.endswith("-"):
-            return int(header[:-1]), -1
+            return int(header[:-1]), end
 
         vals = header.split("-")
         if not len(vals) == 2:

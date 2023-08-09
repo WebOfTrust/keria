@@ -17,10 +17,10 @@ from keri.db import dbing, koming
 from keri.help import helping
 
 # long running operationt types
-Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential done')
+Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole done')
 
 OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation', group='group', query='query',
-                  registry='registry', credential='credential', done='done')
+                  registry='registry', credential='credential', endrole='endrole', done='done')
 
 
 @dataclass_json
@@ -312,6 +312,24 @@ class Monitor:
             else:
                 operation.done = False
 
+        elif op.type in (OpTypes.endrole, ):
+            if "cid" not in op.metadata or "role" not in op.metadata or "eid" not in op.metadata:
+                raise kering.ValidationError(
+                    f"invalid long running {op.type} operaiton, metadata missing 'ced' field")
+
+            cid = op.metadata['cid']
+            role = op.metadata['role']
+            eid = op.metadata['eid']
+
+            end = self.hby.db.ends.get(keys=(cid, role, eid))
+            if end and (end.enabled or end.allowed):
+                saider = self.hby.db.eans.get(keys=(cid, role, eid))
+                serder = self.hby.db.rpys.get(keys=(saider.qb64,))
+                operation.done = True
+                operation.response = serder.ked
+            else:
+                operation.done = False
+
         elif op.type in (OpTypes.done, ):
             operation.done = True
             operation.response = op.metadata["response"]
@@ -363,7 +381,7 @@ class OperationResourceEnd:
 
         agent = req.context.agent
         if agent.monitor.get(name) is None:
-            raise falcon.HTTPNotFound(f"long running operation '{name}' not found")
+            raise falcon.HTTPNotFound(title=f"long running operation '{name}' not found")
 
         deleted = agent.monitor.rem(name)
         if deleted:

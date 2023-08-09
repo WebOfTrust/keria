@@ -90,8 +90,13 @@ class AgencyBaser(dbing.LMDBer):
         # Names end with "." as sub DB name must include a non Base64 character
         # to avoid namespace collisions with Base64 identifier prefixes.
 
+        # Sub-database keyed by qb64 controller AID mapping to the Prefixer object of the AID of an agent
         self.agnt = subing.CesrSuber(db=self, subkey='agnt.', klas=coring.Prefixer)
+
+        # Sub-database keyed by qb64 agent AID mapping to the Prefixer object of the AID of an controller
         self.ctrl = subing.CesrSuber(db=self, subkey='ctrl.', klas=coring.Prefixer)
+
+        # Sub-database keyed by qb64 AID mapping to the Prefixer object of the AID of its Agent
         self.aids = subing.CesrSuber(db=self,
                                      subkey='aids.',
                                      klas=coring.Prefixer)

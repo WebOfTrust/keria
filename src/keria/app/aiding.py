@@ -5,7 +5,6 @@ keria.app.aiding module
 
 """
 import json
-import time
 from dataclasses import asdict
 from urllib.parse import urlparse
 
@@ -13,7 +12,7 @@ import falcon
 from keri import kering
 from keri.app import habbing
 from keri.app.keeping import Algos
-from keri.core import coring
+from keri.core import coring, eventing
 from keri.core.coring import Ilks
 from keri.db import dbing
 from keri.help import ogler
@@ -25,8 +24,8 @@ logger = ogler.getLogger()
 
 
 def loadEnds(app, agency, authn):
-    agentEnd = AgentResourceEnd(agency=agency, authn=authn)
-    app.add_route("/agent/{caid}", agentEnd)
+    groupEnd = AgentResourceEnd(agency=agency, authn=authn)
+    app.add_route("/agent/{caid}", groupEnd)
 
     aidsEnd = IdentifierCollectionEnd()
     app.add_route("/identifiers", aidsEnd)
@@ -60,8 +59,8 @@ def loadEnds(app, agency, authn):
     contactImgEnd = ContactImageResourceEnd()
     app.add_route("/contacts/{prefix}/img", contactImgEnd)
 
-    agentEnd = GroupMemberCollectionEnd()
-    app.add_route("/identifiers/{name}/members", agentEnd)
+    groupEnd = GroupMemberCollectionEnd()
+    app.add_route("/identifiers/{name}/members", groupEnd)
 
     return aidEnd
 
@@ -128,7 +127,7 @@ class AgentResourceEnd:
         """
         agent = self.agency.get(caid)
         if agent is None:
-            raise falcon.HTTPNotFound(f"no agent for {caid}")
+            raise falcon.HTTPNotFound(description=f"no agent for {caid}")
 
         typ = req.params.get("type")
         if typ == "ixn":
@@ -626,7 +625,7 @@ class IdentifierOOBICollectionEnd:
             for wit in hab.kever.wits:
                 urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
                 if not urls:
-                    raise falcon.HTTPNotFound(f"unable to query witness {wit}, no http endpoint")
+                    raise falcon.HTTPNotFound(description=f"unable to query witness {wit}, no http endpoint")
 
                 up = urlparse(urls[kering.Schemes.http])
                 oobis.append(f"{kering.Schemes.http}://{up.hostname}:{up.port}/oobi/{hab.pre}/witness/{wit}")
@@ -642,6 +641,9 @@ class IdentifierOOBICollectionEnd:
             res["oobis"] = oobis
         elif role in (kering.Roles.agent,):  # Fetch URL OOBIs for all witnesses
             roleUrls = hab.fetchRoleUrls(cid=hab.pre, role=kering.Roles.agent, scheme=kering.Schemes.http)
+            if kering.Roles.agent not in roleUrls:
+                raise falcon.HTTPNotFound(description=f"unable to query agent roles for {hab.pre}, no http endpoint")
+
             aoobis = roleUrls[kering.Roles.agent]
 
             oobis = list()
@@ -670,12 +672,12 @@ class EndRoleCollectionEnd:
         if name is not None:
             hab = agent.hby.habByName(name)
             if hab is None:
-                raise falcon.errors.HTTPNotFound(f"invalid alias {name}")
+                raise falcon.errors.HTTPNotFound(description=f"invalid alias {name}")
             pre = hab.pre
         elif aid is not None:
             pre = aid
         else:
-            raise falcon.HTTPBadRequest("either `aid` or `name` are required in the path")
+            raise falcon.HTTPBadRequest(description="either `aid` or `name` are required in the path")
 
         if role is not None:
             keys = (pre, role,)
@@ -703,7 +705,7 @@ class EndRoleCollectionEnd:
 
         """
         if role is not None or aid is not None:
-            raise falcon.HTTPNotFound("route not found")
+            raise falcon.HTTPNotFound(description="route not found")
 
         agent = req.context.agent
         body = req.get_media()
@@ -719,22 +721,40 @@ class EndRoleCollectionEnd:
 
         hab = agent.hby.habByName(name)
         if hab is None:
-            raise falcon.errors.HTTPNotFound(f"invalid alias {name}")
+            raise falcon.errors.HTTPNotFound(description=f"invalid alias {name}")
 
         if pre != hab.pre:
-            raise falcon.errors.HTTPBadRequest(description=f"error trying to create end role for unknown local AID {pre}")
+            raise falcon.errors.HTTPBadRequest(
+                description=f"error trying to create end role for unknown local AID {pre}")
 
         rsigers = [coring.Siger(qb64=rsig) for rsig in rsigs]
         tsg = (hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn), hab.kever.serder.saider, rsigers)
-        agent.hby.rvy.processReply(rserder, tsgs=[tsg])
+        try:
+            agent.hby.rvy.processReply(rserder, tsgs=[tsg])
+        except kering.UnverifiedReplyError:
+            pass
 
-        msg = hab.loadEndRole(cid=pre, role=role, eid=eid)
-        if msg is None:
-            raise falcon.errors.HTTPBadRequest(description=f"invalid end role rpy={rserder.ked}")
+        if isinstance(hab, habbing.SignifyGroupHab):
+            seal = eventing.SealEvent(i=hab.kever.prefixer.qb64,
+                                      s=hex(hab.kever.lastEst.s),
+                                      d=hab.kever.lastEst.d)
+            msg = eventing.messagize(serder=rserder,
+                                     sigers=rsigers,
+                                     seal=seal,
+                                     pipelined=True)
+            atc = bytes(msg[rserder.size:])
 
-        rep.status = falcon.HTTP_200
+            others = [smid for smid in hab.db.signingMembers(hab.pre) if smid != hab.mhab.pre]
+            for o in others:
+                agent.postman.send(hab=agent.agentHab, dest=o, topic="multisig", serder=rserder,
+                                   attachment=atc)
+
+        oid = ".".join([pre, role, eid])
+        op = agent.monitor.submit(oid, longrunning.OpTypes.endrole, metadata=dict(cid=pre, role=role, eid=eid))
+
         rep.content_type = "application/json"
-        rep.data = rserder.raw
+        rep.status = falcon.HTTP_202
+        rep.data = op.to_json().encode("utf-8")
 
 
 class EndRoleResourceEnd:
@@ -744,16 +764,22 @@ class EndRoleResourceEnd:
 
 
 class RpyEscrowCollectionEnd:
+
     @staticmethod
     def on_get(req, rep):
         agent = req.context.agent
 
         # Optional Route parameter
         route = req.params.get("route")
+        keys = (route,) if route is not None else ()
+        events = []
+        for saider in agent.hby.db.rpes.get(keys=keys):
+            serder = agent.hby.db.rpys.get(keys=(saider.qb64,))
+            events.append(serder.ked)
 
-        rep.set_header('Content-Type', "text/event-stream")
+        rep.set_header("Content-Type", "application/json")
         rep.status = falcon.HTTP_200
-        rep.stream = ReplyEscrowIterable(db=agent.hby.db, route=route)
+        rep.data = json.dumps(events).encode("utf-8")
 
 
 class ChallengeCollectionEnd:
@@ -1310,43 +1336,6 @@ class ContactResourceEnd:
             raise falcon.HTTPNotFound(description=f"no contact information to delete for {prefix}")
 
         rep.status = falcon.HTTP_202
-
-
-class ReplyEscrowIterable:
-    TimeoutMBX = 300000
-
-    def __init__(self, db, route=None, retry=5000):
-        self.db = db
-        self.keys = (route,) if route is not None else ()
-        self.retry = retry
-        self.sent = []
-
-    def __iter__(self):
-        self.start = self.end = time.perf_counter()
-        return self
-
-    def __next__(self):
-        if self.end - self.start < self.TimeoutMBX:
-            if self.start == self.end:
-                self.end = time.perf_counter()
-                return bytearray(f"retry: {self.retry}\n\n".encode("utf-8"))
-
-            data = bytearray()
-            for saider in self.db.rpes.get(keys=self.keys):
-                if saider.qb64 in self.sent:  # Send each event only once per connection
-                    continue
-
-                serder = self.db.rpys.get(keys=(saider.qb64,))
-                data.extend(bytearray("id: {}\nevent: {}\nretry: {}\ndata: ".format(serder.said, serder.said, self.retry)
-                                      .encode("utf-8")))
-                data.extend(serder.raw)
-                data.extend(b'\n\n')
-                self.sent.append(serder.said)
-                self.start = time.perf_counter()
-            self.end = time.perf_counter()
-            return data
-
-        raise StopIteration
 
 
 class GroupMemberCollectionEnd:
