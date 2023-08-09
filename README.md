@@ -41,47 +41,7 @@ The code is built using Typescript and running code locally requires a Mac or Li
 
 Account Creation Workflow
 
-
-sequenceDiagram
-    actor u as User
-    participant s as Signify
-    participant c as Cloud Agent
-    u ->> s: Create Account
-    s ->> s: Generate Pub/Pri Keys
-    s ->>+ c: Request ICP Event Creation with Keys
-    note over s,c: This call can not be secured
-    note right of c: Creates ICP Event
-    c ->>- s: Return ICP event
-    s ->>+ c: Create Account with Signed ICP Event
-    note over s,c: Call Signed by new Keys
-    note right of c: Parses and Saves ICP
-    note right of c: Create Account with new AID
-    c ->>- s: Return New Account KeyState
-    s ->>+ c: Save Key Information
-    c ->>- s: Key Information Saved
-    s ->> u: Return New Account Information
+![Account Creation](/docs/diagrams/account-creation-workflow.png)
 
 
-sequenceDiagram
-    actor u as User
-    participant a as Web Page App
-    participant s as Signify
-    participant c as Cloud Agent
-    u ->> a: Create Account
-    a ->>+ s: Generate Pub/Pri Keys
-    s ->>- a: Return new Pub/Pri Keypair
-    a ->>+ c: Request ICP Event Creation with Keys
-    note over s,c: This call can not be secured
-    note right of c: Creates ICP Event
-    c ->>- a: Return ICP event
-    a ->>+ s: Sign ICP Event
-    s ->>- a: Return Signed Event
-    a ->>+ c: Create Account with Signed ICP Event
-    note over s,c: Call Signed by new Keys
-    note right of c: Parses and Saves ICP
-    note right of c: Create Account with new AID
-    c ->>- a: Return New Account KeyState
-    a ->>+ s: Save Key Information
-    s ->>+ c: Save Key Information
-    c ->>- s: Key Information Saved
-    a ->> u: Return New Account Information
+![Account Creation Webpage](/docs/diagrams/account-creation-webpage-workflow.png)
