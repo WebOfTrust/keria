@@ -246,7 +246,7 @@ export class SignifyClient {
             }
         })
     }
- 
+
     async rotate(nbran: string, aids: [string] ){
         let data = this.controller.rotate(nbran, aids)
         await fetch(this.url + "/agent/" + this.controller.pre, {
@@ -256,7 +256,7 @@ export class SignifyClient {
                 "Content-Type": "application/json"
             }
         })
-        
+
     }
 
     identifiers() {
@@ -301,6 +301,10 @@ export class SignifyClient {
 
     notifications() {
         return new Notifications(this)
+    }
+
+    escrows(): Escrows {
+        return new Escrows(this)
     }
 }
 
@@ -565,11 +569,11 @@ class Identifier {
         let res = await this.client.fetch("/identifiers/" + name, "PUT", jsondata)
         return res.json()
     }
-    async addEndRole(name: string, role: string, eid?: string) {
+    async addEndRole(name: string, role: string, eid?: string, stamp?: string) {
         const hab = await this.get(name)
         const pre = hab.prefix
 
-        const rpy = this.makeEndRole(pre, role, eid)
+        const rpy = this.makeEndRole(pre, role, eid, stamp)
         const keeper = this.client.manager!.get(hab)
         const sigs = keeper.sign(b(rpy.raw))
 
@@ -582,7 +586,7 @@ class Identifier {
         return res.json()
 
     }
-    makeEndRole(pre: string, role: string, eid?: string) {
+    makeEndRole(pre: string, role: string, eid?: string, stamp?: string) {
         const data: any = {
             cid: pre,
             role: role
@@ -591,7 +595,12 @@ class Identifier {
             data.eid = eid
         }
         const route = "/end/role/add"
-        return reply(route, data, undefined, undefined, Serials.JSON)
+        return reply(route, data, stamp, undefined, Serials.JSON)
+    }
+
+    async members(name: string) {
+        let res = await this.client.fetch("/identifiers/" + name + "/members", "GET", undefined)
+        return res.json()
     }
 }
 
@@ -1290,5 +1299,23 @@ class Notifications {
         return await res.json()
     }
 
+}
+
+class Escrows {
+    client: SignifyClient
+
+    constructor(client: SignifyClient) {
+        this.client = client
+    }
+
+    async listReply(route?:string) {
+        let params = new URLSearchParams()
+        if (route !== undefined) {params.append('route', route)}
+
+        let path = `/escrows/rpy` + '?' + params.toString()
+        let method = 'GET'
+        let res = await this.client.fetch(path, method, null)
+        return await res.json()
+    }
 }
 
