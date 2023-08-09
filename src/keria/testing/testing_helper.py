@@ -455,7 +455,8 @@ class Helpers:
         body = dict(rpy=rpy.ked, sigs=sigs)
 
         res = client.simulate_post(path=f"/identifiers/{name}/endroles", json=body)
-        ked = res.json
+        op = res.json
+        ked = op["response"]
         serder = coring.Serder(ked=ked)
         assert serder.raw == rpy.raw
 
@@ -499,8 +500,8 @@ class Helpers:
         return registries[0], issuer.json
 
     @staticmethod
-    def endrole(cid, eid):
-        data = dict(cid=cid, role="agent", eid=eid)
+    def endrole(cid, eid, role="agent"):
+        data = dict(cid=cid, role=role, eid=eid)
         return eventing.reply(route="/end/role/add", data=data)
 
     @staticmethod

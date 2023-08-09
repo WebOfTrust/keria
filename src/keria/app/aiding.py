@@ -12,7 +12,7 @@ import falcon
 from keri import kering
 from keri.app import habbing
 from keri.app.keeping import Algos
-from keri.core import coring
+from keri.core import coring, eventing
 from keri.core.coring import Ilks
 from keri.db import dbing
 from keri.help import ogler
@@ -24,8 +24,8 @@ logger = ogler.getLogger()
 
 
 def loadEnds(app, agency, authn):
-    agentEnd = AgentResourceEnd(agency=agency, authn=authn)
-    app.add_route("/agent/{caid}", agentEnd)
+    groupEnd = AgentResourceEnd(agency=agency, authn=authn)
+    app.add_route("/agent/{caid}", groupEnd)
 
     aidsEnd = IdentifierCollectionEnd()
     app.add_route("/identifiers", aidsEnd)
@@ -37,9 +37,15 @@ def loadEnds(app, agency, authn):
 
     endRolesEnd = EndRoleCollectionEnd()
     app.add_route("/identifiers/{name}/endroles", endRolesEnd)
+    app.add_route("/identifiers/{name}/endroles/{role}", endRolesEnd)
+    app.add_route("/endroles/{aid}", endRolesEnd)
+    app.add_route("/endroles/{aid}/{role}", endRolesEnd)
 
     endRoleEnd = EndRoleResourceEnd()
-    app.add_route("/identifiers/{name}/endroles/{cid}/{role}/{eid}", endRoleEnd)
+    app.add_route("/identifiers/{name}/endroles/{role}/{eid}", endRoleEnd)
+
+    rpyEscrowEnd = RpyEscrowCollectionEnd()
+    app.add_route("/escrows/rpy", rpyEscrowEnd)
 
     chaEnd = ChallengeCollectionEnd()
     app.add_route("/challenges", chaEnd)
@@ -52,6 +58,9 @@ def loadEnds(app, agency, authn):
     app.add_route("/contacts/{prefix}", contactResEnd)
     contactImgEnd = ContactImageResourceEnd()
     app.add_route("/contacts/{prefix}/img", contactImgEnd)
+
+    groupEnd = GroupMemberCollectionEnd()
+    app.add_route("/identifiers/{name}/members", groupEnd)
 
     return aidEnd
 
@@ -118,7 +127,7 @@ class AgentResourceEnd:
         """
         agent = self.agency.get(caid)
         if agent is None:
-            raise falcon.HTTPNotFound(f"no agent for {caid}")
+            raise falcon.HTTPNotFound(description=f"no agent for {caid}")
 
         typ = req.params.get("type")
         if typ == "ixn":
@@ -232,6 +241,11 @@ class IdentifierCollectionEnd:
     """ Resource class for creating and managing identifiers """
 
     @staticmethod
+    def on_options(req, rep):
+        rep.add_header("Accept-Ranges", "aids")
+        rep.status = falcon.HTTP_200
+
+    @staticmethod
     def on_get(req, rep):
         """ Identifier List GET endpoint
 
@@ -243,22 +257,36 @@ class IdentifierCollectionEnd:
         agent = req.context.agent
         res = []
 
-        last = req.params.get("last")
-        limit = req.params.get("limit")
+        rng = req.get_header("Range")
+        if rng is None:
+            rep.status = falcon.HTTP_200
+            start = 0
+            end = 9
+        else:
+            rep.status = falcon.HTTP_206
+            start, end = httping.parseRangeHeader(rng, "aids")
 
-        limit = limit if not limit is None else "25"
-        last = last if last is not None else ""
-
-        for name, habord in agent.hby.db.habs.getItemIter(keys=(last,)):
-            name = ".".join(name)  # detupleize the database key name
-            if len(res) == int(limit, 10):
+        count = agent.hby.db.habs.cntAll()
+        it = agent.hby.db.habs.getItemIter()
+        for _ in range(start):
+            try:
+                next(it)
+            except StopIteration:
                 break
+
+        for name, habord in it:
+            name = ".".join(name)  # detupleize the database key name
 
             hab = agent.hby.habByName(name)
             data = info(hab, agent.mgr)
             res.append(data)
 
-        rep.status = falcon.HTTP_200
+            if (not end == -1) and len(res) == (end - start) + 1:
+                break
+
+        end = start + (len(res) - 1) if len(res) > 0 else 0
+        rep.set_header("Accept-Ranges", "aids")
+        rep.set_header("Content-Range", f"aids {start}-{end}/{count}")
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
 
@@ -546,8 +574,8 @@ def info(hab, rm, full=False):
         prefix=hab.pre,
     )
 
-    if not isinstance(hab, habbing.SignifyHab):
-        raise kering.ConfigurationError("agent only allows SignifyHab instances")
+    if not isinstance(hab, habbing.SignifyHab) and not isinstance(hab, habbing.SignifyGroupHab):
+        raise kering.ConfigurationError(f"agent only allows SignifyHab instances, {type(hab)}")
 
     keeper = rm.get(pre=hab.pre)
     data.update(keeper.params(pre=hab.pre))
@@ -597,7 +625,7 @@ class IdentifierOOBICollectionEnd:
             for wit in hab.kever.wits:
                 urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
                 if not urls:
-                    raise falcon.HTTPNotFound(f"unable to query witness {wit}, no http endpoint")
+                    raise falcon.HTTPNotFound(description=f"unable to query witness {wit}, no http endpoint")
 
                 up = urlparse(urls[kering.Schemes.http])
                 oobis.append(f"{kering.Schemes.http}://{up.hostname}:{up.port}/oobi/{hab.pre}/witness/{wit}")
@@ -613,6 +641,9 @@ class IdentifierOOBICollectionEnd:
             res["oobis"] = oobis
         elif role in (kering.Roles.agent,):  # Fetch URL OOBIs for all witnesses
             roleUrls = hab.fetchRoleUrls(cid=hab.pre, role=kering.Roles.agent, scheme=kering.Schemes.http)
+            if kering.Roles.agent not in roleUrls:
+                raise falcon.HTTPNotFound(description=f"unable to query agent roles for {hab.pre}, no http endpoint")
+
             aoobis = roleUrls[kering.Roles.agent]
 
             oobis = list()
@@ -635,15 +666,47 @@ class IdentifierOOBICollectionEnd:
 class EndRoleCollectionEnd:
 
     @staticmethod
-    def on_post(req, rep, name):
+    def on_get(req, rep, name=None, aid=None, role=None):
+        agent = req.context.agent
+
+        if name is not None:
+            hab = agent.hby.habByName(name)
+            if hab is None:
+                raise falcon.errors.HTTPNotFound(description=f"invalid alias {name}")
+            pre = hab.pre
+        elif aid is not None:
+            pre = aid
+        else:
+            raise falcon.HTTPBadRequest(description="either `aid` or `name` are required in the path")
+
+        if role is not None:
+            keys = (pre, role,)
+        else:
+            keys = (pre,)
+
+        ends = []
+        for (_, erole, eid), end in agent.hby.db.ends.getItemIter(keys=keys):
+            ends.append(dict(cid=pre, role=erole, eid=eid))
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(ends).encode("utf-8")
+
+    @staticmethod
+    def on_post(req, rep, name, aid=None, role=None):
         """
 
         Args:
             req (Request): Falcon HTTP request object
             rep (Response): Falcon HTTP response object
             name (str): human readable alias for AID
+            aid (str): Not supported for POST.  If provided, a 404 is returned
+            role (str): Not supported for POST.  If provided, a 404 is returned
 
         """
+        if role is not None or aid is not None:
+            raise falcon.HTTPNotFound(description="route not found")
+
         agent = req.context.agent
         body = req.get_media()
 
@@ -658,28 +721,65 @@ class EndRoleCollectionEnd:
 
         hab = agent.hby.habByName(name)
         if hab is None:
-            raise falcon.errors.HTTPNotFound(f"invalid alias {name}")
+            raise falcon.errors.HTTPNotFound(description=f"invalid alias {name}")
 
         if pre != hab.pre:
-            raise falcon.errors.HTTPBadRequest(description=f"error trying to create end role for unknown local AID {pre}")
+            raise falcon.errors.HTTPBadRequest(
+                description=f"error trying to create end role for unknown local AID {pre}")
 
         rsigers = [coring.Siger(qb64=rsig) for rsig in rsigs]
         tsg = (hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn), hab.kever.serder.saider, rsigers)
-        agent.hby.rvy.processReply(rserder, tsgs=[tsg])
+        try:
+            agent.hby.rvy.processReply(rserder, tsgs=[tsg])
+        except kering.UnverifiedReplyError:
+            pass
 
-        msg = hab.loadEndRole(cid=pre, role=role, eid=eid)
-        if msg is None:
-            raise falcon.errors.HTTPBadRequest(description=f"invalid end role rpy={rserder.ked}")
+        if isinstance(hab, habbing.SignifyGroupHab):
+            seal = eventing.SealEvent(i=hab.kever.prefixer.qb64,
+                                      s=hex(hab.kever.lastEst.s),
+                                      d=hab.kever.lastEst.d)
+            msg = eventing.messagize(serder=rserder,
+                                     sigers=rsigers,
+                                     seal=seal,
+                                     pipelined=True)
+            atc = bytes(msg[rserder.size:])
 
-        rep.status = falcon.HTTP_200
+            others = [smid for smid in hab.db.signingMembers(hab.pre) if smid != hab.mhab.pre]
+            for o in others:
+                agent.postman.send(hab=agent.agentHab, dest=o, topic="multisig", serder=rserder,
+                                   attachment=atc)
+
+        oid = ".".join([pre, role, eid])
+        op = agent.monitor.submit(oid, longrunning.OpTypes.endrole, metadata=dict(cid=pre, role=role, eid=eid))
+
         rep.content_type = "application/json"
-        rep.data = rserder.raw
+        rep.status = falcon.HTTP_202
+        rep.data = op.to_json().encode("utf-8")
 
 
 class EndRoleResourceEnd:
 
     def on_delete(self, req, rep):
         pass
+
+
+class RpyEscrowCollectionEnd:
+
+    @staticmethod
+    def on_get(req, rep):
+        agent = req.context.agent
+
+        # Optional Route parameter
+        route = req.params.get("route")
+        keys = (route,) if route is not None else ()
+        events = []
+        for saider in agent.hby.db.rpes.get(keys=keys):
+            serder = agent.hby.db.rpys.get(keys=(saider.qb64,))
+            events.append(serder.ked)
+
+        rep.set_header("Content-Type", "application/json")
+        rep.status = falcon.HTTP_200
+        rep.data = json.dumps(events).encode("utf-8")
 
 
 class ChallengeCollectionEnd:
@@ -1237,3 +1337,33 @@ class ContactResourceEnd:
 
         rep.status = falcon.HTTP_202
 
+
+class GroupMemberCollectionEnd:
+
+    @staticmethod
+    def on_get(req, rep, name):
+        agent = req.context.agent
+
+        hab = agent.hby.habByName(name)
+        if hab is None:
+            raise falcon.errors.HTTPNotFound(description=f"invalid alias {name}")
+
+        if not isinstance(hab, habbing.SignifyGroupHab):
+            raise falcon.HTTPBadRequest(description="members endpoint only available for group AIDs")
+
+        smids = hab.db.signingMembers(hab.pre)
+        rmids = hab.db.rotationMembers(hab.pre)
+
+        signing = []
+        for smid in smids:
+            ends = hab.endsFor(smid)
+            signing.append(dict(aid=smid, ends=ends))
+
+        rotation = []
+        for rmid in rmids:
+            ends = hab.endsFor(rmid)
+            rotation.append(dict(aid=rmid, ends=ends))
+
+        data = dict(signing=signing, rotation=rotation)
+        rep.status = falcon.HTTP_200
+        rep.data = json.dumps(data).encode("utf-8")

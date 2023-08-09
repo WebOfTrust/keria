@@ -64,7 +64,7 @@ setup(
         'Topic :: Utilities',
     ],
     project_urls={
-        'Issue Tracker': 'https://github.com/WebOfTrust/cesrpy/issues',
+        'Issue Tracker': 'https://github.com/WebOfTrust/keria/issues',
     },
     keywords=[
         "secure attribution",

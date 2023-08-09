@@ -12,13 +12,16 @@ from dataclasses import asdict
 
 import falcon
 from falcon import testing
+from keri import kering
 from keri.app import habbing, keeping
 from keri.app.keeping import Algos
 from keri.core import coring, eventing, parsing
 from keri.core.coring import MtrDex
+from keri.db.basing import LocationRecord
 from keri.peer import exchanging
 
 from keria.app import aiding, agenting
+from keria.app.aiding import IdentifierOOBICollectionEnd, RpyEscrowCollectionEnd
 
 
 def test_load_ends(helpers):
@@ -39,7 +42,7 @@ def test_load_ends(helpers):
         assert isinstance(end, aiding.IdentifierOOBICollectionEnd)
         (end, *_) = app._router.find("/identifiers/NAME/endroles")
         assert isinstance(end, aiding.EndRoleCollectionEnd)
-        (end, *_) = app._router.find("/identifiers/NAME/endroles/CID/witness/EID")
+        (end, *_) = app._router.find("/identifiers/NAME/endroles/witness/EID")
         assert isinstance(end, aiding.EndRoleResourceEnd)
         (end, *_) = app._router.find("/challenges")
         assert isinstance(end, aiding.ChallengeCollectionEnd)
@@ -61,6 +64,11 @@ def test_endrole_ends(helpers):
         app.add_route("/identifiers/{name}", idResEnd)
         endRolesEnd = aiding.EndRoleCollectionEnd()
         app.add_route("/identifiers/{name}/endroles", endRolesEnd)
+        app.add_route("/endroles/{aid}", endRolesEnd)
+        app.add_route("/endroles/{aid}/{role}", endRolesEnd)
+
+        # Bad route to test error condition
+        app.add_route("/endroles", endRolesEnd)
 
         salt = b'0123456789abcdef'
         op = helpers.createAid(client, "user1", salt)
@@ -73,7 +81,8 @@ def test_endrole_ends(helpers):
         body = dict(rpy=rpy.ked, sigs=sigs)
 
         res = client.simulate_post(path=f"/identifiers/user1/endroles", json=body)
-        ked = res.json
+        op = res.json
+        ked = op["response"]
         serder = coring.Serder(ked=ked)
         assert serder.raw == rpy.raw
 
@@ -81,6 +90,49 @@ def test_endrole_ends(helpers):
         end = agent.hby.db.ends.get(keys=keys)
         assert end is not None
         assert end.allowed is True
+
+        # Test GET method
+        # Must be valid aid alias
+        res = client.simulate_get(path=f"/identifiers/bad/endroles")
+        assert res.status_code == 404
+
+        # Get endrols
+        res = client.simulate_get(path=f"/identifiers/user1/endroles")
+        assert res.status_code == 200
+
+        ends = res.json
+        assert len(ends) == 1
+        assert ends[0] == {'cid': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                           'role': 'agent',
+                           'eid': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9'}
+
+        # Test access with AID
+        res = client.simulate_get(path="/endroles")
+        assert res.status_code == 400
+
+        res = client.simulate_get(path="/endroles/EXXXVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY")
+        assert res.status_code == 200
+        assert len(res.json) == 0
+
+        res = client.simulate_get(path="/endroles/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY")
+        assert res.status_code == 200
+        assert len(res.json) == 1
+        assert ends[0] == {'cid': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                           'role': 'agent',
+                           'eid': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9'}
+
+        res = client.simulate_get(path="/endroles/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/agent")
+        assert res.status_code == 200
+        assert len(res.json) == 1
+        assert ends[0] == {'cid': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                           'role': 'agent',
+                           'eid': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9'}
+
+
+
+
+
+
 
 
 def test_agent_resource(helpers, mockHelpingNowUTC):
@@ -159,6 +211,9 @@ def test_identifier_collection_end(helpers):
         resend = aiding.IdentifierResourceEnd()
         app.add_route("/identifiers", end)
         app.add_route("/identifiers/{name}", resend)
+
+        groupEnd = aiding.GroupMemberCollectionEnd()
+        app.add_route("/identifiers/{name}/members", groupEnd)
 
         client = testing.TestClient(app)
 
@@ -412,6 +467,25 @@ def test_identifier_collection_end(helpers):
                                   'ECTS-VsMzox2NoMaLIei9Gb6361Z3u0fFFWmjEjEeD64',
                                   'ED7Jk3MscDy8IHtb2k1k6cs0Oe5rEb3_8XKD1Ut_gCo8']
 
+        # Test Group Members
+
+        # try with bad aid alias
+        res = client.simulate_get(path="/identifiers/janky/members")
+        assert res.status_code == 404
+
+        # try with single sig
+        res = client.simulate_get(path="/identifiers/aid1/members")
+        assert res.status_code == 400
+
+        res = client.simulate_get(path="/identifiers/multisig/members")
+        assert res.status_code == 200
+        assert "signing" in res.json
+        signing = res.json["signing"]
+        assert len(signing) == 5  # this number is a little janky because we reuse public keys above, leaving for now
+        assert "rotation" in res.json
+        rotation = res.json["rotation"]
+        assert len(rotation) == 5  # this number is a little janky because we reuse rotation keys above, leaving for now
+
     # Lets test randy with some key rotations and interaction events
     with helpers.openKeria() as (agency, agent, app, client):
         end = aiding.IdentifierCollectionEnd()
@@ -555,6 +629,7 @@ def test_identifier_collection_end(helpers):
                 }
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
         assert res.status_code == 202
+
 
 def test_challenge_ends(helpers):
     with helpers.openKeria() as (agency, agent, app, client):
@@ -876,4 +951,117 @@ def test_identifier_resource_end(helpers):
         res = client.simulate_get(path="/identifiers/aid1")
         assert res.status_code == 200
         assert res.json['prefix'] == 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY'
+
+
+def test_oobi_ends(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+
+        endRolesEnd = aiding.EndRoleCollectionEnd()
+        app.add_route("/identifiers/{name}/endroles", endRolesEnd)
+        aidOOBIsEnd = IdentifierOOBICollectionEnd()
+        app.add_route("/identifiers/{name}/oobis", aidOOBIsEnd)
+
+        client = testing.TestClient(app)
+        # Create an AID to test against
+        salt = b'0123456789abcdef'
+        op = helpers.createAid(client, "pal", salt)
+        iserder = coring.Serder(ked=op["response"])
+        assert iserder.pre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+
+        # Test before endroles are added
+        res = client.simulate_get("/identifiers/pal/oobis?role=agent")
+        assert res.status_code == 404
+
+        rpy = helpers.endrole(iserder.pre, agent.agentHab.pre)
+        sigs = helpers.sign(salt, 0, 0, rpy.raw)
+        body = dict(rpy=rpy.ked, sigs=sigs)
+
+        res = client.simulate_post(path=f"/identifiers/pal/endroles", json=body)
+        op = res.json
+        ked = op["response"]
+        serder = coring.Serder(ked=ked)
+        assert serder.raw == rpy.raw
+
+        # must be a valid aid alias
+        res = client.simulate_get("/identifiers/bad/oobis")
+        assert res.status_code == 404
+
+        # role parameter is required
+        res = client.simulate_get("/identifiers/pal/oobis")
+        assert res.status_code == 400
+        assert res.json == {'description': 'role parameter required', 'title': '400 Bad Request'}
+
+        # role parameter must be valie
+        res = client.simulate_get("/identifiers/pal/oobis?role=banana")
+        assert res.status_code == 400
+        assert res.json == {'description': 'unsupport role type banana for oobi request',
+                            'title': '400 Bad Request'}
+
+        res = client.simulate_get("/identifiers/pal/oobis?role=agent")
+        assert res.status_code == 200
+        role = res.json['role']
+        oobis = res.json['oobis']
+
+        assert role == "agent"
+        assert len(oobis) == 1
+        assert oobis[0] == ("http://127.0.0.1:3902/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/agent/EI7AkI40M1"
+                            "1MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9")
+
+        res = client.simulate_get("/identifiers/pal/oobis?role=witness")
+        assert res.status_code == 200
+        role = res.json['role']
+        oobis = res.json['oobis']
+
+        assert role == "witness"
+        assert len(oobis) == 0
+
+        res = client.simulate_get("/identifiers/pal/oobis?role=controller")
+        assert res.status_code == 404
+
+        # Jam HTTP loc record for pre in database
+        agent.hby.db.locs.pin(keys=(iserder.pre, kering.Schemes.http), val=LocationRecord(url="http://localhost:1234/"))
+
+        res = client.simulate_get("/identifiers/pal/oobis?role=controller")
+        assert res.status_code == 200
+        role = res.json['role']
+        oobis = res.json['oobis']
+
+        assert role == "controller"
+        assert len(oobis) == 1
+        assert oobis[0] == "http://localhost:1234/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/controller"
+
+
+def test_rpy_escow_end(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        rpyEscrowEnd = RpyEscrowCollectionEnd()
+        app.add_route("/escrows/rpy", rpyEscrowEnd)
+
+        rpy1 = helpers.endrole("EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY",
+                              "ECL8abFVW_0RTZXFhiiA4rkRobNvjTfJ6t-T8UdBRV1e")
+        agent.hby.db.rpes.add(keys=("/end/role",), val=rpy1.saider)
+        agent.hby.db.rpys.put(keys=(rpy1.said,), val=rpy1)
+
+        rpy2 = helpers.endrole("EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY",
+                              "ECL8abFVW_0RTZXFhiiA4rkRobNvjTfJ6t-T8UdBRV1e",
+                              role=kering.Roles.controller)
+        agent.hby.db.rpes.add(keys=("/end/role",), val=rpy2.saider)
+        agent.hby.db.rpys.put(keys=(rpy2.said,), val=rpy2)
+
+        rpy3 = helpers.endrole("EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY",
+                              "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
+                              role=kering.Roles.witness)
+        agent.hby.db.rpes.add(keys=("/end/role",), val=rpy3.saider)
+        agent.hby.db.rpys.put(keys=(rpy3.said,), val=rpy3)
+
+        res = client.simulate_get(path="/escrows/rpy?route=/end/role")
+        assert res.status_code == 200
+        assert len(res.json) == 3
+
+        esc = res.json
+        assert esc[0] == rpy1.ked
+        assert esc[1] == rpy2.ked
+        assert esc[2] == rpy3.ked
+
 
