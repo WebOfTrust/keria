@@ -1,3 +1,4 @@
+// @ts-ignore
 let signify: any;
 
 // @ts-ignore
@@ -50,6 +51,8 @@ async function connect() {
     let op = await identifiers.create("multisig-ts", {bran: salt})
     let aid = op["response"]
 
+    await identifiers.addEndRole("multisig-ts", "agent", d.agent.i)
+
     console.log("Created AID: ", aid)
 
     console.log("Resolving delegator...")
@@ -66,8 +69,7 @@ async function connect() {
 
     console.log("Resolving multisig-kli...")
     op = await oobis.resolve(
-        "http://127.0.0.1:5642/oobi/EFBmwh8vdPTofoautCiEjjuA17gSlEnE3xc-xy-fGzWZ/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv" +
-        "_VmF_dJNN6vkf2Ha",
+        "http://127.0.0.1:5642/oobi/EFBmwh8vdPTofoautCiEjjuA17gSlEnE3xc-xy-fGzWZ",
         "multisig-kli");
     while (!op["done"]) {
         op = await operations.get(op["name"]);

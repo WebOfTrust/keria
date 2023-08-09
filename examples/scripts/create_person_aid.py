@@ -24,8 +24,8 @@ def create_aid():
     operations = client.operations()
     oobis = client.oobis()
 
-    aids = identifiers.list()
-    assert aids == []
+    res = identifiers.list()
+    assert res["aids"] == []
 
     wits = [
         "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
@@ -57,8 +57,7 @@ def create_aid():
 
     print("multisig-sigpy resolving multisig-kli...")
     op = oobis.resolve(
-        oobi="http://127.0.0.1:5642/oobi/EFBmwh8vdPTofoautCiEjjuA17gSlEnE3xc-xy-fGzWZ/witness/BBilc4"
-             "-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
+        oobi="http://127.0.0.1:5642/oobi/EFBmwh8vdPTofoautCiEjjuA17gSlEnE3xc-xy-fGzWZ",
         alias="multisig-kli")
     while not op["done"]:
         op = operations.get(op["name"])
