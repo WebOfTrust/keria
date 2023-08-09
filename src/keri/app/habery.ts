@@ -6,7 +6,6 @@ import {Diger} from "../core/diger";
 import {incept} from "../core/eventing";
 import {Serder} from "../core/serder";
 
-
 export class TraitCodex {
     EstOnly: string = 'EO'  // Only allow establishment events
     DoNotDelegate: string = 'DND'  // Dot not allow delegated identifiers
@@ -56,6 +55,9 @@ export class Hab {
 }
 
 
+/**
+ * Habery
+ */
 export class Habery {
     private readonly _name: string;
     private readonly _mgr: Manager;
@@ -94,10 +96,21 @@ export class Habery {
         return Array.from(this._habs.values())
     }
 
+    /**
+     * habByName
+     * @param {string} name 
+     * @returns {Hab|undefined}
+     */
     habByName(name: string): Hab|undefined {
         return this._habs.get(name)
     }
 
+    /**
+     * makeHab
+     * @param {string} name 
+     * @param {MakeHabArgs} args
+     * @returns {Hab}
+     */
     makeHab(name:string, {code = MtrDex.Blake3_256, transferable = true, isith = undefined, icount = 1,
                           nsith = undefined, ncount = undefined, toad = undefined, wits = undefined, delpre = undefined,
                           estOnly = false, DnD = false, data = undefined}: MakeHabArgs): Hab {

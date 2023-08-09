@@ -4,7 +4,6 @@ import { MtrDex } from "../core/matter";
 import { Diger } from "../core/diger";
 import { incept, rotate, interact } from "../core/eventing";
 import { Serder } from "../core/serder";
-// import { Siger } from "../core/siger";
 import { Tholder } from "../core/tholder";
 import { Ilks, b, Serials, Versionage } from "../core/core";
 import { Verfer } from "../core/verfer";
@@ -14,6 +13,10 @@ import { Cipher } from "../core/cipher";
 import { Seqner } from "../core/seqner";
 import { CesrNumber } from "../core/number";
 
+/**
+ * Agent is a custodial entity that can be used in conjuntion with a local Client to establish the
+ * KERI "signing at the edge" semantic
+ */
 export class Agent {
     pre: string;
     anchor: string;
@@ -22,6 +25,10 @@ export class Agent {
     sn: number | undefined;
     said: string | undefined;
 
+    /**
+     * Agent
+     * @param agent
+     */
     constructor(agent: any) {
         this.pre = "";
         this.anchor = "";
@@ -32,10 +39,7 @@ export class Agent {
         this.parse(agent);
     }
 
-    parse(agent: any) {
-        // if (kel.length < 1) {
-        //     throw new Error("invalid empty KEL");
-        // }
+    private parse(agent: Agent) {
         let [state, verfer,] = this.event(agent);
 
         this.sn = new CesrNumber({}, undefined, state['s']).num
@@ -51,36 +55,16 @@ export class Agent {
         }
 
         this.anchor = state['di'];
-        // for (let evt of kel.kel.slice(1)) {
-        // for (let evt of state.controller.slice(1)) {
-        //     let [rot, nverfer, ndiger] = this.event(evt);
-        //     if (rot.ked['t'] !== Ilks.rot) {
-        //         throw new Error(`invalid rotation event type ${serder.ked['t']}`);
-        //     }
-
-        //     if (new Diger({ qb64b: nverfer.qb64b }).qb64b !== diger.qb64b) {
-        //         throw new Error(`next key mismatch error on rotation event ${serder}`);
-        //     }
-
-        //     verfer = nverfer;
-        //     diger = ndiger;
-        // }
 
         this.verfer = verfer
         this.state = state
     }
 
-    event(evt: any): [any, Verfer, Diger] {
-        // let siger = new Siger({ qb64: evt["sig"] });
 
-
+    private event(evt: any): [any, Verfer, Diger] {
         if (evt['k'].length !== 1) {
             throw new Error(`agent inception event can only have one key`);
         }
-
-        // if (!serder.verfers[0].verify(siger.raw, serder.raw)) {
-        //     throw new Error(`invalid signature on evt ${serder.ked['d']}`);
-        // }
 
         let verfer = new Verfer({ qb64: evt['k'][0] })
 
@@ -102,12 +86,13 @@ export class Agent {
         return [evt, verfer, diger];
     }
 }
+
+/**
+ * Controller is responsible for managing signing keys for the client and agent.  The client
+ * signing key represents the Account for the client on the agent
+ */
 export class Controller {
-    /*
-    *   Controller is responsible for managing signing keys for the client and agent.  The client
-    *   signing key represents the Account for the client on the agent
-    *
-    */
+
     private bran: string;
     public stem: string;
     public tier: Tier;
@@ -119,6 +104,13 @@ export class Controller {
     private keys: string[];
     public ndigs: string[];
 
+    /**
+     * Controller
+     * @param {string} bran 
+     * @param {Tier} tier 
+     * @param {number} ridx 
+     * @param {any} state 
+     */
     constructor(bran: string, tier: Tier, ridx: number = 0, state: any | null = null) {
         this.bran = MtrDex.Salt_128 + 'A' + bran.substring(0, 21)  // qb64 salt for seed
         this.stem = "signify:controller"
@@ -148,6 +140,12 @@ export class Controller {
             this.serder = new Serder(state['ee'])
         }
     }
+
+    /**
+     * approveDelegation
+     * @param {Agent} _agent 
+     * @returns 
+     */
     approveDelegation(_agent: Agent) {
 
         let seqner = new Seqner({sn: _agent.sn})
@@ -176,6 +174,11 @@ export class Controller {
         return this.signer.verfer()
     }
 
+    /**
+     * derive
+     * @param {any} state 
+     * @returns {Serder}
+     */
     derive(state: any) {
         if (state != undefined && state['ee']['s'] === '0') {
             return incept({
@@ -193,6 +196,12 @@ export class Controller {
         }
     }
 
+    /**
+     * rotate
+     * @param {string} bran 
+     * @param {Array<any>} aids 
+     * @returns {Object}
+     */
     rotate(bran: string, aids: Array<any>) {
         let nbran = MtrDex.Salt_128 + 'A' + bran.substring(0, 21)  // qb64 salt for seed
         let nsalter = new Salter({ qb64: nbran, tier: this.tier })
@@ -310,6 +319,13 @@ export class Controller {
         return data
     }
 
+    /**
+     * recrypt
+     * @param enc 
+     * @param decrypter 
+     * @param encrypter 
+     * @returns {Cipher}
+     */
     recrypt(enc: string, decrypter: Decrypter, encrypter: Encrypter) {
         let cipher = new Cipher({ qb64: enc })
         let dnxt = decrypter.decrypt(null, cipher).qb64

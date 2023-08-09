@@ -17,9 +17,9 @@ export class Client {
     }
 
     /**
-     * 
-     * @param name 
-     * @returns 
+     * getAccount
+     * @param {string} name 
+     * @returns {Promise<Response>}
      */
     getAccount(name: string): Promise<Response> {
         let url = this.url(`/account/${name}`)
@@ -28,11 +28,11 @@ export class Client {
     }
 
     /**
-     * 
-     * @param name 
-     * @param key 
-     * @param ndig 
-     * @returns 
+     * createAccount
+     * @param {string} name 
+     * @param {string} key 
+     * @param {string} ndig 
+     * @returns {Promise<Response>}
      */
     createAccount(name: string, key: string, ndig: string): Promise<Response> {
         let url = this.url(`/account/${name}`)

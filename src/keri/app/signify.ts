@@ -21,6 +21,9 @@ export class CredentialTypes {
     static received = "received"
 }
 
+/**
+ * State
+ */
 class State {
     agent: any | null
     controller: any | null
@@ -35,6 +38,9 @@ class State {
     }
 }
 
+/**
+ * SignifyClient
+ */
 export class SignifyClient {
     public controller: Controller
     public url: string
@@ -46,6 +52,13 @@ export class SignifyClient {
     public tier: Tier
     public bootUrl: string
 
+    /**
+     * SignifyClient
+     * @param {string} url 
+     * @param {string} bran 
+     * @param {Tier} tier 
+     * @param {string} bootUrl 
+     */
     constructor(url: string, bran: string, tier: Tier = Tier.low, bootUrl: string = DEFAULT_BOOT_URL) {
         this.url = url
         if (bran.length < 21) {
@@ -65,7 +78,12 @@ export class SignifyClient {
         return [this.url, this.bran, this.pidx, this.authn]
     }
 
-    async boot() {
+    /**
+     * boot
+     * @async
+     * @returns {Promise<Response>}
+     */
+    async boot(): Promise<Response>{
         const [evt, sign] = this.controller?.event ?? [];
         const data = {
             icp: evt.ked,
@@ -74,6 +92,7 @@ export class SignifyClient {
             pidx: 1,
             tier: this.controller?.tier
         };
+
         const res = await fetch(this.bootUrl + "/boot", {
             method: "POST",
             body: JSON.stringify(data),
@@ -85,12 +104,20 @@ export class SignifyClient {
         return res;
     }
 
+
+    /**
+     * state
+     * @async
+     * @returns {Promise<State>}
+     */
     async state(): Promise<State> {
         const caid = this.controller?.pre
+
         let res = await fetch(this.url + `/agent/${caid}`);
         if (res.status == 404) {
             throw new Error(`agent does not exist for controller ${caid}`);
         }
+
         const data = await res.json();
         let state = new State();
         state.agent = data.agent ?? {};
@@ -100,6 +127,10 @@ export class SignifyClient {
         return state;
     }
 
+    /**
+     * connect
+     * @async
+     */
     async connect() {
         const state = await this.state()
         this.pidx = state.pidx
@@ -118,7 +149,16 @@ export class SignifyClient {
         this.authn = new Authenticater(this.controller.signer, this.agent.verfer!)
     }
 
-    async fetch(path: string, method: string, data: any, extraHeaders?: Headers) {
+    /**
+     * fetch
+     * @param {string} path 
+     * @param {string} method 
+     * @param {any} data 
+     * @param {Headers} extraHeaders 
+     * @throws {Error}
+     * @returns {Response}
+     */
+    async fetch(path: string, method: string, data: any, extraHeaders?: Headers): Response {
         let headers = new Headers()
         let signed_headers = new Headers()
         let final_headers = new Headers()
@@ -169,7 +209,16 @@ export class SignifyClient {
         }
     }
 
-    async signedFetch(url: string, path: string, method: string, data: any, aidName: string) {
+    /**
+     * signedFetch
+     * @param {string} url 
+     * @param {string} path 
+     * @param {string} method 
+     * @param {any} data 
+     * @param {string} aidName 
+     * @returns {Promise<Response>}
+     */
+    async signedFetch(url: string, path: string, method: string, data: any, aidName: string): Promise<Response> {
         const hab = await this.identifiers().get(aidName)
         const keeper = this.manager!.get(hab)
 
@@ -208,6 +257,10 @@ export class SignifyClient {
 
     }
 
+    /**
+     * approveDelegation
+     * @async
+     */
     async approveDelegation() {
         let sigs = this.controller.approveDelegation(this.agent!)
 
@@ -225,7 +278,13 @@ export class SignifyClient {
         })
     }
 
-    async saveOldSalt(salt:string) {
+    /**
+     * saveOldSalt
+     * @async
+     * @param {string} salt 
+     * @returns {Promise<Response>}
+     */
+    async saveOldSalt(salt:string): Promise<Response> {
         const caid = this.controller?.pre;
         const body = { salt: salt };
         return await fetch(this.url + "/salt/" + caid, {
@@ -237,7 +296,12 @@ export class SignifyClient {
         })
     }
 
-    async deleteldSalt() {
+    /**
+     * deleteldSalt
+     * @async
+     * @returns {Promise<Response>}
+     */
+    async deleteldSalt(): Promise<Response> {
         const caid = this.controller?.pre;
         return await fetch(this.url + "/salt/" + caid, {
             method: "DELETE",
@@ -247,6 +311,11 @@ export class SignifyClient {
         })
     }
 
+    /**
+     * rotate
+     * @param {string} nbran 
+     * @param {Array<string>} aids 
+     */
     async rotate(nbran: string, aids: [string] ){
         let data = this.controller.rotate(nbran, aids)
         await fetch(this.url + "/agent/" + this.controller.pre, {
@@ -256,65 +325,159 @@ export class SignifyClient {
                 "Content-Type": "application/json"
             }
         })
-
     }
 
-    identifiers() {
+    /**
+     * identifiers
+     * @returns {Identifier}
+     */
+    identifiers(): Identifier {
         return new Identifier(this)
     }
 
-    oobis() {
+    /**
+     * oobis
+     * @returns {Oobis}
+     */
+    oobis(): Oobis {
         return new Oobis(this)
     }
 
-    operations() {
+    /**
+     * operations
+     * @returns {Operations}
+     */
+    operations(): Operations {
         return new Operations(this)
     }
 
-    keyEvents() {
+    /**
+     * keyEvents
+     * @returns {KeyEvents}
+     */
+    keyEvents(): KeyEvents {
         return new KeyEvents(this)
     }
 
-    keyStates() {
+    /**
+     * keyStates
+     * @returns {KeyStates}
+     */
+    keyStates(): KeyStates {
         return new KeyStates(this)
     }
 
-    credentials() {
+    /**
+     * credentials
+     * @returns {Credentials}
+     */
+    credentials(): Credentials {
         return new Credentials(this)
     }
 
-    registries() {
+    /**
+     * registries
+     * @returns {Registries}
+     */
+    registries(): Registries {
         return new Registries(this)
     }
 
-    schemas() {
+    /**
+     * schemas
+     * @returns {Schemas}
+     */
+    schemas(): Schemas {
         return new Schemas(this)
     }
 
-    challenges() {
+    /**
+     * challenges
+     * @returns {Challenges}
+     */
+    challenges(): Challenges {
         return new Challenges(this)
     }
 
-    contacts() {
+    /**
+     * contacts
+     * @returns {Contacts}
+     */
+    contacts(): Contacts {
         return new Contacts(this)
     }
 
-    notifications() {
+    /**
+     * notifications
+     * @returns {Notifications}
+     */
+    notifications(): Notifications {
         return new Notifications(this)
     }
 
+    /**
+     * 
+     * @returns 
+     */
     escrows(): Escrows {
         return new Escrows(this)
     }
 }
 
+export interface CreateIdentiferArgs {
+    transferable?: boolean,
+    isith?: string | number,
+    nsith?: string | number,
+    wits?: string[],
+    toad?: number,
+    proxy?: string,
+    delpre?: string,
+    dcode?: string,
+    data?: any,
+    algo?: Algos,
+    pre?: string,
+    states?: any[],
+    rstates?: any[]
+    prxs?: any[],
+    nxts?: any[],
+    mhab?: any,
+    keys?: any[],
+    ndigs?: any[],
+    bran?: string,
+    count?: number,
+    ncount?: number,
+    tier?: Tier
+}
+
+export interface RotateIdentifierArgs {
+    transferable?: boolean,
+    nsith?: string | number,
+    toad?: number,
+    cuts?: string[],
+    adds?: string[],
+    data?: Array<object>,
+    ncode?: string,
+    ncount?: number,
+    ncodes?: string[],
+    states?: any[],
+    rstates?: any[]
+}
+
+/**
+ * Identifier
+ */
 class Identifier {
     public client: SignifyClient
     constructor(client: SignifyClient) {
         this.client = client
     }
 
-    async list() {
+    /**
+     * list
+     * @async
+     * @returns {Promise<any>}
+     */
+    async list(): Promise<any> {
         let path = `/identifiers`
         let data = null
         let method = 'GET'
@@ -322,7 +485,12 @@ class Identifier {
         return await res.json()
     }
 
-    async get(name: string) {
+    /**
+     * get
+     * @param {string} name 
+     * @returns {Promise<any>}
+     */
+    async get(name: string): Promise<any> {
         let path = `/identifiers/${name}`
         let data = null
         let method = 'GET'
@@ -330,31 +498,14 @@ class Identifier {
         return await res.json()
     }
 
-    async create(name: string,
-        kargs: {
-            transferable?: boolean,
-            isith?: string | number,
-            nsith?: string | number,
-            wits?: string[],
-            toad?: number,
-            proxy?: string,
-            delpre?: string,
-            dcode?: string,
-            data?: any,
-            algo?: Algos,
-            pre?: string,
-            states?: any[],
-            rstates?: any[]
-            prxs?: any[],
-            nxts?: any[],
-            mhab?: any,
-            keys?: any[],
-            ndigs?: any[],
-            bran?: string,
-            count?: number,
-            ncount?: number,
-            tier?: Tier
-        }={}) {
+    /**
+     * create
+     * @async
+     * @param name 
+     * @param {CreateIdentiferArgs} 
+     * @returns {Promise<any>}
+     */
+    async create(name: string, kargs:CreateIdentiferArgs ={}): Promise<any> {
 
         const algo = kargs.algo == undefined ? Algos.salty : kargs.algo
 
@@ -459,7 +610,14 @@ class Identifier {
         return res.json()
     }
 
-    async interact(name: string, data?: any) {
+    /**
+     * interact
+     * @async
+     * @param {string} name 
+     * @param {any} data 
+     * @returns {Promise<any>}
+     */
+    async interact(name: string, data?: any): Promise<any> {
 
         let hab = await this.get(name)
         let pre: string = hab.prefix
@@ -482,24 +640,16 @@ class Identifier {
 
         let res = await this.client.fetch("/identifiers/" + name + "?type=ixn", "PUT", jsondata)
         return res.json()
-
     }
 
-    async rotate(
-        name: string,
-        kargs: {
-            transferable?: boolean,
-            nsith?: string | number,
-            toad?: number,
-            cuts?: string[],
-            adds?: string[],
-            data?: Array<object>,
-            ncode?: string,
-            ncount?: number,
-            ncodes?: string[],
-            states?: any[],
-            rstates?: any[]
-        }={}) {
+
+    /**
+     * rotate
+     * @param name 
+     * @param {RotateIdentifierArgs} kargs 
+     * @returns {Promise<any>}
+     */
+    async rotate(name: string, kargs: RotateIdentifierArgs={}): Promise<any> {
 
         let transferable = kargs.transferable ?? true
         let ncode = kargs.ncode ?? MtrDex.Ed25519_Seed
@@ -569,7 +719,17 @@ class Identifier {
         let res = await this.client.fetch("/identifiers/" + name, "PUT", jsondata)
         return res.json()
     }
-    async addEndRole(name: string, role: string, eid?: string, stamp?: string) {
+
+    /**
+     * addEndRole
+     * @async
+     * @param {string} name 
+     * @param {string} role 
+     * @param {string} eid 
+     * @param {string} stamp 
+     * @returns {Promise<any>}
+     */
+    async addEndRole(name: string, role: string, eid?: string, stamp?: string): Promise<any> {
         const hab = await this.get(name)
         const pre = hab.prefix
 
@@ -586,7 +746,16 @@ class Identifier {
         return res.json()
 
     }
-    makeEndRole(pre: string, role: string, eid?: string, stamp?: string) {
+
+    /**
+     * makeEndRole
+     * @param {string} pre 
+     * @param {string} role 
+     * @param {string} eid 
+     * @param {string} stamp 
+     * @returns {Serder}
+     */
+    makeEndRole(pre: string, role: string, eid?: string, stamp?: string): Serder {
         const data: any = {
             cid: pre,
             role: role
@@ -598,19 +767,34 @@ class Identifier {
         return reply(route, data, stamp, undefined, Serials.JSON)
     }
 
-    async members(name: string) {
+    /**
+     * members
+     * @async
+     * @param {string} name 
+     * @returns {Promise<any>}
+     */
+    async members(name: string): Promise<any> {
         let res = await this.client.fetch("/identifiers/" + name + "/members", "GET", undefined)
         return res.json()
     }
 }
 
+/**
+ * Oobis
+ */
 class Oobis {
     public client: SignifyClient
     constructor(client: SignifyClient) {
         this.client = client
     }
 
-    async get(name: string, role: string = 'agent') {
+    /**
+     * get
+     * @param {string} name 
+     * @param {string} role 
+     * @returns {Promise<any>}
+     */
+    async get(name: string, role: string = 'agent'): Promise<any> {
         let path = `/identifiers/${name}/oobis?role=${role}`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null)
@@ -618,7 +802,14 @@ class Oobis {
 
     }
 
-    async resolve(oobi: string, alias?: string) {
+    /**
+     * resolve
+     * @async
+     * @param oobi 
+     * @param alias 
+     * @returns {Promise<any>}
+     */
+    async resolve(oobi: string, alias?: string): Promise<any> {
         let path = `/oobis`
         let data: any = {
             url: oobi
@@ -633,13 +824,22 @@ class Oobis {
     }
 }
 
+/**
+ * Operations
+ */
 class Operations {
     public client: SignifyClient
     constructor(client: SignifyClient) {
         this.client = client
     }
 
-    async get(name: string) {
+    /**
+     * get
+     * @async
+     * @param {string} name 
+     * @returns {Promise<any>}
+     */
+    async get(name: string): Promise<any> {
         let path = `/operations/${name}`
         let data = null
         let method = 'GET'
@@ -649,13 +849,22 @@ class Operations {
     }
 }
 
+/**
+ * KeyEvents
+ */
 class KeyEvents {
     public client: SignifyClient
     constructor(client: SignifyClient) {
         this.client = client
     }
 
-    async get(pre: string) {
+    /**
+     * get
+     * @async
+     * @param {string} pre 
+     * @returns {Promise<any>}
+     */
+    async get(pre: string): Promise<any> {
         let path = `/events?pre=${pre}`
         let data = null
         let method = 'GET'
@@ -665,13 +874,22 @@ class KeyEvents {
     }
 }
 
+/**
+ * KeyStates
+ */
 class KeyStates {
     public client: SignifyClient
     constructor(client: SignifyClient) {
         this.client = client
     }
 
-    async get(pre: string) {
+    /**
+     * get
+     * @async
+     * @param {string} pre 
+     * @returns {Promise<any>}
+     */
+    async get(pre: string): Promise<any> {
         let path = `/states?pre=${pre}`
         let data = null
         let method = 'GET'
@@ -680,7 +898,13 @@ class KeyStates {
 
     }
 
-    async list(pres: [string]) {
+    /**
+     * list
+     * @async
+     * @param {Array<string>} pres
+     * @returns {Promise<any>}
+     */
+    async list(pres: [string]): Promise<any> {
         let path = `/states?${pres.map(pre => `pre=${pre}`).join('&')}`
         let data = null
         let method = 'GET'
@@ -689,7 +913,15 @@ class KeyStates {
 
     }
 
-    async query(pre: string, sn?: number, anchor?: string) {
+    /**
+     * query
+     * @async
+     * @param {string} pre 
+     * @param {number} sn 
+     * @param {string} anchor 
+     * @returns {Promise<any>}
+     */
+    async query(pre: string, sn?: number, anchor?: string): Promise<any> {
         let path = `/queries`
         let data: any = {
             pre: pre
@@ -704,16 +936,33 @@ class KeyStates {
         let method = 'POST'
         let res = await this.client.fetch(path, method, data)
         return await res.json()
-
     }
 }
 
+export interface CredentialFilter {
+    filter?: object, 
+    sort?: object[], 
+    skip?: number, 
+    limit?: number
+}
+
+/**
+ * Credentials
+ */
 class Credentials {
     public client: SignifyClient
     constructor(client: SignifyClient) {
         this.client = client
     }
-    async list(name: string, kargs: {filter?: object, sort?: object[], skip?: number, limit?: number}={}) {
+
+    /**
+     * list
+     * @async
+     * @param {string} name 
+     * @param {CredentialFilter} kargs 
+     * @returns 
+     */
+    async list(name: string, kargs:CredentialFilter ={}): Promise<any> {
         let path = `/identifiers/${name}/credentials/query`
         let filtr = kargs.filter === undefined ? {} : kargs.filter;
         let sort = kargs.sort === undefined ? [] : kargs.sort;
@@ -732,7 +981,15 @@ class Credentials {
         return await res.json()
     }
 
-    async get(name: string, said: string, includeCESR: boolean = false) {
+    /**
+     * get
+     * @async
+     * @param {string} name 
+     * @param {string} said 
+     * @param {boolean} includeCESR 
+     * @returns {Promise<any>}
+     */
+    async get(name: string, said: string, includeCESR: boolean = false): Promise<any> {
         let path = `/identifiers/${name}/credentials/${said}`
         let method = 'GET'
         let headers = includeCESR? new Headers({'Accept': 'application/json+cesr'}) : new Headers({'Accept': 'application/json'})
@@ -741,7 +998,20 @@ class Credentials {
         return includeCESR? await res.text() : await res.json()
     }
 
-    async issue(name: string, registy: string, schema: string, recipient?: string, credentialData?: any, rules?: any, source?: any, priv: boolean=false) {
+    /**
+     * issue
+     * @async
+     * @param {string} name 
+     * @param {string} registy 
+     * @param {string} schema 
+     * @param {string} recipient 
+     * @param {any} credentialData 
+     * @param {any} rules 
+     * @param {any} source 
+     * @param {boolean} priv 
+     * @returns {Promise<any>}
+     */
+    async issue(name: string, registy: string, schema: string, recipient?: string, credentialData?: any, rules?: any, source?: any, priv: boolean=false): Promise<any> {
         
         // Create Credential
         let hab = await this.client.identifiers().get(name)
@@ -851,7 +1121,14 @@ class Credentials {
 
     }
 
-    async revoke(name: string, said: string) {
+    /**
+     * revoke
+     * @async
+     * @param {string} name 
+     * @param {string} said 
+     * @returns {Promise<any>}
+     */
+    async revoke(name: string, said: string): Promise<any> {
         let hab = await this.client.identifiers().get(name)
         let pre: string = hab.prefix
 
@@ -922,8 +1199,16 @@ class Credentials {
 
     }
 
-
-    async present(name: string, said: string, recipient: string, include: boolean=true) {
+    /**
+     * present
+     * @async
+     * @param {string} name 
+     * @param {string} said 
+     * @param {string} recipient 
+     * @param {boolean} include 
+     * @returns {Promise<string>}
+     */
+    async present(name: string, said: string, recipient: string, include: boolean=true): Promise<string> {
 
         let hab = await this.client.identifiers().get(name)
         let pre: string = hab.prefix
@@ -977,8 +1262,16 @@ class Credentials {
 
     }
 
-    async request(name: string, recipient: string, schema: string, issuer?: string) {
-
+    /**
+     * request
+     * @async
+     * @param {string} name 
+     * @param {string} recipient 
+     * @param {string} schema 
+     * @param {string} issuer 
+     * @returns {Promise<string>}
+     */
+    async request(name: string, recipient: string, schema: string, issuer?: string): Promise<string> {
         let hab = await this.client.identifiers().get(name)
         let pre: string = hab.prefix
 
@@ -1031,20 +1324,38 @@ class Credentials {
     }
 }
 
+/**
+ * Registries
+ */
 class Registries {
     public client: SignifyClient
     constructor(client: SignifyClient) {
         this.client = client
     }
 
-    async list(name:string) {
+    /**
+     * list
+     * @async
+     * @param {string} name
+     * @returns {Promise<any>}
+     */
+    async list(name:string): Promise<any> {
         let path = `/identifiers/${name}/registries`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null)
         return await res.json()
 
     }
-    async create(name: string, registryName: string, nonce?:string) {
+
+    /**
+     * create
+     * @async
+     * @param {string} name 
+     * @param {string} registryName 
+     * @param {string} nonce 
+     * @returns {Promise<any>}
+     */
+    async create(name: string, registryName: string, nonce?:string): Promise<any> {
         // TODO add backers option
         // TODO get estOnly from get_identifier ?
 
@@ -1116,20 +1427,34 @@ class Registries {
 
 }
 
+/**
+ * Schemas
+ */
 class Schemas {
     client: SignifyClient
     constructor(client: SignifyClient) {
         this.client = client
     }
 
-    async get(said: string) {
+    /**
+     * get
+     * @async
+     * @param {string} said 
+     * @returns {Promise<any>}
+     */
+    async get(said: string): Promise<any> {
         let path = `/schema/${said}`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null)
         return await res.json()
     }
 
-    async list() {
+    /**
+     * list
+     * @async
+     * @returns {Promise<any>}
+     */
+    async list(): Promise<any> {
         let path = `/schema`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null)
@@ -1137,19 +1462,41 @@ class Schemas {
     }
 }
 
+/**
+ * Challenges
+ */
 class Challenges {
     client: SignifyClient
+
+    /**
+     * Challenges
+     * @param {SignifyClient} client 
+     */
     constructor(client: SignifyClient) {
         this.client = client
     }
 
-    async generate(strength: number = 128) {
+    /**
+     * generate
+     * @async
+     * @param {number} strength 
+     * @returns {Promise<any>}
+     */
+    async generate(strength: number = 128): Promise<any> {
         let path = `/challenges?strength=${strength.toString()}`
         let method = 'GET'
         let res = await this.client.fetch(path, method, null)
         return await res.json()
     }
 
+    /**
+     * respond
+     * @async
+     * @param {string} name 
+     * @param {string} recipient 
+     * @param {Array<string>} words 
+     * @returns {any}
+     */
     async respond(name: string, recipient: string, words: string[]) {
         let path = `/challenges/${name}`
         let method = 'POST'
@@ -1199,8 +1546,15 @@ class Challenges {
             return resp
         }
     }
-    //ChallengeResourceEnd
-    async accept(name: string, pre: string, said: string) {
+
+    /**
+     * accept
+     * @param {string} name 
+     * @param {string} pre 
+     * @param {string} said 
+     * @returns {Promise<Response>}
+     */
+    async accept(name: string, pre: string, said: string): Promise<Response> {
         let path = `/challenges/${name}`
         let method = 'PUT'
         let data = {
@@ -1213,13 +1567,29 @@ class Challenges {
     }
 }
 
+/**
+ * Contacts
+ */
 class Contacts {
     client: SignifyClient
+
+    /**
+     * Contacts
+     * @param {SignifyClient} client 
+     */
     constructor(client: SignifyClient) {
         this.client = client
     }
 
-    async list(group?:string, filterField?:string, filterValue?:string) {
+    /**
+     * list
+     * @async
+     * @param {string} group 
+     * @param {string} filterField 
+     * @param {string} filterValue 
+     * @returns {Promise<any>}
+     */
+    async list(group?:string, filterField?:string, filterValue?:string): Promise<any> {
         let params = new URLSearchParams()
         if (group !== undefined) {params.append('group', group)}
         if (filterField !== undefined && filterValue !== undefined) {params.append(filterField, filterValue)}
@@ -1231,7 +1601,13 @@ class Contacts {
 
     }
 
-    async get(pre:string) {
+    /**
+     * get
+     * @async
+     * @param {string} pre 
+     * @returns {Promise<any>}
+     */
+    async get(pre:string): Promise<any> {
 
         let path = `/contacts/`+ pre
         let method = 'GET'
@@ -1240,7 +1616,14 @@ class Contacts {
 
     }
 
-    async add(pre: string, info: any) {
+    /**
+     * add
+     * @async
+     * @param {string} pre 
+     * @param {any} info 
+     * @returns {Promise<any>}
+     */
+    async add(pre: string, info: any): Promise<any> {
         let path = `/contacts/`+ pre
         let method = 'POST'
 
@@ -1248,7 +1631,13 @@ class Contacts {
         return await res.json()
     }
 
-    async delete(pre: string) {
+    /**
+     * delete
+     * @async
+     * @param {string} pre 
+     * @returns {Promise<any>}
+     */
+    async delete(pre: string): Promise<any> {
         let path = `/contacts/`+ pre
         let method = 'DELETE'
 
@@ -1256,7 +1645,14 @@ class Contacts {
         return await res.json()
     }
 
-    async update(pre: string, info: any) {
+    /**
+     * update
+     * @async
+     * @param {string} pre 
+     * @param {any} info 
+     * @returns {Promise<any>}
+     */
+    async update(pre: string, info: any): Promise<any> {
         let path = `/contacts/` + pre
         let method = 'PUT'
 
@@ -1266,13 +1662,28 @@ class Contacts {
 
 }
 
+/**
+ * Notifications
+ */
 class Notifications {
     client: SignifyClient
+
+    /**
+     * Notifications
+     * @param {SignifyClient} client 
+     */
     constructor(client: SignifyClient) {
         this.client = client
     }
 
-    async list(last?:string, limit?:number) {
+    /**
+     * list
+     * @async
+     * @param {string} last 
+     * @param {number} limit 
+     * @returns {Promise<any>}
+     */
+    async list(last?:string, limit?:number): Promise<any> {
         let params = new URLSearchParams()
         if (last !== undefined) {params.append('last', last)}
         if (limit !== undefined) {params.append('limit', limit.toString())}
@@ -1283,7 +1694,13 @@ class Notifications {
         return await res.json()
     }
 
-    async mark(said:string) {
+    /**
+     * mark
+     * @async
+     * @param {string} said 
+     * @returns {Promise<string>}
+     */
+    async mark(said:string): Promise<string> {
 
         let path = `/notifications/`+ said
         let method = 'PUT'
@@ -1291,6 +1708,12 @@ class Notifications {
         return await res.text()
     }
 
+    /**
+     * delete
+     * @async
+     * @param {string} said 
+     * @returns {Promise<any>} 
+     */
     async delete(said:string) {
 
         let path = `/notifications/`+ said
@@ -1301,13 +1724,26 @@ class Notifications {
 
 }
 
+/**
+ * Escrows
+ */
 class Escrows {
     client: SignifyClient
 
+    /**
+     * Escrows
+     * @param {SignifyClient} client 
+     */
     constructor(client: SignifyClient) {
         this.client = client
     }
 
+    /**
+     * listReply
+     * @async
+     * @param {string} route 
+     * @returns {Promise<any>}
+     */
     async listReply(route?:string) {
         let params = new URLSearchParams()
         if (route !== undefined) {params.append('route', route)}
@@ -1318,4 +1754,3 @@ class Escrows {
         return await res.json()
     }
 }
-
