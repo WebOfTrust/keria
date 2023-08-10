@@ -218,7 +218,7 @@ export interface ManagerArgs {
     tier?: string | undefined
 }
 
-export interface InceptArgs {
+export interface ManagerInceptArgs {
     icodes?: any | undefined
     icount?: number
     icode?: string
@@ -273,13 +273,6 @@ export class Manager {
         pidx = pidx == undefined ? 0 : pidx
         algo = algo == undefined ? Algos.salty : algo
 
-        // if (salt == undefined) {
-        //     salt = new Salter({}).qb64
-        // } else {
-        //     if (new Salter({qb64: salt}).qb64 != salt) {
-        //         throw new Error(`Invalid qb64 for salt=${salt}.`)
-        //     }
-        // }
         let salt = salter?.qb64
 
         tier = tier == undefined ? Tier.low : tier
@@ -427,7 +420,7 @@ export class Manager {
     incept({icodes=undefined, icount=1, icode=MtrDex.Ed25519_Seed,
             ncodes=undefined, ncount=1, ncode=MtrDex.Ed25519_Seed,
             dcode=MtrDex.Blake3_256, algo=undefined, salt=undefined, stem=undefined, tier=undefined,
-            rooted=true, transferable=true, temp=false }: InceptArgs): [Array<Verfer>, Array<Diger>] {
+            rooted=true, transferable=true, temp=false }: ManagerInceptArgs): [Array<Verfer>, Array<Diger>] {
 
         if (rooted && algo == undefined) {
             algo = this.algo

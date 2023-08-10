@@ -41,7 +41,7 @@ The code is built using Typescript and running code locally requires a Mac or Li
 
 Account Creation Workflow
 
-![Account Creation](/docs/diagrams/account-creation-workflow.png)
+![Account Creation](/diagrams/account-creation-workflow.png)
 
 
-![Account Creation Webpage](/docs/diagrams/account-creation-webpage-workflow.png)
+![Account Creation Webpage](/diagrams/account-creation-webpage-workflow.png)

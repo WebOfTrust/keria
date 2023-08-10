@@ -21,9 +21,6 @@ export class CredentialTypes {
     static received = "received"
 }
 
-/**
- * State
- */
 class State {
     agent: any | null
     controller: any | null
@@ -38,9 +35,6 @@ class State {
     }
 }
 
-/**
- * SignifyClient
- */
 export class SignifyClient {
     public controller: Controller
     public url: string
@@ -52,13 +46,6 @@ export class SignifyClient {
     public tier: Tier
     public bootUrl: string
 
-    /**
-     * SignifyClient
-     * @param {string} url 
-     * @param {string} bran 
-     * @param {Tier} tier 
-     * @param {string} bootUrl 
-     */
     constructor(url: string, bran: string, tier: Tier = Tier.low, bootUrl: string = DEFAULT_BOOT_URL) {
         this.url = url
         if (bran.length < 21) {
@@ -78,11 +65,6 @@ export class SignifyClient {
         return [this.url, this.bran, this.pidx, this.authn]
     }
 
-    /**
-     * boot
-     * @async
-     * @returns {Promise<Response>}
-     */
     async boot(): Promise<Response>{
         const [evt, sign] = this.controller?.event ?? [];
         const data = {
@@ -104,12 +86,6 @@ export class SignifyClient {
         return res;
     }
 
-
-    /**
-     * state
-     * @async
-     * @returns {Promise<State>}
-     */
     async state(): Promise<State> {
         const caid = this.controller?.pre
 
@@ -127,10 +103,6 @@ export class SignifyClient {
         return state;
     }
 
-    /**
-     * connect
-     * @async
-     */
     async connect() {
         const state = await this.state()
         this.pidx = state.pidx
@@ -149,15 +121,6 @@ export class SignifyClient {
         this.authn = new Authenticater(this.controller.signer, this.agent.verfer!)
     }
 
-    /**
-     * fetch
-     * @param {string} path 
-     * @param {string} method 
-     * @param {any} data 
-     * @param {Headers} extraHeaders 
-     * @throws {Error}
-     * @returns {Promise<Response>}
-     */
     async fetch(path: string, method: string, data: any, extraHeaders?: Headers): Promise<Response> {
         let headers = new Headers()
         let signed_headers = new Headers()
@@ -209,15 +172,6 @@ export class SignifyClient {
         }
     }
 
-    /**
-     * signedFetch
-     * @param {string} url 
-     * @param {string} path 
-     * @param {string} method 
-     * @param {any} data 
-     * @param {string} aidName 
-     * @returns {Promise<Response>}
-     */
     async signedFetch(url: string, path: string, method: string, data: any, aidName: string): Promise<Response> {
         const hab = await this.identifiers().get(aidName)
         const keeper = this.manager!.get(hab)
@@ -257,10 +211,6 @@ export class SignifyClient {
 
     }
 
-    /**
-     * approveDelegation
-     * @async
-     */
     async approveDelegation() {
         let sigs = this.controller.approveDelegation(this.agent!)
 
@@ -278,12 +228,6 @@ export class SignifyClient {
         })
     }
 
-    /**
-     * saveOldSalt
-     * @async
-     * @param {string} salt 
-     * @returns {Promise<Response>}
-     */
     async saveOldSalt(salt:string): Promise<Response> {
         const caid = this.controller?.pre;
         const body = { salt: salt };
@@ -296,11 +240,6 @@ export class SignifyClient {
         })
     }
 
-    /**
-     * deleteldSalt
-     * @async
-     * @returns {Promise<Response>}
-     */
     async deleteldSalt(): Promise<Response> {
         const caid = this.controller?.pre;
         return await fetch(this.url + "/salt/" + caid, {
@@ -311,11 +250,6 @@ export class SignifyClient {
         })
     }
 
-    /**
-     * rotate
-     * @param {string} nbran 
-     * @param {Array<string>} aids 
-     */
     async rotate(nbran: string, aids: [string] ){
         let data = this.controller.rotate(nbran, aids)
         await fetch(this.url + "/agent/" + this.controller.pre, {
@@ -327,98 +261,50 @@ export class SignifyClient {
         })
     }
 
-    /**
-     * identifiers
-     * @returns {Identifier}
-     */
     identifiers(): Identifier {
         return new Identifier(this)
     }
 
-    /**
-     * oobis
-     * @returns {Oobis}
-     */
     oobis(): Oobis {
         return new Oobis(this)
     }
 
-    /**
-     * operations
-     * @returns {Operations}
-     */
     operations(): Operations {
         return new Operations(this)
     }
 
-    /**
-     * keyEvents
-     * @returns {KeyEvents}
-     */
     keyEvents(): KeyEvents {
         return new KeyEvents(this)
     }
 
-    /**
-     * keyStates
-     * @returns {KeyStates}
-     */
     keyStates(): KeyStates {
         return new KeyStates(this)
     }
 
-    /**
-     * credentials
-     * @returns {Credentials}
-     */
     credentials(): Credentials {
         return new Credentials(this)
     }
 
-    /**
-     * registries
-     * @returns {Registries}
-     */
     registries(): Registries {
         return new Registries(this)
     }
 
-    /**
-     * schemas
-     * @returns {Schemas}
-     */
     schemas(): Schemas {
         return new Schemas(this)
     }
 
-    /**
-     * challenges
-     * @returns {Challenges}
-     */
     challenges(): Challenges {
         return new Challenges(this)
     }
 
-    /**
-     * contacts
-     * @returns {Contacts}
-     */
     contacts(): Contacts {
         return new Contacts(this)
     }
 
-    /**
-     * notifications
-     * @returns {Notifications}
-     */
     notifications(): Notifications {
         return new Notifications(this)
     }
 
-    /**
-     * 
-     * @returns 
-     */
     escrows(): Escrows {
         return new Escrows(this)
     }
@@ -463,20 +349,12 @@ export interface RotateIdentifierArgs {
     rstates?: any[]
 }
 
-/**
- * Identifier
- */
 class Identifier {
     public client: SignifyClient
     constructor(client: SignifyClient) {
         this.client = client
     }
 
-    /**
-     * list
-     * @async
-     * @returns {Promise<any>}
-     */
     async list(): Promise<any> {
         let path = `/identifiers`
         let data = null
@@ -485,11 +363,6 @@ class Identifier {
         return await res.json()
     }
 
-    /**
-     * get
-     * @param {string} name 
-     * @returns {Promise<any>}
-     */
     async get(name: string): Promise<any> {
         let path = `/identifiers/${name}`
         let data = null
@@ -498,14 +371,7 @@ class Identifier {
         return await res.json()
     }
 
-    /**
-     * create
-     * @async
-     * @param name 
-     * @param {CreateIdentiferArgs} 
-     * @returns {Promise<any>}
-     */
-    async create(name: string, kargs:CreateIdentiferArgs ={}): Promise<any> {
+    async create(name: string, kargs:CreateIdentiferArgs={}): Promise<any> {
 
         const algo = kargs.algo == undefined ? Algos.salty : kargs.algo
 

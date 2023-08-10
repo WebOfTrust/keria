@@ -5,6 +5,15 @@ export const FALSY = [false, 0, "?0", "no", "false", "False", "off"]
 export const TRUTHY = [true, 1, "?1", "yes", "true", "True", 'on']
 
 export class Signage {
+    /**
+     * 
+     * @param markers 
+     * @param indexed 
+     * @param signer 
+     * @param ordinal 
+     * @param digest 
+     * @param kind 
+     */
     constructor(markers: any, indexed?: boolean, signer?: string, ordinal?: string,
                 digest?: string, kind?: string) {
         this.markers = markers

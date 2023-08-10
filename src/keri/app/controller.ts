@@ -25,10 +25,6 @@ export class Agent {
     sn: number | undefined;
     said: string | undefined;
 
-    /**
-     * Agent
-     * @param agent
-     */
     constructor(agent: any) {
         this.pre = "";
         this.anchor = "";
@@ -104,13 +100,6 @@ export class Controller {
     private keys: string[];
     public ndigs: string[];
 
-    /**
-     * Controller
-     * @param {string} bran 
-     * @param {Tier} tier 
-     * @param {number} ridx 
-     * @param {any} state 
-     */
     constructor(bran: string, tier: Tier, ridx: number = 0, state: any | null = null) {
         this.bran = MtrDex.Salt_128 + 'A' + bran.substring(0, 21)  // qb64 salt for seed
         this.stem = "signify:controller"
@@ -141,11 +130,6 @@ export class Controller {
         }
     }
 
-    /**
-     * approveDelegation
-     * @param {Agent} _agent 
-     * @returns 
-     */
     approveDelegation(_agent: Agent) {
 
         let seqner = new Seqner({sn: _agent.sn})
@@ -174,11 +158,6 @@ export class Controller {
         return this.signer.verfer()
     }
 
-    /**
-     * derive
-     * @param {any} state 
-     * @returns {Serder}
-     */
     derive(state: any) {
         if (state != undefined && state['ee']['s'] === '0') {
             return incept({
@@ -196,12 +175,6 @@ export class Controller {
         }
     }
 
-    /**
-     * rotate
-     * @param {string} bran 
-     * @param {Array<any>} aids 
-     * @returns {Object}
-     */
     rotate(bran: string, aids: Array<any>) {
         let nbran = MtrDex.Salt_128 + 'A' + bran.substring(0, 21)  // qb64 salt for seed
         let nsalter = new Salter({ qb64: nbran, tier: this.tier })
@@ -319,13 +292,6 @@ export class Controller {
         return data
     }
 
-    /**
-     * recrypt
-     * @param enc 
-     * @param decrypter 
-     * @param encrypter 
-     * @returns {Cipher}
-     */
     recrypt(enc: string, decrypter: Decrypter, encrypter: Encrypter) {
         let cipher = new Cipher({ qb64: enc })
         let dnxt = decrypter.decrypt(null, cipher).qb64
