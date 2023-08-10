@@ -17,7 +17,7 @@ Of the five functions in a KERI agent,
 5. Event Validation
 
 Signify-TS splits off two, key generation and event signing into a TypeScript library to provide "signing at the edge".
-It accomplishes this by using [libsodium](https://doc.libsodium.org/) to generate ed25510 key pairs for signing and x25519 key pairs for encrypting the
+It accomplishes this by using [libsodium](https://doc.libsodium.org/) to generate ed25519 key pairs for signing and x25519 key pairs for encrypting the
 private keys, next public keys and salts used to generate the private keys.  The encrypted private key and salts are then stored on a
 remote cloud agent that never has access to the decryption keys.  New key pair sets (current and next) will be generated 
 for inception and rotation events with only the public keys and blake3 hash of the next keys made available to the agent.
