@@ -156,9 +156,9 @@ export class SignifyClient {
      * @param {any} data 
      * @param {Headers} extraHeaders 
      * @throws {Error}
-     * @returns {Response}
+     * @returns {Promise<Response>}
      */
-    async fetch(path: string, method: string, data: any, extraHeaders?: Headers): Response {
+    async fetch(path: string, method: string, data: any, extraHeaders?: Headers): Promise<Response> {
         let headers = new Headers()
         let signed_headers = new Headers()
         let final_headers = new Headers()
