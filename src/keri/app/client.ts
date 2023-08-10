@@ -1,8 +1,3 @@
-
-
-/**
- * Client
- */
 export class Client {
     private readonly _url: string
 
