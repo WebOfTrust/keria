@@ -414,6 +414,30 @@ def test_identifier_collection_end(helpers):
         assert group["ndigs"] == ['EHj7rmVHVkQKqnfeer068PiYvYm-WFSTVZZpFGsClfT-',
                                   'ECTS-VsMzox2NoMaLIei9Gb6361Z3u0fFFWmjEjEeD64',
                                   'ED7Jk3MscDy8IHtb2k1k6cs0Oe5rEb3_8XKD1Ut_gCo8']
+        
+        # Test limit and last
+        res = client.simulate_get(path="/identifiers?limit=1",)
+        assert res.status_code == 200
+        assert len(res.json) == 1
+
+        res = client.simulate_get(path="/identifiers?limit=2",)
+        assert res.status_code == 200
+        assert len(res.json) == 2
+        aid = res.json[1]
+        assert aid["name"] == "aid2"
+
+        res = client.simulate_get(path="/identifiers?limit=3",)
+        assert res.status_code == 200
+        assert len(res.json) == 3
+        aid = res.json[2]
+        assert aid["name"] == "aid3"
+
+        res = client.simulate_get(path="/identifiers?limit=2&last=aid3",)
+        assert res.status_code == 200
+        assert len(res.json) == 1
+        aid = res.json[0]
+        assert aid["name"] == "aid3"
+
 
     # Lets test randy with some key rotations and interaction events
     with helpers.openKeria() as (agency, agent, app, client):
@@ -516,6 +540,21 @@ def test_identifier_collection_end(helpers):
         events = res.json
         assert len(events) == 3
         assert events[2] == serder.ked
+
+        # Bad interactions
+        res = client.simulate_put(path="/identifiers/badrandy?type=ixn", body=json.dumps(body))
+        assert res.status_code == 404
+        assert res.json == {'title': 'No AID badrandy found'}
+
+        body = { 'sigs': sigers }
+        res = client.simulate_put(path="/identifiers/randy1?type=ixn", body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'description': "required field 'ixn' missing from request", 'title': 'invalid interaction'}
+
+        body = { 'ixn': serder.ked }
+        res = client.simulate_put(path="/identifiers/randy1?type=ixn", body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'description': "required field 'sigs' missing from request", 'title': 'invalid interaction'}
 
     # Lets test delegated AID
     with helpers.openKeria() as (agency, agent, app, client):
