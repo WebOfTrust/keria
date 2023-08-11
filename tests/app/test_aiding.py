@@ -489,6 +489,22 @@ def test_identifier_collection_end(helpers):
         rotation = res.json["rotation"]
         assert len(rotation) == 5  # this number is a little janky because we reuse rotation keys above, leaving for now
 
+        # Try unknown witness
+        serder, signers = helpers.incept(salt, "signify:aid", pidx=3,
+                                         wits=["BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkunkn"],
+                                         toad="1")
+        sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
+
+        body = {'name': 'aid4',
+                'icp': serder.ked,
+                'sigs': sigers,
+                'salty': {'stem': 'signify:aid', 'pidx': 3, 'tier': 'low', 'sxlt': sxlt,
+                          'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}}
+
+        res = client.simulate_post(path="/identifiers", body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'title': '400 Bad Request','description': 'unknown witness BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkunkn'}
+
     # Lets test randy with some key rotations and interaction events
     with helpers.openKeria() as (agency, agent, app, client):
         end = aiding.IdentifierCollectionEnd()
