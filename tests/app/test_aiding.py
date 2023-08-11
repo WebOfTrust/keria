@@ -17,6 +17,9 @@ from keri.app.keeping import Algos
 from keri.core import coring, eventing, parsing
 from keri.core.coring import MtrDex
 from keri.peer import exchanging
+from keri.help import helping
+from keri.db import basing
+from keri import kering
 
 from keria.app import aiding, agenting
 
@@ -202,10 +205,8 @@ def test_identifier_collection_end(helpers):
 
         # Try to resubmit and get an error
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
-        assert res.status_code == 500
-        assert res.json == {'description': 'Already incepted '
-                                           'pre=EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY.',
-                            'title': '500 Internal Server Error'}
+        assert res.status_code == 400
+        assert res.json == {'title': 'AID with name aid1 already incepted'}
 
         res = client.simulate_get(path="/identifiers")
         assert res.status_code == 200
@@ -241,6 +242,10 @@ def test_identifier_collection_end(helpers):
         assert ss["pidx"] == 1
 
         # Test with witnesses
+        url = "http://127.0.0.1:9999"
+        agent.hby.db.locs.put(keys=("BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha", kering.Schemes.http), val=basing.LocationRecord(url=url))
+        agent.hby.db.locs.put(keys=("BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM", kering.Schemes.http), val=basing.LocationRecord(url=url))
+        agent.hby.db.locs.put(keys=("BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX", kering.Schemes.http), val=basing.LocationRecord(url=url))
         serder, signers = helpers.incept(salt, "signify:aid", pidx=3,
                                          wits=["BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
                                                "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
@@ -392,10 +397,8 @@ def test_identifier_collection_end(helpers):
 
         # Resubmit to get an error
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
-        assert res.status_code == 500
-        assert res.json == {'description': 'Already incepted '
-                                           'pre=EGOSjnzaVz4nZ55wk3-SV78WgdaTJZddhom9ZLeNFEd3.',
-                            'title': '500 Internal Server Error'}
+        assert res.status_code == 400
+        assert res.json == {'title': 'AID with name multisig already incepted'}
 
         res = client.simulate_get(path="/identifiers")
         assert res.status_code == 200
@@ -442,8 +445,8 @@ def test_identifier_collection_end(helpers):
 
         # Resubmit and get an error
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
-        assert res.status_code == 500
-        assert res.json['title'] == '500 Internal Server Error'
+        assert res.status_code == 400
+        assert res.json == {'title': 'AID with name randy1 already incepted'}
 
         res = client.simulate_get(path="/identifiers")
         assert res.status_code == 200
