@@ -622,6 +622,31 @@ def test_identifier_collection_end(helpers):
         assert res.status_code == 400
         assert res.json == {'description': "required field 'sigs' missing from request", 'title': 'invalid interaction'}
 
+        # Bad rotation
+        body = {'rot': serder.ked,
+                'sigs': sigers,
+                'randy': {
+                    "prxs": prxs,
+                    "nxts": nxts,
+                    "transferable": True,
+                }
+                }
+        res = client.simulate_put(path="/identifiers/randybad?type=rot", body=json.dumps(body))
+        assert res.status_code == 404
+        assert res.json == {'title': 'No AID with name randybad found'}
+
+        body = {
+                'sigs': sigers,
+                'randy': {
+                    "prxs": prxs,
+                    "nxts": nxts,
+                    "transferable": True,
+                }
+                }
+        res = client.simulate_put(path="/identifiers/randy1", body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'description': "required field 'rot' missing from request", 'title': 'invalid rotation'}
+
     # Lets test delegated AID
     with helpers.openKeria() as (agency, agent, app, client):
         end = aiding.IdentifierCollectionEnd()
@@ -639,6 +664,28 @@ def test_identifier_collection_end(helpers):
         assert delpre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
         op = helpers.createAid(client, "delegatee", salt, delpre=delpre)
         assert op['name'] == "delegation.EFt8G8gkCJ71e4amQaRUYss0BDK4pUpzKelEIr3yZ1D0"
+
+        #try unknown delegator
+        delpre = "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHUNKN"
+        serder, signers = helpers.incept(salt, "signify:aid", pidx=0,  delpre=delpre)
+
+        salter = coring.Salter(raw=salt)
+        encrypter = coring.Encrypter(verkey=signers[0].verfer.qb64)
+        sxlt = encrypter.encrypt(salter.qb64).qb64
+
+        sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
+
+        body = {'name': "aid",
+                'icp': serder.ked,
+                'sigs': sigers,
+                "salty": {
+                    'stem': 'signify:aid', 'pidx': 0, 'tier': 'low', 'sxlt': sxlt,
+                    'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}
+                }
+
+        res = client.simulate_post(path="/identifiers", body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'title': '400 Bad Request','description': "unknown delegator EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHUNKN"}
 
     # Test extern keys for HSM integration, only initial tests, work still needed
     with helpers.openKeria() as (agency, agent, app, client):

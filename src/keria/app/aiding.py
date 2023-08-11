@@ -481,8 +481,11 @@ class IdentifierResourceEnd:
         hab = agent.hby.habByName(name)
         if hab is None:
             raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
-
+               
         rot = body.get("rot")
+        if rot is None:
+            raise falcon.HTTPBadRequest(title="invalid rotation",
+                                        description=f"required field 'rot' missing from request")
 
         if 'ba' in rot:
             for wit in rot['ba']:
@@ -492,10 +495,6 @@ class IdentifierResourceEnd:
 
         if 'di' in rot and rot["di"] not in agent.hby.kevers:
             raise falcon.HTTPBadRequest(description=f'unknown delegator {rot["di"]}')
-        
-        if rot is None:
-            raise falcon.HTTPBadRequest(title="invalid rotation",
-                                        description=f"required field 'rot' missing from request")
 
         sigs = body.get("sigs")
         if sigs is None or len(sigs) == 0:
