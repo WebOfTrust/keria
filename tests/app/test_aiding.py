@@ -647,6 +647,32 @@ def test_identifier_collection_end(helpers):
         assert res.status_code == 400
         assert res.json == {'description': "required field 'rot' missing from request", 'title': 'invalid rotation'}
 
+        # rotate and unknown witness
+        serder = eventing.rotate(keys=keys,
+                                 pre=pre,
+                                 dig=pre,
+                                 isith="1",
+                                 nsith="1",
+                                 ndigs=[diger.qb64 for diger in ndigs],
+                                 adds=["EJJR2nmwyYAZAoTNZH3ULvaU6Z-i0d8fSVPzhzS6b5CM"]
+                                 )
+
+        sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
+        prxs = [encrypter.encrypt(matter=signer).qb64 for signer in signers]
+        nxts = [encrypter.encrypt(matter=signer).qb64 for signer in nsigners]
+
+        body = {'rot': serder.ked,
+                'sigs': sigers,
+                'randy': {
+                    "prxs": prxs,
+                    "nxts": nxts,
+                    "transferable": True,
+                }
+                }
+        res = client.simulate_put(path="/identifiers/randy1", body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'description': "unknown witness EJJR2nmwyYAZAoTNZH3ULvaU6Z-i0d8fSVPzhzS6b5CM", 'title': '400 Bad Request'}
+
     # Lets test delegated AID
     with helpers.openKeria() as (agency, agent, app, client):
         end = aiding.IdentifierCollectionEnd()
