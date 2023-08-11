@@ -234,6 +234,13 @@ def test_oobi_ends(seeder, helpers):
             habbing.openHby(name="wes", salt=coring.Salter(raw=b'wess-the-witness').qb64) as wesHby:
         wesHab = wesHby.makeHab(name="wes", transferable=False)
 
+        result = client.simulate_get(path="/oobi/pal?role=witness")
+        assert result.status == falcon.HTTP_404  # Missing OOBI endpoints for witness
+
+        # Add witness endpoints
+        url = "http://127.0.0.1:9999"
+        agent.hby.db.locs.put(keys=(wesHab.pre, kering.Schemes.http), val=basing.LocationRecord(url=url))
+
         # Register the identifier endpoint so we can create an AID for the test
         end = aiding.IdentifierCollectionEnd()
         app.add_route("/identifiers", end)
@@ -255,7 +262,7 @@ def test_oobi_ends(seeder, helpers):
         assert result.status == falcon.HTTP_404  # Bad role, watcher not supported yet
 
         result = client.simulate_get(path="/oobi/pal?role=witness")
-        assert result.status == falcon.HTTP_404  # Missing OOBI endpoints for witness
+        assert result.status == falcon.HTTP_200
 
         result = client.simulate_get(path="/oobi/pal?role=controller")
         assert result.status == falcon.HTTP_404  # Missing OOBI controller endpoints
