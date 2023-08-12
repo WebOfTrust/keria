@@ -206,6 +206,52 @@ def test_agent_resource(helpers, mockHelpingNowUTC):
         assert res.json["pidx"] == 0
 
 
+
+        # Test rotation
+        body={
+        }
+        res = client.simulate_put(path=f"/agent/bad_pre",body=json.dumps(body))
+        assert res.status_code == 404
+        assert res.json == {'description': "no agent for bad_pre",
+                            'title': '404 Not Found'}
+        
+        res = client.simulate_put(path=f"/agent/{agent.caid}?type=ixn",body=json.dumps(body))
+        assert res.status_code == 400
+
+        res = client.simulate_put(path=f"/agent/{agent.caid}",body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'description': "required field 'rot' missing from body",
+                            'title': '400 Bad Request'}
+        
+        body = {
+            "rot": "fake_rot"
+        }
+        res = client.simulate_put(path=f"/agent/{agent.caid}",body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'description': "required field 'sigs' missing from body",
+                            'title': '400 Bad Request'}
+        
+        body = {
+            "rot": "fake_rot",
+            "sigs": "fake_sigs"
+        }
+        res = client.simulate_put(path=f"/agent/{agent.caid}",body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'description': "required field 'sxlt' missing from body",
+                            'title': '400 Bad Request'}
+        
+        body = {
+            "rot": "fake_rot",
+            "sigs": "fake_sigs",
+            "sxlt": "fake_sxlt"
+        }
+        res = client.simulate_put(path=f"/agent/{agent.caid}",body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'description': "required field 'keys' missing from body",
+                            'title': '400 Bad Request'}
+        
+
+
 def test_identifier_collection_end(helpers):
     with helpers.openKeria() as (agency, agent, app, client), \
             habbing.openHby(name="p1", temp=True) as p1hby, \
@@ -647,7 +693,7 @@ def test_identifier_collection_end(helpers):
         assert res.status_code == 400
         assert res.json == {'description': "required field 'rot' missing from request", 'title': 'invalid rotation'}
 
-        # rotate and unknown witness
+        # rotate to unknown witness
         serder = eventing.rotate(keys=keys,
                                  pre=pre,
                                  dig=pre,
@@ -1110,6 +1156,9 @@ def test_oobi_ends(helpers):
         assert res.status_code == 200
         role = res.json['role']
         oobis = res.json['oobis']
+
+        res = client.simulate_get("/identifiers/pal/oobis?role=witness")
+        assert res.status_code == 200
 
         assert role == "agent"
         assert len(oobis) == 1
