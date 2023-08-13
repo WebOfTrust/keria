@@ -888,6 +888,10 @@ def test_contact_ends(helpers):
         response = client.simulate_post(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo/pal", body=b)
         assert response.status == falcon.HTTP_404
 
+        # Bad prefix
+        response = client.simulate_post(f"/contacts/bad_prefix", body=b)
+        assert response.status == falcon.HTTP_404
+
         # POST to a local identifier
         response = client.simulate_post(f"/contacts/{palPre}", body=b)
         assert response.status == falcon.HTTP_400
@@ -900,9 +904,19 @@ def test_contact_ends(helpers):
                 company="GLEIF"
             )
             b = json.dumps(data).encode("utf-8")
-            # POST to an identifier that is not in the Kever
             response = client.simulate_post(f"/contacts/{aids[i]}", body=b)
             assert response.status == falcon.HTTP_200
+
+        # Dupplicate
+        data = dict(
+                id=aid[0],
+                first=f"Ken{0}",
+                last=f"Burns{0}",
+                company="GLEIF"
+            )
+        b = json.dumps(data).encode("utf-8")
+        response = client.simulate_post(f"/contacts/{aids[i]}", body=b)
+        assert response.status == falcon.HTTP_400
 
         response = client.simulate_get(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
         assert response.status == falcon.HTTP_404
@@ -1126,6 +1140,13 @@ def test_oobi_ends(helpers):
         serder = coring.Serder(ked=ked)
         assert serder.raw == rpy.raw
 
+        # not valid calls
+        res = client.simulate_post(path=f"/identifiers/pal/endroles/agent", json=body)
+        assert res.status_code == 404
+
+        res = client.simulate_post(path=f"/endroles/pal", json=body)
+        assert res.status_code == 404
+
         # must be a valid aid alias
         res = client.simulate_get("/identifiers/bad/oobis")
         assert res.status_code == 404
@@ -1331,8 +1352,6 @@ def test_rotation(helpers):
         idResEnd = aiding.IdentifierResourceEnd()
         app.add_route("/identifiers/{name}", idResEnd)
 
-
-
         body = dict(
             icp=serder.ked,
             sig=sigers[0].qb64,
@@ -1352,23 +1371,14 @@ def test_rotation(helpers):
         assert agt["i"] == "EHyaw-1bCenigGQCZRs_hXNdndHw0fSf-Q5-LpUwOR8r"
         assert ctrl["state"]["i"] == controllerAID
 
-        # creat one AID
         op = helpers.createAid(client, name="salty_aid", salt=bran)
         aid = op["response"]
-        delpre = aid['i']
-        assert delpre == "EKYCAqyMMllSeGowQJUGMbRJpvLnhNMbF1qEIPCSpmOM"
+        assert aid['i'] == "EKYCAqyMMllSeGowQJUGMbRJpvLnhNMbF1qEIPCSpmOM"
 
-        res = client.simulate_get(path=f"/identifiers/salty_aid")
-        assert res.status_code == 200 
-        aid = res.json                                 
-
-
-        # First we create the new salter and then use it to encrypted the OLD salt
         nbran = b'abcdefghijk0123456789'
         new_salter = coring.Salter(raw=nbran)
         new_signer = new_salter.signer(transferable=False)
 
-        # This is the previous next signer so it will be used to sign the rotation and then have 0 signing authority
         salter = coring.Salter(raw=bran)
         creator = keeping.SaltyCreator(salt=salter.qb64, stem="signify:controller", tier=coring.Tiers.low)
         nsigner = creator.create(ridx=0 + 1).pop()
@@ -1380,7 +1390,6 @@ def test_rotation(helpers):
         keys = [nsigner.verfer.qb64, new_signer.verfer.qb64]
         ndigs = [coring.Diger(ser=nsigner.verfer.qb64b).qb64]
 
-        # Now rotate the controller AID to authenticate the passcode rotation
         rot = eventing.rotate(pre=serder.pre,
                               keys=keys,
                               dig=serder.ked['d'],
@@ -1392,15 +1401,9 @@ def test_rotation(helpers):
 
         encrypter = coring.Encrypter(verkey=new_nsigner.verfer.qb64)  # encrypter for new salt
         sxlt = encrypter.encrypt(new_salter.qb64).qb64
-        # decrypter = coring.Decrypter(seed=signers[0].qb64b)  # decrypter with old salt
-
-        # salty = aid["salty"]
-        # cipher = coring.Cipher(qb64=salty["sxlt"])
-        # dnxt = decrypter.decrypt(cipher=cipher).qb64
-        # sxlt = encrypter.encrypt(matter=coring.Matter(qb64=dnxt)).qb64
 
         keys ={
-            aid["prefix"]: encrypter.encrypt(new_salter.qb64).qb64
+            aid["i"]: encrypter.encrypt(new_salter.qb64).qb64
         }
 
         body = dict(
