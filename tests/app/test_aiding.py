@@ -1326,6 +1326,11 @@ def test_rotation(helpers):
         app.add_route("/boot", bootEnd)
         agentEnd = aiding.AgentResourceEnd(agency=agency, authn=None)
         app.add_route("/agent/{caid}", agentEnd)
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+        idResEnd = aiding.IdentifierResourceEnd()
+        app.add_route("/identifiers/{name}", idResEnd)
+
 
 
         body = dict(
@@ -1347,18 +1352,28 @@ def test_rotation(helpers):
         assert agt["i"] == "EHyaw-1bCenigGQCZRs_hXNdndHw0fSf-Q5-LpUwOR8r"
         assert ctrl["state"]["i"] == controllerAID
 
+        # creat one AID
+        op = helpers.createAid(client, name="salty_aid", salt=bran)
+        aid = op["response"]
+        delpre = aid['i']
+        assert delpre == "EKYCAqyMMllSeGowQJUGMbRJpvLnhNMbF1qEIPCSpmOM"
+
+        res = client.simulate_get(path=f"/identifiers/salty_aid")
+        assert res.status_code == 200 
+        aid = res.json                                 
+
 
         # First we create the new salter and then use it to encrypted the OLD salt
         nbran = b'abcdefghijk0123456789'
-        nsalter = coring.Salter(raw=nbran)
-        nsigner = salter.signer(transferable=False)
+        new_salter = coring.Salter(raw=nbran)
+        new_signer = new_salter.signer(transferable=False)
 
         # This is the previous next signer so it will be used to sign the rotation and then have 0 signing authority
         salter = coring.Salter(raw=bran)
         creator = keeping.SaltyCreator(salt=salter.qb64, stem="signify:controller", tier=coring.Tiers.low)
         nsigner = creator.create(ridx=0 + 1).pop()
 
-        new_creator = keeping.SaltyCreator(salt=nsalter.qb64, stem="signify:controller", tier=coring.Tiers.low)
+        new_creator = keeping.SaltyCreator(salt=new_salter.qb64, stem="signify:controller", tier=coring.Tiers.low)
         new_signer = new_creator.create(ridx=0).pop()
         new_nsigner = new_creator.create(ridx=0 + 1).pop()
 
@@ -1376,19 +1391,24 @@ def test_rotation(helpers):
         sigs = [new_signer.sign(ser=rot.raw, index=1, ondex=0).qb64, nsigner.sign(ser=rot.raw, index=0).qb64]
 
         encrypter = coring.Encrypter(verkey=new_nsigner.verfer.qb64)  # encrypter for new salt
-        decrypter = coring.Decrypter(seed=new_nsigner.qb64)  # decrypter with old salt
+        sxlt = encrypter.encrypt(new_salter.qb64).qb64
+        # decrypter = coring.Decrypter(seed=signers[0].qb64b)  # decrypter with old salt
 
-        # First encrypt and save old Salt in case we need a recovery
-        sxlt = encrypter.encrypt(salter.qb64).qb64
+        # salty = aid["salty"]
+        # cipher = coring.Cipher(qb64=salty["sxlt"])
+        # dnxt = decrypter.decrypt(cipher=cipher).qb64
+        # sxlt = encrypter.encrypt(matter=coring.Matter(qb64=dnxt)).qb64
+
+        keys ={
+            aid["prefix"]: encrypter.encrypt(new_salter.qb64).qb64
+        }
 
         body = dict(
             rot=rot.ked,
             sigs=sigs,
             sxlt=sxlt,
-            keys={}
+            keys= keys
         )
 
         res = client.simulate_put(path=f"/agent/{controllerAID}",body=json.dumps(body))
         assert res.status_code == 204
-
-
