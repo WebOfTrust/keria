@@ -13,7 +13,7 @@ from dataclasses import asdict
 import falcon
 from falcon import testing
 from keri import kering
-from keri.app import habbing, keeping
+from keri.app import habbing, keeping, configing
 from keri.app.keeping import Algos
 from keri.core import coring, eventing, parsing
 from keri.core.coring import MtrDex
@@ -21,6 +21,8 @@ from keri.db.basing import LocationRecord
 from keri.peer import exchanging
 from keri.db import basing
 from keri import kering
+from keri.vdr import credentialing
+from hio.base import doing
 
 from keria.app import aiding, agenting
 from keria.app.aiding import IdentifierOOBICollectionEnd, RpyEscrowCollectionEnd
@@ -1206,5 +1208,187 @@ def test_rpy_escow_end(helpers):
         assert esc[0] == rpy1.ked
         assert esc[1] == rpy2.ked
         assert esc[2] == rpy3.ked
+
+
+def test_approve_delegation(helpers):
+    caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
+    salt = b'0123456789abcdef'
+    salter = coring.Salter(raw=salt)
+    cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
+
+    with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
+        hab = hby.makeHab(name="test")
+        agency = agenting.Agency(name="agency", bran=None, temp=True)
+        agentHab = hby.makeHab(caid, ns="agent", transferable=True, data=[caid])
+
+        rgy = credentialing.Regery(hby=hby, name=agentHab.name, base=hby.base, temp=True)
+        agent = agenting.Agent(hby=hby, rgy=rgy, agentHab=agentHab, agency=agency, caid=caid)
+
+        doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+        doist.enter(doers=[agency])
+
+        end = agenting.KeyStateCollectionEnd()
+
+        app = falcon.App()
+        app.add_middleware(helpers.middleware(agent))
+        app.add_route("/states", end)
+
+        client = testing.TestClient(app)
+ 
+        serder, signers = helpers.incept(bran=b'abcdefghijk0123456789', stem="signify:controller", pidx=0)
+        sigers = [signers[0].sign(ser=serder.raw, index=0)]
+        controllerAID = "EEnUbC_nMt-2uGQMp7jq_xUS9nc8SQ0q7eX_w49CG7jb"
+        assert serder.pre == controllerAID
+
+        bootEnd = agenting.BootEnd(agency)
+        app.add_route("/boot", bootEnd)
+        agentEnd = aiding.AgentResourceEnd(agency=agency, authn=None)
+        app.add_route("/agent/{caid}", agentEnd)
+
+
+        body = dict(
+            icp=serder.ked,
+            sig=sigers[0].qb64,
+            salty=dict(
+                stem='signify:aid', pidx=0, tier='low', sxlt='OBXYZ',
+                icodes=[MtrDex.Ed25519_Seed], ncodes=[MtrDex.Ed25519_Seed]
+            )
+        )
+
+        rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"))
+        assert rep.status_code == 202
+
+        res = client.simulate_get(path=f"/agent/{serder.pre}")
+        assert res.status_code == 200
+        agt = res.json["agent"]
+        ctrl = res.json["controller"]
+        assert agt["i"] == "EHyaw-1bCenigGQCZRs_hXNdndHw0fSf-Q5-LpUwOR8r"
+        assert ctrl["state"]["i"] == controllerAID
+
+        anchor = dict(i=agt["i"], s="0", d=agt["d"])
+        serder = eventing.interact(pre=ctrl["state"]["i"], sn="1",dig=ctrl["state"]["d"], data=[anchor])
+        body = {
+            "ixn": serder.ked,
+            "sigs": [signers[0].sign(ser=serder.raw, index=0).qb64],
+        }
+        res = client.simulate_put(path=f"/agent/{controllerAID}?type=ixn",body=json.dumps(body))
+        assert res.status_code == 204
+
+        body={
+        }
+        res = client.simulate_put(path=f"/agent/{controllerAID}?type=ixn",body=json.dumps(body))
+        assert res.status_code == 400
+
+        body = {
+            "sigs": "fake_sigs"
+        }
+        res = client.simulate_put(path=f"/agent/{controllerAID}?type=ixn",body=json.dumps(body))
+        assert res.status_code == 400
+
+        body = {
+            "ixn": "fake_ixn"
+        }
+        res = client.simulate_put(path=f"/agent/{controllerAID}?type=ixn",body=json.dumps(body))
+        assert res.status_code == 400
+
+def test_rotation(helpers):
+    caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
+    salt = b'0123456789abcdef'
+    salter = coring.Salter(raw=salt)
+    cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
+
+    with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
+        hab = hby.makeHab(name="test")
+        agency = agenting.Agency(name="agency", bran=None, temp=True)
+        agentHab = hby.makeHab(caid, ns="agent", transferable=True, data=[caid])
+
+        rgy = credentialing.Regery(hby=hby, name=agentHab.name, base=hby.base, temp=True)
+        agent = agenting.Agent(hby=hby, rgy=rgy, agentHab=agentHab, agency=agency, caid=caid)
+
+        doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+        doist.enter(doers=[agency])
+
+        end = agenting.KeyStateCollectionEnd()
+
+        app = falcon.App()
+        app.add_middleware(helpers.middleware(agent))
+        app.add_route("/states", end)
+
+        client = testing.TestClient(app)
+ 
+        bran=b'abcdefghijk0123456789'
+        serder, signers = helpers.incept(bran=bran, stem="signify:controller", pidx=0)
+        sigers = [signers[0].sign(ser=serder.raw, index=0)]
+        controllerAID = "EEnUbC_nMt-2uGQMp7jq_xUS9nc8SQ0q7eX_w49CG7jb"
+        assert serder.pre == controllerAID
+
+        bootEnd = agenting.BootEnd(agency)
+        app.add_route("/boot", bootEnd)
+        agentEnd = aiding.AgentResourceEnd(agency=agency, authn=None)
+        app.add_route("/agent/{caid}", agentEnd)
+
+
+        body = dict(
+            icp=serder.ked,
+            sig=sigers[0].qb64,
+            salty=dict(
+                stem='signify:aid', pidx=0, tier='low', sxlt='OBXYZ',
+                icodes=[MtrDex.Ed25519_Seed], ncodes=[MtrDex.Ed25519_Seed]
+            )
+        )
+
+        rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"))
+        assert rep.status_code == 202
+
+        res = client.simulate_get(path=f"/agent/{serder.pre}")
+        assert res.status_code == 200
+        agt = res.json["agent"]
+        ctrl = res.json["controller"]
+        assert agt["i"] == "EHyaw-1bCenigGQCZRs_hXNdndHw0fSf-Q5-LpUwOR8r"
+        assert ctrl["state"]["i"] == controllerAID
+
+
+        # First we create the new salter and then use it to encrypted the OLD salt
+        nbran = b'abcdefghijk0123456789'
+        nsalter = coring.Salter(raw=nbran)
+        nsigner = salter.signer(transferable=False)
+
+        # This is the previous next signer so it will be used to sign the rotation and then have 0 signing authority
+        salter = coring.Salter(raw=bran)
+        creator = keeping.SaltyCreator(salt=salter.qb64, stem="signify:controller", tier=coring.Tiers.low)
+        nsigner = creator.create(ridx=0 + 1).pop()
+
+        new_creator = keeping.SaltyCreator(salt=nsalter.qb64, stem="signify:controller", tier=coring.Tiers.low)
+        new_signer = new_creator.create(ridx=0).pop()
+        new_nsigner = new_creator.create(ridx=0 + 1).pop()
+
+        keys = [nsigner.verfer.qb64, new_signer.verfer.qb64]
+        ndigs = [coring.Diger(ser=nsigner.verfer.qb64b).qb64]
+
+        # Now rotate the controller AID to authenticate the passcode rotation
+        rot = eventing.rotate(pre=serder.pre,
+                              keys=keys,
+                              dig=serder.ked['d'],
+                              isith=["1", "0"],
+                              nsith="1",
+                              ndigs=ndigs)
+
+        sigs = [new_signer.sign(ser=rot.raw, index=1, ondex=0).qb64, nsigner.sign(ser=rot.raw, index=0).qb64]
+
+        encrypter = coring.Encrypter(verkey=new_nsigner.verfer.qb64)  # encrypter for new salt
+        decrypter = coring.Decrypter(seed=new_nsigner.qb64)  # decrypter with old salt
+
+        # First encrypt and save old Salt in case we need a recovery
+        sxlt = encrypter.encrypt(salter.qb64).qb64
+
+        body = dict(
+            rot=rot.ked,
+            sigs=sigs,
+            sxlt=sxlt,
+            keys={}
+        )
+
+        res = client.simulate_put(path=f"/agent/{controllerAID}",body=json.dumps(body))
+        assert res.status_code == 204
 
 
