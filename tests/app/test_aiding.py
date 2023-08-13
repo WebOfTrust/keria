@@ -19,7 +19,6 @@ from keri.core import coring, eventing, parsing
 from keri.core.coring import MtrDex
 from keri.db.basing import LocationRecord
 from keri.peer import exchanging
-from keri.help import helping
 from keri.db import basing
 from keri import kering
 
@@ -131,13 +130,6 @@ def test_endrole_ends(helpers):
                            'role': 'agent',
                            'eid': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9'}
 
-
-
-
-
-
-
-
 def test_agent_resource(helpers, mockHelpingNowUTC):
     with helpers.openKeria() as (agency, agent, app, client):
         agentEnd = aiding.AgentResourceEnd(agency=agency, authn=None)
@@ -205,8 +197,6 @@ def test_agent_resource(helpers, mockHelpingNowUTC):
                                                     'vn': [1, 0]}}
         assert res.json["pidx"] == 0
 
-
-
         # Test rotation
         body={
         }
@@ -214,9 +204,6 @@ def test_agent_resource(helpers, mockHelpingNowUTC):
         assert res.status_code == 404
         assert res.json == {'description': "no agent for bad_pre",
                             'title': '404 Not Found'}
-        
-        res = client.simulate_put(path=f"/agent/{agent.caid}?type=ixn",body=json.dumps(body))
-        assert res.status_code == 400
 
         res = client.simulate_put(path=f"/agent/{agent.caid}",body=json.dumps(body))
         assert res.status_code == 400

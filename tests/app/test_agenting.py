@@ -14,9 +14,9 @@ from falcon import testing
 from hio.base import doing
 from hio.help import decking
 from keri import kering
-from keri.app import habbing, configing, oobiing
+from keri.app import habbing, configing, oobiing, keeping
 from keri.app.agenting import Receiptor
-from keri.core import coring
+from keri.core import coring, eventing
 from keri.core.coring import MtrDex
 from keri.db import basing
 from keri.vdr import credentialing
@@ -172,6 +172,86 @@ def test_boot_ends(helpers):
         'description': 'agent for controller EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx already exists'
     }
 
+def test_approve_delegation(helpers):
+    caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
+    salt = b'0123456789abcdef'
+    salter = coring.Salter(raw=salt)
+    cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
+
+    with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
+        hab = hby.makeHab(name="test")
+        agency = agenting.Agency(name="agency", bran=None, temp=True)
+        agentHab = hby.makeHab(caid, ns="agent", transferable=True, data=[caid])
+
+        rgy = credentialing.Regery(hby=hby, name=agentHab.name, base=hby.base, temp=True)
+        agent = agenting.Agent(hby=hby, rgy=rgy, agentHab=agentHab, agency=agency, caid=caid)
+
+        doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+        doist.enter(doers=[agency])
+
+        end = agenting.KeyStateCollectionEnd()
+
+        app = falcon.App()
+        app.add_middleware(helpers.middleware(agent))
+        app.add_route("/states", end)
+
+        client = testing.TestClient(app)
+ 
+        serder, signers = helpers.incept(bran=b'abcdefghijk0123456789', stem="signify:controller", pidx=0)
+        sigers = [signers[0].sign(ser=serder.raw, index=0)]
+        controllerAID = "EEnUbC_nMt-2uGQMp7jq_xUS9nc8SQ0q7eX_w49CG7jb"
+        assert serder.pre == controllerAID
+
+        bootEnd = agenting.BootEnd(agency)
+        app.add_route("/boot", bootEnd)
+        agentEnd = aiding.AgentResourceEnd(agency=agency, authn=None)
+        app.add_route("/agent/{caid}", agentEnd)
+
+
+        body = dict(
+            icp=serder.ked,
+            sig=sigers[0].qb64,
+            salty=dict(
+                stem='signify:aid', pidx=0, tier='low', sxlt='OBXYZ',
+                icodes=[MtrDex.Ed25519_Seed], ncodes=[MtrDex.Ed25519_Seed]
+            )
+        )
+
+        rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"))
+        assert rep.status_code == 202
+
+        res = client.simulate_get(path=f"/agent/{serder.pre}?type=ixn")
+        assert res.status_code == 200
+        agt = res.json["agent"]
+        ctrl = res.json["controller"]
+        assert agt["i"] == "EHyaw-1bCenigGQCZRs_hXNdndHw0fSf-Q5-LpUwOR8r"
+        assert ctrl["state"]["i"] == controllerAID
+
+        anchor = dict(i=agt["i"], s="0", d=agt["d"])
+        serder = eventing.interact(pre=ctrl["state"]["i"], sn="1",dig=ctrl["state"]["d"], data=[anchor])
+        body = {
+            "ixn": serder.ked,
+            "sigs": [signers[0].sign(ser=serder.raw, index=0).qb64],
+        }
+        res = client.simulate_put(path=f"/agent/{controllerAID}?type=ixn",body=json.dumps(body))
+        assert res.status_code == 204
+
+        body={
+        }
+        res = client.simulate_put(path=f"/agent/{controllerAID}?type=ixn",body=json.dumps(body))
+        assert res.status_code == 400
+
+        body = {
+            "sigs": "fake_sigs"
+        }
+        res = client.simulate_put(path=f"/agent/{controllerAID}?type=ixn",body=json.dumps(body))
+        assert res.status_code == 400
+
+        body = {
+            "ixn": "fake_ixn"
+        }
+        res = client.simulate_put(path=f"/agent/{controllerAID}?type=ixn",body=json.dumps(body))
+        assert res.status_code == 400
 
 def test_witnesser(helpers):
     salt = b'0123456789abcdef'
@@ -227,7 +307,6 @@ def test_keystate_ends(helpers):
                                'br': [],
                                'd': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
                                's': '0'}
-
 
 def test_oobi_ends(seeder, helpers):
     with helpers.openKeria() as (agency, agent, app, client), \
