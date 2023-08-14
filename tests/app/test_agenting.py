@@ -353,3 +353,6 @@ def test_oobi_ends(seeder, helpers):
         assert result.json == {'oobis': ['http://127.0.0.1:3902/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/agent'
                                          '/EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9'],
                                'role': 'agent'}
+        
+        result = client.simulate_get(path="/oobi/")
+        assert result.status == falcon.HTTP_200

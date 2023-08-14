@@ -149,10 +149,28 @@ def test_registry_end(helpers, seeder):
         body = dict(name="test", alias="test", vcp=regser.ked, ixn=serder.ked, sigs=sigers)
         result = client.simulate_post(path="/identifiers/bad_test/registries", body=json.dumps(body).encode("utf-8"))
         assert result.status == falcon.HTTP_404
+        assert result.json == {'description': 'alias is not a valid reference to an identfier', 'title': '404 Not Found'}
 
-        result = client.simulate_get(path="/identifiers/bad_test/registries")
+
+        result = client.simulate_get(path="/identifiers/not_test/registries")
         assert result.status == falcon.HTTP_404
+        assert result.json == {'description': 'name is not a valid reference to an identfier', 'title': '404 Not Found'}
 
+        # Test Operation Resource
+        result = client.simulate_get(path=f"/operations/{op['name']}")
+        assert result.status == falcon.HTTP_200
+        assert result.json["done"] == True
+
+        result = client.simulate_get(path=f"/operations/bad_name")
+        assert result.status == falcon.HTTP_404
+        assert result.json == {'title': "long running operation 'bad_name' not found"}
+
+        result = client.simulate_delete(path=f"/operations/{op['name']}")
+        assert result.status == falcon.HTTP_204
+
+        result = client.simulate_delete(path=f"/operations/bad_name")
+        assert result.status == falcon.HTTP_404
+        assert result.json == {'title': "long running operation 'bad_name' not found"}
 
 def test_issue_credential(helpers, seeder):
     with helpers.openKeria() as (agency, agent, app, client):
