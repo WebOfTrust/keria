@@ -401,6 +401,35 @@ def test_identifier_collection_end(helpers):
         mhab = res.json
         agent0 = mhab["state"]
 
+        # rotate aid3
+        salter = coring.Salter(raw=salt)
+        creator = keeping.SaltyCreator(salt=salter.qb64, stem="signify:aid", tier=coring.Tiers.low)
+
+        signers = creator.create(pidx=3, ridx=1, tier=coring.Tiers.low, temp=False, count=1)
+        nsigners = creator.create(pidx=3, ridx=2, tier=coring.Tiers.low, temp=False, count=1)
+
+        keys = [signer.verfer.qb64 for signer in signers]
+        ndigs = [coring.Diger(ser=nsigner.verfer.qb64b) for nsigner in nsigners]
+
+        serder = eventing.rotate(pre= aid["prefix"],
+                                    keys=keys,
+                                    dig=aid["prefix"],
+                                    ndigs=[diger.qb64 for diger in ndigs],
+                                    wits=["BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
+                                               "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
+                                               "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX", ],
+                                    toad="2"
+                                )
+        sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
+        body = {
+                'rot': serder.ked,
+                'sigs': sigers,
+                'salty': {'stem': 'signify:aid', 'pidx': 0, 'tier': 'low', 'sxlt': sxlt, 'transferable': True, 'kidx': 3,
+                          'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}
+                }
+        res = client.simulate_put(path="/identifiers/aid3", body=json.dumps(body))
+        assert res.status_code == 200
+
         # create member habs for group AID
         p1 = p1hby.makeHab(name="p1")
         assert p1.pre == "EBPtjiAY9ITdvScWFGeeCu3Pf6_CFFr57siQqffVt9Of"
