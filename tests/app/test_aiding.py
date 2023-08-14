@@ -331,6 +331,29 @@ def test_identifier_collection_end(helpers):
         ss = aid[Algos.salty]
         assert ss["pidx"] == 1
 
+        # Rotate aid1
+        salter = coring.Salter(raw=salt)
+        creator = keeping.SaltyCreator(salt=salter.qb64, stem="signify:aid", tier=coring.Tiers.low)
+
+        signers = creator.create(pidx=0, ridx=1, tier=coring.Tiers.low, temp=False, count=1)
+        nsigners = creator.create(pidx=0, ridx=2, tier=coring.Tiers.low, temp=False, count=1)
+
+        keys = [signer.verfer.qb64 for signer in signers]
+        ndigs = [coring.Diger(ser=nsigner.verfer.qb64b) for nsigner in nsigners]
+
+        serder = eventing.rotate(pre= res.json[0]["prefix"],
+                                    keys=keys,
+                                    dig=res.json[0]["prefix"],
+                                    ndigs=[diger.qb64 for diger in ndigs],
+                                )
+        sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
+        body = {
+                'rot': serder.ked,
+                'sigs': sigers,
+                }
+        res = client.simulate_put(path="/identifiers/aid1", body=json.dumps(body))
+        assert res.status_code == 200
+
         # Test with witnesses
         url = "http://127.0.0.1:9999"
         agent.hby.db.locs.put(keys=("BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha", kering.Schemes.http), val=basing.LocationRecord(url=url))
