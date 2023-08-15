@@ -126,10 +126,10 @@ def test_registry_end(helpers, seeder):
         serder, sigers = helpers.interact(pre=pre, bran=salt, pidx=0, ridx=0, dig=aid['d'], sn='1', data=[anchor])
         body = dict(name="test", alias="test", vcp=regser.ked, ixn=serder.ked, sigs=sigers)
         result = client.simulate_post(path="/identifiers/test/registries", body=json.dumps(body).encode("utf-8"))
-        op = result.json
-        metadata = op["metadata"]
+        op2 = result.json
+        metadata = op2["metadata"]
 
-        assert op["done"] is True
+        assert op2["done"] is True
         assert metadata["anchor"] == anchor
         assert result.status == falcon.HTTP_202
 
@@ -158,6 +158,10 @@ def test_registry_end(helpers, seeder):
 
         # Test Operation Resource
         result = client.simulate_get(path=f"/operations/{op['name']}")
+        assert result.status == falcon.HTTP_200
+        assert result.json["done"] == True
+
+        result = client.simulate_get(path=f"/operations/{op2['name']}")
         assert result.status == falcon.HTTP_200
         assert result.json["done"] == True
 
