@@ -121,12 +121,15 @@ def test_indirecting(helpers):
         # Test ending
         oobiEnd = ending.OOBIEnd(agency)
         app.add_route("/oobi", oobiEnd)
+        app.add_route("/oobi/{aid}", oobiEnd)
+        app.add_route("/oobi/{aid}/{role}", oobiEnd)
+        app.add_route("/oobi/{aid}/{role}/{eid}", oobiEnd)
 
-        result = client.simulate_get(path="/oobi/")
-        assert result.status == falcon.HTTP_404  # no blind oobi for this node
+        result = client.simulate_get(path="/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/role")
+        assert result.status == falcon.HTTP_200 
 
-        result = client.simulate_get(path="/oobi/badAID")
-        assert result.status == falcon.HTTP_404  # AID not found for this OOBI
+        result = client.simulate_get(path="/oobi/EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3")
+        assert result.status == falcon.HTTP_404 
 
 
 
