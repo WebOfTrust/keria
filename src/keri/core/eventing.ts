@@ -148,7 +148,9 @@ export function rotate({
     }
 
     let newitsetdiff = new Set([...witset].filter(x => cutset.has(x)))
-    let newitset = new Set([...newitsetdiff, ..._adds])
+    let newitset = new Set()
+    newitsetdiff.forEach(newitset.add, newitset)
+    addset.forEach(newitset.add, newitset)
 
     if (newitset.size != (witset.size - cutset.size + addset.size)) {
         throw new Error(`Invalid member combination among wits = ${wits}, cuts = ${cuts}, and adds = ${adds}.`)
