@@ -75,6 +75,7 @@ export class SignifyClient {
 
     /** 
      * Boot a KERIA agent
+     * @async
      * @returns {Promise<Response>} - A promise to the result of the boot
      */
     async boot(): Promise<Response>{
@@ -99,7 +100,8 @@ export class SignifyClient {
     }
 
     /** 
-     * Get state of the agent and the client 
+     * Get state of the agent and the client
+     * @async
      * @returns {Promise<Response>} - A promise to the state
      */
     async state(): Promise<State> {
@@ -119,7 +121,9 @@ export class SignifyClient {
         return state;
     }
 
-    /* Connect to a KERIA agent */
+    /**  Connect to a KERIA agent
+    * @async
+    */
     async connect() {
         const state = await this.state()
         this.pidx = state.pidx
@@ -140,6 +144,7 @@ export class SignifyClient {
 
     /**
     * Fetch a resource from the KERIA agent
+    * @async
     * @param {string} path - Path to the resource
     * @param {string} method - HTTP method
     * @param {any} data - Data to be sent in the body of the resource
@@ -199,6 +204,7 @@ export class SignifyClient {
 
     /**
      * Fetch a resource from from an external URL with headers signed by an AID
+     * @async
      * @param {string} url - URL of the resource 
      * @param {string} path - Path to the resource
      * @param {string} method - HTTP method 
@@ -247,6 +253,7 @@ export class SignifyClient {
     
     /**
      * Approve the delegation of the client AID to the KERIA agent
+     * @async
      * @returns {Promise<Response>} - A promise to the result of the approval
      */
     async approveDelegation(): Promise<Response> {
@@ -268,6 +275,7 @@ export class SignifyClient {
 
     /**
     * Save old client passcode in KERIA agent
+    * @async
     * @param {string} passcode - Passcode to be saved
     * @returns {Promise<Response>} - A promise to the result of the save
     */ 
@@ -285,6 +293,7 @@ export class SignifyClient {
 
     /**
     * Delete a saved passcode from KERIA agent
+    * @async
     * @returns {Promise<Response>} - A promise to the result of the deletion
     */
     async deletePasscode(): Promise<Response> {
@@ -299,6 +308,7 @@ export class SignifyClient {
 
     /**
     * Rotate the client AID
+    * @async
     * @param {string} nbran - Base64 21 char string that is used as base material for the new seed
     * @param {Array<string>} aids - List of managed AIDs to be rotated
     * @returns {Promise<Response>} - A promise to the result of the rotation
@@ -315,7 +325,7 @@ export class SignifyClient {
     }
 
     /**
-    * Identifiers resource
+    * Get identifiers resource
     * @returns {Identifier} 
     */
     identifiers(): Identifier {
@@ -323,7 +333,7 @@ export class SignifyClient {
     }
 
     /**
-    * OOBIs resource
+    * Get OOBIs resource
     * @returns {Oobis}
     */
     oobis(): Oobis {
@@ -331,7 +341,7 @@ export class SignifyClient {
     }
 
     /**
-    * Operations resource
+    * Get operations resource
     * @returns {Operations}
     */
     operations(): Operations {
@@ -339,7 +349,7 @@ export class SignifyClient {
     }
 
     /**
-    * KeyEvents resource
+    * Get keyEvents resource
     * @returns {KeyEvents}
     */
     keyEvents(): KeyEvents {
@@ -347,7 +357,7 @@ export class SignifyClient {
     }
 
     /**
-    * KeyStates resource
+    * Get keyStates resource
     * @returns {KeyStates}
     */
     keyStates(): KeyStates {
@@ -355,7 +365,7 @@ export class SignifyClient {
     }
 
     /**
-    * Credentials resource
+    * Get credentials resource
     * @returns {Credentials}
     */
     credentials(): Credentials {
@@ -363,7 +373,7 @@ export class SignifyClient {
     }
 
     /**
-    * Registries resource
+    * Get registries resource
     * @returns {Registries}
     */
     registries(): Registries {
@@ -371,7 +381,7 @@ export class SignifyClient {
     }
 
     /**
-    * Schemas resource
+    * Get schemas resource
     * @returns {Schemas}
     */
     schemas(): Schemas {
@@ -379,7 +389,7 @@ export class SignifyClient {
     }
 
     /**
-    * Challenges resource
+    * Get challenges resource
     * @returns {Challenges}
     */
     challenges(): Challenges {
@@ -387,7 +397,7 @@ export class SignifyClient {
     }
 
     /**
-    * Contacts resource
+    * Get contacts resource
     * @returns {Contacts}
     */
     contacts(): Contacts {
@@ -395,7 +405,7 @@ export class SignifyClient {
     }
 
     /**
-    * Notifications resource
+    * Get notifications resource
     * @returns {Notifications}
     */
     notifications(): Notifications {
@@ -403,7 +413,7 @@ export class SignifyClient {
     }
 
     /**
-    * Escrows resource
+    * Get escrows resource
     * @returns {Escrows}
     */
     escrows(): Escrows {
@@ -411,6 +421,7 @@ export class SignifyClient {
     }
 }
 
+/** Arguments required to create an identfier */
 export interface CreateIdentiferArgs {
     transferable?: boolean,
     isith?: string | number,
@@ -436,6 +447,7 @@ export interface CreateIdentiferArgs {
     tier?: Tier
 }
 
+/** Arguments required to rotate an identfier */
 export interface RotateIdentifierArgs {
     transferable?: boolean,
     nsith?: string | number,
@@ -450,12 +462,18 @@ export interface RotateIdentifierArgs {
     rstates?: any[]
 }
 
+/** Identifier */
 class Identifier {
     public client: SignifyClient
     constructor(client: SignifyClient) {
         this.client = client
     }
 
+    /**
+     * List managed identifiers
+     * @async
+     * @returns {Promise<any>} - A promise to the list of managed identifiers
+     */
     async list(): Promise<any> {
         let path = `/identifiers`
         let data = null
@@ -464,6 +482,12 @@ class Identifier {
         return await res.json()
     }
 
+    /** 
+     * Get information for a managed identifier
+     * @async
+     * @param {string} name - Name or alias of the identifier
+     * @returns {Promise<any>} - A promise to the identifier information
+    */
     async get(name: string): Promise<any> {
         let path = `/identifiers/${name}`
         let data = null
@@ -472,10 +496,16 @@ class Identifier {
         return await res.json()
     }
 
+    /**
+     * Create a managed identifier
+     * @async
+     * @param {string} name - Name or alias of the identifier 
+     * @param {CreateIdentiferArgs} kargs - Optional parameters to create the identifier
+     * @returns {Promise<any>} - A promise to the operation
+     */
     async create(name: string, kargs:CreateIdentiferArgs={}): Promise<any> {
 
         const algo = kargs.algo == undefined ? Algos.salty : kargs.algo
-
 
         let transferable = kargs.transferable ?? true
         let isith = kargs.isith ?? "1"
@@ -578,11 +608,11 @@ class Identifier {
     }
 
     /**
-     * interact
+     * Generate an interaction event in a managed identifier
      * @async
-     * @param {string} name 
-     * @param {any} data 
-     * @returns {Promise<any>}
+     * @param {string} name - Name or alias of the identifier
+     * @param {any} data - Data to be anchored in the interaction event
+     * @returns {Promise<any>} - A promise to operation
      */
     async interact(name: string, data?: any): Promise<any> {
 
@@ -611,9 +641,9 @@ class Identifier {
 
 
     /**
-     * rotate
-     * @param name 
-     * @param {RotateIdentifierArgs} kargs 
+     * Generate a rotation event in a managed identifier
+     * @param {string} name - Name or alias of the identifier
+     * @param {RotateIdentifierArgs} kargs - Optional parameters requiered to generate the rotation event
      * @returns {Promise<any>}
      */
     async rotate(name: string, kargs: RotateIdentifierArgs={}): Promise<any> {
@@ -634,7 +664,6 @@ class Identifier {
         let isith = state.kt
 
         let nsith = kargs.nsith ?? isith
-
 
         // if isith is None:  # compute default from newly rotated verfers above
         if (isith == undefined) isith = `${Math.max(1, Math.ceil(count / 2)).toString(16)}`
@@ -688,13 +717,15 @@ class Identifier {
     }
 
     /**
-     * addEndRole
+     * Authorize an endpoint provider in a given role for a managed identifier
+     * @remarks
+     * Typically used to authorize the agent to be the endpoint provider for the identifier in the role of `agent`
      * @async
-     * @param {string} name 
-     * @param {string} role 
-     * @param {string} eid 
-     * @param {string} stamp 
-     * @returns {Promise<any>}
+     * @param {string} name - Name or alias of the identifier
+     * @param {string} role - Authorized role for eid
+     * @param {string} eid - Optional qb64 of endpoint provider to be authorized
+     * @param {string} stamp - Optional date-time-stamp RFC-3339 profile of iso8601 datetime. Now is the default if not provided
+     * @returns {Promise<any>} - A promise to the result of the authorization
      */
     async addEndRole(name: string, role: string, eid?: string, stamp?: string): Promise<any> {
         const hab = await this.get(name)
@@ -715,14 +746,14 @@ class Identifier {
     }
 
     /**
-     * makeEndRole
-     * @param {string} pre 
-     * @param {string} role 
-     * @param {string} eid 
-     * @param {string} stamp 
-     * @returns {Serder}
+     * Generate an /end/role/add reply message
+     * @param {string} pre - Prefix of the identifier
+     * @param {string} role - Authorized role for eid
+     * @param {string} eid - Optional qb64 of endpoint provider to be authorized
+     * @param {string} stamp - Optional date-time-stamp RFC-3339 profile of iso8601 datetime. Now is the default if not provided
+     * @returns {Serder} - The reply message
      */
-    makeEndRole(pre: string, role: string, eid?: string, stamp?: string): Serder {
+    private makeEndRole(pre: string, role: string, eid?: string, stamp?: string): Serder {
         const data: any = {
             cid: pre,
             role: role
@@ -735,10 +766,10 @@ class Identifier {
     }
 
     /**
-     * members
+     * Get the members of a group identifier
      * @async
-     * @param {string} name 
-     * @returns {Promise<any>}
+     * @param {string} name - Name or alias of the identifier
+     * @returns {Promise<any>} - A promise to the list of members
      */
     async members(name: string): Promise<any> {
         let res = await this.client.fetch("/identifiers/" + name + "/members", "GET", undefined)
@@ -756,7 +787,7 @@ class Oobis {
     }
 
     /**
-     * get
+     * Get the OOBI for a managed indentifier for a given role
      * @param {string} name 
      * @param {string} role 
      * @returns {Promise<any>}
