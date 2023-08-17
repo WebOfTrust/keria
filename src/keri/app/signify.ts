@@ -787,10 +787,10 @@ class Oobis {
     }
 
     /**
-     * Get the OOBI for a managed indentifier for a given role
-     * @param {string} name 
-     * @param {string} role 
-     * @returns {Promise<any>}
+     * Get the OOBI(s) for a managed indentifier for a given role
+     * @param {string} name - Name or alias of the identifier
+     * @param {string} role - Authorized role
+     * @returns {Promise<any>} - A promise to the OOBI(s)
      */
     async get(name: string, role: string = 'agent'): Promise<any> {
         let path = `/identifiers/${name}/oobis?role=${role}`
@@ -801,11 +801,11 @@ class Oobis {
     }
 
     /**
-     * resolve
+     * Resolve an OOBI
      * @async
-     * @param oobi 
-     * @param alias 
-     * @returns {Promise<any>}
+     * @param {string} oobi - The OOBI to be resolver
+     * @param {string} alias - Optional name or alias to link the OOBI resolution to a contact 
+     * @returns {Promise<any>} - A promise to the operation
      */
     async resolve(oobi: string, alias?: string): Promise<any> {
         let path = `/oobis`
