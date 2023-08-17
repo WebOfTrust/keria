@@ -577,7 +577,7 @@ class Issuer:
     def createRegistry(self, pre, name):
         conf = dict(nonce='AGu8jwfkyvVXQ2nqEb5yVigEtR31KSytcpe2U2f7NArr')
 
-        registry = self.registrar.incept(name=name, pre=pre, conf=conf)
+        registry, _ = self.registrar.incept(name=name, pre=pre, conf=conf)
         assert registry.regk == "EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4"
 
         # Process escrows to clear event

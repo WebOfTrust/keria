@@ -325,7 +325,7 @@ class Agent(doing.DoDoer):
             Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries),
             Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc, vry=self.verifier,
                      registrar=self.registrar, credentialer=self.credentialer),
-            Messager(kvy=self.kvy, parser=self.parser),
+            ParserDoer(kvy=self.kvy, parser=self.parser),
             Witnesser(receiptor=receiptor, witners=self.witners),
             Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
             GroupRequester(hby=hby, agentHab=agentHab, postman=self.postman, counselor=self.counselor,
@@ -364,12 +364,12 @@ class Agent(doing.DoDoer):
         self.agency.incept(self.caid, pre)
 
 
-class Messager(doing.Doer):
+class ParserDoer(doing.Doer):
 
     def __init__(self, kvy, parser):
         self.kvy = kvy
         self.parser = parser
-        super(Messager, self).__init__()
+        super(ParserDoer, self).__init__()
 
     def recur(self, tyme=None):
         if self.parser.ims:
