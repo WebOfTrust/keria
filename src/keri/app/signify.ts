@@ -35,6 +35,7 @@ class State {
     }
 }
 
+/** SignifyClient */
 export class SignifyClient {
     public controller: Controller
     public url: string
@@ -46,6 +47,13 @@ export class SignifyClient {
     public tier: Tier
     public bootUrl: string
 
+    /**
+     * SignifyClient constructor
+     * @param {string} url - KERIA admin interface URL
+     * @param {string} bran - Base64 21 char string that is used as base material for seed of the client AID
+     * @param {Tier} tier - Security tier for generating keys of the client AID (high | mewdium | low)
+     * @param {string} bootUrl - Optional KERIA boot interface URL if differs from admin URL
+     */
     constructor(url: string, bran: string, tier: Tier = Tier.low, bootUrl: string = DEFAULT_BOOT_URL) {
         this.url = url
         if (bran.length < 21) {
@@ -65,6 +73,10 @@ export class SignifyClient {
         return [this.url, this.bran, this.pidx, this.authn]
     }
 
+    /** 
+     * Boot a KERIA agent
+     * @returns {Promise<Response>} - A promise to the result of the boot
+     */
     async boot(): Promise<Response>{
         const [evt, sign] = this.controller?.event ?? [];
         const data = {
@@ -86,6 +98,10 @@ export class SignifyClient {
         return res;
     }
 
+    /** 
+     * Get state of the agent and the client 
+     * @returns {Promise<Response>} - A promise to the state
+     */
     async state(): Promise<State> {
         const caid = this.controller?.pre
 
@@ -103,6 +119,7 @@ export class SignifyClient {
         return state;
     }
 
+    /* Connect to a KERIA agent */
     async connect() {
         const state = await this.state()
         this.pidx = state.pidx
@@ -121,6 +138,14 @@ export class SignifyClient {
         this.authn = new Authenticater(this.controller.signer, this.agent.verfer!)
     }
 
+    /**
+    * Fetch a resource from the KERIA agent
+    * @param {string} path - Path to the resource
+    * @param {string} method - HTTP method
+    * @param {any} data - Data to be sent in the body of the resource
+    * @param {Headers} extraHeaders - Extra headers to be sent with the request
+    * @returns {Promise<Response>} - A promise to the result of the fetch
+    */
     async fetch(path: string, method: string, data: any, extraHeaders?: Headers): Promise<Response> {
         let headers = new Headers()
         let signed_headers = new Headers()
@@ -172,6 +197,15 @@ export class SignifyClient {
         }
     }
 
+    /**
+     * Fetch a resource from from an external URL with headers signed by an AID
+     * @param {string} url - URL of the resource 
+     * @param {string} path - Path to the resource
+     * @param {string} method - HTTP method 
+     * @param {any} data - Data to be sent in the body of the resource
+     * @param {string} aidName - name or alias of the AID to be used for signing
+     * @returns {Promise<Response>} - A promise to the result of the fetch
+     */
     async signedFetch(url: string, path: string, method: string, data: any, aidName: string): Promise<Response> {
         const hab = await this.identifiers().get(aidName)
         const keeper = this.manager!.get(hab)
@@ -210,8 +244,12 @@ export class SignifyClient {
         });
 
     }
-
-    async approveDelegation() {
+    
+    /**
+     * Approve the delegation of the client AID to the KERIA agent
+     * @returns {Promise<Response>} - A promise to the result of the approval
+     */
+    async approveDelegation(): Promise<Response> {
         let sigs = this.controller.approveDelegation(this.agent!)
 
         let data = {
@@ -219,7 +257,7 @@ export class SignifyClient {
             sigs: sigs
         }
 
-        await fetch(this.url + "/agent/" + this.controller.pre + "?type=ixn", {
+        return await fetch(this.url + "/agent/" + this.controller.pre + "?type=ixn", {
             method: "PUT",
             body: JSON.stringify(data),
             headers: {
@@ -228,9 +266,14 @@ export class SignifyClient {
         })
     }
 
-    async saveOldSalt(salt:string): Promise<Response> {
+    /**
+    * Save old client passcode in KERIA agent
+    * @param {string} passcode - Passcode to be saved
+    * @returns {Promise<Response>} - A promise to the result of the save
+    */ 
+    async saveOldPasscode(passcode:string): Promise<Response> {
         const caid = this.controller?.pre;
-        const body = { salt: salt };
+        const body = { salt: passcode };
         return await fetch(this.url + "/salt/" + caid, {
             method: "PUT",
             body: JSON.stringify(body),
@@ -240,7 +283,11 @@ export class SignifyClient {
         })
     }
 
-    async deleteldSalt(): Promise<Response> {
+    /**
+    * Delete a saved passcode from KERIA agent
+    * @returns {Promise<Response>} - A promise to the result of the deletion
+    */
+    async deletePasscode(): Promise<Response> {
         const caid = this.controller?.pre;
         return await fetch(this.url + "/salt/" + caid, {
             method: "DELETE",
@@ -250,9 +297,15 @@ export class SignifyClient {
         })
     }
 
-    async rotate(nbran: string, aids: [string] ){
+    /**
+    * Rotate the client AID
+    * @param {string} nbran - Base64 21 char string that is used as base material for the new seed
+    * @param {Array<string>} aids - List of managed AIDs to be rotated
+    * @returns {Promise<Response>} - A promise to the result of the rotation
+    */  
+    async rotate(nbran: string, aids: [string]): Promise<Response>{
         let data = this.controller.rotate(nbran, aids)
-        await fetch(this.url + "/agent/" + this.controller.pre, {
+        return await fetch(this.url + "/agent/" + this.controller.pre, {
             method: "PUT",
             body: JSON.stringify(data),
             headers: {
@@ -261,50 +314,98 @@ export class SignifyClient {
         })
     }
 
+    /**
+    * Identifiers resource
+    * @returns {Identifier} 
+    */
     identifiers(): Identifier {
         return new Identifier(this)
     }
 
+    /**
+    * OOBIs resource
+    * @returns {Oobis}
+    */
     oobis(): Oobis {
         return new Oobis(this)
     }
 
+    /**
+    * Operations resource
+    * @returns {Operations}
+    */
     operations(): Operations {
         return new Operations(this)
     }
 
+    /**
+    * KeyEvents resource
+    * @returns {KeyEvents}
+    */
     keyEvents(): KeyEvents {
         return new KeyEvents(this)
     }
 
+    /**
+    * KeyStates resource
+    * @returns {KeyStates}
+    */
     keyStates(): KeyStates {
         return new KeyStates(this)
     }
 
+    /**
+    * Credentials resource
+    * @returns {Credentials}
+    */
     credentials(): Credentials {
         return new Credentials(this)
     }
 
+    /**
+    * Registries resource
+    * @returns {Registries}
+    */
     registries(): Registries {
         return new Registries(this)
     }
 
+    /**
+    * Schemas resource
+    * @returns {Schemas}
+    */
     schemas(): Schemas {
         return new Schemas(this)
     }
 
+    /**
+    * Challenges resource
+    * @returns {Challenges}
+    */
     challenges(): Challenges {
         return new Challenges(this)
     }
 
+    /**
+    * Contacts resource
+    * @returns {Contacts}
+    */
     contacts(): Contacts {
         return new Contacts(this)
     }
 
+    /**
+    * Notifications resource
+    * @returns {Notifications}
+    */
     notifications(): Notifications {
         return new Notifications(this)
     }
 
+    /**
+    * Escrows resource
+    * @returns {Escrows}
+    */
     escrows(): Escrows {
         return new Escrows(this)
     }
