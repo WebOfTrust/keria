@@ -16,11 +16,13 @@ import { randomNonce } from "./apping"
 
 const DEFAULT_BOOT_URL = "http://localhost:3903"
 
+/** Types of credentials */
 export class CredentialTypes {
     static issued = "issued"
     static received = "received"
 }
 
+/** Starte of the client */
 class State {
     agent: any | null
     controller: any | null
@@ -49,10 +51,10 @@ export class SignifyClient {
 
     /**
      * SignifyClient constructor
-     * @param {string} url - KERIA admin interface URL
-     * @param {string} bran - Base64 21 char string that is used as base material for seed of the client AID
-     * @param {Tier} tier - Security tier for generating keys of the client AID (high | mewdium | low)
-     * @param {string} bootUrl - Optional KERIA boot interface URL if differs from admin URL
+     * @param {string} url KERIA admin interface URL
+     * @param {string} bran Base64 21 char string that is used as base material for seed of the client AID
+     * @param {Tier} tier Security tier for generating keys of the client AID (high | mewdium | low)
+     * @param {string} bootUrl KERIA boot interface URL
      */
     constructor(url: string, bran: string, tier: Tier = Tier.low, bootUrl: string = DEFAULT_BOOT_URL) {
         this.url = url
@@ -76,7 +78,7 @@ export class SignifyClient {
     /** 
      * Boot a KERIA agent
      * @async
-     * @returns {Promise<Response>} - A promise to the result of the boot
+     * @returns {Promise<Response>} A promise to the result of the boot
      */
     async boot(): Promise<Response>{
         const [evt, sign] = this.controller?.event ?? [];
@@ -88,7 +90,7 @@ export class SignifyClient {
             tier: this.controller?.tier
         };
 
-        const res = await fetch(this.bootUrl + "/boot", {
+        return await fetch(this.bootUrl + "/boot", {
             method: "POST",
             body: JSON.stringify(data),
             headers: {
@@ -96,13 +98,12 @@ export class SignifyClient {
             }
         });
 
-        return res;
     }
 
     /** 
      * Get state of the agent and the client
      * @async
-     * @returns {Promise<Response>} - A promise to the state
+     * @returns {Promise<Response>} A promise to the state
      */
     async state(): Promise<State> {
         const caid = this.controller?.pre
@@ -145,11 +146,11 @@ export class SignifyClient {
     /**
     * Fetch a resource from the KERIA agent
     * @async
-    * @param {string} path - Path to the resource
-    * @param {string} method - HTTP method
-    * @param {any} data - Data to be sent in the body of the resource
-    * @param {Headers} extraHeaders - Extra headers to be sent with the request
-    * @returns {Promise<Response>} - A promise to the result of the fetch
+    * @param {string} path Path to the resource
+    * @param {string} method HTTP method
+    * @param {any} data Data to be sent in the body of the resource
+    * @param {Headers} [extraHeaders] Optional extra headers to be sent with the request
+    * @returns {Promise<Response>} A promise to the result of the fetch
     */
     async fetch(path: string, method: string, data: any, extraHeaders?: Headers): Promise<Response> {
         let headers = new Headers()
@@ -205,12 +206,12 @@ export class SignifyClient {
     /**
      * Fetch a resource from from an external URL with headers signed by an AID
      * @async
-     * @param {string} url - URL of the resource 
-     * @param {string} path - Path to the resource
-     * @param {string} method - HTTP method 
-     * @param {any} data - Data to be sent in the body of the resource
-     * @param {string} aidName - name or alias of the AID to be used for signing
-     * @returns {Promise<Response>} - A promise to the result of the fetch
+     * @param {string} url URL of the resource 
+     * @param {string} path Path to the resource
+     * @param {string} method HTTP method 
+     * @param {any} data Data to be sent in the body of the resource
+     * @param {string} aidName Name or alias of the AID to be used for signing
+     * @returns {Promise<Response>} A promise to the result of the fetch
      */
     async signedFetch(url: string, path: string, method: string, data: any, aidName: string): Promise<Response> {
         const hab = await this.identifiers().get(aidName)
@@ -254,7 +255,7 @@ export class SignifyClient {
     /**
      * Approve the delegation of the client AID to the KERIA agent
      * @async
-     * @returns {Promise<Response>} - A promise to the result of the approval
+     * @returns {Promise<Response>} A promise to the result of the approval
      */
     async approveDelegation(): Promise<Response> {
         let sigs = this.controller.approveDelegation(this.agent!)
@@ -276,8 +277,8 @@ export class SignifyClient {
     /**
     * Save old client passcode in KERIA agent
     * @async
-    * @param {string} passcode - Passcode to be saved
-    * @returns {Promise<Response>} - A promise to the result of the save
+    * @param {string} passcode Passcode to be saved
+    * @returns {Promise<Response>} A promise to the result of the save
     */ 
     async saveOldPasscode(passcode:string): Promise<Response> {
         const caid = this.controller?.pre;
@@ -294,7 +295,7 @@ export class SignifyClient {
     /**
     * Delete a saved passcode from KERIA agent
     * @async
-    * @returns {Promise<Response>} - A promise to the result of the deletion
+    * @returns {Promise<Response>} A promise to the result of the deletion
     */
     async deletePasscode(): Promise<Response> {
         const caid = this.controller?.pre;
@@ -309,9 +310,9 @@ export class SignifyClient {
     /**
     * Rotate the client AID
     * @async
-    * @param {string} nbran - Base64 21 char string that is used as base material for the new seed
-    * @param {Array<string>} aids - List of managed AIDs to be rotated
-    * @returns {Promise<Response>} - A promise to the result of the rotation
+    * @param {string} nbran Base64 21 char string that is used as base material for the new seed
+    * @param {Array<string>} aids List of managed AIDs to be rotated
+    * @returns {Promise<Response>} A promise to the result of the rotation
     */  
     async rotate(nbran: string, aids: [string]): Promise<Response>{
         let data = this.controller.rotate(nbran, aids)
@@ -465,6 +466,10 @@ export interface RotateIdentifierArgs {
 /** Identifier */
 class Identifier {
     public client: SignifyClient
+    /**
+     * Identifier
+     * @param {SignifyClient} client 
+     */
     constructor(client: SignifyClient) {
         this.client = client
     }
@@ -472,7 +477,7 @@ class Identifier {
     /**
      * List managed identifiers
      * @async
-     * @returns {Promise<any>} - A promise to the list of managed identifiers
+     * @returns {Promise<any>} A promise to the list of managed identifiers
      */
     async list(): Promise<any> {
         let path = `/identifiers`
@@ -485,8 +490,8 @@ class Identifier {
     /** 
      * Get information for a managed identifier
      * @async
-     * @param {string} name - Name or alias of the identifier
-     * @returns {Promise<any>} - A promise to the identifier information
+     * @param {string} name Name or alias of the identifier
+     * @returns {Promise<any>} A promise to the identifier information
     */
     async get(name: string): Promise<any> {
         let path = `/identifiers/${name}`
@@ -499,9 +504,9 @@ class Identifier {
     /**
      * Create a managed identifier
      * @async
-     * @param {string} name - Name or alias of the identifier 
-     * @param {CreateIdentiferArgs} kargs - Optional parameters to create the identifier
-     * @returns {Promise<any>} - A promise to the operation
+     * @param {string} name Name or alias of the identifier 
+     * @param {CreateIdentiferArgs} [kargs] Optional parameters to create the identifier
+     * @returns {Promise<any>} A promise to the long-running operation
      */
     async create(name: string, kargs:CreateIdentiferArgs={}): Promise<any> {
 
@@ -604,15 +609,15 @@ class Identifier {
 
             this.client.pidx = this.client.pidx + 1
         let res = await this.client.fetch("/identifiers", "POST", jsondata)
-        return res.json()
+        return await res.json()
     }
 
     /**
      * Generate an interaction event in a managed identifier
      * @async
-     * @param {string} name - Name or alias of the identifier
-     * @param {any} data - Data to be anchored in the interaction event
-     * @returns {Promise<any>} - A promise to operation
+     * @param {string} name Name or alias of the identifier
+     * @param {any} [data] Option data to be anchored in the interaction event
+     * @returns {Promise<any>} A promise to the long-running operation
      */
     async interact(name: string, data?: any): Promise<any> {
 
@@ -636,14 +641,14 @@ class Identifier {
         jsondata[keeper.algo] = keeper.params()
 
         let res = await this.client.fetch("/identifiers/" + name + "?type=ixn", "PUT", jsondata)
-        return res.json()
+        return await res.json()
     }
 
 
     /**
      * Generate a rotation event in a managed identifier
-     * @param {string} name - Name or alias of the identifier
-     * @param {RotateIdentifierArgs} kargs - Optional parameters requiered to generate the rotation event
+     * @param {string} name Name or alias of the identifier
+     * @param {RotateIdentifierArgs} [kargs] Optional parameters requiered to generate the rotation event
      * @returns {Promise<any>}
      */
     async rotate(name: string, kargs: RotateIdentifierArgs={}): Promise<any> {
@@ -713,7 +718,7 @@ class Identifier {
         jsondata[keeper.algo] = keeper.params()
 
         let res = await this.client.fetch("/identifiers/" + name, "PUT", jsondata)
-        return res.json()
+        return await res.json()
     }
 
     /**
@@ -721,11 +726,11 @@ class Identifier {
      * @remarks
      * Typically used to authorize the agent to be the endpoint provider for the identifier in the role of `agent`
      * @async
-     * @param {string} name - Name or alias of the identifier
-     * @param {string} role - Authorized role for eid
-     * @param {string} eid - Optional qb64 of endpoint provider to be authorized
-     * @param {string} stamp - Optional date-time-stamp RFC-3339 profile of iso8601 datetime. Now is the default if not provided
-     * @returns {Promise<any>} - A promise to the result of the authorization
+     * @param {string} name Name or alias of the identifier
+     * @param {string} role Authorized role for eid
+     * @param {string} [eid] Optional qb64 of endpoint provider to be authorized
+     * @param {string} [stamp=now] Optional date-time-stamp RFC-3339 profile of iso8601 datetime. Now is the default if not provided
+     * @returns {Promise<any>} A promise to the result of the authorization
      */
     async addEndRole(name: string, role: string, eid?: string, stamp?: string): Promise<any> {
         const hab = await this.get(name)
@@ -741,17 +746,17 @@ class Identifier {
         }
 
         let res = await this.client.fetch("/identifiers/" + name + "/endroles", "POST", jsondata)
-        return res.json()
+        return await res.json()
 
     }
 
     /**
      * Generate an /end/role/add reply message
-     * @param {string} pre - Prefix of the identifier
-     * @param {string} role - Authorized role for eid
-     * @param {string} eid - Optional qb64 of endpoint provider to be authorized
-     * @param {string} stamp - Optional date-time-stamp RFC-3339 profile of iso8601 datetime. Now is the default if not provided
-     * @returns {Serder} - The reply message
+     * @param {string} pre Prefix of the identifier
+     * @param {string} role Authorized role for eid
+     * @param {string} [eid] Optional qb64 of endpoint provider to be authorized
+     * @param {string} [stamp=now] Optional date-time-stamp RFC-3339 profile of iso8601 datetime. Now is the default if not provided
+     * @returns {Serder} The reply message
      */
     private makeEndRole(pre: string, role: string, eid?: string, stamp?: string): Serder {
         const data: any = {
@@ -773,7 +778,7 @@ class Identifier {
      */
     async members(name: string): Promise<any> {
         let res = await this.client.fetch("/identifiers/" + name + "/members", "GET", undefined)
-        return res.json()
+        return await res.json()
     }
 }
 
@@ -782,15 +787,19 @@ class Identifier {
  */
 class Oobis {
     public client: SignifyClient
+    /**
+     * Oobis
+     * @param {SignifyClient} client 
+     */
     constructor(client: SignifyClient) {
         this.client = client
     }
 
     /**
      * Get the OOBI(s) for a managed indentifier for a given role
-     * @param {string} name - Name or alias of the identifier
-     * @param {string} role - Authorized role
-     * @returns {Promise<any>} - A promise to the OOBI(s)
+     * @param {string} name Name or alias of the identifier
+     * @param {string} role Authorized role
+     * @returns {Promise<any>} A promise to the OOBI(s)
      */
     async get(name: string, role: string = 'agent'): Promise<any> {
         let path = `/identifiers/${name}/oobis?role=${role}`
@@ -803,9 +812,9 @@ class Oobis {
     /**
      * Resolve an OOBI
      * @async
-     * @param {string} oobi - The OOBI to be resolver
-     * @param {string} alias - Optional name or alias to link the OOBI resolution to a contact 
-     * @returns {Promise<any>} - A promise to the operation
+     * @param {string} oobi The OOBI to be resolver
+     * @param {string} [alias] Optional name or alias to link the OOBI resolution to a contact 
+     * @returns {Promise<any>} A promise to the long-running operation
      */
     async resolve(oobi: string, alias?: string): Promise<any> {
         let path = `/oobis`
@@ -824,18 +833,24 @@ class Oobis {
 
 /**
  * Operations
+ * @remarks
+ * Operations represent the status and result of long running tasks performed by KERIA agent
  */
 class Operations {
     public client: SignifyClient
+    /**
+     * Operations
+     * @param {SignifyClient} client 
+     */
     constructor(client: SignifyClient) {
         this.client = client
     }
 
     /**
-     * get
+     * Get operation status
      * @async
-     * @param {string} name 
-     * @returns {Promise<any>}
+     * @param {string} name Name of the operation
+     * @returns {Promise<any>} A promise to the status of the operation
      */
     async get(name: string): Promise<any> {
         let path = `/operations/${name}`
@@ -852,15 +867,19 @@ class Operations {
  */
 class KeyEvents {
     public client: SignifyClient
+    /**
+     * KeyEvents
+     * @param {SignifyClient} client 
+     */
     constructor(client: SignifyClient) {
         this.client = client
     }
 
     /**
-     * get
+     * Retrieve key events for an identifier
      * @async
-     * @param {string} pre 
-     * @returns {Promise<any>}
+     * @param {string} pre Identifier prefix
+     * @returns {Promise<any>} A promise to the key events
      */
     async get(pre: string): Promise<any> {
         let path = `/events?pre=${pre}`
@@ -877,15 +896,19 @@ class KeyEvents {
  */
 class KeyStates {
     public client: SignifyClient
+    /**
+     * KeyStates
+     * @param {SignifyClient} client 
+     */
     constructor(client: SignifyClient) {
         this.client = client
     }
 
     /**
-     * get
+     * Retriene the key state for an identifier
      * @async
-     * @param {string} pre 
-     * @returns {Promise<any>}
+     * @param {string} pre Identifier prefix
+     * @returns {Promise<any>} A promise to the key states
      */
     async get(pre: string): Promise<any> {
         let path = `/states?pre=${pre}`
@@ -897,10 +920,10 @@ class KeyStates {
     }
 
     /**
-     * list
+     * Retrieve the key state for a list of identifiers
      * @async
-     * @param {Array<string>} pres
-     * @returns {Promise<any>}
+     * @param {Array<string>} pres List of identifier prefixes
+     * @returns {Promise<any>} A promise to the key states
      */
     async list(pres: [string]): Promise<any> {
         let path = `/states?${pres.map(pre => `pre=${pre}`).join('&')}`
@@ -912,12 +935,12 @@ class KeyStates {
     }
 
     /**
-     * query
+     * Query the key state of an identifier for a given sequence number or anchor SAID
      * @async
-     * @param {string} pre 
-     * @param {number} sn 
-     * @param {string} anchor 
-     * @returns {Promise<any>}
+     * @param {string} pre Identifier prefix
+     * @param {number} [sn] Optional sequence number
+     * @param {string} [anchor] Optional anchor SAID
+     * @returns {Promise<any>} A promise to the long-running operation
      */
     async query(pre: string, sn?: number, anchor?: string): Promise<any> {
         let path = `/queries`
@@ -937,6 +960,7 @@ class KeyStates {
     }
 }
 
+/** Credential filter parameters */
 export interface CredentialFilter {
     filter?: object, 
     sort?: object[], 
@@ -949,16 +973,20 @@ export interface CredentialFilter {
  */
 class Credentials {
     public client: SignifyClient
+    /**
+     * Credentials
+     * @param {SignifyClient} client 
+     */
     constructor(client: SignifyClient) {
         this.client = client
     }
 
     /**
-     * list
+     * List credentials
      * @async
-     * @param {string} name 
-     * @param {CredentialFilter} kargs 
-     * @returns 
+     * @param {string} name Name or alias of the identifier
+     * @param {CredentialFilter} [kargs] Optional parameters to filter the credentials
+     * @returns {Promise<any>} A promise to the list of credentials
      */
     async list(name: string, kargs:CredentialFilter ={}): Promise<any> {
         let path = `/identifiers/${name}/credentials/query`
@@ -980,12 +1008,12 @@ class Credentials {
     }
 
     /**
-     * get
+     * Get a credential
      * @async
-     * @param {string} name 
-     * @param {string} said 
-     * @param {boolean} includeCESR 
-     * @returns {Promise<any>}
+     * @param {string} name - Name or alias of the identifier
+     * @param {string} said - SAID of the credential
+     * @param {boolean} [includeCESR=false] - Optional flag export the credential in CESR format
+     * @returns {Promise<any>} A promise to the credential
      */
     async get(name: string, said: string, includeCESR: boolean = false): Promise<any> {
         let path = `/identifiers/${name}/credentials/${said}`
@@ -997,20 +1025,19 @@ class Credentials {
     }
 
     /**
-     * issue
+     * Issue a credential
      * @async
-     * @param {string} name 
-     * @param {string} registy 
-     * @param {string} schema 
-     * @param {string} recipient 
-     * @param {any} credentialData 
-     * @param {any} rules 
-     * @param {any} source 
-     * @param {boolean} priv 
-     * @returns {Promise<any>}
+     * @param {string} name Name or alias of the identifier
+     * @param {string} registy qb64 AID of credential registry
+     * @param {string} schema SAID of the schema
+     * @param {string} [recipient] Optional prefix of recipient identifier
+     * @param {any} [credentialData] Optional credential data
+     * @param {any} [rules] Optional credential rules
+     * @param {any} [source] Optional credential sources
+     * @param {boolean} [priv=false] Flag to issue a credential with privacy preserving features
+     * @returns {Promise<any>} A promise to the long-running operation
      */
     async issue(name: string, registy: string, schema: string, recipient?: string, credentialData?: any, rules?: any, source?: any, priv: boolean=false): Promise<any> {
-        
         // Create Credential
         let hab = await this.client.identifiers().get(name)
         let pre: string = hab.prefix
@@ -1120,11 +1147,11 @@ class Credentials {
     }
 
     /**
-     * revoke
+     * Revoke credential
      * @async
-     * @param {string} name 
-     * @param {string} said 
-     * @returns {Promise<any>}
+     * @param {string} name Name or alias of the identifier
+     * @param {string} said SAID of the credential
+     * @returns {Promise<any>} A promise to the long-running operation
      */
     async revoke(name: string, said: string): Promise<any> {
         let hab = await this.client.identifiers().get(name)
@@ -1198,13 +1225,13 @@ class Credentials {
     }
 
     /**
-     * present
+     * Present a credential
      * @async
-     * @param {string} name 
-     * @param {string} said 
-     * @param {string} recipient 
-     * @param {boolean} include 
-     * @returns {Promise<string>}
+     * @param {string} name Name or alias of the identifier
+     * @param {string} said SAID of the credential
+     * @param {string} recipient Identifier prefix of the receiver of the presentation
+     * @param {boolean} [include=true] Flag to indicate whether to stream credential alongside presentation exchange message
+     * @returns {Promise<string>} A promise to the long-running operation
      */
     async present(name: string, said: string, recipient: string, include: boolean=true): Promise<string> {
 
@@ -1261,13 +1288,13 @@ class Credentials {
     }
 
     /**
-     * request
+     * Request a presentation of a credential
      * @async
-     * @param {string} name 
-     * @param {string} recipient 
-     * @param {string} schema 
-     * @param {string} issuer 
-     * @returns {Promise<string>}
+     * @param {string} name Name or alias of the identifier
+     * @param {string} recipient Identifier prefix of the receiver of the presentation
+     * @param {string} schema SAID of the schema
+     * @param {string} [issuer] Optional prefix of the issuer of the credential
+     * @returns {Promise<string>} A promise to the long-running operation
      */
     async request(name: string, recipient: string, schema: string, issuer?: string): Promise<string> {
         let hab = await this.client.identifiers().get(name)
@@ -1327,15 +1354,19 @@ class Credentials {
  */
 class Registries {
     public client: SignifyClient
+    /**
+     * Registries
+     * @param {SignifyClient} client 
+     */
     constructor(client: SignifyClient) {
         this.client = client
     }
 
     /**
-     * list
+     * List registries
      * @async
-     * @param {string} name
-     * @returns {Promise<any>}
+     * @param {string} name Name or alias of the identifier
+     * @returns {Promise<any>} A promise to the list of registries
      */
     async list(name:string): Promise<any> {
         let path = `/identifiers/${name}/registries`
@@ -1346,12 +1377,12 @@ class Registries {
     }
 
     /**
-     * create
+     * Create a registry
      * @async
-     * @param {string} name 
-     * @param {string} registryName 
-     * @param {string} nonce 
-     * @returns {Promise<any>}
+     * @param {string} name Name or alias of the identifier
+     * @param {string} registryName Name for the registry
+     * @param {string} [nonce] Nonce used to generate the registry. If not provided a random nonce will be generated
+     * @returns {Promise<any>} A promise to the long-running operation
      */
     async create(name: string, registryName: string, nonce?:string): Promise<any> {
         // TODO add backers option
@@ -1430,15 +1461,19 @@ class Registries {
  */
 class Schemas {
     client: SignifyClient
+    /**
+     * Schemas
+     * @param {SignifyClient} client 
+     */
     constructor(client: SignifyClient) {
         this.client = client
     }
 
     /**
-     * get
+     * Get a schema
      * @async
-     * @param {string} said 
-     * @returns {Promise<any>}
+     * @param {string} said SAID of the schema
+     * @returns {Promise<any>} A promise to the schema
      */
     async get(said: string): Promise<any> {
         let path = `/schema/${said}`
@@ -1448,9 +1483,9 @@ class Schemas {
     }
 
     /**
-     * list
+     * List schemas
      * @async
-     * @returns {Promise<any>}
+     * @returns {Promise<any>} A promise to the list of schemas
      */
     async list(): Promise<any> {
         let path = `/schema`
@@ -1465,7 +1500,6 @@ class Schemas {
  */
 class Challenges {
     client: SignifyClient
-
     /**
      * Challenges
      * @param {SignifyClient} client 
@@ -1475,10 +1509,10 @@ class Challenges {
     }
 
     /**
-     * generate
+     * Generate a random challenge word list based on BIP39
      * @async
-     * @param {number} strength 
-     * @returns {Promise<any>}
+     * @param {number} strength Integer representing the strength of the challenge. Typically 128 or 256
+     * @returns {Promise<any>} A promise to the list of random words
      */
     async generate(strength: number = 128): Promise<any> {
         let path = `/challenges?strength=${strength.toString()}`
@@ -1488,12 +1522,12 @@ class Challenges {
     }
 
     /**
-     * respond
+     * Respond to a challenge by signing a message with the list of words
      * @async
-     * @param {string} name 
-     * @param {string} recipient 
-     * @param {Array<string>} words 
-     * @returns {any}
+     * @param {string} name Name or alias of the identifier
+     * @param {string} recipient Prefix of the recipient of the response
+     * @param {Array<string>} words List of words to embed in the signed response
+     * @returns {Promise<any>} A promise to the result of the response
      */
     async respond(name: string, recipient: string, words: string[]) {
         let path = `/challenges/${name}`
@@ -1536,21 +1570,15 @@ class Challenges {
             sig: new TextDecoder().decode(ims)
         }
 
-        let resp = await this.client.fetch(path, method, jsondata)
-        if (resp.status === 202) {
-            return exn.ked.d
-        }
-        else {
-            return resp
-        }
+        return await this.client.fetch(path, method, jsondata)
     }
 
     /**
-     * accept
-     * @param {string} name 
-     * @param {string} pre 
-     * @param {string} said 
-     * @returns {Promise<Response>}
+     * Accept a challenge response as valid (list of words are correct)
+     * @param {string} name Name or alias of the identifier
+     * @param {string} pre Prefix of the identifier that was challenged
+     * @param {string} said SAID of the challenge response message
+     * @returns {Promise<Response>} A promise to the result of the response
      */
     async accept(name: string, pre: string, said: string): Promise<Response> {
         let path = `/challenges/${name}`
@@ -1570,7 +1598,6 @@ class Challenges {
  */
 class Contacts {
     client: SignifyClient
-
     /**
      * Contacts
      * @param {SignifyClient} client 
@@ -1580,12 +1607,12 @@ class Contacts {
     }
 
     /**
-     * list
+     * List contacts
      * @async
-     * @param {string} group 
-     * @param {string} filterField 
-     * @param {string} filterValue 
-     * @returns {Promise<any>}
+     * @param {string} [group] Optional group name to filter contacts 
+     * @param {string} [filterField] Optional field name to filter contacts
+     * @param {string} [filterValue] Optional field value to filter contacts
+     * @returns {Promise<any>} A promise to the list of contacts
      */
     async list(group?:string, filterField?:string, filterValue?:string): Promise<any> {
         let params = new URLSearchParams()
@@ -1600,10 +1627,10 @@ class Contacts {
     }
 
     /**
-     * get
+     * Get a contact
      * @async
-     * @param {string} pre 
-     * @returns {Promise<any>}
+     * @param {string} pre Prefix of the contact
+     * @returns {Promise<any>} A promise to the contact
      */
     async get(pre:string): Promise<any> {
 
@@ -1615,11 +1642,11 @@ class Contacts {
     }
 
     /**
-     * add
+     * Add a contact
      * @async
-     * @param {string} pre 
-     * @param {any} info 
-     * @returns {Promise<any>}
+     * @param {string} pre Prefix of the contact
+     * @param {any} info Information about the contact
+     * @returns {Promise<any>} A promise to the result of the addition
      */
     async add(pre: string, info: any): Promise<any> {
         let path = `/contacts/`+ pre
@@ -1630,10 +1657,10 @@ class Contacts {
     }
 
     /**
-     * delete
+     * Delete a contact
      * @async
-     * @param {string} pre 
-     * @returns {Promise<any>}
+     * @param {string} pre Prefix of the contact
+     * @returns {Promise<any>} A promise to the result of the deletion
      */
     async delete(pre: string): Promise<any> {
         let path = `/contacts/`+ pre
@@ -1644,11 +1671,11 @@ class Contacts {
     }
 
     /**
-     * update
+     * Update a contact
      * @async
-     * @param {string} pre 
-     * @param {any} info 
-     * @returns {Promise<any>}
+     * @param {string} pre Prefix of the contact
+     * @param {any} info Updated information about the contact
+     * @returns {Promise<any>} A promise to the result of the update
      */
     async update(pre: string, info: any): Promise<any> {
         let path = `/contacts/` + pre
@@ -1675,11 +1702,11 @@ class Notifications {
     }
 
     /**
-     * list
+     * List notifications
      * @async
-     * @param {string} last 
-     * @param {number} limit 
-     * @returns {Promise<any>}
+     * @param {string} last SAID of the last notification received
+     * @param {number} limit number of notifications to return
+     * @returns {Promise<any>} A promise to the list of notifications
      */
     async list(last?:string, limit?:number): Promise<any> {
         let params = new URLSearchParams()
@@ -1693,13 +1720,12 @@ class Notifications {
     }
 
     /**
-     * mark
+     * Mark a notification as read
      * @async
-     * @param {string} said 
-     * @returns {Promise<string>}
+     * @param {string} said SAID of the notification
+     * @returns {Promise<string>} A promise to the result of the marking
      */
     async mark(said:string): Promise<string> {
-
         let path = `/notifications/`+ said
         let method = 'PUT'
         let res = await this.client.fetch(path, method, null)
@@ -1707,13 +1733,12 @@ class Notifications {
     }
 
     /**
-     * delete
+     * Delete a notification
      * @async
-     * @param {string} said 
-     * @returns {Promise<any>} 
+     * @param {string} said SAID of the notification
+     * @returns {Promise<any>} A promise to the result of the deletion
      */
     async delete(said:string) {
-
         let path = `/notifications/`+ said
         let method = 'DELETE'
         let res = await this.client.fetch(path, method, null)
@@ -1737,18 +1762,18 @@ class Escrows {
     }
 
     /**
-     * listReply
+     * List replay messages
      * @async
-     * @param {string} route 
-     * @returns {Promise<any>}
+     * @param {string} [route] Optional route in the replay message 
+     * @returns {Promise<any>} A promise to the list of replay messages
      */
-    async listReply(route?:string) {
+    async listReply(route?:string): Promise<any> {
         let params = new URLSearchParams()
         if (route !== undefined) {params.append('route', route)}
 
         let path = `/escrows/rpy` + '?' + params.toString()
         let method = 'GET'
-        let res = await this.client.fetch(path, method, null)
+        let res =  await this.client.fetch(path, method, null)
         return await res.json()
     }
 }
