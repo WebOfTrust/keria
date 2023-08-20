@@ -48,7 +48,7 @@ def test_presentation(helpers, seeder, mockHelpingNowUTC):
 
         conf = dict(nonce='AGu8jwfkyvVXQ2nqEb5yVigEtR31KSytcpe2U2f7NArr')
 
-        registry = registrar.incept(name="issuer", pre=hab.pre, conf=conf)
+        registry, _ = registrar.incept(name="issuer", pre=hab.pre, conf=conf)
         assert registry.regk == "EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4"
 
         issuer.createRegistry(hab.pre, name="issuer")
@@ -88,8 +88,8 @@ def test_presentation(helpers, seeder, mockHelpingNowUTC):
         assert res.json == {'description': "required field 'exn' missing from request",
                             'title': '400 Bad Request'}
 
-        exn = exchanging.exchange(route="/presentation", payload=data)
-        ims = agent.agentHab.endorse(serder=exn, last=True, pipelined=False)
+        exn, _ = exchanging.exchange(route="/presentation", payload=data, sender=agent.agentHab.pre)
+        ims = agent.agentHab.endorse(serder=exn, last=False, pipelined=False)
         del ims[:exn.size]
         sig = ims.decode("utf-8")
 
@@ -133,19 +133,23 @@ def test_presentation(helpers, seeder, mockHelpingNowUTC):
         assert len(agent.postman.evts) == 1
 
         evt = agent.postman.evts.popleft()
-        assert evt["attachment"] == bytearray(b'-HABEI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9'
-                                               b'-AABAACVNgeDsAZb6eQYApxOMGMmUYacxJQYNeodMoN2KCfHziv_'
-                                               b'-7C1LkvXyUa2iMyT01QkselieT0plM_Ar504aWIL')
+        assert evt["attachment"] == bytearray(b'-FABEI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_90AAAAAAAAAAAAAAA'
+                                              b'AAAAAAAAEI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9-AABAABtWleD'
+                                              b'VOweCGISmt_NdpnAwvHSVoMMWohZ-xambY-U40YsjXPHJ-ykHNGVtetOfUa9PACn'
+                                              b'JtixUDnlwZo8KNEF')
         assert evt["dest"] == 'EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze'
         assert evt["serder"].ked == {'a': {'i': 'EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze',
-                                        'n': 'EIO9uC3K6MvyjFD-RB3RYW3dfL49kCyz3OPqv3gi1dek',
-                                        's': 'EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs'},
-                                  'd': 'EOkCRLwEjc7Bkn3wVZkoUXneD0ZiAX6R0MI-CcGaLdfE',
-                                  'dt': '2021-01-01T00:00:00.000000+00:00',
-                                  'q': {},
-                                  'r': '/presentation',
-                                  't': 'exn',
-                                  'v': 'KERI10JSON000138_'}
+                                           'n': 'EIO9uC3K6MvyjFD-RB3RYW3dfL49kCyz3OPqv3gi1dek',
+                                           's': 'EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs'},
+                                     'd': 'EPlofHphyio8QS7o9-C7MJPOT6rtR_Vukjy5I1tVSIEI',
+                                     'dt': '2021-01-01T00:00:00.000000+00:00',
+                                     'e': {},
+                                     'i': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9',
+                                     'p': '',
+                                     'q': {},
+                                     'r': '/presentation',
+                                     't': 'exn',
+                                     'v': 'KERI10JSON000179_'}
         assert evt["src"] == 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY'
         assert evt["topic"] == 'credential'
 
@@ -159,19 +163,23 @@ def test_presentation(helpers, seeder, mockHelpingNowUTC):
         assert evt["serder"].raw == creder.raw
 
         evt = agent.postman.evts[8]
-        assert evt["attachment"] == bytearray(b'-HABEI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9'
-                                               b'-AABAACVNgeDsAZb6eQYApxOMGMmUYacxJQYNeodMoN2KCfHziv_'
-                                               b'-7C1LkvXyUa2iMyT01QkselieT0plM_Ar504aWIL')
+        assert evt["attachment"] == bytearray(b'-FABEI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_90AAAAAAAAAAAAAAA'
+                                              b'AAAAAAAAEI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9-AABAABtWleD'
+                                              b'VOweCGISmt_NdpnAwvHSVoMMWohZ-xambY-U40YsjXPHJ-ykHNGVtetOfUa9PACn'
+                                              b'JtixUDnlwZo8KNEF')
         assert evt["dest"] == 'EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze'
         assert evt["serder"].ked == {'a': {'i': 'EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze',
-                                        'n': 'EIO9uC3K6MvyjFD-RB3RYW3dfL49kCyz3OPqv3gi1dek',
-                                        's': 'EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs'},
-                                  'd': 'EOkCRLwEjc7Bkn3wVZkoUXneD0ZiAX6R0MI-CcGaLdfE',
-                                  'dt': '2021-01-01T00:00:00.000000+00:00',
-                                  'q': {},
-                                  'r': '/presentation',
-                                  't': 'exn',
-                                  'v': 'KERI10JSON000138_'}
+                                           'n': 'EIO9uC3K6MvyjFD-RB3RYW3dfL49kCyz3OPqv3gi1dek',
+                                           's': 'EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs'},
+                                     'd': 'EPlofHphyio8QS7o9-C7MJPOT6rtR_Vukjy5I1tVSIEI',
+                                     'dt': '2021-01-01T00:00:00.000000+00:00',
+                                     'e': {},
+                                     'i': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9',
+                                     'p': '',
+                                     'q': {},
+                                     'r': '/presentation',
+                                     't': 'exn',
+                                     'v': 'KERI10JSON000179_'}
         assert evt["src"] == 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY'
         assert evt["topic"] == 'credential'
 
@@ -196,8 +204,8 @@ def test_presentation_request(helpers):
             i=issuer
         )
 
-        exn = exchanging.exchange(route="/presentation/request", payload=pl)
-        ims = agent.agentHab.endorse(serder=exn, last=True, pipelined=False)
+        exn, _ = exchanging.exchange(route="/presentation/request", payload=pl, sender=agent.agentHab.pre)
+        ims = agent.agentHab.endorse(serder=exn, last=False, pipelined=False)
         del ims[:exn.size]
         sig = ims.decode("utf-8")
 

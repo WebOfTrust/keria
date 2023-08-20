@@ -937,10 +937,8 @@ class Registrar:
 
             serder, sadsigs, sadcigs = self.rgy.reger.cloneCred(creder.said)
             atc = signing.provision(serder=creder, sadcigars=sadcigs, sadsigers=sadsigs)
-            del atc[:serder.size]
-            self.postman.send(src=sender, dest=recp, topic="credential", serder=creder, attachment=atc)
-
-            exn, atc = protocoling.credentialIssueExn(hab=self.agentHab, issuer=issr, schema=creder.schema, said=creder.said)
+            iss = next(self.verifier.reger.clonePreIter(pre=creder.said))
+            exn, atc = protocoling.credentialIssueExn(hab=self.agentHab, message="", acdc=atc, iss=iss)
             self.postman.send(src=sender, dest=recp, topic="credential", serder=exn, attachment=atc)
 
             # Escrow until postman has successfully sent the notification

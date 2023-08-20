@@ -668,8 +668,8 @@ def test_challenge_ends(helpers):
         aid = op["response"]
 
         payload = dict(i=aid['i'], words=words)
-        exn = exchanging.exchange(route="/challenge/response", payload=payload)
-        ims = agent.agentHab.endorse(serder=exn, last=True, pipelined=False)
+        exn, _ = exchanging.exchange(route="/challenge/response", payload=payload, sender=agent.agentHab.pre)
+        ims = agent.agentHab.endorse(serder=exn, last=False, pipelined=False)
         del ims[:exn.size]
 
         data["exn"] = exn.ked

@@ -261,7 +261,7 @@ def test_credentialing_ends(helpers, seeder):
 
         conf = dict(nonce='AGu8jwfkyvVXQ2nqEb5yVigEtR31KSytcpe2U2f7NArr')
 
-        registry = registrar.incept(name="issuer", pre=hab.pre, conf=conf)
+        registry, _ = registrar.incept(name="issuer", pre=hab.pre, conf=conf)
         assert registry.regk == "EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4"
 
         issuer.createRegistry(hab.pre, name="issuer")
