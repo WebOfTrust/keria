@@ -155,6 +155,9 @@ class AgentResourceEnd:
         ctrlHab = agent.hby.habByName(caid, ns="agent")
         ctrlHab.rotate(serder=rot, sigers=[coring.Siger(qb64=sig) for sig in sigs])
 
+        if not self.authn.verify(req):
+            raise falcon.HTTPForbidden(description="invalid signature on request")
+        
         sxlt = body["sxlt"]
         agent.mgr.sxlt = sxlt
 
