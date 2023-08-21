@@ -45,16 +45,19 @@ def test_notifications(helpers):
         assert notes[0]['a'] == dict(a=1, b=2, c=3)
         assert notes[3]['a'] == dict(a=3)
 
-        res = client.simulate_get(path="/notifications?limit=3")
+        headers = dict(Range=f"notes=0-2")
+        res = client.simulate_get(path="/notifications", headers=headers)
         assert res.status_code == 200
         notes = res.json
         assert len(notes) == 3
         assert notes[0]['a'] == dict(a=1, b=2, c=3)
         assert notes[2]['a'] == dict(a=2)
+        assert res.headers["Accept-Ranges"] == "notes"
+        assert res.headers["Content-Range"] == "notes 0-2/4"
 
         # Load since the last one seen
-        last = notes[1]['i']
-        res = client.simulate_get(path=f"/notifications?last={last}&limit=2")
+        headers = dict(Range=f"notes=1-2")
+        res = client.simulate_get(path=f"/notifications", headers=headers)
         assert res.status_code == 200
         notes = res.json
         assert len(notes) == 2
@@ -63,13 +66,6 @@ def test_notifications(helpers):
 
         # Load with a non-existance last
         last = randomNonce()
-        res = client.simulate_get(path=f"/notifications?last={last}&limit=2")
-        assert res.status_code == 200
-        notes = res.json
-        assert len(notes) == 2
-        assert notes[0]['a'] == dict(a=1, b=2, c=3)
-        assert notes[1]['a'] == dict(a=1)
-
         # Not found for deleting or marking as read a non-existent note
         res = client.simulate_delete(path=f"/notifications/{last}")
         assert res.status_code == 404
@@ -84,7 +80,7 @@ def test_notifications(helpers):
         assert res.status_code == 200
         notes = res.json
         assert len(notes) == 3
-        assert notes[1]['a'] == dict(a=2)
+        assert notes[1]['a'] == dict(a=1)
 
         last = notes[1]['i']
         res = client.simulate_put(path=f"/notifications/{last}")
