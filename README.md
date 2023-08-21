@@ -5,6 +5,7 @@ Project Name: signify-ts
 [![TypeScript](https://badges.frapsoft.com/typescript/code/typescript.png?v=101)](https://github.com/ellerbrock/typescript-badges/)
 [![Tests](https://github.com/WebOfTrust/signify-ts/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/WebOfTrust/signify-ts/actions/workflows/main.yml)
 [![codecov](https://codecov.io/gh/WebOfTrust/signify-ts/branch/main/graph/badge.svg?token=K3GK7MCYVW)](https://codecov.io/gh/WebOfTrust/signify-ts)
+![Documentation](https://img.shields.io/badge/documentation-grey?link=https%3A%2F%2Fweboftrust.github.io%2Fsignify-ts%2F)
 
 ## Signify - KERI Signing at the Edge
 
