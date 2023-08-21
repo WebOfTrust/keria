@@ -8,6 +8,8 @@ import json
 
 import falcon
 
+from keria.core import httping
+
 
 def loadEnds(app):
     noteCol = NotificationCollectionEnd()
@@ -30,17 +32,12 @@ class NotificationCollectionEnd:
         description:  Get list of notifcations for the controller of the agent.  Notifications will
                        be sorted by creation date/time
         parameters:
-          - in: query
-            name: last
+          - in: header
+            name: Range
             schema:
               type: string
             required: false
-            description: qb64 SAID of last notification seen
-          - in: query
-            name: limit
-            schema:
-              type: integer
-            required: false
+            description: HTTP Range header syntax
             description: size of the result list.  Defaults to 25
         tags:
            - Notifications
@@ -50,24 +47,22 @@ class NotificationCollectionEnd:
               description: List of contact information for remote identifiers
         """
         agent = req.context.agent
-        last = req.params.get("last")
-        limit = req.params.get("limit")
-
-        limit = int(limit) if limit is not None else 25
-
-        if last is not None:
-            val = agent.notifier.noter.get(last)
-            if val is not None:
-                lastNote, _ = val
-                start = lastNote.datetime
-            else:
-                start = ""
+        rng = req.get_header("Range")
+        if rng is None:
+            rep.status = falcon.HTTP_200
+            start = 0
+            end = 24
         else:
-            start = ""
+            rep.status = falcon.HTTP_206
+            start, end = httping.parseRangeHeader(rng, "notes")
 
-        notes = agent.notifier.getNotes(start=start, limit=limit)
+        count = agent.notifier.getNoteCnt()
+        notes = agent.notifier.getNotes(start=start, end=end)
         out = [note.pad for note in notes]
 
+        end = start + (len(out) - 1) if len(out) > 0 else 0
+        rep.set_header("Accept-Ranges", "notes")
+        rep.set_header("Content-Range", f"notes {start}-{end}/{count}")
         rep.status = falcon.HTTP_200
         rep.data = json.dumps(out).encode("utf-8")
 
