@@ -24,7 +24,7 @@
 <ul class="tsd-hierarchy">
 <li><span class="target">SignifyClient</span></li></ul></section><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L44">keri/app/signify.ts:44</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L41">keri/app/signify.ts:41</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-index-accordion" open><summary class="tsd-accordion-summary tsd-index-summary">
@@ -58,7 +58,7 @@
 <a href="SignifyClient.html#connect" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>connect</span></a>
 <a href="SignifyClient.html#contacts" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>contacts</span></a>
 <a href="SignifyClient.html#credentials" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>credentials</span></a>
-<a href="SignifyClient.html#deleteldSalt" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>deleteld<wbr/>Salt</span></a>
+<a href="SignifyClient.html#deletePasscode" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>delete<wbr/>Passcode</span></a>
 <a href="SignifyClient.html#escrows" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>escrows</span></a>
 <a href="SignifyClient.html#fetch" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>fetch</span></a>
 <a href="SignifyClient.html#identifiers" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>identifiers</span></a>
@@ -69,7 +69,7 @@
 <a href="SignifyClient.html#operations" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>operations</span></a>
 <a href="SignifyClient.html#registries" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>registries</span></a>
 <a href="SignifyClient.html#rotate" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>rotate</span></a>
-<a href="SignifyClient.html#saveOldSalt" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>save<wbr/>Old<wbr/>Salt</span></a>
+<a href="SignifyClient.html#saveOldPasscode" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>save<wbr/>Old<wbr/>Passcode</span></a>
 <a href="SignifyClient.html#schemas" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>schemas</span></a>
 <a href="SignifyClient.html#signedFetch" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>signed<wbr/>Fetch</span></a>
 <a href="SignifyClient.html#state" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>state</span></a>
@@ -81,74 +81,82 @@
 <ul class="tsd-signatures">
 <li class="tsd-signature tsd-anchor-link" id="constructor.new_SignifyClient"><span class="tsd-kind-constructor-signature">new <wbr/>Signify<wbr/>Client</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">url</span>, <span class="tsd-kind-parameter">bran</span>, <span class="tsd-kind-parameter">tier</span><span class="tsd-signature-symbol">?</span>, <span class="tsd-kind-parameter">bootUrl</span><span class="tsd-signature-symbol">?</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="SignifyClient.html" class="tsd-signature-type tsd-kind-class">SignifyClient</a><a href="#constructor.new_SignifyClient" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>SignifyClient</p>
+<div class="tsd-comment tsd-typography"><p>SignifyClient constructor</p>
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li>
 <h5><span class="tsd-kind-parameter">url</span>: <span class="tsd-signature-type">string</span></h5>
+<div class="tsd-comment tsd-typography"><p>KERIA admin interface URL</p>
+</div>
 <div class="tsd-comment tsd-typography"></div></li>
 <li>
 <h5><span class="tsd-kind-parameter">bran</span>: <span class="tsd-signature-type">string</span></h5>
+<div class="tsd-comment tsd-typography"><p>Base64 21 char string that is used as base material for seed of the client AID</p>
+</div>
 <div class="tsd-comment tsd-typography"></div></li>
 <li>
 <h5><span class="tsd-kind-parameter">tier</span>: <a href="../enums/Tier.html" class="tsd-signature-type tsd-kind-enum">Tier</a><span class="tsd-signature-symbol"> = Tier.low</span></h5>
+<div class="tsd-comment tsd-typography"><p>Security tier for generating keys of the client AID (high | mewdium | low)</p>
+</div>
 <div class="tsd-comment tsd-typography"></div></li>
 <li>
 <h5><span class="tsd-kind-parameter">bootUrl</span>: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> = DEFAULT_BOOT_URL</span></h5>
+<div class="tsd-comment tsd-typography"><p>KERIA boot interface URL</p>
+</div>
 <div class="tsd-comment tsd-typography"></div></li></ul></div>
 <h4 class="tsd-returns-title">Returns <a href="SignifyClient.html" class="tsd-signature-type tsd-kind-class">SignifyClient</a></h4>
 <div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L62">keri/app/signify.ts:62</a></li></ul></aside></li></ul></section></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L59">keri/app/signify.ts:59</a></li></ul></aside></li></ul></section></section>
 <section class="tsd-panel-group tsd-member-group">
 <h2>Properties</h2>
 <section class="tsd-panel tsd-member"><a id="agent" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>agent</span><a href="#agent" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">agent</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">null</span><span class="tsd-signature-symbol"> | </span><a href="Agent.html" class="tsd-signature-type tsd-kind-class">Agent</a></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L49">keri/app/signify.ts:49</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L46">keri/app/signify.ts:46</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member"><a id="authn" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>authn</span><a href="#authn" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">authn</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">null</span><span class="tsd-signature-symbol"> | </span><a href="Authenticater.html" class="tsd-signature-type tsd-kind-class">Authenticater</a></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L50">keri/app/signify.ts:50</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L47">keri/app/signify.ts:47</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member"><a id="bootUrl" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>boot<wbr/>Url</span><a href="#bootUrl" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">boot<wbr/>Url</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L53">keri/app/signify.ts:53</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L50">keri/app/signify.ts:50</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member"><a id="bran" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>bran</span><a href="#bran" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">bran</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L47">keri/app/signify.ts:47</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L44">keri/app/signify.ts:44</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member"><a id="controller" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>controller</span><a href="#controller" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">controller</span><span class="tsd-signature-symbol">:</span> <a href="Controller.html" class="tsd-signature-type tsd-kind-class">Controller</a></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L45">keri/app/signify.ts:45</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L42">keri/app/signify.ts:42</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member"><a id="manager" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>manager</span><a href="#manager" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">manager</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">null</span><span class="tsd-signature-symbol"> | </span><a href="KeyManager.html" class="tsd-signature-type tsd-kind-class">KeyManager</a></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L51">keri/app/signify.ts:51</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L48">keri/app/signify.ts:48</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member"><a id="pidx" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>pidx</span><a href="#pidx" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">pidx</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L48">keri/app/signify.ts:48</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L45">keri/app/signify.ts:45</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member"><a id="tier" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>tier</span><a href="#tier" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">tier</span><span class="tsd-signature-symbol">:</span> <a href="../enums/Tier.html" class="tsd-signature-type tsd-kind-enum">Tier</a></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L52">keri/app/signify.ts:52</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L49">keri/app/signify.ts:49</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member"><a id="url" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>url</span><a href="#url" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">url</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L46">keri/app/signify.ts:46</a></li></ul></aside></section></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L43">keri/app/signify.ts:43</a></li></ul></aside></section></section>
 <section class="tsd-panel-group tsd-member-group">
 <h2>Accessors</h2>
 <section class="tsd-panel tsd-member"><a id="data" class="tsd-anchor"></a>
@@ -158,294 +166,329 @@
 <li class="tsd-description">
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-symbol">(</span><span class="tsd-signature-type">null</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> | </span><a href="Authenticater.html" class="tsd-signature-type tsd-kind-class">Authenticater</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">[]</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L77">keri/app/signify.ts:77</a></li></ul></aside></li></ul></section></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L74">keri/app/signify.ts:74</a></li></ul></aside></li></ul></section></section>
 <section class="tsd-panel-group tsd-member-group">
 <h2>Methods</h2>
 <section class="tsd-panel tsd-member"><a id="approveDelegation" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>approve<wbr/>Delegation</span><a href="#approveDelegation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
-<li class="tsd-signature tsd-anchor-link" id="approveDelegation.approveDelegation-1"><span class="tsd-kind-call-signature">approve<wbr/>Delegation</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span><a href="#approveDelegation.approveDelegation-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="approveDelegation.approveDelegation-1"><span class="tsd-kind-call-signature">approve<wbr/>Delegation</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span><a href="#approveDelegation.approveDelegation-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>approveDelegation</p>
+<div class="tsd-comment tsd-typography"><p>Approve the delegation of the client AID to the KERIA agent</p>
 </div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span></h4><p>A promise to the result of the approval</p>
+
 <div class="tsd-comment tsd-typography">
 <h4>Async</h4></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L265">keri/app/signify.ts:265</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L260">keri/app/signify.ts:260</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="boot" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>boot</span><a href="#boot" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="tsd-signature tsd-anchor-link" id="boot.boot-1"><span class="tsd-kind-call-signature">boot</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span><a href="#boot.boot-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>boot</p>
+<div class="tsd-comment tsd-typography"><p>Boot a KERIA agent</p>
 </div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span></h4>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span></h4><p>A promise to the result of the boot</p>
+
 <div class="tsd-comment tsd-typography">
 <h4>Async</h4></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L86">keri/app/signify.ts:86</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L83">keri/app/signify.ts:83</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="challenges" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>challenges</span><a href="#challenges" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
-<li class="tsd-signature tsd-anchor-link" id="challenges.challenges-1"><span class="tsd-kind-call-signature">challenges</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Challenges</span><a href="#challenges.challenges-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="challenges.challenges-1"><span class="tsd-kind-call-signature">challenges</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="Challenges.html" class="tsd-signature-type tsd-kind-class">Challenges</a><a href="#challenges.challenges-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>challenges</p>
+<div class="tsd-comment tsd-typography"><p>Get challenges resource</p>
 </div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Challenges</span></h4>
+<h4 class="tsd-returns-title">Returns <a href="Challenges.html" class="tsd-signature-type tsd-kind-class">Challenges</a></h4>
 <div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L399">keri/app/signify.ts:399</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L396">keri/app/signify.ts:396</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="connect" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>connect</span><a href="#connect" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="tsd-signature tsd-anchor-link" id="connect.connect-1"><span class="tsd-kind-call-signature">connect</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span><a href="#connect.connect-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>connect</p>
+<div class="tsd-comment tsd-typography"><p>Connect to a KERIA agent</p>
 </div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4>
 <div class="tsd-comment tsd-typography">
 <h4>Async</h4></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L134">keri/app/signify.ts:134</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L128">keri/app/signify.ts:128</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="contacts" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>contacts</span><a href="#contacts" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
-<li class="tsd-signature tsd-anchor-link" id="contacts.contacts-1"><span class="tsd-kind-call-signature">contacts</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Contacts</span><a href="#contacts.contacts-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="contacts.contacts-1"><span class="tsd-kind-call-signature">contacts</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="Contacts.html" class="tsd-signature-type tsd-kind-class">Contacts</a><a href="#contacts.contacts-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>contacts</p>
+<div class="tsd-comment tsd-typography"><p>Get contacts resource</p>
 </div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Contacts</span></h4>
+<h4 class="tsd-returns-title">Returns <a href="Contacts.html" class="tsd-signature-type tsd-kind-class">Contacts</a></h4>
 <div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L407">keri/app/signify.ts:407</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L404">keri/app/signify.ts:404</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="credentials" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>credentials</span><a href="#credentials" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
-<li class="tsd-signature tsd-anchor-link" id="credentials.credentials-1"><span class="tsd-kind-call-signature">credentials</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Credentials</span><a href="#credentials.credentials-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="credentials.credentials-1"><span class="tsd-kind-call-signature">credentials</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="Credentials.html" class="tsd-signature-type tsd-kind-class">Credentials</a><a href="#credentials.credentials-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>credentials</p>
+<div class="tsd-comment tsd-typography"><p>Get credentials resource</p>
 </div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Credentials</span></h4>
+<h4 class="tsd-returns-title">Returns <a href="Credentials.html" class="tsd-signature-type tsd-kind-class">Credentials</a></h4>
 <div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L375">keri/app/signify.ts:375</a></li></ul></aside></li></ul></section>
-<section class="tsd-panel tsd-member"><a id="deleteldSalt" class="tsd-anchor"></a>
-<h3 class="tsd-anchor-link"><span>deleteld<wbr/>Salt</span><a href="#deleteldSalt" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L372">keri/app/signify.ts:372</a></li></ul></aside></li></ul></section>
+<section class="tsd-panel tsd-member"><a id="deletePasscode" class="tsd-anchor"></a>
+<h3 class="tsd-anchor-link"><span>delete<wbr/>Passcode</span><a href="#deletePasscode" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
-<li class="tsd-signature tsd-anchor-link" id="deleteldSalt.deleteldSalt-1"><span class="tsd-kind-call-signature">deleteld<wbr/>Salt</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span><a href="#deleteldSalt.deleteldSalt-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="deletePasscode.deletePasscode-1"><span class="tsd-kind-call-signature">delete<wbr/>Passcode</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span><a href="#deletePasscode.deletePasscode-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>deleteldSalt</p>
+<div class="tsd-comment tsd-typography"><p>Delete a saved passcode from KERIA agent</p>
 </div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span></h4>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span></h4><p>A promise to the result of the deletion</p>
+
 <div class="tsd-comment tsd-typography">
 <h4>Async</h4></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L305">keri/app/signify.ts:305</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L300">keri/app/signify.ts:300</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="escrows" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>escrows</span><a href="#escrows" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
-<li class="tsd-signature tsd-anchor-link" id="escrows.escrows-1"><span class="tsd-kind-call-signature">escrows</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Escrows</span><a href="#escrows.escrows-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="escrows.escrows-1"><span class="tsd-kind-call-signature">escrows</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="Escrows.html" class="tsd-signature-type tsd-kind-class">Escrows</a><a href="#escrows.escrows-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Escrows</span></h4>
+<div class="tsd-comment tsd-typography"><p>Get escrows resource</p>
+</div>
+<h4 class="tsd-returns-title">Returns <a href="Escrows.html" class="tsd-signature-type tsd-kind-class">Escrows</a></h4>
 <div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L423">keri/app/signify.ts:423</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L420">keri/app/signify.ts:420</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="fetch" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>fetch</span><a href="#fetch" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="tsd-signature tsd-anchor-link" id="fetch.fetch-1"><span class="tsd-kind-call-signature">fetch</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">path</span>, <span class="tsd-kind-parameter">method</span>, <span class="tsd-kind-parameter">data</span>, <span class="tsd-kind-parameter">extraHeaders</span><span class="tsd-signature-symbol">?</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span><a href="#fetch.fetch-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>fetch</p>
+<div class="tsd-comment tsd-typography"><p>Fetch a resource from the KERIA agent</p>
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li>
 <h5><span class="tsd-kind-parameter">path</span>: <span class="tsd-signature-type">string</span></h5>
+<div class="tsd-comment tsd-typography"><p>Path to the resource</p>
+</div>
 <div class="tsd-comment tsd-typography"></div></li>
 <li>
 <h5><span class="tsd-kind-parameter">method</span>: <span class="tsd-signature-type">string</span></h5>
+<div class="tsd-comment tsd-typography"><p>HTTP method</p>
+</div>
 <div class="tsd-comment tsd-typography"></div></li>
 <li>
 <h5><span class="tsd-kind-parameter">data</span>: <span class="tsd-signature-type">any</span></h5>
+<div class="tsd-comment tsd-typography"><p>Data to be sent in the body of the resource</p>
+</div>
 <div class="tsd-comment tsd-typography"></div></li>
 <li>
 <h5><code class="tsd-tag ts-flagOptional">Optional</code> <span class="tsd-kind-parameter">extraHeaders</span>: <span class="tsd-signature-type ">Headers</span></h5>
+<div class="tsd-comment tsd-typography"><p>Optional extra headers to be sent with the request</p>
+</div>
 <div class="tsd-comment tsd-typography"></div></li></ul></div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span></h4>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span></h4><p>A promise to the result of the fetch</p>
+
 <div class="tsd-comment tsd-typography">
-<h4>Throws</h4></div><aside class="tsd-sources">
+<h4>Async</h4></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L161">keri/app/signify.ts:161</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L155">keri/app/signify.ts:155</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="identifiers" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>identifiers</span><a href="#identifiers" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
-<li class="tsd-signature tsd-anchor-link" id="identifiers.identifiers-1"><span class="tsd-kind-call-signature">identifiers</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Identifier</span><a href="#identifiers.identifiers-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="identifiers.identifiers-1"><span class="tsd-kind-call-signature">identifiers</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="Identifier.html" class="tsd-signature-type tsd-kind-class">Identifier</a><a href="#identifiers.identifiers-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>identifiers</p>
+<div class="tsd-comment tsd-typography"><p>Get identifiers resource</p>
 </div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Identifier</span></h4>
+<h4 class="tsd-returns-title">Returns <a href="Identifier.html" class="tsd-signature-type tsd-kind-class">Identifier</a></h4>
 <div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L335">keri/app/signify.ts:335</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L332">keri/app/signify.ts:332</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="keyEvents" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>key<wbr/>Events</span><a href="#keyEvents" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
-<li class="tsd-signature tsd-anchor-link" id="keyEvents.keyEvents-1"><span class="tsd-kind-call-signature">key<wbr/>Events</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">KeyEvents</span><a href="#keyEvents.keyEvents-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="keyEvents.keyEvents-1"><span class="tsd-kind-call-signature">key<wbr/>Events</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="KeyEvents.html" class="tsd-signature-type tsd-kind-class">KeyEvents</a><a href="#keyEvents.keyEvents-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>keyEvents</p>
+<div class="tsd-comment tsd-typography"><p>Get keyEvents resource</p>
 </div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">KeyEvents</span></h4>
+<h4 class="tsd-returns-title">Returns <a href="KeyEvents.html" class="tsd-signature-type tsd-kind-class">KeyEvents</a></h4>
 <div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L359">keri/app/signify.ts:359</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L356">keri/app/signify.ts:356</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="keyStates" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>key<wbr/>States</span><a href="#keyStates" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
-<li class="tsd-signature tsd-anchor-link" id="keyStates.keyStates-1"><span class="tsd-kind-call-signature">key<wbr/>States</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">KeyStates</span><a href="#keyStates.keyStates-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="keyStates.keyStates-1"><span class="tsd-kind-call-signature">key<wbr/>States</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="KeyStates.html" class="tsd-signature-type tsd-kind-class">KeyStates</a><a href="#keyStates.keyStates-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>keyStates</p>
+<div class="tsd-comment tsd-typography"><p>Get keyStates resource</p>
 </div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">KeyStates</span></h4>
+<h4 class="tsd-returns-title">Returns <a href="KeyStates.html" class="tsd-signature-type tsd-kind-class">KeyStates</a></h4>
 <div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L367">keri/app/signify.ts:367</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L364">keri/app/signify.ts:364</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="notifications" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>notifications</span><a href="#notifications" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
-<li class="tsd-signature tsd-anchor-link" id="notifications.notifications-1"><span class="tsd-kind-call-signature">notifications</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Notifications</span><a href="#notifications.notifications-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="notifications.notifications-1"><span class="tsd-kind-call-signature">notifications</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="Notifications.html" class="tsd-signature-type tsd-kind-class">Notifications</a><a href="#notifications.notifications-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>notifications</p>
+<div class="tsd-comment tsd-typography"><p>Get notifications resource</p>
 </div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Notifications</span></h4>
+<h4 class="tsd-returns-title">Returns <a href="Notifications.html" class="tsd-signature-type tsd-kind-class">Notifications</a></h4>
 <div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L415">keri/app/signify.ts:415</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L412">keri/app/signify.ts:412</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="oobis" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>oobis</span><a href="#oobis" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
-<li class="tsd-signature tsd-anchor-link" id="oobis.oobis-1"><span class="tsd-kind-call-signature">oobis</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Oobis</span><a href="#oobis.oobis-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="oobis.oobis-1"><span class="tsd-kind-call-signature">oobis</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="Oobis.html" class="tsd-signature-type tsd-kind-class">Oobis</a><a href="#oobis.oobis-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>oobis</p>
+<div class="tsd-comment tsd-typography"><p>Get OOBIs resource</p>
 </div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Oobis</span></h4>
+<h4 class="tsd-returns-title">Returns <a href="Oobis.html" class="tsd-signature-type tsd-kind-class">Oobis</a></h4>
 <div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L343">keri/app/signify.ts:343</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L340">keri/app/signify.ts:340</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="operations" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>operations</span><a href="#operations" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
-<li class="tsd-signature tsd-anchor-link" id="operations.operations-1"><span class="tsd-kind-call-signature">operations</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Operations</span><a href="#operations.operations-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="operations.operations-1"><span class="tsd-kind-call-signature">operations</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="Operations.html" class="tsd-signature-type tsd-kind-class">Operations</a><a href="#operations.operations-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>operations</p>
+<div class="tsd-comment tsd-typography"><p>Get operations resource</p>
 </div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Operations</span></h4>
+<h4 class="tsd-returns-title">Returns <a href="Operations.html" class="tsd-signature-type tsd-kind-class">Operations</a></h4>
 <div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L351">keri/app/signify.ts:351</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L348">keri/app/signify.ts:348</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="registries" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>registries</span><a href="#registries" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
-<li class="tsd-signature tsd-anchor-link" id="registries.registries-1"><span class="tsd-kind-call-signature">registries</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Registries</span><a href="#registries.registries-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="registries.registries-1"><span class="tsd-kind-call-signature">registries</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="Registries.html" class="tsd-signature-type tsd-kind-class">Registries</a><a href="#registries.registries-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>registries</p>
+<div class="tsd-comment tsd-typography"><p>Get registries resource</p>
 </div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Registries</span></h4>
+<h4 class="tsd-returns-title">Returns <a href="Registries.html" class="tsd-signature-type tsd-kind-class">Registries</a></h4>
 <div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L383">keri/app/signify.ts:383</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L380">keri/app/signify.ts:380</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="rotate" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>rotate</span><a href="#rotate" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
-<li class="tsd-signature tsd-anchor-link" id="rotate.rotate-1"><span class="tsd-kind-call-signature">rotate</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">nbran</span>, <span class="tsd-kind-parameter">aids</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span><a href="#rotate.rotate-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="rotate.rotate-1"><span class="tsd-kind-call-signature">rotate</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">nbran</span>, <span class="tsd-kind-parameter">aids</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span><a href="#rotate.rotate-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>rotate</p>
+<div class="tsd-comment tsd-typography"><p>Rotate the client AID</p>
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li>
 <h5><span class="tsd-kind-parameter">nbran</span>: <span class="tsd-signature-type">string</span></h5>
+<div class="tsd-comment tsd-typography"><p>Base64 21 char string that is used as base material for the new seed</p>
+</div>
 <div class="tsd-comment tsd-typography"></div></li>
 <li>
-<h5><span class="tsd-kind-parameter">aids</span>: <span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]</span></h5>
+<h5><span class="tsd-kind-parameter">aids</span>: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
+<div class="tsd-comment tsd-typography"><p>List of managed AIDs to be rotated</p>
+</div>
 <div class="tsd-comment tsd-typography"></div></li></ul></div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4>
-<div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span></h4><p>A promise to the result of the rotation</p>
+
+<div class="tsd-comment tsd-typography">
+<h4>Async</h4></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L320">keri/app/signify.ts:320</a></li></ul></aside></li></ul></section>
-<section class="tsd-panel tsd-member"><a id="saveOldSalt" class="tsd-anchor"></a>
-<h3 class="tsd-anchor-link"><span>save<wbr/>Old<wbr/>Salt</span><a href="#saveOldSalt" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L317">keri/app/signify.ts:317</a></li></ul></aside></li></ul></section>
+<section class="tsd-panel tsd-member"><a id="saveOldPasscode" class="tsd-anchor"></a>
+<h3 class="tsd-anchor-link"><span>save<wbr/>Old<wbr/>Passcode</span><a href="#saveOldPasscode" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
-<li class="tsd-signature tsd-anchor-link" id="saveOldSalt.saveOldSalt-1"><span class="tsd-kind-call-signature">save<wbr/>Old<wbr/>Salt</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">salt</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span><a href="#saveOldSalt.saveOldSalt-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="saveOldPasscode.saveOldPasscode-1"><span class="tsd-kind-call-signature">save<wbr/>Old<wbr/>Passcode</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">passcode</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span><a href="#saveOldPasscode.saveOldPasscode-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>saveOldSalt</p>
+<div class="tsd-comment tsd-typography"><p>Save old client passcode in KERIA agent</p>
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li>
-<h5><span class="tsd-kind-parameter">salt</span>: <span class="tsd-signature-type">string</span></h5>
+<h5><span class="tsd-kind-parameter">passcode</span>: <span class="tsd-signature-type">string</span></h5>
+<div class="tsd-comment tsd-typography"><p>Passcode to be saved</p>
+</div>
 <div class="tsd-comment tsd-typography"></div></li></ul></div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span></h4>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span></h4><p>A promise to the result of the save</p>
+
 <div class="tsd-comment tsd-typography">
 <h4>Async</h4></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L288">keri/app/signify.ts:288</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L283">keri/app/signify.ts:283</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="schemas" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>schemas</span><a href="#schemas" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
-<li class="tsd-signature tsd-anchor-link" id="schemas.schemas-1"><span class="tsd-kind-call-signature">schemas</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Schemas</span><a href="#schemas.schemas-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="schemas.schemas-1"><span class="tsd-kind-call-signature">schemas</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="Schemas.html" class="tsd-signature-type tsd-kind-class">Schemas</a><a href="#schemas.schemas-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>schemas</p>
+<div class="tsd-comment tsd-typography"><p>Get schemas resource</p>
 </div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Schemas</span></h4>
+<h4 class="tsd-returns-title">Returns <a href="Schemas.html" class="tsd-signature-type tsd-kind-class">Schemas</a></h4>
 <div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L391">keri/app/signify.ts:391</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L388">keri/app/signify.ts:388</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="signedFetch" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>signed<wbr/>Fetch</span><a href="#signedFetch" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="tsd-signature tsd-anchor-link" id="signedFetch.signedFetch-1"><span class="tsd-kind-call-signature">signed<wbr/>Fetch</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">url</span>, <span class="tsd-kind-parameter">path</span>, <span class="tsd-kind-parameter">method</span>, <span class="tsd-kind-parameter">data</span>, <span class="tsd-kind-parameter">aidName</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span><a href="#signedFetch.signedFetch-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>signedFetch</p>
+<div class="tsd-comment tsd-typography"><p>Fetch a resource from from an external URL with headers signed by an AID</p>
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li>
 <h5><span class="tsd-kind-parameter">url</span>: <span class="tsd-signature-type">string</span></h5>
+<div class="tsd-comment tsd-typography"><p>URL of the resource</p>
+</div>
 <div class="tsd-comment tsd-typography"></div></li>
 <li>
 <h5><span class="tsd-kind-parameter">path</span>: <span class="tsd-signature-type">string</span></h5>
+<div class="tsd-comment tsd-typography"><p>Path to the resource</p>
+</div>
 <div class="tsd-comment tsd-typography"></div></li>
 <li>
 <h5><span class="tsd-kind-parameter">method</span>: <span class="tsd-signature-type">string</span></h5>
+<div class="tsd-comment tsd-typography"><p>HTTP method</p>
+</div>
 <div class="tsd-comment tsd-typography"></div></li>
 <li>
 <h5><span class="tsd-kind-parameter">data</span>: <span class="tsd-signature-type">any</span></h5>
+<div class="tsd-comment tsd-typography"><p>Data to be sent in the body of the resource</p>
+</div>
 <div class="tsd-comment tsd-typography"></div></li>
 <li>
 <h5><span class="tsd-kind-parameter">aidName</span>: <span class="tsd-signature-type">string</span></h5>
+<div class="tsd-comment tsd-typography"><p>Name or alias of the AID to be used for signing</p>
+</div>
 <div class="tsd-comment tsd-typography"></div></li></ul></div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span></h4>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">Response</span><span class="tsd-signature-symbol">&gt;</span></h4><p>A promise to the result of the fetch</p>
+
 <div class="tsd-comment tsd-typography">
 <h4>Async</h4></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L222">keri/app/signify.ts:222</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L216">keri/app/signify.ts:216</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="state" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>state</span><a href="#state" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="tsd-signature tsd-anchor-link" id="state.state-1"><span class="tsd-kind-call-signature">state</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">State</span><span class="tsd-signature-symbol">&gt;</span><a href="#state.state-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>state</p>
+<div class="tsd-comment tsd-typography"><p>Get state of the agent and the client</p>
 </div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">State</span><span class="tsd-signature-symbol">&gt;</span></h4>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">State</span><span class="tsd-signature-symbol">&gt;</span></h4><p>A promise to the state</p>
+
 <div class="tsd-comment tsd-typography">
 <h4>Async</h4></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/6de32b6/src/keri/app/signify.ts#L113">keri/app/signify.ts:113</a></li></ul></aside></li></ul></section></section></div>
+<li>Defined in <a href="https://github.com/m00sey/signify-ts/blob/119d3df/src/keri/app/signify.ts#L108">keri/app/signify.ts:108</a></li></ul></aside></li></ul></section></section></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -482,7 +525,7 @@
 <li><a href="#connect" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>connect</span></a></li>
 <li><a href="#contacts" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>contacts</span></a></li>
 <li><a href="#credentials" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>credentials</span></a></li>
-<li><a href="#deleteldSalt" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>deleteld<wbr/>Salt</span></a></li>
+<li><a href="#deletePasscode" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>delete<wbr/>Passcode</span></a></li>
 <li><a href="#escrows" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>escrows</span></a></li>
 <li><a href="#fetch" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>fetch</span></a></li>
 <li><a href="#identifiers" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>identifiers</span></a></li>
@@ -493,7 +536,7 @@
 <li><a href="#operations" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>operations</span></a></li>
 <li><a href="#registries" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>registries</span></a></li>
 <li><a href="#rotate" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>rotate</span></a></li>
-<li><a href="#saveOldSalt" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>save<wbr/>Old<wbr/>Salt</span></a></li>
+<li><a href="#saveOldPasscode" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>save<wbr/>Old<wbr/>Passcode</span></a></li>
 <li><a href="#schemas" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>schemas</span></a></li>
 <li><a href="#signedFetch" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>signed<wbr/>Fetch</span></a></li>
 <li><a href="#state" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2048"></use></svg><span>state</span></a></li></ul></div></details></div>
@@ -509,42 +552,53 @@
 <li><a href="Authenticater.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Authenticater</span></a></li>
 <li><a href="BexCodex.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Bex<wbr/>Codex</span></a></li>
 <li><a href="CesrNumber.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Cesr<wbr/>Number</span></a></li>
+<li><a href="Challenges.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Challenges</span></a></li>
 <li><a href="Cigar.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Cigar</span></a></li>
 <li><a href="Cipher.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Cipher</span></a></li>
-<li><a href="Client.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Client</span></a></li>
 <li><a href="Codex.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Codex</span></a></li>
+<li><a href="Contacts.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Contacts</span></a></li>
 <li><a href="Controller.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Controller</span></a></li>
 <li><a href="Counter.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Counter</span></a></li>
 <li><a href="CounterCodex.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Counter<wbr/>Codex</span></a></li>
 <li><a href="Creatory.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Creatory</span></a></li>
 <li><a href="CredentialTypes.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Credential<wbr/>Types</span></a></li>
+<li><a href="Credentials.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Credentials</span></a></li>
 <li><a href="Decrypter.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Decrypter</span></a></li>
 <li><a href="Diger.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Diger</span></a></li>
 <li><a href="DigiCodex.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Digi<wbr/>Codex</span></a></li>
 <li><a href="EmptyMaterialError.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Empty<wbr/>Material<wbr/>Error</span></a></li>
 <li><a href="Encrypter.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Encrypter</span></a></li>
+<li><a href="Escrows.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Escrows</span></a></li>
 <li><a href="GroupKeeper.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Group<wbr/>Keeper</span></a></li>
 <li><a href="Hab.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Hab</span></a></li>
 <li><a href="Habery.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Habery</span></a></li>
+<li><a href="Identifier.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Identifier</span></a></li>
 <li><a href="IndexedBothSigCodex.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Indexed<wbr/>Both<wbr/>Sig<wbr/>Codex</span></a></li>
 <li><a href="IndexedCurrentSigCodex.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Indexed<wbr/>Current<wbr/>Sig<wbr/>Codex</span></a></li>
 <li><a href="IndexedSigCodex.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Indexed<wbr/>Sig<wbr/>Codex</span></a></li>
 <li><a href="Indexer.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Indexer</span></a></li>
 <li><a href="IndexerCodex.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Indexer<wbr/>Codex</span></a></li>
 <li><a href="Inputage.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Inputage</span></a></li>
+<li><a href="KeyEvents.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Key<wbr/>Events</span></a></li>
 <li><a href="KeyManager.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Key<wbr/>Manager</span></a></li>
+<li><a href="KeyStates.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Key<wbr/>States</span></a></li>
 <li><a href="Manager.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Manager</span></a></li>
 <li><a href="Matter.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Matter</span></a></li>
 <li><a href="MatterCodex.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Matter<wbr/>Codex</span></a></li>
 <li><a href="NonTransCodex.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Non<wbr/>Trans<wbr/>Codex</span></a></li>
+<li><a href="Notifications.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Notifications</span></a></li>
 <li><a href="NumCodex.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Num<wbr/>Codex</span></a></li>
+<li><a href="Oobis.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Oobis</span></a></li>
+<li><a href="Operations.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Operations</span></a></li>
 <li><a href="Prefixer.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Prefixer</span></a></li>
 <li><a href="RandyCreator.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Randy<wbr/>Creator</span></a></li>
 <li><a href="RandyKeeper.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Randy<wbr/>Keeper</span></a></li>
+<li><a href="Registries.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Registries</span></a></li>
 <li><a href="Saider.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Saider</span></a></li>
 <li><a href="Salter.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Salter</span></a></li>
 <li><a href="SaltyCreator.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Salty<wbr/>Creator</span></a></li>
 <li><a href="SaltyKeeper.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Salty<wbr/>Keeper</span></a></li>
+<li><a href="Schemas.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Schemas</span></a></li>
 <li><a href="Seqner.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Seqner</span></a></li>
 <li><a href="Serder.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Serder</span></a></li>
 <li><a href="Siger.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg><span>Siger</span></a></li>
