@@ -13,6 +13,7 @@ import { Siger } from "../core/siger"
 import { Prefixer } from "../core/prefixer"
 import { Salter } from "../core/salter"
 import { randomNonce } from "./apping"
+import { parseRangeHeaders } from "../core/httping"
 
 const DEFAULT_BOOT_URL = "http://localhost:3903"
 
@@ -176,17 +177,15 @@ export class SignifyClient {
         })
         if (extraHeaders !== undefined) {
             extraHeaders.forEach((value, key) => {
-                final_headers.set(key, value)
+                final_headers.append(key, value)
             })
         }
-
         let res = await fetch(this.url + path, {
             method: method,
             body: _body,
             headers: final_headers
         });
-
-        if (!(res.status == 200 || res.status == 202)) {
+        if (!(res.status == 200 || res.status == 202 || res.status == 206)) {
             const error = await res.text()
             throw new Error(error)
         }
@@ -477,14 +476,29 @@ export class Identifier {
     /**
      * List managed identifiers
      * @async
+     * @param {number} [start=0] Start index of list of notifications, defaults to 0
+     * @param {number} [end=24] End index of list of notifications, defaults to 24
      * @returns {Promise<any>} A promise to the list of managed identifiers
      */
-    async list(): Promise<any> {
+    async list(start:number=0, end:number=24): Promise<any> {
+        let extraHeaders = new Headers()
+        extraHeaders.append('Range', `aids=${start}-${end}`)
+        
         let path = `/identifiers`
         let data = null
         let method = 'GET'
-        let res = await this.client.fetch(path, method, data)
-        return await res.json()
+        let res = await this.client.fetch(path, method, data, extraHeaders)
+
+        let cr = res.headers.get('content-range')
+        let range = parseRangeHeaders(cr,"aids")
+        let aids = await res.json()
+
+        return {
+            start: range.start,
+            end: range.end,
+            total: range.total,
+            aids: aids
+        }
     }
 
     /** 
@@ -1704,19 +1718,28 @@ export class Notifications {
     /**
      * List notifications
      * @async
-     * @param {string} last SAID of the last notification received
-     * @param {number} limit number of notifications to return
+     * @param {number} [start=0] Start index of list of notifications, defaults to 0
+     * @param {number} [end=24] End index of list of notifications, defaults to 24
      * @returns {Promise<any>} A promise to the list of notifications
      */
-    async list(last?:string, limit?:number): Promise<any> {
-        let params = new URLSearchParams()
-        if (last !== undefined) {params.append('last', last)}
-        if (limit !== undefined) {params.append('limit', limit.toString())}
-
-        let path = `/notifications` + '?' + params.toString()
+    async list(start:number=0, end:number=24): Promise<any> {
+        let extraHeaders = new Headers()
+        extraHeaders.append('Range', `aids=${start}-${end}`)
+        
+        let path = `/notifications`
         let method = 'GET'
-        let res = await this.client.fetch(path, method, null)
-        return await res.json()
+        let res = await this.client.fetch(path, method, null, extraHeaders)
+
+        let cr = res.headers.get('content-range')
+        let range = parseRangeHeaders(cr,"notes")
+        let notes = await res.json()
+
+        return {
+            start: range.start,
+            end: range.end,
+            total: range.total,
+            notes: notes
+        }
     }
 
     /**
@@ -1738,7 +1761,7 @@ export class Notifications {
      * @param {string} said SAID of the notification
      * @returns {Promise<any>} A promise to the result of the deletion
      */
-    async delete(said:string) {
+    async delete(said:string): Promise<any> {
         let path = `/notifications/`+ said
         let method = 'DELETE'
         let res = await this.client.fetch(path, method, null)

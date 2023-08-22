@@ -30,7 +30,7 @@ export function Randy() {
                             assert.equal(client.agent?.anchor, 'ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose')
                             const identifiers = client.identifiers()
                             let aids = await identifiers.list()
-                            assert.equal(aids.length, 0)
+                            assert.equal(aids.aids.length, 0)
 
                             let op = await identifiers.create('aid1', {algo: Algos.randy})
                             assert.equal(op['done'], true)
@@ -43,8 +43,8 @@ export function Randy() {
 
 
                             aids = await identifiers.list()
-                            assert.equal(aids.length, 1)
-                            aid = aids[0]
+                            assert.equal(aids.aids.length, 1)
+                            aid = aids.aids[0]
                             assert.equal(aid.name, 'aid1')
                             assert.equal(aid.prefix, icp.pre)
 
@@ -56,8 +56,8 @@ export function Randy() {
                             assert.deepEqual(ixn.ked['a'], [icp.pre])
 
                             aids = await identifiers.list()
-                            assert.equal(aids.length, 1)
-                            aid = aids[0]
+                            assert.equal(aids.aids.length, 1)
+                            aid = aids.aids[0]
 
                             const events = client.keyEvents()
                             let log = await events.get(aid["prefix"])
