@@ -65,6 +65,7 @@
     "buffer": "^6.0.3",
     "cbor": "^8.0.0",
     "collections": "^5.1.12",
+    "jest-fetch-mock": "^3.0.3",
     "libsodium-wrappers-sumo": "^0.7.9",
     "lodash": "^4.17.21",
     "mathjs": "^11.8.2",
@@ -73,6 +74,7 @@
     "text-encoding": "^0.7.0",
     "ts-node": "^10.9.1",
     "urlsafe-base64": "^1.0.0",
+    "whatwg-fetch": "^3.6.17",
     "xregexp": "^5.1.0"
   }
 }

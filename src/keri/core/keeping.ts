@@ -241,8 +241,6 @@ export class RandyKeeper {
     public algo:Algos = Algos.randy
     public signers:Signer[]
 
-
-
     constructor(salter:Salter, code=MtrDex.Ed25519_Seed, count=1, icodes:string[]|undefined=undefined, transferable=false, 
         ncode=MtrDex.Ed25519_Seed, ncount=1, ncodes:string[], dcode=MtrDex.Blake3_256, prxs:string[]|undefined=undefined, nxts:string[]|undefined=undefined){
 
