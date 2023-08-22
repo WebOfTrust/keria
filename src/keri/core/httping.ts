@@ -161,3 +161,20 @@ export function desiginput(value: string): Array<Inputage> {
     return siginputs
 
 }
+/** Parse start, end and total from HTTP Content-Range header value 
+ * @param {string|null} header - HTTP Range header value
+ * @param {string} typ - type of range, e.g. "aids"
+ * @returns {start: number, end: number, total: number} - object with start, end and total properties
+*/
+export function parseRangeHeaders(header: string|null, typ: string): {start: number, end: number, total: number} {
+    if (header !== null) {
+        let data = header.replace(`${typ} `, "")
+        let values = data.split("/")
+        let rng = values[0].split("-")
+        
+        return {start: parseInt(rng[0]), end: parseInt(rng[1]), total: parseInt(values[1])}
+    } else {
+        return {start: 0, end: 0, total: 0}
+    }
+
+}

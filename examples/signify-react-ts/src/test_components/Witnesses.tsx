@@ -26,7 +26,7 @@ export function Witnesses() {
                             const identifiers = client.identifiers()
                             const operations = client.operations()
                             let aids = await identifiers.list()
-                            assert.equal(aids.length, 0)
+                            assert.equal(aids.aids.length, 0)
 
                             let op = await identifiers.create('aid1', {
                                 bran: 'canIGetAWitnessSaltGreaterThan21',
@@ -57,8 +57,8 @@ export function Witnesses() {
                             assert.equal(aid1.windexes.length, 3)
 
                             aids = await identifiers.list()
-                            assert.equal(aids.length, 1)
-                            const aid = aids.pop()
+                            assert.equal(aids.aids.length, 1)
+                            const aid = aids.aids.pop()
                             assert.equal(aid.prefix, icp1.pre)
 
                             setTestResult("Passed")

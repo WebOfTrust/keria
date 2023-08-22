@@ -37,10 +37,10 @@ export function Rotation() {
                             assert.equal(op_salt['done'], true)
 
 
-                            let pres = await identifiers.list_identifiers()
+                            let pres = await identifiers.list()
                             let aids = []
                             for (let pre of pres) {
-                                let _aid = await identifiers.get_identifier(pre.name)
+                                let _aid = await identifiers.get(pre.name)
                                 aids.push(_aid)
                             }
                             client.rotate('1111123456789abcdefghijk', aids)

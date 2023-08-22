@@ -38,8 +38,8 @@ async function run() {
 
 
     let aids = await client1.identifiers().list()
-    assert.equal(aids.length, 1)
-    aid = aids[0]
+    assert.equal(aids.aids.length, 1)
+    aid = aids.aids[0]
     assert.equal(aid.name, 'aid1')
     assert.equal(aid.prefix, icp.pre)
 
@@ -51,8 +51,8 @@ async function run() {
     assert.deepEqual(ixn.ked['a'], [icp.pre])
 
     aids = await client1.identifiers().list()
-    assert.equal(aids.length, 1)
-    aid = aids[0]
+    assert.equal(aids.aids.length, 1)
+    aid = aids.aids[0]
 
     const events = client1.keyEvents()
     let log = await events.get(aid["prefix"])

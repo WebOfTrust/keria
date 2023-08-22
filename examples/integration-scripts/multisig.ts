@@ -191,22 +191,22 @@ async function run() {
     console.log("Multisig created!")
 
     const identifiers1 = await client1.identifiers().list()
-    assert.equal(identifiers1.length, 2)
-    assert.equal(identifiers1[0].name, "multisig")
-    assert.equal(identifiers1[1].name, "multisig1")
+    assert.equal(identifiers1.aids.length, 2)
+    assert.equal(identifiers1.aids[0].name, "multisig")
+    assert.equal(identifiers1.aids[1].name, "multisig1")
 
     const identifiers2 = await client2.identifiers().list()
-    assert.equal(identifiers2.length, 2)
-    assert.equal(identifiers2[0].name, "multisig")
-    assert.equal(identifiers2[1].name, "multisig2")
+    assert.equal(identifiers2.aids.length, 2)
+    assert.equal(identifiers2.aids[0].name, "multisig")
+    assert.equal(identifiers2.aids[1].name, "multisig2")
 
     const identifiers3 = await client3.identifiers().list()
-    assert.equal(identifiers3.length, 2)
-    assert.equal(identifiers3[0].name, "multisig")
-    assert.equal(identifiers3[1].name, "multisig3")
+    assert.equal(identifiers3.aids.length, 2)
+    assert.equal(identifiers3.aids[0].name, "multisig")
+    assert.equal(identifiers3.aids[1].name, "multisig3")
 
-    console.log("Client 1 identifiers:", identifiers1[0].name, identifiers1[1].name)
-    console.log("Client 2 identifiers:", identifiers2[0].name, identifiers2[1].name)
-    console.log("Client 3 identifiers:", identifiers3[0].name, identifiers3[1].name)
+    console.log("Client 1 identifiers:", identifiers1.aids[0].name, identifiers1.aids[1].name)
+    console.log("Client 2 identifiers:", identifiers2.aids[0].name, identifiers2.aids[1].name)
+    console.log("Client 3 identifiers:", identifiers3.aids[0].name, identifiers3.aids[1].name)
 
 }

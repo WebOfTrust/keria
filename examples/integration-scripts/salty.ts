@@ -39,8 +39,8 @@ async function run() {
     assert.equal(icp.ked['kt'], '1')
     assert.equal(icp.ked['nt'], '1')
     let aids = await client1.identifiers().list()
-    assert.equal(aids.length, 1)
-    let aid = aids.pop()
+    assert.equal(aids.aids.length, 1)
+    let aid = aids.aids.pop()
     assert.equal(aid.name, 'aid1')
     let salt  = aid.salty
     assert.equal(salt.pidx, 0)
@@ -63,13 +63,29 @@ async function run() {
     assert.equal(icp2.ked['kt'], '2')
     assert.equal(icp2.ked['nt'], '2')
     aids = await client1.identifiers().list()
-    assert.equal(aids.length, 2)
-    aid = aids[1]
+    assert.equal(aids.aids.length, 2)
+    aid = aids.aids[1]
     assert.equal(aid.name, 'aid2')
     salt  = aid.salty
     assert.equal(salt.pidx, 1)
     assert.equal(salt.stem, 'signify:aid')
     assert.equal(aid.prefix, icp2.pre)
+
+    await client1.identifiers().create('aid3')
+    aids = await client1.identifiers().list()
+    assert.equal(aids.aids.length, 3)
+    aid = aids.aids[0]
+    assert.equal(aid.name, 'aid1')
+
+    aids = await client1.identifiers().list(1,2)
+    assert.equal(aids.aids.length, 2)
+    aid = aids.aids[0]
+    assert.equal(aid.name, 'aid2')
+
+    aids = await client1.identifiers().list(2,2)
+    assert.equal(aids.aids.length, 1)
+    aid = aids.aids[0]
+    assert.equal(aid.name, 'aid3')
 
     op = await client1.identifiers().rotate('aid1')
     assert.equal(op['done'], true)
