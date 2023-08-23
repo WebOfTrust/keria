@@ -14,6 +14,7 @@ import { Prefixer } from "../core/prefixer"
 import { Salter } from "../core/salter"
 import { randomNonce } from "./apping"
 import { parseRangeHeaders } from "../core/httping"
+import { TextDecoder } from "util"
 
 const DEFAULT_BOOT_URL = "http://localhost:3903"
 
