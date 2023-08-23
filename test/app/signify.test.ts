@@ -453,4 +453,72 @@ describe('SignifyClient', () => {
 
     })
 
+    it('Events and states', async () => {
+        await libsodium.ready;
+        const bran = "0123456789abcdefghijk"
+
+        let client = new SignifyClient(url, bran, Tier.low, boot_url)
+
+        await client.boot()
+        await client.connect()
+
+        let keyEvents = client.keyEvents()
+        let keyStates = client.keyStates()
+
+        await keyEvents.get("EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX")
+        let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/events?pre=EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX')
+        assert.equal(lastCall[1]!.method,'GET')
+
+        await keyStates.get("EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX")
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/states?pre=EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX')
+        assert.equal(lastCall[1]!.method,'GET')
+
+        await keyStates.list(["EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX","ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK"])
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/states?pre=EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX&pre=ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK')
+        assert.equal(lastCall[1]!.method,'GET')
+
+        await keyStates.query("EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX",1,"EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        let lastBody = JSON.parse(lastCall[1]!.body!.toString())
+        assert.equal(lastCall[0]!,url+'/queries')
+        assert.equal(lastCall[1]!.method,'POST')
+        assert.equal(lastBody.pre,"EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX")
+        assert.equal(lastBody.sn,1)
+        assert.equal(lastBody.anchor,"EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
+    })
+
+    it('Credentials', async () => {
+        await libsodium.ready;
+        const bran = "0123456789abcdefghijk"
+
+        let client = new SignifyClient(url, bran, Tier.low, boot_url)
+
+        await client.boot()
+        await client.connect()
+
+        let credentials = client.credentials()
+
+        let kargs = {
+            filter:{"-i": {"$eq": "EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX"}},
+            sort: [{"-s": 1}],
+            limit: 25,
+            skip: 5
+        }
+        await credentials.list("aid1",kargs)
+        let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        let lastBody = JSON.parse(lastCall[1]!.body!.toString())
+        assert.equal(lastCall[0]!,url+'/identifiers/aid1/credentials/query')
+        assert.equal(lastCall[1]!.method,'POST')
+        assert.deepEqual(lastBody,kargs)
+
+        await credentials.get("aid1","EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao",true)
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/identifiers/aid1/credentials/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao')
+        assert.equal(lastCall[1]!.method,'GET')
+
+    })
+
 })
