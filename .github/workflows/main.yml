@@ -11,12 +11,12 @@ on:
   workflow_dispatch:
 jobs:
   build:
-    name: Build, lint, and test on Node ${{ matrix.node }} and ${{ matrix.os }}
+    name: Build, lint, and test on Node 18.12.1 and ${{ matrix.os }}
 
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ macOS-latest]
+        os: [ macOS-latest, ubuntu-latest]
 
     steps:
       - name: Checkout repo
