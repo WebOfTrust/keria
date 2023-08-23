@@ -316,6 +316,20 @@ describe('SignifyClient', () => {
         assert.deepEqual(lastBody.ixn,{"v":"KERI10JSON000138_","t":"ixn","d":"EPtNJLDft3CB-oz3qIhe86fnTKs-GYWiWyx8fJv3VO5e","i":"ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK","s":"1","p":"ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK","a":[{"i":"ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK","s":0,"d":"ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK"}]})
         assert.deepEqual(lastBody.sigs,["AADEzKk-5LT6vH-PWFb_1i1A8FW-KGHORtTOCZrKF4gtWkCr9vN1z_mDSVKRc6MKktpdeB3Ub1fWCGpnS50hRgoJ"])
 
+        await client.identifiers().addEndRole('aid1','agent')
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        lastBody = JSON.parse(lastCall[1]!.body!.toString())
+        assert.equal(lastCall[0]!,url+'/identifiers/aid1/endroles')
+        assert.equal(lastCall[1]!.method,'POST')
+        assert.equal(lastBody.rpy.t,'rpy')
+        assert.equal(lastBody.rpy.r,'/end/role/add')
+        assert.deepEqual(lastBody.rpy.a,{"cid":"ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK","role":"agent"})
+
+        await client.identifiers().members('aid1')
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/identifiers/aid1/members')
+        assert.equal(lastCall[1]!.method,'GET')
+
     })
 
     it('Randy identifiers', async () => {
@@ -385,7 +399,38 @@ describe('SignifyClient', () => {
         assert.equal(lastCall[0]!,url+'/schema/'+schemaSAID)
         assert.equal(lastCall[1]!.method,'GET')
 
+    })
 
+    it('OOBIs', async () => {
+        await libsodium.ready;
+        const bran = "0123456789abcdefghijk"
+
+        let client = new SignifyClient(url, bran, Tier.low, boot_url)
+
+        await client.boot()
+        await client.connect()
+
+        let oobis = client.oobis()
+
+        await oobis.get("aid","agent")
+        let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/identifiers/aid/oobis?role=agent')
+        assert.equal(lastCall[1]!.method,'GET')
+
+        await oobis.resolve("http://oobiurl.com")
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        let lastBody = JSON.parse(lastCall[1]!.body!.toString())
+        assert.equal(lastCall[0]!,url+'/oobis')
+        assert.equal(lastCall[1]!.method,'POST')
+        assert.deepEqual(lastBody.url,"http://oobiurl.com")
+        
+        await oobis.resolve("http://oobiurl.com","witness")
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        lastBody = JSON.parse(lastCall[1]!.body!.toString())
+        assert.equal(lastCall[0]!,url+'/oobis')
+        assert.equal(lastCall[1]!.method,'POST')
+        assert.deepEqual(lastBody.url,"http://oobiurl.com")
+        assert.deepEqual(lastBody.oobialias,"witness")
     })
 
 })
