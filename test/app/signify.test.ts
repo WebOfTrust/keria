@@ -431,6 +431,26 @@ describe('SignifyClient', () => {
         assert.equal(lastCall[1]!.method,'POST')
         assert.deepEqual(lastBody.url,"http://oobiurl.com")
         assert.deepEqual(lastBody.oobialias,"witness")
+
+    })
+
+    it('Operations', async () => {
+        await libsodium.ready;
+        const bran = "0123456789abcdefghijk"
+
+        let client = new SignifyClient(url, bran, Tier.low, boot_url)
+
+        await client.boot()
+        await client.connect()
+
+        let ops = client.operations()
+
+        await ops.get("operationName")
+        let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/operations/operationName')
+        assert.equal(lastCall[1]!.method,'GET')
+
+
     })
 
 })
