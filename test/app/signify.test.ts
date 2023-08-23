@@ -686,6 +686,41 @@ describe('SignifyClient', () => {
         assert.equal(lastBody.aid,"EG2XjQN-3jPN5rcR4spLjaJyM4zA6Lgg-Hd5vSMymu5p")
         assert.equal(lastBody.said,"EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
 
+    })
+
+    it('Notifications', async () => {
+        await libsodium.ready;
+        const bran = "0123456789abcdefghijk"
+
+        let client = new SignifyClient(url, bran, Tier.low, boot_url)
+
+        await client.boot()
+        await client.connect()
+
+        let notifications = client.notifications()
+        let escrows = client.escrows()
+
+        await notifications.list(20, 40)
+        let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/notifications')
+        assert.equal(lastCall[1]!.method,'GET')
+        let lastHeaders = new Headers((lastCall[1]!.headers!))
+        assert.equal(lastHeaders.get('Range'),'notes=20-40')
+
+        await notifications.mark("notificationSAID")
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/notifications/notificationSAID')
+        assert.equal(lastCall[1]!.method,'PUT')
+
+        await notifications.delete("notificationSAID")
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/notifications/notificationSAID')
+        assert.equal(lastCall[1]!.method,'DELETE')
+
+        await escrows.listReply('/presentation/request')
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/escrows/rpy?route=%2Fpresentation%2Frequest')
+        assert.equal(lastCall[1]!.method,'GET')
 
     })
     

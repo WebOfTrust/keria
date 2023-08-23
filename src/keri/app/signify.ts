@@ -1725,7 +1725,7 @@ export class Notifications {
      */
     async list(start:number=0, end:number=24): Promise<any> {
         let extraHeaders = new Headers()
-        extraHeaders.append('Range', `aids=${start}-${end}`)
+        extraHeaders.append('Range', `notes=${start}-${end}`)
         
         let path = `/notifications`
         let method = 'GET'
