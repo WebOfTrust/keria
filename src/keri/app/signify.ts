@@ -939,7 +939,7 @@ export class KeyStates {
      * @param {Array<string>} pres List of identifier prefixes
      * @returns {Promise<any>} A promise to the key states
      */
-    async list(pres: [string]): Promise<any> {
+    async list(pres: string[]): Promise<any> {
         let path = `/states?${pres.map(pre => `pre=${pre}`).join('&')}`
         let data = null
         let method = 'GET'

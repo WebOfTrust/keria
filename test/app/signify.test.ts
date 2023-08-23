@@ -316,6 +316,20 @@ describe('SignifyClient', () => {
         assert.deepEqual(lastBody.ixn,{"v":"KERI10JSON000138_","t":"ixn","d":"EPtNJLDft3CB-oz3qIhe86fnTKs-GYWiWyx8fJv3VO5e","i":"ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK","s":"1","p":"ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK","a":[{"i":"ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK","s":0,"d":"ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK"}]})
         assert.deepEqual(lastBody.sigs,["AADEzKk-5LT6vH-PWFb_1i1A8FW-KGHORtTOCZrKF4gtWkCr9vN1z_mDSVKRc6MKktpdeB3Ub1fWCGpnS50hRgoJ"])
 
+        await client.identifiers().addEndRole('aid1','agent')
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        lastBody = JSON.parse(lastCall[1]!.body!.toString())
+        assert.equal(lastCall[0]!,url+'/identifiers/aid1/endroles')
+        assert.equal(lastCall[1]!.method,'POST')
+        assert.equal(lastBody.rpy.t,'rpy')
+        assert.equal(lastBody.rpy.r,'/end/role/add')
+        assert.deepEqual(lastBody.rpy.a,{"cid":"ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK","role":"agent"})
+
+        await client.identifiers().members('aid1')
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/identifiers/aid1/members')
+        assert.equal(lastCall[1]!.method,'GET')
+
     })
 
     it('Randy identifiers', async () => {
@@ -385,7 +399,175 @@ describe('SignifyClient', () => {
         assert.equal(lastCall[0]!,url+'/schema/'+schemaSAID)
         assert.equal(lastCall[1]!.method,'GET')
 
+    })
+
+    it('OOBIs', async () => {
+        await libsodium.ready;
+        const bran = "0123456789abcdefghijk"
+
+        let client = new SignifyClient(url, bran, Tier.low, boot_url)
+
+        await client.boot()
+        await client.connect()
+
+        let oobis = client.oobis()
+
+        await oobis.get("aid","agent")
+        let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/identifiers/aid/oobis?role=agent')
+        assert.equal(lastCall[1]!.method,'GET')
+
+        await oobis.resolve("http://oobiurl.com")
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        let lastBody = JSON.parse(lastCall[1]!.body!.toString())
+        assert.equal(lastCall[0]!,url+'/oobis')
+        assert.equal(lastCall[1]!.method,'POST')
+        assert.deepEqual(lastBody.url,"http://oobiurl.com")
+        
+        await oobis.resolve("http://oobiurl.com","witness")
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        lastBody = JSON.parse(lastCall[1]!.body!.toString())
+        assert.equal(lastCall[0]!,url+'/oobis')
+        assert.equal(lastCall[1]!.method,'POST')
+        assert.deepEqual(lastBody.url,"http://oobiurl.com")
+        assert.deepEqual(lastBody.oobialias,"witness")
 
     })
 
+    it('Operations', async () => {
+        await libsodium.ready;
+        const bran = "0123456789abcdefghijk"
+
+        let client = new SignifyClient(url, bran, Tier.low, boot_url)
+
+        await client.boot()
+        await client.connect()
+
+        let ops = client.operations()
+
+        await ops.get("operationName")
+        let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/operations/operationName')
+        assert.equal(lastCall[1]!.method,'GET')
+
+
+    })
+
+    it('Events and states', async () => {
+        await libsodium.ready;
+        const bran = "0123456789abcdefghijk"
+
+        let client = new SignifyClient(url, bran, Tier.low, boot_url)
+
+        await client.boot()
+        await client.connect()
+
+        let keyEvents = client.keyEvents()
+        let keyStates = client.keyStates()
+
+        await keyEvents.get("EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX")
+        let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/events?pre=EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX')
+        assert.equal(lastCall[1]!.method,'GET')
+
+        await keyStates.get("EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX")
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/states?pre=EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX')
+        assert.equal(lastCall[1]!.method,'GET')
+
+        await keyStates.list(["EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX","ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK"])
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/states?pre=EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX&pre=ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK')
+        assert.equal(lastCall[1]!.method,'GET')
+
+        await keyStates.query("EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX",1,"EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        let lastBody = JSON.parse(lastCall[1]!.body!.toString())
+        assert.equal(lastCall[0]!,url+'/queries')
+        assert.equal(lastCall[1]!.method,'POST')
+        assert.equal(lastBody.pre,"EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX")
+        assert.equal(lastBody.sn,1)
+        assert.equal(lastBody.anchor,"EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
+    })
+
+    it('Credentials', async () => {
+        await libsodium.ready;
+        const bran = "0123456789abcdefghijk"
+
+        let client = new SignifyClient(url, bran, Tier.low, boot_url)
+
+        await client.boot()
+        await client.connect()
+
+        let credentials = client.credentials()
+
+        let kargs = {
+            filter:{"-i": {"$eq": "EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX"}},
+            sort: [{"-s": 1}],
+            limit: 25,
+            skip: 5
+        }
+        await credentials.list("aid1",kargs)
+        let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        let lastBody = JSON.parse(lastCall[1]!.body!.toString())
+        assert.equal(lastCall[0]!,url+'/identifiers/aid1/credentials/query')
+        assert.equal(lastCall[1]!.method,'POST')
+        assert.deepEqual(lastBody,kargs)
+
+        await credentials.get("aid1","EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao",true)
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/identifiers/aid1/credentials/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao')
+        assert.equal(lastCall[1]!.method,'GET')
+
+    })
+
+    it('Contacts', async () => {
+        await libsodium.ready;
+        const bran = "0123456789abcdefghijk"
+
+        let client = new SignifyClient(url, bran, Tier.low, boot_url)
+
+        await client.boot()
+        await client.connect()
+
+        let contacts = client.contacts()
+
+
+        await contacts.list("mygroup","company","mycompany")
+        let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/contacts?group=mygroup&company=mycompany')
+        assert.equal(lastCall[1]!.method,'GET')
+
+
+        await contacts.get("EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/contacts/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao')
+        assert.equal(lastCall[1]!.method,'GET')
+
+        let info = {
+            "name": "John Doe",
+            "company": "My Company"
+        }
+        await contacts.add("EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao",info)
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        let lastBody = JSON.parse(lastCall[1]!.body!.toString())
+        assert.equal(lastCall[0]!,url+'/contacts/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao')
+        assert.equal(lastCall[1]!.method,'POST')
+        assert.deepEqual(lastBody,info)
+
+        await contacts.update("EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao",info)
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        lastBody = JSON.parse(lastCall[1]!.body!.toString())
+        assert.equal(lastCall[0]!,url+'/contacts/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao')
+        assert.equal(lastCall[1]!.method,'PUT')
+        assert.deepEqual(lastBody,info)
+
+        await contacts.delete("EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        lastBody = JSON.parse(lastCall[1]!.body!.toString())
+        assert.equal(lastCall[0]!,url+'/contacts/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao')
+        assert.equal(lastCall[1]!.method,'DELETE')
+
+    })
+    
 })
