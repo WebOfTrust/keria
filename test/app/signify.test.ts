@@ -239,6 +239,15 @@ describe('SignifyClient', () => {
         assert.deepEqual(lastBody.rot.kt,['1','0'])
         assert.equal(lastBody.rot.d,'EGFi9pCcRaLK8dPh5S7JP9Em62fBMiR1l4gW1ZazuuAO')
 
+        resp = await client.signedFetch('http://example.com','/test','POST',{foo:true},'aid1')
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,'http://example.com/test')
+        assert.equal(lastCall[1]!.method,'POST')
+        lastBody = JSON.parse(lastCall[1]!.body!)
+        assert.deepEqual(lastBody.foo,true)
+        lastHeaders = new Headers((lastCall[1]!.headers!))
+        assert.equal(lastHeaders.get('signify-resource'),'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK')
+
     })
 
     it('Salty identifiers', async () => {
