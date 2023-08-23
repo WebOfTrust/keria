@@ -521,4 +521,53 @@ describe('SignifyClient', () => {
 
     })
 
+    it('Contacts', async () => {
+        await libsodium.ready;
+        const bran = "0123456789abcdefghijk"
+
+        let client = new SignifyClient(url, bran, Tier.low, boot_url)
+
+        await client.boot()
+        await client.connect()
+
+        let contacts = client.contacts()
+
+
+        await contacts.list("mygroup","company","mycompany")
+        let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/contacts?group=mygroup&company=mycompany')
+        assert.equal(lastCall[1]!.method,'GET')
+
+
+        await contacts.get("EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/contacts/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao')
+        assert.equal(lastCall[1]!.method,'GET')
+
+        let info = {
+            "name": "John Doe",
+            "company": "My Company"
+        }
+        await contacts.add("EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao",info)
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        let lastBody = JSON.parse(lastCall[1]!.body!.toString())
+        assert.equal(lastCall[0]!,url+'/contacts/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao')
+        assert.equal(lastCall[1]!.method,'POST')
+        assert.deepEqual(lastBody,info)
+
+        await contacts.update("EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao",info)
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        lastBody = JSON.parse(lastCall[1]!.body!.toString())
+        assert.equal(lastCall[0]!,url+'/contacts/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao')
+        assert.equal(lastCall[1]!.method,'PUT')
+        assert.deepEqual(lastBody,info)
+
+        await contacts.delete("EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        lastBody = JSON.parse(lastCall[1]!.body!.toString())
+        assert.equal(lastCall[0]!,url+'/contacts/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao')
+        assert.equal(lastCall[1]!.method,'DELETE')
+
+    })
+    
 })
