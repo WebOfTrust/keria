@@ -14,6 +14,7 @@ import { Prefixer } from "../core/prefixer"
 import { Salter } from "../core/salter"
 import { randomNonce } from "./apping"
 import { parseRangeHeaders } from "../core/httping"
+import { TextDecoder } from "util"
 
 const DEFAULT_BOOT_URL = "http://localhost:3903"
 
@@ -1724,7 +1725,7 @@ export class Notifications {
      */
     async list(start:number=0, end:number=24): Promise<any> {
         let extraHeaders = new Headers()
-        extraHeaders.append('Range', `aids=${start}-${end}`)
+        extraHeaders.append('Range', `notes=${start}-${end}`)
         
         let path = `/notifications`
         let method = 'GET'

@@ -9,6 +9,7 @@ import { Siger } from "./siger";
 import { Cigar } from "./cigar";
 import { Counter, CtrDex } from "./counter";
 import { Seqner } from "./seqner";
+import { TextEncoder } from "util";
 
 let MaxIntThold = 2 ** 32 - 1
 
