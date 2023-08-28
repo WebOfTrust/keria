@@ -723,5 +723,24 @@ describe('SignifyClient', () => {
         assert.equal(lastCall[1]!.method,'GET')
 
     })
-    
+
+    it('Messages', async () => {
+        await libsodium.ready;
+        const bran = "0123456789abcdefghijk"
+
+        let client = new SignifyClient(url,bran,Tier.low,boot_url)
+
+        await client.boot()
+        await client.connect()
+
+        let messages = client.messages()
+
+        await messages.list('ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose','EMQQpnSkgfUOgWdzQTWfrgiVHKIDAhvAZIPQ6z3EAfz1',0, 10)
+        let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
+        assert.equal(lastCall[0]!,url+'/messages?sender=ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose&recipient=EMQQpnSkgfUOgWdzQTWfrgiVHKIDAhvAZIPQ6z3EAfz1')
+        assert.equal(lastCall[1]!.method,'GET')
+        
+        let lastHeaders = new Headers((lastCall[1]!.headers!))
+        assert.equal(lastHeaders.get('Range'),'messages=0-10')
+    })
 })
