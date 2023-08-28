@@ -1834,7 +1834,7 @@ export class Messages {
      * @param {number} [start=0] Start index of list of messages, defaults to 0
      * @param {number} [end=9] End index of list of messages, defaults to 9
      */
-    async list(sender?:string, recipient?:string, start:number=0, end:number=9): Promise<any> {
+    async list(sender:string, recipient:string, start:number=0, end:number=9): Promise<any> {
         let extraHeaders = new Headers()
         extraHeaders.append('Range', `messages=${start}-${end}`)
         let params = new URLSearchParams()
@@ -1843,7 +1843,7 @@ export class Messages {
         if (recipient !== undefined) {params.append('recipient', recipient)}
 
 
-        let path = `/messages`
+        let path = `/messages`+ '?' + params.toString()
         let method = 'GET'
         let res = await this.client.fetch(path, method, null, extraHeaders)
         let cr = res.headers.get('content-range')
