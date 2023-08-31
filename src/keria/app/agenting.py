@@ -29,7 +29,7 @@ from keri.db.basing import OobiRecord
 from keri.vc import protocoling
 
 from keria.end import ending
-from keri.help import helping, ogler
+from keri.help import helping, ogler, nowIso8601
 from keri.peer import exchanging
 from keri.vdr import verifying
 from keri.vdr.credentialing import Regery, sendArtifacts
@@ -64,6 +64,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
     bootServerDoer = http.ServerDoer(server=bootServer)
     bootEnd = BootEnd(agency)
     bootApp.add_route("/boot", bootEnd)
+    bootApp.add_route("/health", HealthEnd())
 
     # Create Authenticater for verifying signatures on all requests
     authn = Authenticater(agency=agency)
@@ -867,6 +868,14 @@ class BootEnd:
 
         rep.status = falcon.HTTP_202
         rep.data = json.dumps(asdict(agent.agentHab.kever.state())).encode("utf-8")
+
+
+class HealthEnd:
+    """Health resource for determining that a container is live"""
+
+    def on_get(self, req, resp):
+        resp.status = falcon.HTTP_OK
+        resp.media = {"message": f"Health is okay. Time is {nowIso8601()}"}
 
 
 class KeyStateCollectionEnd:
