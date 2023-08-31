@@ -28,7 +28,7 @@ from keri.core.coring import Ilks, randomNonce
 from keri.db import dbing
 from keri.db.basing import OobiRecord
 from keria.end import ending
-from keri.help import helping, ogler
+from keri.help import helping, ogler, nowIso8601
 from keri.peer import exchanging
 from keri.vc import protocoling
 from keri.vdr import verifying
@@ -58,6 +58,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
     bootServerDoer = http.ServerDoer(server=bootServer)
     bootEnd = BootEnd(agency)
     bootApp.add_route("/boot", bootEnd)
+    bootApp.add_route("/health", HealthEnd())
 
     # Create Authenticater for verifying signatures on all requests
     authn = Authenticater(agency=agency)
@@ -68,7 +69,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
                         'signify-resource', 'signify-timestamp']))
     if os.getenv("KERI_AGENT_CORS", "false").lower() in ("true", "1"):
         app.add_middleware(middleware=httping.HandleCORS())
-    app.add_middleware(authing.SignatureValidationComponent(agency=agency, authn=authn, allowed=["/agent"]))
+    app.add_middleware(authing.SignatureValidationComponent(agency=agency, authn=authn, allowed=["/agent", "/health"]))
     app.req_options.media_handlers.update(media.Handlers())
     app.resp_options.media_handlers.update(media.Handlers())
 
@@ -580,6 +581,8 @@ def loadEnds(app):
     queryEnd = QueryCollectionEnd()
     app.add_route("/queries", queryEnd)
 
+    app.add_route("/health", HealthEnd())
+
 
 class BootEnd:
     """ Resource class for creating datastore in cloud ahab """
@@ -672,6 +675,14 @@ class BootEnd:
             raise falcon.HTTPBadRequest(description="multisig groups not supported as agent controller")
 
         rep.status = falcon.HTTP_202
+
+
+class HealthEnd:
+    """Health resource for determining that a container is live"""
+
+    def on_get(self, req, resp):
+        resp.status = falcon.HTTP_OK
+        resp.media = {"message": f"Health is okay. Time is {nowIso8601()}"}
 
 
 class KeyStateCollectionEnd:
