@@ -18,6 +18,7 @@ export * from './keri/app/signify'
 export * from './keri/app/apping'
 export * from './keri/app/controller'
 export * from './keri/app/habery'
+export * from './keri/app/exchanging'
 export * from './keri/app/signify'
 
 export * from './keri/core/authing'

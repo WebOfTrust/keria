@@ -33,7 +33,7 @@ def create_aid():
         "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"
     ]
 
-    op = identifiers.create("multisig-sigpy", bran="0123456789abcdefghijk", wits=wits, toad="2")
+    _, _, op = identifiers.create("multisig-sigpy", bran="0123456789abcdefghijk", wits=wits, toad="2")
 
     while not op["done"]:
         op = operations.get(op["name"])

@@ -9,7 +9,9 @@ import json
 from time import sleep
 
 from keri.app.keeping import Algos
+from keri.core import eventing, coring
 from keri.core.coring import Tiers
+from keri.peer import exchanging
 from signify.app.clienting import SignifyClient
 
 
@@ -23,6 +25,7 @@ def create_multisig_aid():
     identifiers = client.identifiers()
     operations = client.operations()
     states = client.keyStates()
+    exchanges = client.exchanges()
 
     aid = identifiers.get("multisig-sigpy")
     sigPy = aid["state"]
@@ -37,17 +40,32 @@ def create_multisig_aid():
     for state in states:
         print(json.dumps(state, indent=2))
 
-    op = identifiers.create("multisig", algo=Algos.group, mhab=aid,
-                            delpre="EHpD0-CDWOdu5RJ8jHBSUkOqBZ3cXeDVHWNb_Ul89VI7",
-                            toad=2,
-                            wits=[
-                                "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
-                                "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
-                                "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"
-                            ],
-                            isith=["1/3", "1/3", "1/3"], nsith=["1/3", "1/3", "1/3"],
-                            states=states,
-                            rstates=rstates)
+    icp, isigs, op = identifiers.create("multisig", algo=Algos.group, mhab=aid,
+                                        delpre="EHpD0-CDWOdu5RJ8jHBSUkOqBZ3cXeDVHWNb_Ul89VI7",
+                                        toad=2,
+                                        wits=[
+                                            "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
+                                            "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
+                                            "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"
+                                        ],
+                                        isith=["1/3", "1/3", "1/3"], nsith=["1/3", "1/3", "1/3"],
+                                        states=states,
+                                        rstates=rstates)
+
+    smids = ["EBcIURLpxmVwahksgrsGW6_dUw0zBhyEHYFk17eWrZfk",
+             "EFBmwh8vdPTofoautCiEjjuA17gSlEnE3xc-xy-fGzWZ",
+             "ELViLL4JCh-oktYca-pmPLwkmUaeYjyPmCLxELAKZW8V"]
+    recp = ["EFBmwh8vdPTofoautCiEjjuA17gSlEnE3xc-xy-fGzWZ",
+            "ELViLL4JCh-oktYca-pmPLwkmUaeYjyPmCLxELAKZW8V"]
+
+    embeds = dict(
+        icp=eventing.messagize(serder=icp, sigers=[coring.Siger(qb64=sig) for sig in isigs])
+    )
+
+    exchanges.send("multisig-sigpy", "multisig", sender=aid, route="/multisig/icp",
+                   payload=dict(gid=icp.pre, smids=smids, rmids=smids),
+                   embeds=embeds, recipients=recp)
+
     print("waiting on multisig creation...")
     while not op["done"]:
         op = operations.get(op["name"])
