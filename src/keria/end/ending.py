@@ -51,32 +51,22 @@ class OOBIEnd:
         """
         if aid is None:
             if self.default is None:
-                rep.status = falcon.HTTP_NOT_FOUND
-                rep.text = "no blind oobi for this node"
-                return
+                raise falcon.HTTPNotFound(description="no blind oobi for this node")
 
             aid = self.default
 
         agent = self.agency.lookup(pre=aid)
         if agent is None:
-            rep.status = falcon.HTTP_NOT_FOUND
-            rep.text = "AID not found for this OOBI"
-            return
-
-        if aid not in agent.hby.kevers:
-            rep.status = falcon.HTTP_NOT_FOUND
-            return
+            raise falcon.HTTPNotFound(description="AID not found for this OOBI")
 
         kever = agent.hby.kevers[aid]
         if not agent.hby.db.fullyWitnessed(kever.serder):
-            rep.status = falcon.HTTP_NOT_FOUND
-            return
+            raise falcon.HTTPNotFound(description=f"{aid} not available")
 
         if kever.prefixer.qb64 in agent.hby.prefixes:  # One of our identifiers
             hab = agent.hby.habs[kever.prefixer.qb64]
         else:  # Not allowed to respond
-            rep.status = falcon.HTTP_NOT_ACCEPTABLE
-            return
+            raise falcon.HTTPNotAcceptable(description=f"{aid} is not a local identifier")
 
         eids = []
         if eid:

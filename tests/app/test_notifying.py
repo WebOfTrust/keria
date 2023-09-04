@@ -1,16 +1,15 @@
 # -*- encoding: utf-8 -*-
 """
 KERIA
-keria.app.agenting module
+keria.app.notifying module
 
-Testing the Mark II Agent
+Testing the Mark II Agent notification endpoint
 """
-import datetime
 from builtins import isinstance
 
 from keri.core.coring import randomNonce
 
-from keria.app import notifying
+from keria.app import notifying, grouping
 
 
 def test_load_ends(helpers):
@@ -33,7 +32,6 @@ def test_notifications(helpers):
 
         assert agent.notifier.add(attrs=dict(a=1, b=2, c=3)) is True
 
-        dt = datetime.datetime.now()
         assert agent.notifier.add(attrs=dict(a=1)) is True
         assert agent.notifier.add(attrs=dict(a=2)) is True
         assert agent.notifier.add(attrs=dict(a=3)) is True
@@ -93,5 +91,3 @@ def test_notifications(helpers):
         assert notes[0]['r'] is False
         assert notes[1]['r'] is True
         assert notes[2]['r'] is not True  # just for fun
-
-

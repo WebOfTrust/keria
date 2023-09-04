@@ -151,6 +151,9 @@ class RegistryCollectionEnd:
         ked = httping.getRequiredParam(body, "vcp")
         vcp = coring.Serder(ked=ked)
 
+        ked = httping.getRequiredParam(body, "ixn")
+        ixn = coring.Serder(ked=ked)
+
         hab = agent.hby.habByName(name)
         if hab is None:
             raise falcon.HTTPNotFound(description="alias is not a valid reference to an identfier")
@@ -164,7 +167,9 @@ class RegistryCollectionEnd:
         anchor = dict(i=registry.regk, s="0", d=registry.regk)
         # Create registry long running OP that embeds the above received OP or Serder.
 
-        agent.registrar.incept(hab, registry)
+        seqner = coring.Seqner(sn=ixn.sn)
+        prefixer = coring.Prefixer(qb64=ixn.pre)
+        agent.registrar.incept(hab, registry, prefixer=prefixer, seqner=seqner, saider=ixn.saider)
         op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.registry,
                                   metadata=dict(anchor=anchor, depends=op))
 
@@ -664,8 +669,8 @@ class Registrar:
             hab (Hab): human readable name for the registry
             registry (SignifyRegistry): qb64 identifier prefix of issuing identifier in control of this registry
             prefixer (Prefixer):
-            seqner (Seqner):
-            saider (Saider):
+            seqner (Seqner): sequence number class of anchoring event
+            saider (Saider): SAID class of anchoring event
 
         Returns:
             Registry:  created registry

@@ -58,7 +58,9 @@ class NotificationCollectionEnd:
 
         count = agent.notifier.getNoteCnt()
         notes = agent.notifier.getNotes(start=start, end=end)
-        out = [note.pad for note in notes]
+        out = []
+        for note in notes:
+            out.append(note.pad)
 
         end = start + (len(out) - 1) if len(out) > 0 else 0
         rep.set_header("Accept-Ranges", "notes")
