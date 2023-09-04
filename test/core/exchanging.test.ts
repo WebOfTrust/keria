@@ -65,8 +65,8 @@ describe("exchange", () => {
 
 
         let embeds = {
-            icp: [serder.ked, siger.qb64],
-            vcp: [vcp.ked, undefined]
+            icp: [serder, siger.qb64],
+            vcp: [vcp, undefined]
         } as Dict<any>
 
         [exn, end] = exchange("/multisig/vcp", {}, "test", undefined, dt, undefined, undefined, embeds)
@@ -101,8 +101,7 @@ describe("exchange", () => {
             "t": "exn",
             "v": "KERI10JSON00020d_"
         })
-        assert.equal(d(end), "-LAD5AACAA-e-icpAAAPkMTS3LrrhVuQB0k4UndDN0xIfEiKYaN7rTlQ_q9ImnBcugwNO8VWTALXzWoaldJE" +
-            "C1IOpEGkEnjZfxxIleoI")
+        assert.equal(d(end), "-LAZ5AACAA-e-icpAAAPkMTS3LrrhVuQB0k4UndDN0xIfEiKYaN7rTlQ_q9ImnBcugwNO8VWTALXzWoaldJEC1IOpEGkEnjZfxxIleoI")
 
 
     })
