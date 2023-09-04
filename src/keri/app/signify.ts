@@ -420,14 +420,6 @@ export class SignifyClient {
     escrows(): Escrows {
         return new Escrows(this)
     }
-
-    /**
-     * Get messages resource
-     * @returns {Messages}
-     * */
-    messages(): Messages {
-        return new Messages(this)
-    }
 }
 
 /** Arguments required to create an identfier */
@@ -1807,54 +1799,5 @@ export class Escrows {
         let method = 'GET'
         let res =  await this.client.fetch(path, method, null)
         return await res.json()
-    }
-}
-
-
-/**
- * Messages
- */
-
-export class Messages {
-    client: SignifyClient
-
-    /**
-     * Messages
-     * @param {SignifyClient} client
-     */
-    constructor(client: SignifyClient) {
-        this.client = client
-    }
-
-    /**
-     * List messages
-     * @async
-     * @param {string} [sender] sender prefix to filter messages
-     * @param {string} [recipient] recipient prefix to filter messages
-     * @param {number} [start=0] Start index of list of messages, defaults to 0
-     * @param {number} [end=9] End index of list of messages, defaults to 9
-     */
-    async list(sender:string, recipient:string, start:number=0, end:number=9): Promise<any> {
-        let extraHeaders = new Headers()
-        extraHeaders.append('Range', `messages=${start}-${end}`)
-        let params = new URLSearchParams()
-        //check sender and recipient are send otherwise return error 
-        if (sender !== undefined) {params.append('sender', sender)}
-        if (recipient !== undefined) {params.append('recipient', recipient)}
-
-
-        let path = `/messages`+ '?' + params.toString()
-        let method = 'GET'
-        let res = await this.client.fetch(path, method, null, extraHeaders)
-        let cr = res.headers.get('content-range')
-        let range = parseRangeHeaders(cr,"messages")
-        let msgs = await res.json()
-
-        return {
-            start: range.start,
-            end: range.end,
-            total: range.total,
-            messages: msgs
-        }
     }
 }
