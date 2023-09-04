@@ -46,9 +46,11 @@ async function connect() {
     let identifiers = client.identifiers()
     const oobis = client.oobis()
     const operations = client.operations()
+    const exchanges = client.exchanges()
 
     let salt = 'abcdefghijk0123456789'
-    let op = await identifiers.create("multisig-ts", {bran: salt})
+    let res = identifiers.create("multisig-ts", {bran: salt})
+    let op = await res.op()
     let aid = op["response"]
 
     await identifiers.addEndRole("multisig-ts", "agent", d.agent.i)
@@ -93,7 +95,7 @@ async function connect() {
     let sigTs = aid['state']
 
     let states = [sigPy, kli, sigTs]
-    identifiers.create("multisig", {
+    let ires = identifiers.create("multisig", {
         algo: "group", mhab: aid,
         delpre: "EHpD0-CDWOdu5RJ8jHBSUkOqBZ3cXeDVHWNb_Ul89VI7",
         toad: 2,
@@ -106,5 +108,22 @@ async function connect() {
         states: states,
         rstates: states
     })
+
+    let serder = ires.serder
+    let sigs = ires.sigs
+    let sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}))
+
+    let ims = signify.d(signify.messagize(serder, sigers))
+    let atc = ims.substring(serder.size)
+    let embeds = {
+        icp: [serder, atc],
+    }
+
+    let smids = states.map((state) =>  state['i'])
+    let recp = [sigPy, kli].map((state) =>  state['i'])
+
+    await exchanges.send("multisig-ts", "multisig", aid, "/multisig/icp",
+        {'gid': serder.pre, smids: smids, rmids: smids}, embeds, recp)
+
 }
 

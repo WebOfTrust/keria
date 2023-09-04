@@ -23,6 +23,12 @@ export class MatterCodex extends Codex {
     X25519_Cipher_Salt:   string = '1AAH' // X25519 100 char b64 Cipher of 24 char qb64 Salt
     Salt_128:             string = '0A'   // 128 bit random salt or 128 bit number (see Huge)
     Ed25519_Sig:          string = '0B'   // Ed25519 signature.
+    StrB64_L0:            string = '4A'   //String Base64 Only Lead Size 0
+    StrB64_L1:            string = '5A'   //String Base64 Only Lead Size 1
+    StrB64_L2:            string = '6A'   //String Base64 Only Lead Size 2
+    StrB64_Big_L0:        string = '7AAA' //String Base64 Only Big Lead Size 0
+    StrB64_Big_L1:        string = '8AAA' //String Base64 Only Big Lead Size 1
+    StrB64_Big_L2:        string = '9AAA' //String Base64 Only Big Lead Size 2
 }
 
 export const MtrDex = new MatterCodex()
@@ -71,6 +77,22 @@ export class BexCodex extends Codex {
 
 export const BexDex = new BexCodex()
 
+class SmallVarRawSizeCodex extends Codex {
+    Lead0: string = '4'  // First Selector Character for all ls == 0 codes
+    Lead1: string = '5'  // First Selector Character for all ls == 1 codes
+    Lead2: string = '6'  // First Selector Character for all ls == 2 codes
+}
+
+export const SmallVrzDex = new SmallVarRawSizeCodex()
+
+class LargeVarRawSizeCodex extends Codex {
+    Lead0_Big: string = '7'  // First Selector Character for all ls == 0 codes
+    Lead1_Big: string = '8'  // First Selector Character for all ls == 1 codes
+    Lead2_Big: string = '9'  // First Selector Character for all ls == 2 codes
+}
+
+export const LargeVrzDex = new LargeVarRawSizeCodex()
+
 export class Sizage {
     public hs: number;
     public ss: number;
@@ -81,7 +103,7 @@ export class Sizage {
         this.hs = hs;
         this.ss = ss;
         this.fs = fs;
-        this.ls = ls;
+        this.ls = ls!;
     }
 }
 
@@ -91,6 +113,7 @@ export interface MatterArgs {
     qb64b?: Uint8Array | undefined
     qb64?: string
     qb2?: Uint8Array | undefined
+    rize?: number
 }
 
 export class Matter {
@@ -160,7 +183,7 @@ export class Matter {
     private _size: number = -1;
     private _raw: Uint8Array = new Uint8Array(0);
 
-    constructor({raw, code = MtrDex.Ed25519N, qb64b, qb64, qb2}: MatterArgs) {
+    constructor({raw, code = MtrDex.Ed25519N, qb64b, qb64, qb2, rize}: MatterArgs) {
 
         let size = -1
         if (raw != undefined) {
@@ -168,13 +191,47 @@ export class Matter {
                 throw new Error("Improper initialization need either (raw and code) or qb64b or qb64 or qb2.")
             }
 
-            // Add support for variable size codes here if needed, this code only works for stable size codes
-            let sizage = Matter.Sizes.get(code)
-            if (sizage!.fs == -1) {  // invalid
-                throw new Error(`Unsupported variable size code=${code}`)
-            }
 
-            let rize = Matter._rawSize(code)
+            if (SmallVrzDex.has(code[0]) || LargeVrzDex.has(code[0])) {
+                if (rize !== undefined) {
+                    if (rize < 0)
+                        throw new Error(`missing var raw size for code=${code}`)
+                } else {
+                    rize = raw.length
+                }
+
+                let ls = (3 - (rize % 3)) % 3  // calc actual lead (pad) size
+                size = Math.floor((rize + ls) / 3)  // calculate value of size in triplets
+                if (SmallVrzDex.has(code[0])) {
+                    if (size <= (64 ** 2 - 1)) {
+                        let hs = 2
+                        let s = Object.values(SmallVrzDex)[ls]
+                        code = `${s}${code.substring(1, hs)}`
+                    } else if (size <= (64 ** 4 - 1)) {
+                        let hs = 4
+                        let s = Object.values(LargeVrzDex)[ls]
+                        code = `${s}${'AAAA'.substring(0, hs - 2)}${code[1]}`
+                    } else {
+                        throw new Error(`Unsupported raw size for code=${code}`)
+                    }
+                } else {
+                    if (size <= (64 ** 4 - 1)) {
+                        let hs= 4
+                        let s = Object.values(LargeVrzDex)[ls]
+                        code = `${s}${code.substring(1, hs)}`
+                    } else {
+                        throw new Error(`Unsupported raw size for code=${code}`)
+                    }
+                }
+            } else {
+                let sizage = Matter.Sizes.get(code)
+                if (sizage!.fs == -1) {  // invalid
+                    throw new Error(`Unsupported variable size code=${code}`)
+                }
+
+                rize = Matter._rawSize(code)
+
+            }
             raw = raw.slice(0, rize)  // copy only exact size from raw stream
             if (raw.length != rize) { // forbids shorter
                 throw new Error(`Not enougth raw bytes for code=${code} expected ${rize} got ${raw.length}.`)
@@ -242,19 +299,43 @@ export class Matter {
 
     get both() {
         let sizage = Matter.Sizes.get(this.code);
-        return `${this.code}${intToB64(this.size, sizage!.ls)}`
+        return `${this.code}${intToB64(this.size, sizage!.ss)}`
     }
 
 
     private _infil() {
         let code = this.code;
+        let size = this.size
         let raw = this.raw;
 
         let ps = ((3 - (raw.length % 3)) % 3);  // pad size chars or lead size bytes
         let sizage = Matter.Sizes.get(code);
 
-        if (sizage!.fs === -1) {  // Variable size code, NOT SUPPORTED
-            throw new Error("Variable sized codes not supported... yet");
+        if (sizage!.fs === undefined) {  // Variable size code, NOT SUPPORTED
+            let cs = sizage!.hs + sizage!.ss
+            if (cs % 4) {
+                throw new Error(`Whole code size not multiple of 4 for variable length material. cs=${cs}`)
+            }
+            if (size < 0 || size > (64 ** sizage!.ss - 1)) {
+                throw new Error(`Invalid size=${size} for code=${code}.`)
+            }
+
+            let both = `${code}${intToB64(size, sizage!.ss)}`
+            if (both.length % 4 !== ps - sizage!.ls!) {
+                throw new Error(`Invalid code=${both} for converted raw pad size=${ps}.`)
+            }
+
+            let bytes = new Uint8Array(sizage!.ls! + raw.length)
+            for (let i = 0; i < sizage!.ls!; i++) {
+                bytes[i] = 0;
+            }
+            for (let i = 0; i < raw.length; i++) {
+                let odx = i + ps
+                bytes[odx] = raw[i];
+            }
+
+            return both + Base64.encode(Buffer.from(bytes))
+
         } else {
             let both = code
             let cs = both.length

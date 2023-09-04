@@ -2,9 +2,9 @@
   "name": "signify-scripts-ts",
   "private": true,
   "version": "0.0.0",
-  "scripts": {
-  },
+  "scripts": {},
   "dependencies": {
+    "prompt-sync": "^4.2.0",
     "signify-ts": "file:../../"
   },
   "devDependencies": {

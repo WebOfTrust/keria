@@ -1,20 +1,20 @@
-import { Controller, Agent } from "./controller"
-import { Tier } from "../core/salter"
-import { Authenticater } from "../core/authing"
-import { KeyManager } from "../core/keeping"
-import { Algos } from '../core/manager'
-import { incept, rotate, interact, reply, messagize } from "../core/eventing"
-import { b, Serials, Versionage, Ilks, versify, Ident} from "../core/core"
-import { Tholder } from "../core/tholder"
-import { MtrDex } from "../core/matter"
-import { Saider } from "../core/saider"
-import { Serder } from "../core/serder"
-import { Siger } from "../core/siger"
-import { Prefixer } from "../core/prefixer"
-import { Salter } from "../core/salter"
-import { randomNonce } from "./apping"
-import { parseRangeHeaders } from "../core/httping"
-import { TextDecoder } from "util"
+import {Agent, Controller} from "./controller"
+import {Salter, Tier} from "../core/salter"
+import {Authenticater} from "../core/authing"
+import {KeyManager} from "../core/keeping"
+import {Algos} from '../core/manager'
+import {incept, interact, messagize, reply, rotate} from "../core/eventing"
+import {b, d, Dict, Ident, Ilks, Serials, versify, Versionage} from "../core/core"
+import {Tholder} from "../core/tholder"
+import {MtrDex} from "../core/matter"
+import {Saider} from "../core/saider"
+import {Serder} from "../core/serder"
+import {Siger} from "../core/siger"
+import {Prefixer} from "../core/prefixer"
+import {randomNonce} from "./apping"
+import {parseRangeHeaders} from "../core/httping"
+import {TextDecoder} from "util"
+import {exchange} from "./exchanging";
 
 const DEFAULT_BOOT_URL = "http://localhost:3903"
 
@@ -420,6 +420,22 @@ export class SignifyClient {
     escrows(): Escrows {
         return new Escrows(this)
     }
+
+    /**
+    * Get groups resource
+    * @returns {Groups}
+    */
+    groups(): Groups {
+        return new Groups(this)
+    }
+
+    /**
+    * Get groups resource
+    * @returns {Exchanges}
+    */
+    exchanges(): Exchanges {
+        return new Exchanges(this)
+    }
 }
 
 /** Arguments required to create an identfier */
@@ -461,6 +477,31 @@ export interface RotateIdentifierArgs {
     ncodes?: string[],
     states?: any[],
     rstates?: any[]
+}
+
+export class InceptionResult {
+    private readonly _serder: Serder
+    private readonly _sigs: string[]
+    private readonly promise: Promise<Response>
+
+    constructor(serder: Serder, sigs: string[], promise: Promise<Response>) {
+        this._serder = serder
+        this._sigs = sigs
+        this.promise = promise
+    }
+
+    get serder() {
+        return this._serder
+    }
+
+    get sigs() {
+        return this._sigs
+    }
+
+    async op(): Promise<any> {
+        let res = await this.promise
+        return await res.json()
+    }
 }
 
 /** Identifier */
@@ -523,7 +564,7 @@ export class Identifier {
      * @param {CreateIdentiferArgs} [kargs] Optional parameters to create the identifier
      * @returns {Promise<any>} A promise to the long-running operation
      */
-    async create(name: string, kargs:CreateIdentiferArgs={}): Promise<any> {
+    create(name: string, kargs:CreateIdentiferArgs={}): InceptionResult {
 
         const algo = kargs.algo == undefined ? Algos.salty : kargs.algo
 
@@ -577,8 +618,9 @@ export class Identifier {
         let keeper = this.client.manager!.new(algo, this.client.pidx, xargs)
         let [keys, ndigs] = keeper!.incept(transferable)
         wits = wits !== undefined ? wits : []
+        let serder: Serder|undefined = undefined
         if (delpre == undefined) {
-            var serder = incept({
+            serder = incept({
                 keys: keys!,
                 isith: isith,
                 ndigs: ndigs,
@@ -594,7 +636,7 @@ export class Identifier {
             })
 
         } else {
-            var serder = incept({
+            serder = incept({
                 keys: keys!,
                 isith: isith,
                 ndigs: ndigs,
@@ -620,11 +662,11 @@ export class Identifier {
             smids: states != undefined ? states.map(state => state.i) : undefined,
             rmids: rstates != undefined ? rstates.map(state => state.i) : undefined
         }
-        jsondata[algo] = keeper.params(),
+        jsondata[algo] = keeper.params()
 
             this.client.pidx = this.client.pidx + 1
-        let res = await this.client.fetch("/identifiers", "POST", jsondata)
-        return await res.json()
+        let res = this.client.fetch("/identifiers", "POST", jsondata)
+        return new InceptionResult(serder, sigs, res)
     }
 
     /**
@@ -1406,7 +1448,7 @@ export class Registries {
         let hab = await this.client.identifiers().get(name)
         let pre: string = hab.prefix
 
-        nonce = nonce !== undefined? nonce : randomNonce()
+        nonce = nonce !== undefined ? nonce : randomNonce()
 
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
         let vcp = {
@@ -1430,12 +1472,11 @@ export class Registries {
         let sigs = []
 
         let state = hab.state
+        let estOnly = false
         if (state.c !== undefined && state.c.includes("EO")) {
-            var estOnly = true
+            estOnly = true
         }
-        else {
-            var estOnly = false
-        }
+
         if (estOnly) {
             // TODO implement rotation event
             throw new Error("establishment only not implemented")
@@ -1445,26 +1486,37 @@ export class Registries {
             let sn = Number(state.s)
             let dig = state.d
 
-            let data:any = [{
+            let data: any = [{
                 i: prefixer.qb64,
                 s: "0",
                 d: prefixer.qb64
             }]
 
-            let serder = interact({ pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined })
+            let serder = interact({pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined})
             let keeper = this.client!.manager!.get(hab)
             sigs = keeper.sign(b(serder.raw))
             ixn = serder.ked
         }
 
+        return await this.createFromEvents(hab, name, registryName, vcp, ixn, sigs)
+    }
+
+    async createFromEvents(hab: Dict<any>, name: string, registryName: string, vcp: Dict<any>, ixn: Dict<any>, sigs: any[]) {
+
         let path = `/identifiers/${name}/registries`
         let method = 'POST'
-        let data = {
+
+        let data: any = {
             name: registryName,
             vcp: vcp,
             ixn: ixn!,
             sigs: sigs
         }
+        let keeper = this.client!.manager!.get(hab)
+        data[keeper.algo] = keeper.params()
+
+        console.log(data)
+
         let res = await this.client.fetch(path, method, data)
         return await res.json()
     }
@@ -1798,6 +1850,139 @@ export class Escrows {
         let path = `/escrows/rpy` + '?' + params.toString()
         let method = 'GET'
         let res =  await this.client.fetch(path, method, null)
+        return await res.json()
+    }
+}
+
+/**
+ * Groups
+ */
+export class Groups {
+    client: SignifyClient
+
+    /**
+     * Groups
+     * @param {SignifyClient} client
+     */
+    constructor(client: SignifyClient) {
+        this.client = client
+    }
+
+    /**
+     * Get group request messages
+     * @async
+     * @param {string} [said] SAID of exn message to load
+     * @returns {Promise<any>} A promise to the list of replay messages
+     */
+    async getRequest(said:string): Promise<any> {
+
+        let path = `/multisig/request/` + said
+        let method = 'GET'
+        let res =  await this.client.fetch(path, method, null)
+        return await res.json()
+    }
+
+    /**
+     * Send multisig exn request  messages to other group members
+     * @async
+     * @param {string} [name] human readable name of group AID
+     * @param {Dict<any>} [exn] exn message to send to other members
+     * @param {string[]} [sigs] signature of the participant over the exn
+     * @param {string} [atc] additional attachments from embedded events in exn
+     * @returns {Promise<any>} A promise to the list of replay messages
+     */
+    async sendRequest(name: string, exn:Dict<any>, sigs: string[], atc: string): Promise<any> {
+
+        let path = `/identifiers/${name}/multisig/request`
+        let method = 'POST'
+        let data = {
+            exn: exn,
+            sigs: sigs,
+            atc: atc
+        }
+        let res = await this.client.fetch(path, method, data)
+        return await res.json()
+    }
+}
+
+
+/**
+ * Exchanges
+ */
+export class Exchanges {
+    client: SignifyClient
+
+    /**
+     * Exchanges
+     * @param {SignifyClient} client
+     */
+    constructor(client: SignifyClient) {
+        this.client = client
+    }
+
+    /**
+     * Send exn messaget to list of recipients
+     * @async
+     * @returns {Promise<any>} A promise to the list of replay messages
+     * @param sender
+     * @param route
+     * @param payload
+     * @param embeds
+     */
+    createExchangeMessage(sender: Dict<any>, route:string, payload: Dict<any>, embeds: Dict<any>): [Serder, string[], string]{
+        let keeper = this.client.manager!.get(sender)
+        let [exn, end] = exchange(route,
+            payload,
+            sender["prefix"], undefined, undefined, undefined, undefined, embeds)
+
+        let sigs = keeper.sign(b(exn.raw))
+        return [exn, sigs, d(end)]
+    }
+
+    /**
+     * Send exn messaget to list of recipients
+     * @async
+     * @returns {Promise<any>} A promise to the list of replay messages
+     * @param name
+     * @param topic
+     * @param sender
+     * @param route
+     * @param payload
+     * @param embeds
+     * @param recipients
+     */
+    async send(name:string, topic: string, sender: Dict<any>, route:string, payload: Dict<any>, embeds: Dict<any>,
+               recipients: string[]): Promise<any> {
+
+        let [exn, sigs, atc] = this.createExchangeMessage(sender, route, payload, embeds)
+        return await this.sendFromEvents(name, topic, exn, sigs, atc, recipients)
+
+    }
+
+    /**
+     * Send exn messaget to list of recipients
+     * @async
+     * @returns {Promise<any>} A promise to the list of replay messages
+     * @param name
+     * @param topic
+     * @param exn
+     * @param sigs
+     * @param atc
+     * @param recipients
+     */
+    async sendFromEvents(name:string, topic: string, exn:Serder, sigs: string[], atc: string, recipients: string[]): Promise<any> {
+
+        let path = `/identifiers/${name}/exchanges`
+        let method = 'POST'
+        let data: any = {
+            tpc: topic,
+            exn: exn.ked,
+            sigs: sigs,
+            atc: atc,
+            rec: recipients
+        }
+
+        let res =  await this.client.fetch(path, method, data)
         return await res.json()
     }
 }

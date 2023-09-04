@@ -1,9 +1,9 @@
 import {strict as assert} from "assert";
 import libsodium from "libsodium-wrappers-sumo";
 
-import { Signer } from '../../src/keri/core/signer';
-import {Matter, MtrDex} from "../../src/keri/core/matter";
-import {b} from "../../src/keri/core/core";
+import { Signer } from '../../src';
+import {Matter, MtrDex} from "../../src";
+import {b} from "../../src";
 
 describe('Signer', () => {
     it('should sign things', async () => {
