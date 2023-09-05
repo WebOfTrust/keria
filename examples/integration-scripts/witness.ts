@@ -39,10 +39,11 @@ async function run() {
     console.log("Witness OOBI resolved")
 
     // Client 1 creates AID with 1 witness
-    op1 = await client1.identifiers().create('aid1',{
+    let icpResult1 = await client1.identifiers().create('aid1',{
         toad: 1,
         wits: ["BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha"]
         })
+    op1 = await icpResult1.op()
     while (!op1["done"] ) {
             op1 = await client1.operations().get(op1.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
