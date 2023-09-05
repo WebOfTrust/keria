@@ -562,7 +562,7 @@ export class Identifier {
      * @async
      * @param {string} name Name or alias of the identifier 
      * @param {CreateIdentiferArgs} [kargs] Optional parameters to create the identifier
-     * @returns {Promise<any>} A promise to the long-running operation
+     * @returns {InceptionResult} The inception result
      */
     create(name: string, kargs:CreateIdentiferArgs={}): InceptionResult {
 
