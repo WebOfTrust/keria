@@ -1515,8 +1515,6 @@ export class Registries {
         let keeper = this.client!.manager!.get(hab)
         data[keeper.algo] = keeper.params()
 
-        console.log(data)
-
         let res = await this.client.fetch(path, method, data)
         return await res.json()
     }
@@ -1921,7 +1919,7 @@ export class Exchanges {
     }
 
     /**
-     * Send exn messaget to list of recipients
+     * Create exn message
      * @async
      * @returns {Promise<any>} A promise to the list of replay messages
      * @param sender
