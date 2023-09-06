@@ -157,7 +157,7 @@ class AgentResourceEnd:
 
         if not self.authn.verify(req):
             raise falcon.HTTPForbidden(description="invalid signature on request")
-
+        
         sxlt = body["sxlt"]
         agent.mgr.sxlt = sxlt
 
@@ -309,6 +309,18 @@ class IdentifierCollectionEnd:
             serder = coring.Serder(ked=icp)
 
             sigers = [coring.Siger(qb64=sig) for sig in sigs]
+
+            if agent.hby.habByName(name) is not None:
+                raise falcon.HTTPBadRequest(title=f"AID with name {name} already incepted")
+
+            if 'b' in icp:
+                for wit in icp['b']:
+                    urls = agent.agentHab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+                    if not urls and wit not in agent.hby.kevers:
+                        raise falcon.HTTPBadRequest(description=f'unknown witness {wit}')
+
+            if 'di' in icp and icp["di"] not in agent.hby.kevers:
+                raise falcon.HTTPBadRequest(description=f'unknown delegator {icp["di"]}')
 
             # client is requesting agent to join multisig group
             if "group" in body:
@@ -469,11 +481,17 @@ class IdentifierResourceEnd:
         hab = agent.hby.habByName(name)
         if hab is None:
             raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
-
+               
         rot = body.get("rot")
         if rot is None:
             raise falcon.HTTPBadRequest(title="invalid rotation",
                                         description=f"required field 'rot' missing from request")
+
+        if 'ba' in rot:
+            for wit in rot['ba']:
+                urls = agent.agentHab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+                if not urls and wit not in agent.hby.kevers:
+                    raise falcon.HTTPBadRequest(description=f'unknown witness {wit}')
 
         sigs = body.get("sigs")
         if sigs is None or len(sigs) == 0:

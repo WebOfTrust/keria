@@ -11,6 +11,7 @@ from keri.app import habbing, httping
 from keri.core import coring
 from keri.core.coring import randomNonce, MtrDex
 from keri.vdr import eventing
+from keria.end import ending
 
 from keria.app import indirecting, aiding
 
@@ -116,6 +117,19 @@ def test_indirecting(helpers):
 
         res = client.post("/", body=regser.raw, headers=dict(headers))
         assert res.status_code == 204
+
+        # Test ending
+        oobiEnd = ending.OOBIEnd(agency)
+        app.add_route("/oobi", oobiEnd)
+        app.add_route("/oobi/{aid}", oobiEnd)
+        app.add_route("/oobi/{aid}/{role}", oobiEnd)
+        app.add_route("/oobi/{aid}/{role}/{eid}", oobiEnd)
+
+        result = client.simulate_get(path="/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/role")
+        assert result.status == falcon.HTTP_200 
+
+        result = client.simulate_get(path="/oobi/EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3")
+        assert result.status == falcon.HTTP_404 
 
 
 

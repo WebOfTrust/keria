@@ -225,3 +225,8 @@ def test_presentation_request(helpers):
         assert res.status_code == 400
         assert res.json == {'description': 'invalid recipient BadRecipient', 'title': '400 Bad Request'}
 
+        res2 = client.simulate_post(path=f"/identifiers/badname/requests",
+                                   body=json.dumps(body).encode("utf-8"))
+        assert res2.status_code == 400
+        assert res2.json == {'description': 'Invalid alias badname for credential request','title': '400 Bad Request'}
+
