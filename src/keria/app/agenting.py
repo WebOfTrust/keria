@@ -497,7 +497,7 @@ class Querier(doing.DoDoer):
         self.queries = queries
         self.kvy = kvy
 
-        super(Querier, self).__init__()
+        super(Querier, self).__init__(always=True)
 
     def recur(self, tyme, deeds=None):
         """ Processes query reqests submitting any on the cue"""
@@ -505,8 +505,14 @@ class Querier(doing.DoDoer):
             msg = self.queries.popleft()
             pre = msg["pre"]
 
-            qryDo = querying.QueryDoer(hby=self.hby, hab=self.agentHab, pre=pre, kvy=self.kvy)
-            self.extend([qryDo])
+            if "sn" in msg:
+                seqNoDo = querying.SeqNoQuerier(hby=self.hby, hab=self.agentHab, pre=pre, sn=msg["sn"])
+                self.extend([seqNoDo])
+            elif "anchor" in msg:
+                pass
+            else:
+                qryDo = querying.QueryDoer(hby=self.hby, hab=self.agentHab, pre=pre, kvy=self.kvy)
+                self.extend([qryDo])
 
         return super(Querier, self).recur(tyme, deeds)
 

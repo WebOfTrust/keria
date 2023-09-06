@@ -14,7 +14,7 @@ from falcon import testing
 from hio.base import doing
 from hio.help import decking
 from keri import kering
-from keri.app import habbing, configing, oobiing
+from keri.app import habbing, configing, oobiing, querying
 from keri.app.agenting import Receiptor
 from keri.core import coring
 from keri.core.coring import MtrDex
@@ -353,4 +353,44 @@ def test_oobi_ends(seeder, helpers):
         assert result.json == {'oobis': ['http://127.0.0.1:3902/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/agent'
                                          '/EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9'],
                                'role': 'agent'}
-        
+
+
+
+def test_querier(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        qry = agenting.Querier(hby=agent.hby, agentHab=agent.agentHab, queries=decking.Deck(), kvy=agent.kvy)
+        doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+        deeds = doist.enter(doers=[qry])
+
+        qry.queries.append(dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9", sn=1))
+        qry.recur(1.0, deeds=deeds)
+
+        assert len(qry.doers) == 1
+        seqNoDoer = qry.doers[0]
+        assert isinstance(seqNoDoer, querying.SeqNoQuerier) is True
+        assert seqNoDoer.pre == "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
+        assert seqNoDoer.sn == 1
+
+        qry.doers.remove(seqNoDoer)
+
+        # Anchor not implemented yet
+        qry.queries.append(dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9", anchor={}))
+        qry.recur(1.0, deeds=deeds)
+        assert len(qry.doers) == 0
+
+        qry.queries.append(dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"))
+        qry.recur(1.0, deeds=deeds)
+
+        assert len(qry.doers) == 1
+        qryDoer = qry.doers[0]
+        assert isinstance(qryDoer, querying.QueryDoer) is True
+        assert qryDoer.pre == "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
+
+
+
+
+
+
+
+
+
