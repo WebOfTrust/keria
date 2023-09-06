@@ -41,13 +41,14 @@ async function run() {
 
 
     // Create two identifiers, one for each client
-    let op1 = await client1.identifiers().create('issuer',  {
+    let icpResult1 = client1.identifiers().create('issuer',  {
         toad: 3,
         wits: [
             "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
             "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"]
         })
+    let op1 = await icpResult1.op()
     while (!op1["done"] ) {
             op1 = await client1.operations().get(op1.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -56,13 +57,14 @@ async function run() {
     await client1.identifiers().addEndRole("issuer", 'agent', client1!.agent!.pre)
     console.log("Issuer's AID:", aid1.prefix)
 
-    let op2 = await client2.identifiers().create('recipient',  {
+    let icpResult2 = await client2.identifiers().create('recipient',  {
         toad: 3,
         wits: [
             "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
             "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"]
         })
+    let op2 = await icpResult2.op()
     while (!op2["done"] ) {
             op2 = await client2.operations().get(op2.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -71,13 +73,14 @@ async function run() {
     await client2.identifiers().addEndRole("recipient", 'agent', client2!.agent!.pre)
     console.log("Recipient's AID:", aid2.prefix)
 
-    let op3 = await client3.identifiers().create('verifier',  {
+    let icpResult3 = await client3.identifiers().create('verifier',  {
         toad: 3,
         wits: [
             "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
             "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"]
         })
+    let op3 = await icpResult3.op()
     while (!op3["done"] ) {
             op3 = await client3.operations().get(op3.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -179,11 +182,25 @@ async function run() {
     console.log("Credential issued")
 
     // Recipient check issued credential
-    let creds2 = await client2.credentials().list('recipient')
-    assert.equal(creds2.length, 1)
-    assert.equal(creds2[0].sad.s, schemaSAID)
-    assert.equal(creds2[0].sad.i, aid1.prefix)
-    assert.equal(creds2[0].status.s, "0") // 0 = issued
+    let credentialReceived = false
+    while (!credentialReceived) {
+        let notifications = await client2.notifications().list()
+        for (let notif of notifications.notes){
+            if (notif.a.r == '/exn//credential/issue') {
+                credentialReceived = true
+                await client2.notifications().mark(notif.i)
+            }
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    // Credetials are no longer accepted by default
+    // pending implementation in KERI to accept them
+    // let creds2 = await client2.credentials().list('recipient')
+    // assert.equal(creds2.length, 1)
+    // assert.equal(creds2[0].sad.s, schemaSAID)
+    // assert.equal(creds2[0].sad.i, aid1.prefix)
+    // assert.equal(creds2[0].status.s, "0") // 0 = issued
     console.log("Credential received by recipient")
 
     // Present credential
@@ -210,19 +227,20 @@ async function run() {
     console.log("Credential revoked")
 
     // Recipient check revoked credential
-    let revoked = false
-    while (!revoked) {
-        let cred2 = await client2.credentials().get('recipient', creds1[0].sad.d)
-        if (cred2.status.s == "1") {
-            revoked = true
-        }
-    }
-    creds2 = await client2.credentials().list('recipient')
-    assert.equal(creds2.length, 1)
-    assert.equal(creds2[0].sad.s, schemaSAID)
-    assert.equal(creds2[0].sad.i, aid1.prefix)
-    assert.equal(creds2[0].status.s, "1") // 1 = revoked
-    console.log("Revocation received by recipient")
+    // credentialReceived = false
+    // let revoked = false
+    // while (!revoked) {
+    //     let cred2 = await client2.credentials().get('recipient', creds1[0].sad.d)
+    //     if (cred2.status.s == "1") {
+    //         revoked = true
+    //     }
+    // }
+    // let creds2 = await client2.credentials().list('recipient')
+    // assert.equal(creds2.length, 1)
+    // assert.equal(creds2[0].sad.s, schemaSAID)
+    // assert.equal(creds2[0].sad.i, aid1.prefix)
+    // assert.equal(creds2[0].status.s, "1") // 1 = revoked
+    // console.log("Revocation received by recipient")
     
     // Present revoked credential
     await client1.credentials().present('issuer', creds1[0].sad.d, 'verifier', true)

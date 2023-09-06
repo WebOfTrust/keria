@@ -41,13 +41,14 @@ async function run() {
 
 
     // Create two identifiers, one for each client
-    let op1 = await client1.identifiers().create('multisig1',  {
+    let icpResult1 = client1.identifiers().create('multisig1',  {
         toad: 3,
         wits: [
             "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
             "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"]
         })
+    let op1 = await icpResult1.op()
     while (!op1["done"] ) {
             op1 = await client1.operations().get(op1.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -56,13 +57,14 @@ async function run() {
     await client1.identifiers().addEndRole("multisig1", 'agent', client1!.agent!.pre)
     console.log("Multisig1's AID:", aid1.prefix)
 
-    let op2 = await client2.identifiers().create('multisig2',  {
+    let icpResult2 = client2.identifiers().create('multisig2',  {
         toad: 3,
         wits: [
             "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
             "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"]
         })
+    let op2 = await icpResult2.op()
     while (!op2["done"] ) {
             op2 = await client2.operations().get(op2.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -71,13 +73,14 @@ async function run() {
     await client2.identifiers().addEndRole("multisig2", 'agent', client2!.agent!.pre)
     console.log("Multisig2's AID:", aid2.prefix)
 
-    let op3 = await client3.identifiers().create('multisig3',  {
+    let icpResult3 = client3.identifiers().create('multisig3',  {
         toad: 3,
         wits: [
             "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
             "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"]
         })
+    let op3 = await icpResult3.op()
     while (!op3["done"] ) {
             op3 = await client3.operations().get(op3.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -131,7 +134,7 @@ async function run() {
     // Create a multisig identifier
     let rstates = [aid1["state"], aid2["state"], aid3["state"]]
     let states = rstates
-    op1 = await client1.identifiers().create("multisig",{
+    icpResult1 = client1.identifiers().create("multisig",{
         algo: signify.Algos.group,
         mhab: aid1,
         isith: 3, 
@@ -144,9 +147,25 @@ async function run() {
         states: states,
         rstates: rstates
     })
+    op1 = await icpResult1.op()
+    let serder = icpResult1.serder
+    let sigs = icpResult1.sigs
+    let sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}))
+
+    let ims = signify.d(signify.messagize(serder, sigers))
+    let atc = ims.substring(serder.size)
+    let embeds = {
+        icp: [serder, atc],
+    }
+
+    let smids = states.map((state) =>  state['i'])
+    let recp = [aid2["state"], aid3["state"]].map((state) =>  state['i'])
+
+    await client1.exchanges().send("multisig1", "multisig", aid1, "/multisig/icp",
+        {'gid': serder.pre, smids: smids, rmids: smids}, embeds, recp)
     console.log("Multisig1 joined multisig waiting for others...")
 
-    op2 = await client2.identifiers().create("multisig",{
+    icpResult2 = client2.identifiers().create("multisig",{
         algo: signify.Algos.group,
         mhab: aid2,
         isith: 3, 
@@ -159,9 +178,25 @@ async function run() {
         states: states,
         rstates: rstates
     })
+    op2 = await icpResult2.op()
+    serder = icpResult2.serder
+    sigs = icpResult2.sigs
+    sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}))
+
+    ims = signify.d(signify.messagize(serder, sigers))
+    atc = ims.substring(serder.size)
+    embeds = {
+        icp: [serder, atc],
+    }
+
+    smids = states.map((state) =>  state['i'])
+    recp = [aid1["state"], aid3["state"]].map((state) =>  state['i'])
+
+    await client2.exchanges().send("multisig2", "multisig", aid2, "/multisig/icp",
+        {'gid': serder.pre, smids: smids, rmids: smids}, embeds, recp)
     console.log("Multisig2 joined multisig waiting for others...")
 
-    op3 = await client3.identifiers().create("multisig",{
+    icpResult3 = client3.identifiers().create("multisig",{
         algo: signify.Algos.group,
         mhab: aid3,
         isith: 3, 
@@ -174,6 +209,22 @@ async function run() {
         states: states,
         rstates: rstates
     })
+    op3 = await icpResult3.op()
+    serder = icpResult3.serder
+    sigs = icpResult3.sigs
+    sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}))
+
+    ims = signify.d(signify.messagize(serder, sigers))
+    atc = ims.substring(serder.size)
+    embeds = {
+        icp: [serder, atc],
+    }
+
+    smids = states.map((state) =>  state['i'])
+    recp = [aid1["state"], aid2["state"]].map((state) =>  state['i'])
+
+    await client3.exchanges().send("multisig3", "multisig", aid3, "/multisig/icp",
+        {'gid': serder.pre, smids: smids, rmids: smids}, embeds, recp)
     console.log("Multisig3 joined multisig waiting for others...")
 
     while (!op1["done"]) {
