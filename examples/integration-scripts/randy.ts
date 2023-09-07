@@ -44,7 +44,8 @@ async function run() {
     assert.equal(aid.name, 'aid1')
     assert.equal(aid.prefix, icp.pre)
 
-    op = await client1.identifiers().interact("aid1", [icp.pre])
+    icpResult = await client1.identifiers().interact("aid1", [icp.pre])
+    op = await icpResult.op()
     assert.equal(op['done'], true)
     let ked = op['response']
     let ixn = new signify.Serder(ked)
@@ -59,7 +60,8 @@ async function run() {
     let log = await events.get(aid["prefix"])
     assert.equal(log.length, 2)
 
-    op = await client1.identifiers().rotate('aid1')
+    icpResult = await client1.identifiers().rotate('aid1')
+    op = await icpResult.op()
     assert.equal(op['done'], true)
     ked = op['response']
     let rot = new signify.Serder(ked)
