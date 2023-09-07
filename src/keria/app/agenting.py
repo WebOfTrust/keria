@@ -16,7 +16,7 @@ from keri.app.storing import Mailboxer
 import falcon
 from falcon import media
 from hio.base import doing
-from hio.core import http
+from hio.core import http, tcp
 from hio.help import decking
 from keri.app import configing, keeping, habbing, storing, signaling, oobiing, agenting, delegating, \
     forwarding, querying, connecting, grouping
@@ -47,7 +47,8 @@ from ..db import basing
 logger = ogler.getLogger()
 
 
-def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=None, configDir=None):
+def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=None, configDir=None,
+          keypath=None, certpath=None, cafilepath=None):
     """ Set up an ahab in Signify mode """
 
     agency = Agency(name=name, base=base, bran=bran, configFile=configFile, configDir=configDir)
@@ -55,7 +56,8 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
         allow_origins='*', allow_credentials='*',
         expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input',
                         'signify-resource', 'signify-timestamp']))
-    bootServer = http.Server(port=bootPort, app=bootApp)
+
+    bootServer = createHttpServer(bootPort, bootApp, keypath, certpath, cafilepath)
     bootServerDoer = http.ServerDoer(server=bootServer)
     bootEnd = BootEnd(agency)
     bootApp.add_route("/boot", bootEnd)
@@ -73,7 +75,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
     app.req_options.media_handlers.update(media.Handlers())
     app.resp_options.media_handlers.update(media.Handlers())
 
-    adminServer = http.Server(port=adminPort, app=app)
+    adminServer = createHttpServer(adminPort, app, keypath, certpath, cafilepath)
     adminServerDoer = http.ServerDoer(server=adminServer)
 
     doers = [agency, bootServerDoer, adminServerDoer]
@@ -96,7 +98,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
         ending.loadEnds(agency=agency, app=happ)
         indirecting.loadEnds(agency=agency, app=happ)
 
-        server = http.Server(port=httpPort, app=happ)
+        server = createHttpServer(httpPort, happ, keypath, certpath, cafilepath)
         httpServerDoer = http.ServerDoer(server=server)
         doers.append(httpServerDoer)
 
@@ -109,6 +111,31 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
 
     print("The Agency is loaded and waiting for requests...")
     return doers
+
+
+def createHttpServer(port, app, keypath, certpath, cafilepath):
+    """
+    Create an HTTP or HTTPS server depending on whether TLS key material is present
+
+    Parameters:
+        port (int)         : port to listen on for all HTTP(s) server instances
+        app (falcon.App)   : application instance to pass to the http.Server instance
+        keypath (string)   : the file path to the TLS private key
+        certpath (string)  : the file path to the TLS signed certificate (public key)
+        cafilepath (string): the file path to the TLS CA certificate chain file
+    Returns:
+        hio.core.http.Server
+    """
+    if keypath is not None and certpath is not None and cafilepath is not None:
+        servant = tcp.ServerTls(certify=False,
+                                keypath=keypath,
+                                certpath=certpath,
+                                cafilepath=cafilepath,
+                                port=port)
+        server = http.Server(port=port, app=app, servant=servant)
+    else:
+        server = http.Server(port=port, app=app)
+    return server
 
 
 class Agency(doing.DoDoer):
