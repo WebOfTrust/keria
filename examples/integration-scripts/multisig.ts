@@ -131,7 +131,7 @@ async function run() {
     }
     console.log("Multisig3 resolved 2 OOBIs")
     
-    // Create a multisig identifier
+    // First member start the creation of a multisig identifier
     let rstates = [aid1["state"], aid2["state"], aid3["state"]]
     let states = rstates
     icpResult1 = client1.identifiers().create("multisig",{
@@ -163,18 +163,33 @@ async function run() {
 
     await client1.exchanges().send("multisig1", "multisig", aid1, "/multisig/icp",
         {'gid': serder.pre, smids: smids, rmids: smids}, embeds, recp)
-    console.log("Multisig1 joined multisig waiting for others...")
+    console.log("Multisig1 create multisig, waiting for others...")
 
+    // Second member check notifications and join the multisig  
+    let msgSaid = ""
+    while (msgSaid=="") {
+        let notifications = await client2.notifications().list()
+        for (let notif of notifications.notes){
+            if (notif.a.r == '/multisig/icp') {
+                msgSaid = notif.a.d
+                await client2.notifications().mark(notif.i)
+                console.log("Multisig2 received request to join multisig")
+            }
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    let res = await client2.groups().getRequest(msgSaid)
+    let exn = res[0].exn
+    let icp = exn.e.icp
+    
     icpResult2 = client2.identifiers().create("multisig",{
         algo: signify.Algos.group,
         mhab: aid2,
-        isith: 3, 
-        nsith: 3,
-        toad: 3,
-        wits: [
-            "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
-            "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
-            "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"],
+        isith: icp.kt, 
+        nsith: icp.nt,
+        toad: parseInt(icp.bt),
+        wits: icp.b,
         states: states,
         rstates: rstates
     })
@@ -189,23 +204,38 @@ async function run() {
         icp: [serder, atc],
     }
 
-    smids = states.map((state) =>  state['i'])
+    smids = exn.a.smids
     recp = [aid1["state"], aid3["state"]].map((state) =>  state['i'])
 
     await client2.exchanges().send("multisig2", "multisig", aid2, "/multisig/icp",
         {'gid': serder.pre, smids: smids, rmids: smids}, embeds, recp)
-    console.log("Multisig2 joined multisig waiting for others...")
+    console.log("Multisig2 joined multisig, waiting for others...")
 
+
+    // Third member check notifications and join the multisig  
+    msgSaid = ""
+    while (msgSaid=="") {
+        let notifications = await client3.notifications().list()
+        for (let notif of notifications.notes){
+            if (notif.a.r == '/multisig/icp') {
+                msgSaid = notif.a.d
+                await client3.notifications().mark(notif.i)
+                console.log("Multisig3 received request to join multisig")
+            }
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    res = await client3.groups().getRequest(msgSaid)
+    exn = res[0].exn
+    icp = exn.e.icp
     icpResult3 = client3.identifiers().create("multisig",{
         algo: signify.Algos.group,
         mhab: aid3,
-        isith: 3, 
-        nsith: 3,
-        toad: 3,
-        wits: [
-            "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
-            "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
-            "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"],
+        isith: icp.kt, 
+        nsith: icp.nt,
+        toad: parseInt(icp.bt),
+        wits: icp.b,
         states: states,
         rstates: rstates
     })
@@ -220,12 +250,12 @@ async function run() {
         icp: [serder, atc],
     }
 
-    smids = states.map((state) =>  state['i'])
+    smids = exn.a.smids
     recp = [aid1["state"], aid2["state"]].map((state) =>  state['i'])
 
     await client3.exchanges().send("multisig3", "multisig", aid3, "/multisig/icp",
         {'gid': serder.pre, smids: smids, rmids: smids}, embeds, recp)
-    console.log("Multisig3 joined multisig waiting for others...")
+    console.log("Multisig3 joined, multisig waiting for others...")
 
     while (!op1["done"]) {
         op1 = await client1.operations().get(op1.name);
