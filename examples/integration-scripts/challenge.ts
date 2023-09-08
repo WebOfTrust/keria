@@ -40,13 +40,14 @@ async function run() {
     assert.equal(challenge1_big.words.length, 24)
 
     // Create two identifiers, one for each client
-    let op1 = await client1.identifiers().create('alice',  {
+    let icpResult1 = await client1.identifiers().create('alice',  {
         toad: 3,
         wits: [
             "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
             "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"]
         })
+    let op1 = await icpResult1.op()
     while (!op1["done"] ) {
             op1 = await client1.operations().get(op1.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -55,13 +56,14 @@ async function run() {
     await client1.identifiers().addEndRole("alice", 'agent', client1!.agent!.pre)
     console.log("Alice's AID:", aid1.i)
 
-    let op2 = await client2.identifiers().create('bob',  {
+    let icpResult2 = await client2.identifiers().create('bob',  {
         toad: 3,
         wits: [
             "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
             "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
             "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"]
         })
+    let op2 = await icpResult2.op()
     while (!op2["done"] ) {
             op2 = await client2.operations().get(op2.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
