@@ -53,7 +53,7 @@ async function list_notifications() {
                     let serder = new signify.Serder(ixn)
                     let ghab = await identifiers.get(group)
 
-                    let keeper = client.manager.get(ghab)
+                    let keeper = client.manager!.get(ghab)
                     let sigs = keeper.sign(signify.b(serder.raw))
                     let sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}))
 
@@ -65,7 +65,7 @@ async function list_notifications() {
                     }
 
                     sender = ghab["group"]["mhab"]
-                    keeper = client.manager.get(sender)
+                    keeper = client.manager!.get(sender)
                     let [nexn, end] = signify.exchange("/multisig/vcp",
                         {'gid': ghab["prefix"], 'usage': "test"},
                         sender["prefix"], undefined, undefined, undefined, undefined, embeds)
