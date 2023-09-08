@@ -613,7 +613,7 @@ describe('SignifyClient', () => {
 
         await contacts.list("mygroup","company","mycompany")
         let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
-        assert.equal(lastCall[0]!,url+'/contacts?group=mygroup&company=mycompany')
+        assert.equal(lastCall[0]!,url+'/contacts?group=mygroup&filter_field=company&filter_value=mycompany')
         assert.equal(lastCall[1]!.method,'GET')
 
 
