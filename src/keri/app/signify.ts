@@ -1682,7 +1682,10 @@ export class Contacts {
     async list(group?:string, filterField?:string, filterValue?:string): Promise<any> {
         let params = new URLSearchParams()
         if (group !== undefined) {params.append('group', group)}
-        if (filterField !== undefined && filterValue !== undefined) {params.append(filterField, filterValue)}
+        if (filterField !== undefined && filterValue !== undefined) {
+            params.append("filter_field", filterField);
+            params.append("filter_value", filterValue);
+        }
 
         let path = `/contacts`+ '?' + params.toString()
         let method = 'GET'
