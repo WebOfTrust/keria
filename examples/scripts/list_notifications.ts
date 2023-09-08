@@ -1,25 +1,14 @@
+import signify from "signify-ts";
 
 const prmpt = require("prompt-sync")({ sigint: true });
-// @ts-ignore
-let signify: any;
 
-// @ts-ignore
-import('signify-ts').then(
-    (module) => {
-        signify = module
-        signify.ready().then(() => {
-            console.log("Signify client ready!");
-            list_notifications().then(() => {
-                console.log("Done")
-            });
-        });
-    }
-)
+await list_notifications();
 
 async function list_notifications() {
     let url = "http://127.0.0.1:3901"
     let bran = '0123456789abcdefghijk'
 
+    await signify.ready();
     const client = new signify.SignifyClient(url, bran);
     await client.connect()
     let d = await client.state()
