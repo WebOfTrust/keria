@@ -441,8 +441,8 @@ export class SignifyClient {
 /** Arguments required to create an identfier */
 export interface CreateIdentiferArgs {
     transferable?: boolean,
-    isith?: string | number,
-    nsith?: string | number,
+    isith?: string | number | string[],
+    nsith?: string | number | string[],
     wits?: string[],
     toad?: number,
     proxy?: string,
@@ -467,7 +467,7 @@ export interface CreateIdentiferArgs {
 /** Arguments required to rotate an identfier */
 export interface RotateIdentifierArgs {
     transferable?: boolean,
-    nsith?: string | number,
+    nsith?: string | number | string[],
     toad?: number,
     cuts?: string[],
     adds?: string[],
