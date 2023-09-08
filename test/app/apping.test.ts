@@ -30,6 +30,7 @@ describe('Controller', () => {
             isith: ["1"],
             nsith: ["1"]
         };
+        args !== null; // avoids TS6133
     })
 
     it('RotateIdentifierArgs', () => {
@@ -43,6 +44,7 @@ describe('Controller', () => {
         args = {
             nsith: ["1"]
         };
+        args !== null; // avoids TS6133
     })
 
 
