@@ -1,5 +1,5 @@
-import { strict as assert } from "assert";
-import signify from "signify-ts";
+import { strict as assert } from "assert"
+import signify from "signify-ts"
 
 const url = "http://127.0.0.1:3901"
 const boot_url = "http://127.0.0.1:3903"

@@ -1,24 +1,13 @@
-import { strict as assert } from "assert";
+import { strict as assert } from "assert"
+import signify from "signify-ts"
 
-let signify: any;
 const url = "http://127.0.0.1:3901"
 const boot_url = "http://127.0.0.1:3903"
 
-// @ts-ignore
-import('signify-ts').then(
-    (module) => {
-        signify = module
-        signify.ready().then(() => {
-            console.log("*** Starting SALTY test ***");
-            run().then(() => {
-                console.log("*** Test complete ***")
-            });
-        });
-    }
-)
+await run()
 
 async function run() {
-    
+    await signify.ready()
     // Boot client
     const bran1 = signify.randomPasscode()
     const client1 = new signify.SignifyClient(url, bran1, signify.Tier.low, boot_url);
