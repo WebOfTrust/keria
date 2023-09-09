@@ -148,10 +148,9 @@ export function rotate({
         throw new Error(`Invalid member combination among cuts = ${cuts}, and adds = ${adds}.`)
     }
 
-    let newitsetdiff = new Set([...witset].filter(x => cutset.has(x)))
-    let newitset = new Set()
-    newitsetdiff.forEach(newitset.add, newitset)
-    addset.forEach(newitset.add, newitset)
+    let newitsetdiff = new Set(_wits)
+    _cuts.forEach(function(v) {newitsetdiff.delete(v) })
+    let newitset = new Set(function*() { yield* newitsetdiff; yield* addset; }())
 
     if (newitset.size != (witset.size - cutset.size + addset.size)) {
         throw new Error(`Invalid member combination among wits = ${wits}, cuts = ${cuts}, and adds = ${adds}.`)

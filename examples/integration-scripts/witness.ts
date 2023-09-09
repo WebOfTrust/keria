@@ -1,25 +1,13 @@
 // This scrip also work if you start keria with no config file with witness urls
 import { strict as assert } from "assert";
+import signify from "signify-ts";
 
-let signify: any;
 const url = "http://127.0.0.1:3901"
 const boot_url = "http://127.0.0.1:3903"
 
-// @ts-ignore
-import('signify-ts').then(
-    (module) => {
-        signify = module
-        signify.ready().then(() => {
-            console.log("*** Starting WITNESS test ***");
-            run().then(() => {
-                console.log("*** Test complete ***")
-            });
-        });
-    }
-)
-
+await run()
 async function run() {
-    
+    await signify.ready()
     // Boot client
     const bran1 = signify.randomPasscode()
     const client1 = new signify.SignifyClient(url, bran1, signify.Tier.low, boot_url);
@@ -48,9 +36,19 @@ async function run() {
             op1 = await client1.operations().get(op1.name);
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
-    const aid1 = await client1.identifiers().get("aid1")
+    let aid1 = await client1.identifiers().get("aid1")
     console.log("AID:",aid1.prefix)
     assert.equal(aid1.state.b.length, 1)
     assert.equal(aid1.state.b[0], witness)
 
+    icpResult1 = await client1.identifiers().rotate('aid1')
+    op1 = await icpResult1.op()
+    while (!op1["done"] ) {
+            op1 = await client1.operations().get(op1.name);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    aid1 = await client1.identifiers().get("aid1")
+    assert.equal(aid1.state.b.length, 1)
+    assert.equal(aid1.state.b[0], witness)
+ 
 }
