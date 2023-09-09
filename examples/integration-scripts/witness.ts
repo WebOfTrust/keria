@@ -50,5 +50,30 @@ async function run() {
     aid1 = await client1.identifiers().get("aid1")
     assert.equal(aid1.state.b.length, 1)
     assert.equal(aid1.state.b[0], witness)
+
+    // Remove witness
+    icpResult1 = await client1.identifiers().rotate('aid1',{cuts: [witness]})
+
+    op1 = await icpResult1.op()
+    while (!op1["done"] ) {
+            op1 = await client1.operations().get(op1.name);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    aid1 = await client1.identifiers().get("aid1")
+    assert.equal(aid1.state.b.length, 0)
+
+    // Add witness again
+
+    icpResult1 = await client1.identifiers().rotate('aid1',{adds: [witness]})
+
+    op1 = await icpResult1.op()
+    while (!op1["done"] ) {
+            op1 = await client1.operations().get(op1.name);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    aid1 = await client1.identifiers().get("aid1")
+    assert.equal(aid1.state.b.length, 1)
+    assert.equal(aid1.state.b.length, 1)
+    assert.equal(aid1.state.b[0], witness)
  
 }
