@@ -5,9 +5,9 @@ import { KeyManager } from "../core/keeping"
 import { Serder } from "../core/serder"
 
 import { Identifier } from "./aiding"
-import { Contacts } from "./contacting"
-import { Oobis, Operations, KeyEvents, KeyStates, Challenges } from "./coring"
-import { Credentials, Registries, Schemas } from './credentialing'
+import { Contacts, Challenges } from "./contacting"
+import { Oobis, Operations, KeyEvents, KeyStates } from "./coring"
+import { Credentials, Registries, Schemas, } from './credentialing'
 import { Notifications } from "./notifying"
 import { Escrows } from "./escrowing"
 import { Groups } from "./grouping"
