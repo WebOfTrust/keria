@@ -1,24 +1,13 @@
-import { strict as assert } from "assert";
+import { strict as assert } from "assert"
+import signify from "signify-ts"
 
-let signify: any;
 const url = "http://127.0.0.1:3901"
 const boot_url = "http://127.0.0.1:3903"
 
-// @ts-ignore
-import('signify-ts').then(
-    (module) => {
-        signify = module
-        signify.ready().then(() => {
-            console.log("*** Starting RANDY test ***");
-            run().then(() => {
-                console.log("*** Test complete ***")
-            });
-        });
-    }
-)
+await run()
 
 async function run() {
-    
+    await signify.ready()
     // Boot client
     const bran1 = signify.randomPasscode()
     const client1 = new signify.SignifyClient(url, bran1, signify.Tier.low, boot_url);
@@ -44,7 +33,8 @@ async function run() {
     assert.equal(aid.name, 'aid1')
     assert.equal(aid.prefix, icp.pre)
 
-    op = await client1.identifiers().interact("aid1", [icp.pre])
+    icpResult = await client1.identifiers().interact("aid1", [icp.pre])
+    op = await icpResult.op()
     assert.equal(op['done'], true)
     let ked = op['response']
     let ixn = new signify.Serder(ked)
@@ -59,7 +49,8 @@ async function run() {
     let log = await events.get(aid["prefix"])
     assert.equal(log.length, 2)
 
-    op = await client1.identifiers().rotate('aid1')
+    icpResult = await client1.identifiers().rotate('aid1')
+    op = await icpResult.op()
     assert.equal(op['done'], true)
     ked = op['response']
     let rot = new signify.Serder(ked)

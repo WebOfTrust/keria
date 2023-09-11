@@ -24,7 +24,7 @@ export class CredentialTypes {
     static received = "received"
 }
 
-/** Starte of the client */
+/** State of the client */
 class State {
     agent: any | null
     controller: any | null
@@ -430,7 +430,7 @@ export class SignifyClient {
     }
 
     /**
-    * Get groups resource
+    * Get exchange resource
     * @returns {Exchanges}
     */
     exchanges(): Exchanges {
@@ -479,7 +479,7 @@ export interface RotateIdentifierArgs {
     rstates?: any[]
 }
 
-export class InceptionResult {
+export class EventResult {
     private readonly _serder: Serder
     private readonly _sigs: string[]
     private readonly promise: Promise<Response>
@@ -562,9 +562,9 @@ export class Identifier {
      * @async
      * @param {string} name Name or alias of the identifier 
      * @param {CreateIdentiferArgs} [kargs] Optional parameters to create the identifier
-     * @returns {InceptionResult} The inception result
+     * @returns {EventResult} The inception result
      */
-    create(name: string, kargs:CreateIdentiferArgs={}): InceptionResult {
+    create(name: string, kargs:CreateIdentiferArgs={}): EventResult {
 
         const algo = kargs.algo == undefined ? Algos.salty : kargs.algo
 
@@ -666,7 +666,7 @@ export class Identifier {
 
             this.client.pidx = this.client.pidx + 1
         let res = this.client.fetch("/identifiers", "POST", jsondata)
-        return new InceptionResult(serder, sigs, res)
+        return new EventResult(serder, sigs, res)
     }
 
     /**
@@ -674,9 +674,9 @@ export class Identifier {
      * @async
      * @param {string} name Name or alias of the identifier
      * @param {any} [data] Option data to be anchored in the interaction event
-     * @returns {Promise<any>} A promise to the long-running operation
+     * @returns {Promise<EventResult>} A promise to the interaction event result
      */
-    async interact(name: string, data?: any): Promise<any> {
+    async interact(name: string, data?: any): Promise<EventResult> {
 
         let hab = await this.get(name)
         let pre: string = hab.prefix
@@ -697,8 +697,8 @@ export class Identifier {
         }
         jsondata[keeper.algo] = keeper.params()
 
-        let res = await this.client.fetch("/identifiers/" + name + "?type=ixn", "PUT", jsondata)
-        return await res.json()
+        let res = this.client.fetch("/identifiers/" + name + "?type=ixn", "PUT", jsondata)
+        return new EventResult(serder, sigs, res)
     }
 
 
@@ -706,14 +706,13 @@ export class Identifier {
      * Generate a rotation event in a managed identifier
      * @param {string} name Name or alias of the identifier
      * @param {RotateIdentifierArgs} [kargs] Optional parameters requiered to generate the rotation event
-     * @returns {Promise<any>}
+     * @returns {Promise<EventResult>} A promise to the rotation event result
      */
-    async rotate(name: string, kargs: RotateIdentifierArgs={}): Promise<any> {
+    async rotate(name: string, kargs: RotateIdentifierArgs={}): Promise<EventResult> {
 
         let transferable = kargs.transferable ?? true
         let ncode = kargs.ncode ?? MtrDex.Ed25519_Seed
         let ncount = kargs.ncount ?? 1
-
 
         let hab = await this.get(name)
         let pre = hab.prefix
@@ -774,8 +773,8 @@ export class Identifier {
         }
         jsondata[keeper.algo] = keeper.params()
 
-        let res = await this.client.fetch("/identifiers/" + name, "PUT", jsondata)
-        return await res.json()
+        let res = this.client.fetch("/identifiers/" + name, "PUT", jsondata)
+        return new EventResult(serder, sigs, res)
     }
 
     /**
@@ -1941,7 +1940,7 @@ export class Exchanges {
     }
 
     /**
-     * Send exn messaget to list of recipients
+     * Send exn messages to list of recipients
      * @async
      * @returns {Promise<any>} A promise to the list of replay messages
      * @param name
