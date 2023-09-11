@@ -113,7 +113,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
     return doers
 
 
-def createHttpServer(port, app, keypath, certpath, cafilepath):
+def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):
     """
     Create an HTTP or HTTPS server depending on whether TLS key material is present
 

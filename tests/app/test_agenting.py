@@ -10,8 +10,10 @@ import os
 import shutil
 
 import falcon
+import hio
 from falcon import testing
 from hio.base import doing
+from hio.core import http, tcp
 from hio.help import decking
 from keri import kering
 from keri.app import habbing, configing, oobiing, querying
@@ -386,7 +388,30 @@ def test_querier(helpers):
         assert isinstance(qryDoer, querying.QueryDoer) is True
         assert qryDoer.pre == "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
 
+class MockServerTls:
+    def __init__(self,  certify, keypath, certpath, cafilepath, port):
+        pass
 
+
+class MockHttpServer:
+    def __init__(self, port, app, servant=None):
+        self.servant = servant
+
+
+def test_createHttpServer(monkeypatch):
+    port = 5632
+    app = falcon.App()
+    server = agenting.createHttpServer(port, app)
+    assert isinstance(server, http.Server)
+
+    monkeypatch.setattr(hio.core.tcp, 'ServerTls', MockServerTls)
+    monkeypatch.setattr(hio.core.http, 'Server', MockHttpServer)
+
+    server = agenting.createHttpServer(port, app, keypath='keypath', certpath='certpath',
+                                          cafilepath='cafilepath')
+
+    assert isinstance(server, MockHttpServer)
+    assert isinstance(server.servant, MockServerTls)
 
 
 
