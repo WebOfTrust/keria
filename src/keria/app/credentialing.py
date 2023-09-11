@@ -1003,14 +1003,8 @@ class Credentialer:
         rseq = coring.Seqner(sn=0)
 
         craw = signing.provision(creder, sadsigers=sadsigers)
-        atc = bytearray(craw[creder.size:])
-
         if isinstance(hab, SignifyGroupHab):
             smids.remove(hab.mhab.pre)
-
-            print(f"Sending signed credential to {len(smids)} other participants")
-            for recpt in smids:
-                self.postman.send(src=hab.mhab.pre, dest=recpt, topic="multisig", serder=creder, attachment=atc)
 
             # escrow waiting for other signatures
             self.rgy.reger.cmse.put(keys=(creder.said, rseq.qb64), val=creder)
