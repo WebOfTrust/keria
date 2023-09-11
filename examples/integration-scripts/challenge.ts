@@ -92,6 +92,7 @@ async function run() {
     let contacts:any = []
     while (!challenge_received) {
         contacts = await client1.contacts().list(undefined, undefined, undefined)
+        console.log(contacts)
         if (contacts[0].challenges.length > 0 ){
             assert.equal(JSON.stringify(contacts[0].challenges[0].words), JSON.stringify(challenge1_small.words))
             challenge_received = true

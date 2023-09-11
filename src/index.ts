@@ -14,12 +14,17 @@ export const ready:() => Promise<void> =  (async() => {
 })
 
 export * from './keri/app/habery'
-export * from './keri/app/signify'
-export * from './keri/app/apping'
 export * from './keri/app/controller'
-export * from './keri/app/habery'
+
+export * from './keri/app/aiding'
+export * from './keri/app/clienting'
+export * from './keri/app/contacting'
+export * from './keri/app/coring'
+export * from './keri/app/credentialing'
+export * from './keri/app/escrowing'
 export * from './keri/app/exchanging'
-export * from './keri/app/signify'
+export * from './keri/app/grouping'
+export * from './keri/app/notifying'
 
 export * from './keri/core/authing'
 export * from './keri/core/cigar'
