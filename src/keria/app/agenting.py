@@ -12,7 +12,6 @@ from urllib.parse import urlparse, urljoin
 from keri import kering
 from keri.app.notifying import Notifier
 from keri.app.storing import Mailboxer
-from ordered_set import OrderedSet as oset
 
 import falcon
 from falcon import media
@@ -20,7 +19,7 @@ from hio.base import doing
 from hio.core import http
 from hio.help import decking
 from keri.app import configing, keeping, habbing, storing, signaling, oobiing, agenting, delegating, \
-    forwarding, querying, connecting
+    forwarding, querying, connecting, grouping
 from keri.app.grouping import Counselor
 from keri.app.keeping import Algos
 from keri.core import coring, parsing, eventing, routing
@@ -37,6 +36,8 @@ from keri.vdr.eventing import Tevery
 from keri.app import challenging
 
 from . import aiding, notifying, indirecting, credentialing, presenting
+from . import grouping as keriagrouping
+from ..peer import exchanging as keriaexchanging
 from .specing import AgentSpecResource
 from ..core import authing, longrunning, httping
 from ..core.authing import Authenticater
@@ -81,6 +82,8 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
     credentialing.loadEnds(app=app, identifierResource=aidEnd)
     presenting.loadEnds(app=app)
     notifying.loadEnds(app=app)
+    keriagrouping.loadEnds(app=app)
+    keriaexchanging.loadEnds(app=app)
 
     if httpPort:
         happ = falcon.App(middleware=falcon.CORSMiddleware(
@@ -274,11 +277,13 @@ class Agent(doing.DoDoer):
 
         signaler = signaling.Signaler()
         self.notifier = Notifier(hby=hby, signaler=signaler)
+        self.mux = grouping.Multiplexor(hby=hby, notifier=self.notifier)
 
         # Initialize all the credential processors
         self.verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
-        self.registrar = credentialing.Registrar(agentHab=agentHab, hby=hby, rgy=rgy, counselor=self.counselor, witPub=self.witPub,
-                                                 witDoer=self.witDoer, postman=self.postman, verifier=self.verifier)
+        self.registrar = credentialing.Registrar(agentHab=agentHab, hby=hby, rgy=rgy, counselor=self.counselor,
+                                                 witPub=self.witPub, witDoer=self.witDoer, postman=self.postman,
+                                                 verifier=self.verifier)
         self.credentialer = credentialing.Credentialer(agentHab=agentHab, hby=self.hby, rgy=self.rgy,
                                                        postman=self.postman, registrar=self.registrar,
                                                        verifier=self.verifier, notifier=self.notifier)
@@ -296,7 +301,8 @@ class Agent(doing.DoDoer):
         challengeHandler = challenging.ChallengeHandler(db=hby.db, signaler=signaler)
 
         handlers = [issueHandler, requestHandler, proofHandler, applyHandler, challengeHandler]
-        self.exc = exchanging.Exchanger(db=hby.db, handlers=handlers)
+        self.exc = exchanging.Exchanger(hby=hby, handlers=handlers)
+        grouping.loadHandlers(hby=hby, exc=self.exc, mux=self.mux)
 
         self.rvy = routing.Revery(db=hby.db, cues=self.cues)
         self.kvy = eventing.Kevery(db=hby.db,
@@ -325,7 +331,7 @@ class Agent(doing.DoDoer):
             Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries),
             Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc, vry=self.verifier,
                      registrar=self.registrar, credentialer=self.credentialer),
-            Messager(kvy=self.kvy, parser=self.parser),
+            ParserDoer(kvy=self.kvy, parser=self.parser),
             Witnesser(receiptor=receiptor, witners=self.witners),
             Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
             GroupRequester(hby=hby, agentHab=agentHab, postman=self.postman, counselor=self.counselor,
@@ -364,12 +370,12 @@ class Agent(doing.DoDoer):
         self.agency.incept(self.caid, pre)
 
 
-class Messager(doing.Doer):
+class ParserDoer(doing.Doer):
 
     def __init__(self, kvy, parser):
         self.kvy = kvy
         self.parser = parser
-        super(Messager, self).__init__()
+        super(ParserDoer, self).__init__()
 
     def recur(self, tyme=None):
         if self.parser.ims:
@@ -470,27 +476,10 @@ class GroupRequester(doing.Doer):
             sigers = msg["sigers"]
 
             ghab = self.hby.habs[serder.pre]
-            if "smids" in msg:
-                smids = msg['smids']
-            else:
-                smids = ghab.db.signingMembers(pre=ghab.pre)
-
-            if "rmids" in msg:
-                rmids = msg['rmids']
-            else:
-                rmids = ghab.db.rotationMembers(pre=ghab.pre)
-
             atc = bytearray()  # attachment
             atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
             for siger in sigers:
                 atc.extend(siger.qb64b)
-
-            others = list(oset(smids + (rmids or [])))
-            others.remove(ghab.mhab.pre)  # don't send to self
-            print(f"Sending multisig event to {len(others)} other participants")
-            for recpt in others:
-                self.postman.send(hab=self.agentHab, dest=recpt, topic="multisig", serder=serder,
-                                  attachment=atc)
 
             prefixer = coring.Prefixer(qb64=serder.pre)
             seqner = coring.Seqner(sn=serder.sn)
@@ -508,16 +497,21 @@ class Querier(doing.DoDoer):
         self.queries = queries
         self.kvy = kvy
 
-        super(Querier, self).__init__()
+        super(Querier, self).__init__(always=True)
 
     def recur(self, tyme, deeds=None):
         """ Processes query reqests submitting any on the cue"""
         if self.queries:
             msg = self.queries.popleft()
             pre = msg["pre"]
-
-            qryDo = querying.QueryDoer(hby=self.hby, hab=self.agentHab, pre=pre, kvy=self.kvy)
-            self.extend([qryDo])
+            if "sn" in msg:
+                seqNoDo = querying.SeqNoQuerier(hby=self.hby, hab=self.agentHab, pre=pre, sn=msg["sn"])
+                self.extend([seqNoDo])
+            elif "anchor" in msg:
+                pass
+            else:
+                qryDo = querying.QueryDoer(hby=self.hby, hab=self.agentHab, pre=pre, kvy=self.kvy)
+                self.extend([qryDo])
 
         return super(Querier, self).recur(tyme, deeds)
 
