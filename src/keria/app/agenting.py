@@ -7,11 +7,12 @@ keria.app.agenting module
 import json
 import os
 from dataclasses import asdict
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 
 from keri import kering
 from keri.app.notifying import Notifier
 from keri.app.storing import Mailboxer
+from ordered_set import OrderedSet as oset
 
 import falcon
 from falcon import media
@@ -19,7 +20,7 @@ from hio.base import doing
 from hio.core import http
 from hio.help import decking
 from keri.app import configing, keeping, habbing, storing, signaling, oobiing, agenting, delegating, \
-    forwarding, querying, connecting, grouping
+    forwarding, querying, connecting
 from keri.app.grouping import Counselor
 from keri.app.keeping import Algos
 from keri.core import coring, parsing, eventing, routing
@@ -36,8 +37,6 @@ from keri.vdr.eventing import Tevery
 from keri.app import challenging
 
 from . import aiding, notifying, indirecting, credentialing, presenting
-from . import grouping as keriagrouping
-from ..peer import exchanging as keriaexchanging
 from .specing import AgentSpecResource
 from ..core import authing, longrunning, httping
 from ..core.authing import Authenticater
@@ -82,8 +81,6 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
     credentialing.loadEnds(app=app, identifierResource=aidEnd)
     presenting.loadEnds(app=app)
     notifying.loadEnds(app=app)
-    keriagrouping.loadEnds(app=app)
-    keriaexchanging.loadEnds(app=app)
 
     if httpPort:
         happ = falcon.App(middleware=falcon.CORSMiddleware(
@@ -277,13 +274,11 @@ class Agent(doing.DoDoer):
 
         signaler = signaling.Signaler()
         self.notifier = Notifier(hby=hby, signaler=signaler)
-        self.mux = grouping.Multiplexor(hby=hby, notifier=self.notifier)
 
         # Initialize all the credential processors
         self.verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
-        self.registrar = credentialing.Registrar(agentHab=agentHab, hby=hby, rgy=rgy, counselor=self.counselor,
-                                                 witPub=self.witPub, witDoer=self.witDoer, postman=self.postman,
-                                                 verifier=self.verifier)
+        self.registrar = credentialing.Registrar(agentHab=agentHab, hby=hby, rgy=rgy, counselor=self.counselor, witPub=self.witPub,
+                                                 witDoer=self.witDoer, postman=self.postman, verifier=self.verifier)
         self.credentialer = credentialing.Credentialer(agentHab=agentHab, hby=self.hby, rgy=self.rgy,
                                                        postman=self.postman, registrar=self.registrar,
                                                        verifier=self.verifier, notifier=self.notifier)
@@ -301,8 +296,7 @@ class Agent(doing.DoDoer):
         challengeHandler = challenging.ChallengeHandler(db=hby.db, signaler=signaler)
 
         handlers = [issueHandler, requestHandler, proofHandler, applyHandler, challengeHandler]
-        self.exc = exchanging.Exchanger(hby=hby, handlers=handlers)
-        grouping.loadHandlers(hby=hby, exc=self.exc, mux=self.mux)
+        self.exc = exchanging.Exchanger(db=hby.db, handlers=handlers)
 
         self.rvy = routing.Revery(db=hby.db, cues=self.cues)
         self.kvy = eventing.Kevery(db=hby.db,
@@ -331,7 +325,7 @@ class Agent(doing.DoDoer):
             Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries),
             Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc, vry=self.verifier,
                      registrar=self.registrar, credentialer=self.credentialer),
-            ParserDoer(kvy=self.kvy, parser=self.parser),
+            Messager(kvy=self.kvy, parser=self.parser),
             Witnesser(receiptor=receiptor, witners=self.witners),
             Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
             GroupRequester(hby=hby, agentHab=agentHab, postman=self.postman, counselor=self.counselor,
@@ -370,12 +364,12 @@ class Agent(doing.DoDoer):
         self.agency.incept(self.caid, pre)
 
 
-class ParserDoer(doing.Doer):
+class Messager(doing.Doer):
 
     def __init__(self, kvy, parser):
         self.kvy = kvy
         self.parser = parser
-        super(ParserDoer, self).__init__()
+        super(Messager, self).__init__()
 
     def recur(self, tyme=None):
         if self.parser.ims:
@@ -476,10 +470,27 @@ class GroupRequester(doing.Doer):
             sigers = msg["sigers"]
 
             ghab = self.hby.habs[serder.pre]
+            if "smids" in msg:
+                smids = msg['smids']
+            else:
+                smids = ghab.db.signingMembers(pre=ghab.pre)
+
+            if "rmids" in msg:
+                rmids = msg['rmids']
+            else:
+                rmids = ghab.db.rotationMembers(pre=ghab.pre)
+
             atc = bytearray()  # attachment
             atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
             for siger in sigers:
                 atc.extend(siger.qb64b)
+
+            others = list(oset(smids + (rmids or [])))
+            others.remove(ghab.mhab.pre)  # don't send to self
+            print(f"Sending multisig event to {len(others)} other participants")
+            for recpt in others:
+                self.postman.send(hab=self.agentHab, dest=recpt, topic="multisig", serder=serder,
+                                  attachment=atc)
 
             prefixer = coring.Prefixer(qb64=serder.pre)
             seqner = coring.Seqner(sn=serder.sn)
@@ -497,7 +508,7 @@ class Querier(doing.DoDoer):
         self.queries = queries
         self.kvy = kvy
 
-        super(Querier, self).__init__(always=True)
+        super(Querier, self).__init__()
 
     def recur(self, tyme, deeds=None):
         """ Processes query reqests submitting any on the cue"""
@@ -505,14 +516,8 @@ class Querier(doing.DoDoer):
             msg = self.queries.popleft()
             pre = msg["pre"]
 
-            if "sn" in msg:
-                seqNoDo = querying.SeqNoQuerier(hby=self.hby, hab=self.agentHab, pre=pre, sn=msg["sn"])
-                self.extend([seqNoDo])
-            elif "anchor" in msg:
-                pass
-            else:
-                qryDo = querying.QueryDoer(hby=self.hby, hab=self.agentHab, pre=pre, kvy=self.kvy)
-                self.extend([qryDo])
+            qryDo = querying.QueryDoer(hby=self.hby, hab=self.agentHab, pre=pre, kvy=self.kvy)
+            self.extend([qryDo])
 
         return super(Querier, self).recur(tyme, deeds)
 
@@ -889,31 +894,34 @@ class OobiResourceEnd:
         if role in (kering.Roles.witness,):  # Fetch URL OOBIs for all witnesses
             oobis = []
             for wit in hab.kever.wits:
-                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
                 if not urls:
                     raise falcon.HTTPNotFound(description=f"unable to query witness {wit}, no http endpoint")
 
+                url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
                 up = urlparse(urls[kering.Schemes.http])
-                oobis.append(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/witness/{wit}")
+                oobis.append(f"{url}oobi/{hab.pre}/witness/{wit}")
             res["oobis"] = oobis
         elif role in (kering.Roles.controller,):  # Fetch any controller URL OOBIs
             oobis = []
-            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http)
+            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http) or hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.https)
             if not urls:
                 raise falcon.HTTPNotFound(description=f"unable to query controller {hab.pre}, no http endpoint")
 
+            url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
             up = urlparse(urls[kering.Schemes.http])
-            oobis.append(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/controller")
+            oobis.append(f"{url}oobi/{hab.pre}/controller")
             res["oobis"] = oobis
         elif role in (kering.Roles.agent,):
             oobis = []
-            roleUrls = hab.fetchRoleUrls(hab.pre, scheme=kering.Schemes.http, role=kering.Roles.agent)
+            roleUrls = hab.fetchRoleUrls(hab.pre, scheme=kering.Schemes.http, role=kering.Roles.agent) or hab.fetchRoleUrls(hab.pre, scheme=kering.Schemes.https, role=kering.Roles.agent)
             if not roleUrls:
                 raise falcon.HTTPNotFound(description=f"unable to query controller {hab.pre}, no http endpoint")
 
             for eid, urls in roleUrls['agent'].items():
+                url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
                 up = urlparse(urls[kering.Schemes.http])
-                oobis.append(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/agent/{eid}")
+                oobis.append(f"{url}oobi/{hab.pre}/agent/{eid}")
                 res["oobis"] = oobis
         else:
             rep.status = falcon.HTTP_404
