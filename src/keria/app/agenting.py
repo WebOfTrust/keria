@@ -899,8 +899,8 @@ class OobiResourceEnd:
                     raise falcon.HTTPNotFound(description=f"unable to query witness {wit}, no http endpoint")
 
                 url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
-                up = urlparse(urls[kering.Schemes.http])
-                oobis.append(f"{url}oobi/{hab.pre}/witness/{wit}")
+                up = urlparse(url)
+                oobis.append(urljoin(up.geturl(),f"/oobi/{hab.pre}/witness/{wit}"))
             res["oobis"] = oobis
         elif role in (kering.Roles.controller,):  # Fetch any controller URL OOBIs
             oobis = []
@@ -909,8 +909,8 @@ class OobiResourceEnd:
                 raise falcon.HTTPNotFound(description=f"unable to query controller {hab.pre}, no http endpoint")
 
             url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
-            up = urlparse(urls[kering.Schemes.http])
-            oobis.append(f"{url}oobi/{hab.pre}/controller")
+            up = urlparse(url)
+            oobis.append(urljoin(up.geturl(),f"/oobi/{hab.pre}/controller"))
             res["oobis"] = oobis
         elif role in (kering.Roles.agent,):
             oobis = []
@@ -920,8 +920,8 @@ class OobiResourceEnd:
 
             for eid, urls in roleUrls['agent'].items():
                 url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
-                up = urlparse(urls[kering.Schemes.http])
-                oobis.append(f"{url}oobi/{hab.pre}/agent/{eid}")
+                up = urlparse(url)
+                oobis.append(urljoin(up.geturl(),f"/oobi/{hab.pre}/agent/{eid}"))
                 res["oobis"] = oobis
         else:
             rep.status = falcon.HTTP_404

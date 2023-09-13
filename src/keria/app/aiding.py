@@ -6,7 +6,7 @@ keria.app.aiding module
 """
 import json
 from dataclasses import asdict
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 
 import falcon
 from keri import kering
@@ -647,7 +647,7 @@ class IdentifierOOBICollectionEnd:
 
                 url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
                 up = urlparse(url)
-                oobis.append(f"{kering.Schemes.http}://{up.hostname}:{up.port}/oobi/{hab.pre}/witness/{wit}")
+                oobis.append(urljoin(up.geturl(),f"/oobi/{hab.pre}/witness/{wit}"))
             res["oobis"] = oobis
         elif role in (kering.Roles.controller,):  # Fetch any controller URL OOBIs
             oobis = []
@@ -657,7 +657,7 @@ class IdentifierOOBICollectionEnd:
 
             url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
             up = urlparse(url)
-            oobis.append(f"{kering.Schemes.http}://{up.hostname}:{up.port}/oobi/{hab.pre}/controller")
+            oobis.append(urljoin(up.geturl(),f"/oobi/{hab.pre}/controller"))
             res["oobis"] = oobis
         elif role in (kering.Roles.agent,):  # Fetch URL OOBIs for all witnesses
             roleUrls = hab.fetchRoleUrls(cid=hab.pre, role=kering.Roles.agent, scheme=kering.Schemes.http) or hab.fetchRoleUrls(cid=hab.pre, role=kering.Roles.agent, scheme=kering.Schemes.https)
@@ -677,7 +677,7 @@ class IdentifierOOBICollectionEnd:
                         urls.extend(murl.naball(kering.Schemes.https))
                     for url in urls:
                         up = urlparse(url)
-                        oobis.append(f"{up.scheme}://{up.hostname}:{up.port}/oobi/{hab.pre}/agent/{agent}")
+                        oobis.append(urljoin(up.geturl(),f"/oobi/{hab.pre}/agent/{agent}"))
 
             res["oobis"] = oobis
         else:
