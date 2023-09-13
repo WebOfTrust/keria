@@ -2,7 +2,6 @@ import { Agent, Controller } from "./controller"
 import { Tier } from "../core/salter"
 import { Authenticater } from "../core/authing"
 import { KeyManager } from "../core/keeping"
-import { Serder } from "../core/serder"
 
 import { Identifier } from "./aiding"
 import { Contacts, Challenges } from "./contacting"
