@@ -1,4 +1,4 @@
-import { SignifyClient, EventResult } from "./clienting"
+import { SignifyClient } from "./clienting"
 import { Tier} from "../core/salter"
 import {Algos} from '../core/manager'
 import {incept, interact, reply, rotate} from "../core/eventing"
@@ -379,6 +379,32 @@ export class Identifier {
      */
     async members(name: string): Promise<any> {
         let res = await this.client.fetch("/identifiers/" + name + "/members", "GET", undefined)
+        return await res.json()
+    }
+}
+
+/** Event Result */
+export class EventResult {
+    private readonly _serder: Serder
+    private readonly _sigs: string[]
+    private readonly promise: Promise<Response>
+
+    constructor(serder: Serder, sigs: string[], promise: Promise<Response>) {
+        this._serder = serder
+        this._sigs = sigs
+        this.promise = promise
+    }
+
+    get serder() {
+        return this._serder
+    }
+
+    get sigs() {
+        return this._sigs
+    }
+
+    async op(): Promise<any> {
+        let res = await this.promise
         return await res.json()
     }
 }

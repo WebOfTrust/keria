@@ -426,29 +426,3 @@ export class SignifyClient {
     exchanges(): Exchanges {
         return new Exchanges(this)
     }
-}
-
-export class EventResult {
-    private readonly _serder: Serder
-    private readonly _sigs: string[]
-    private readonly promise: Promise<Response>
-
-    constructor(serder: Serder, sigs: string[], promise: Promise<Response>) {
-        this._serder = serder
-        this._sigs = sigs
-        this.promise = promise
-    }
-
-    get serder() {
-        return this._serder
-    }
-
-    get sigs() {
-        return this._sigs
-    }
-
-    async op(): Promise<any> {
-        let res = await this.promise
-        return await res.json()
-    }
-}
