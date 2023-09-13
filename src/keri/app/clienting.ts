@@ -426,3 +426,4 @@ export class SignifyClient {
     exchanges(): Exchanges {
         return new Exchanges(this)
     }
+}
