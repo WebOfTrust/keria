@@ -9,7 +9,6 @@ ReST API endpoints
 import falcon
 from keri import kering
 from keri.end import ending
-from ordered_set import OrderedSet as oset
 
 
 def loadEnds(app, agency, default=None):

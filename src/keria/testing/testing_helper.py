@@ -601,8 +601,11 @@ class Issuer:
                                     status=registry.regk,
                                     source={}, rules={})
 
-        craw = signing.ratify(hab=issuer, serder=creder)
-        self.registrar.issue(regk=registry.regk, said=creder.said, dt=self.date)
+        pre, sn, said = self.registrar.issue(regk=registry.regk, said=creder.said, dt=self.date)
+        prefixer = coring.Prefixer(qb64=pre)
+        seqner = coring.Seqner(sn=sn)
+        saider = coring.Saider(qb64=said)
+        craw = signing.serialize(creder, prefixer, seqner, saider)
 
         # Process escrows to clear event
         self.rgy.processEscrows()
@@ -629,8 +632,12 @@ class Issuer:
                                     data=credSubject,
                                     status=registry.regk)
 
-        craw = signing.ratify(hab=issuer, serder=creder)
-        self.registrar.issue(regk=registry.regk, said=creder.said, dt=self.date)
+        pre, sn, said = self.registrar.issue(regk=registry.regk, said=creder.said, dt=self.date)
+
+        prefixer = coring.Prefixer(qb64=pre)
+        seqner = coring.Seqner(sn=sn)
+        saider = coring.Saider(qb64=said)
+        craw = signing.serialize(creder, prefixer, seqner, saider)
 
         # Process escrows to clear event
         self.rgy.processEscrows()
