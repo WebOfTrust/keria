@@ -29,7 +29,6 @@ from keri.db.basing import OobiRecord
 from keria.end import ending
 from keri.help import helping, ogler
 from keri.peer import exchanging
-from keri.vc import protocoling
 from keri.vdr import verifying
 from keri.vdr.credentialing import Regery
 from keri.vdr.eventing import Tevery
@@ -292,17 +291,11 @@ class Agent(doing.DoDoer):
                                            registrar=self.registrar, credentialer=self.credentialer)
         self.seeker = basing.Seeker(name=hby.name, db=hby.db, reger=self.rgy.reger, reopen=True, temp=self.hby.temp)
 
-        issueHandler = protocoling.IssueHandler(hby=hby, rgy=rgy, notifier=self.notifier)
-        requestHandler = protocoling.PresentationRequestHandler(hby=hby, notifier=self.notifier)
-        applyHandler = protocoling.ApplyHandler(hby=hby, rgy=rgy, verifier=self.verifier,
-                                                name=agentHab.name)
-        proofHandler = protocoling.PresentationProofHandler(notifier=self.notifier)
-
         challengeHandler = challenging.ChallengeHandler(db=hby.db, signaler=signaler)
 
-        handlers = [issueHandler, requestHandler, proofHandler, applyHandler, challengeHandler]
+        handlers = [challengeHandler]
         self.exc = exchanging.Exchanger(hby=hby, handlers=handlers)
-        grouping.loadHandlers(hby=hby, exc=self.exc, mux=self.mux)
+        grouping.loadHandlers(exc=self.exc, mux=self.mux)
 
         self.rvy = routing.Revery(db=hby.db, cues=self.cues)
         self.kvy = eventing.Kevery(db=hby.db,
@@ -326,7 +319,6 @@ class Agent(doing.DoDoer):
                                      vry=self.verifier)
 
         doers.extend([
-            self.exc,
             Initer(agentHab=agentHab, caid=caid),
             Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries),
             Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc, vry=self.verifier,
