@@ -18,7 +18,7 @@ export {};
 export interface ExternalModule {
     type: string, 
     name: string, 
-    params: any[], 
+    module: any, 
 }
 
 export class KeyManager {
@@ -29,10 +29,8 @@ export class KeyManager {
 
         this.salter = salter
         this.modules = []
-        externalModules.forEach((module) => {
-            let pkg = require(module.name)
-            let mod = new pkg(module.params)
-            this.modules[module.type] = mod
+        externalModules.forEach((mod) => {
+            this.modules[mod.type] = mod.module
         })
     }
 
@@ -46,11 +44,11 @@ export class KeyManager {
                 return new GroupKeeper(this, kargs["mhab"], kargs["states"], kargs["rstates"],kargs["keys"],kargs["ndigs"])
             case Algos.extern:
                 let typ = kargs.extern_type
-                if ( !this.modules.contains(typ)) {
-                    throw new Error(`unsupported external module type ${typ}`)
+                if ( typ in this.modules) {
+                    let mod = new this.modules[typ](pidx,kargs)
+                    return mod
                 } else {
-                    let mod = this.modules[typ]
-                    return new mod(pidx,kargs.extern)
+                    throw new Error(`unsupported external module type ${typ}`)
                 }
             default:
                 throw new Error('Unknown algo')
