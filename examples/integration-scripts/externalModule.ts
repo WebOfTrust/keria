@@ -24,6 +24,4 @@ async function run() {
     let icpResult = client1.identifiers().create('aid1', {algo: signify.Algos.extern, extern_type:"bip39_shim", extern:{mnemonics: words}})
     let op = await icpResult.op()
     assert.equal(op['done'], true)
-    let aid = op['response']
-    console.log(aid)
 }

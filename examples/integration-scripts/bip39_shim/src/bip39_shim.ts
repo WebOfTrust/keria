@@ -1,9 +1,6 @@
 import bip39 from 'bip39'
 import { Diger, Signer, MtrDex} from 'signify-ts';
 
-
-
-
 export class BIP39Shim {
 
     private icount:number
@@ -16,7 +13,6 @@ export class BIP39Shim {
     private mnemonics: string = ""
 
     constructor(pidx:number, kargs:any ) {
-        console.log(kargs)
         this.icount = kargs.icount??1
         this.ncount = kargs.ncount??1
         this.pidx = pidx
