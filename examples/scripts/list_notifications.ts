@@ -1,25 +1,15 @@
+import signify from "signify-ts";
+import promptSync from 'prompt-sync';
 
-const prmpt = require("prompt-sync")({ sigint: true });
-// @ts-ignore
-let signify: any;
+const prmpt = promptSync({ sigint: true });
 
-// @ts-ignore
-import('signify-ts').then(
-    (module) => {
-        signify = module
-        signify.ready().then(() => {
-            console.log("Signify client ready!");
-            list_notifications().then(() => {
-                console.log("Done")
-            });
-        });
-    }
-)
+await list_notifications();
 
 async function list_notifications() {
     let url = "http://127.0.0.1:3901"
     let bran = '0123456789abcdefghijk'
 
+    await signify.ready();
     const client = new signify.SignifyClient(url, bran);
     await client.connect()
     let d = await client.state()
@@ -64,7 +54,7 @@ async function list_notifications() {
                     let serder = new signify.Serder(ixn)
                     let ghab = await identifiers.get(group)
 
-                    let keeper = client.manager.get(ghab)
+                    let keeper = client.manager!.get(ghab)
                     let sigs = keeper.sign(signify.b(serder.raw))
                     let sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}))
 
@@ -76,13 +66,13 @@ async function list_notifications() {
                     }
 
                     sender = ghab["group"]["mhab"]
-                    keeper = client.manager.get(sender)
+                    keeper = client.manager!.get(sender)
                     let [nexn, end] = signify.exchange("/multisig/vcp",
                         {'gid': ghab["prefix"], 'usage': "test"},
                         sender["prefix"], undefined, undefined, undefined, undefined, embeds)
 
                     console.log(nexn.pretty())
-                    let esigs = keeper.sign(nexn.raw)
+                    let esigs = keeper.sign(signify.b(nexn.raw))
                     await groups.sendRequest(group, nexn.ked, esigs, signify.d(end))
 
                     return await registries.createFromEvents(ghab, group, registryName, vcp, ixn, sigs)

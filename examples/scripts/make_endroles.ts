@@ -1,24 +1,12 @@
+import signify from "signify-ts";
 
-// @ts-ignore
-let signify: any;
-
-// @ts-ignore
-import('signify-ts').then(
-    (module) => {
-        signify = module
-        signify.ready().then(() => {
-            console.log("Signify client ready!");
-            makeends().then(() => {
-                console.log("Done")
-            });
-        });
-    }
-)
+await makeends();
 
 async function makeends() {
     let url = "http://127.0.0.1:3901"
     let bran = '0123456789abcdefghijk'
 
+    await signify.ready();
     const client = new signify.SignifyClient(url, bran);
     await client.connect()
     let d = await client.state()

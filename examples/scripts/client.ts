@@ -1,23 +1,12 @@
-// @ts-ignore
-let signify: any;
+import signify from "signify-ts";
 
-// @ts-ignore
-import('signify-ts').then(
-    (module) => {
-        signify = module
-        signify.ready().then(() => {
-            console.log("Signify client ready!");
-            connect().then(() => {
-                console.log("Done")
-            });
-        });
-    }
-)
+await connect();
 
 async function connect() {
     let url = "http://127.0.0.1:3901"
     let bran = '0123456789abcdefghijk'
 
+    await signify.ready();
     const client = new signify.SignifyClient(url, bran);
     console.log(client.controller.pre)
     const [evt, sign] = client.controller?.event ?? [];
@@ -96,7 +85,7 @@ async function connect() {
 
     let states = [sigPy, kli, sigTs]
     let ires = identifiers.create("multisig", {
-        algo: "group", mhab: aid,
+        algo: signify.Algos.group, mhab: aid,
         delpre: "EHpD0-CDWOdu5RJ8jHBSUkOqBZ3cXeDVHWNb_Ul89VI7",
         toad: 2,
         wits: [
