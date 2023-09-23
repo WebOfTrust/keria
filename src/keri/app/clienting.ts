@@ -175,7 +175,7 @@ export class SignifyClient {
             body: _body,
             headers: final_headers
         });
-        if (!(res.status == 200 || res.status == 202 || res.status == 206)) {
+        if (!res.ok) {
             const error = await res.text()
             throw new Error(error)
         }
