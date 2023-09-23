@@ -1,7 +1,7 @@
 import { Agent, Controller } from "./controller"
 import { Tier } from "../core/salter"
 import { Authenticater } from "../core/authing"
-import { KeyManager } from "../core/keeping"
+import { ExternalModule, KeyManager } from "../core/keeping"
 
 import { Identifier } from "./aiding"
 import { Contacts, Challenges } from "./contacting"
@@ -39,6 +39,7 @@ export class SignifyClient {
     public manager: KeyManager | null
     public tier: Tier
     public bootUrl: string
+    public exteralModules: ExternalModule[]
 
     /**
      * SignifyClient constructor
@@ -46,8 +47,9 @@ export class SignifyClient {
      * @param {string} bran Base64 21 char string that is used as base material for seed of the client AID
      * @param {Tier} tier Security tier for generating keys of the client AID (high | mewdium | low)
      * @param {string} bootUrl KERIA boot interface URL
+     * @param {ExternalModule[]} externalModules list of external modules to load 
      */
-    constructor(url: string, bran: string, tier: Tier = Tier.low, bootUrl: string = DEFAULT_BOOT_URL) {
+    constructor(url: string, bran: string, tier: Tier = Tier.low, bootUrl: string = DEFAULT_BOOT_URL, externalModules:ExternalModule[]=[]) {
         this.url = url
         if (bran.length < 21) {
             throw Error("bran must be 21 characters")
@@ -60,6 +62,7 @@ export class SignifyClient {
         this.manager = null
         this.tier = tier
         this.bootUrl = bootUrl
+        this.exteralModules = externalModules
     }
 
     get data() {
@@ -130,7 +133,7 @@ export class SignifyClient {
         if (this.controller.serder.ked.s == 0) {
             await this.approveDelegation()
         }
-        this.manager = new KeyManager(this.controller.salter, null)
+        this.manager = new KeyManager(this.controller.salter, this.exteralModules)
         this.authn = new Authenticater(this.controller.signer, this.agent.verfer!)
     }
 

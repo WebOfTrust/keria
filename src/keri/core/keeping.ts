@@ -14,14 +14,26 @@ import { Cigar } from './cigar';
 
 export {};
 
+/** External module definition */
+export interface ExternalModule {
+    type: string, 
+    name: string, 
+    params: any[], 
+}
+
 export class KeyManager {
     private salter?: Salter
-    // private externalModulees?: any
+    private modules?: any
 
-    constructor(salter: Salter, _externalModules: any = undefined ) {
+    constructor(salter: Salter, externalModules: ExternalModule[] = [] ) {
 
         this.salter = salter
-        // this.externalModulees = _externalModules
+        this.modules = []
+        externalModules.forEach((module) => {
+            let pkg = require(module.name)
+            let mod = new pkg(module.params)
+            this.modules[module.type] = mod
+        })
     }
 
     new(algo: Algos, pidx: number, kargs: any){
@@ -32,6 +44,14 @@ export class KeyManager {
                 return new RandyKeeper(this.salter!, kargs["code"], kargs["count"], kargs["icodes"], kargs["transferable"], kargs["ncode"], kargs["ncount"], kargs["ncodes"], kargs["dcode"], kargs["prxs"], kargs["nxts"])
             case Algos.group:
                 return new GroupKeeper(this, kargs["mhab"], kargs["states"], kargs["rstates"],kargs["keys"],kargs["ndigs"])
+            case Algos.extern:
+                let typ = kargs.extern_type
+                if ( !this.modules.contains(typ)) {
+                    throw new Error(`unsupported external module type ${typ}`)
+                } else {
+                    let mod = this.modules[typ]
+                    return new mod(pidx,kargs.extern)
+                }
             default:
                 throw new Error('Unknown algo')
         }
