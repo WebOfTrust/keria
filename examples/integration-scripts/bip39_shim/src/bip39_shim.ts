@@ -1,5 +1,5 @@
-import bip39 from 'bip39-light'
-import { Diger, Signer, Verfer } from 'signify-ts';
+import bip39 from 'bip39'
+import { Diger, Signer, MtrDex} from 'signify-ts';
 
 
 
@@ -9,25 +9,24 @@ export class BIP39Shim {
     private icount:number
     private ncount:number
     private dcode:string | undefined
-    private pidx: number
-    private kidx: number
+    private pidx: number = 0
+    private kidx: number = 0
     private transferable:boolean
-    private stem: string
-    private mnemonics: string[]
-    private signer: Signer
+    private stem: string 
+    private mnemonics: string = ""
 
-    constructor(pidx, kargs ) {
-        this.icount = kargs.icount
-        this.ncount = kargs.ncount
+    constructor(pidx:number, kargs:any ) {
+        console.log(kargs)
+        this.icount = kargs.icount??1
+        this.ncount = kargs.ncount??1
         this.pidx = pidx
-        this.kidx = kargs.kidx
-        this.transferable = kargs.transferable
-        this.stem = kargs.stem
-        this.mnemonics = kargs.mnemonics
-
-        const seed = bip39.mnemonicToEntropy(this.mnemonics);
-        this.signer = new Signer({raw: seed, code: this.dcode, transferable: this.transferable})
-
+        this.kidx = kargs.kidx??0
+        this.transferable = kargs.transferable??true
+        this.stem = kargs.stem?? "bip39_shim"
+        if (kargs.extern != undefined && kargs.extern.mnemonics != undefined){
+            this.mnemonics = kargs.extern.mnemonics
+        }
+        this.dcode = kargs.dcode
     }
 
     params(){
@@ -38,54 +37,44 @@ export class BIP39Shim {
         }
     }
 
-    keys(count, kidx, transferable){
+    keys(count:number, kidx:number, transferable:boolean){
         let keys = []
-        for (let idx in range(count)){
+        for (let idx = 0; idx < count; idx++) {
             let keyId = `${this.stem}-${this.pidx}-${kidx + idx}`
-            verkey = bip39 aldo
-            verfer = new Verfer(verkey,
-                coring.MtrDex.Ed25519 if transferable
-                else coring.MtrDex.Ed25519N)
-            keys.push(verfer.qb64)
+            let seed = bip39.mnemonicToSeedSync(this.mnemonics, keyId);
+            let signer = new Signer({raw: new Uint8Array(seed), code: MtrDex.Ed25519_Seed, transferable: transferable})
+            keys.push(signer)
         }
         return keys
     }
 
-
     incept(transferable:boolean){
-        this.transferable = transferable
 
-        let signers = this.creator.create(this.icodes, this.count, this.code, this.transferable) 
-
-        let verfers = signers.signers.map(signer => signer.verfer.qb64);
+        let signers = this.keys(this.icount, this.kidx, transferable)
+        let verfers = signers.map(signer => signer.verfer.qb64);
         
-        let nsigners = this.creator.create(this.ncodes, this.ncount, this.ncode, this.transferable)  
-        
-
-        let digers = nsigners.signers.map(nsigner => new Diger({code: this.dcode},nsigner.verfer.qb64b ).qb64);
-
+        let nsigners = this.keys(this.ncount, this.kidx + this.icount, transferable)          
+        let digers = nsigners.map(nsigner => new Diger({code: this.dcode},nsigner.verfer.qb64b ).qb64);
         return [verfers, digers]
     }
 
-    rotate(){
-        this.ncodes = ncodes
-        this.transferable = transferable
-        this.prxs = this.nxts
+    rotate(ncount:number, transferable:boolean){
+        let signers = this.keys(this.ncount, this.kidx + this.icount, transferable)
+        let verfers = signers.map(signer => signer.verfer.qb64);
+        
+        this.kidx = this.kidx + this.icount
+        this.icount = this.ncount
+        this.ncount = ncount
 
-        let signers = this.nxts!.map(nxt => this.decrypter.decrypt(undefined, new Cipher({qb64:nxt}), this.transferable))
-        let verfers = signers.map(signer => signer.verfer.qb64)
-        let nsigners = this.creator.create(this.ncodes, this.ncount, this.ncode, this.transferable)    
-
-        this.nxts = nsigners.signers.map(signer => this.encrypter.encrypt(undefined, signer).qb64);
-
-        let digers = nsigners.signers.map(nsigner => new Diger({code: this.dcode},nsigner.verfer.qb64b ).qb64);
+        let nsigners = this.keys(this.ncount, this.kidx + this.icount, this.transferable)          
+        let digers = nsigners.map(nsigner => new Diger({code: this.dcode},nsigner.verfer.qb64b ).qb64);
 
         return [verfers, digers]
     }
 
     sign(ser: Uint8Array, indexed=true, indices:number[]|undefined=undefined, ondices:number[]|undefined=undefined){
-        // let signers = this.prxs!.map(prx => this.decrypter.decrypt(new Cipher({qb64:prx}).qb64b, undefined, this.transferable))
-        let signers = []
+
+        let signers = this.keys(this.icount, this.kidx, this.transferable)
 
         if (indexed){
             let sigers = []
@@ -121,7 +110,7 @@ export class BIP39Shim {
 
     }
 
-    generateMnemonic(strength){
+    generateMnemonic(strength:number){
         return bip39.generateMnemonic(strength)
     }
 

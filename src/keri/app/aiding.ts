@@ -31,7 +31,9 @@ export interface CreateIdentiferArgs {
     bran?: string,
     count?: number,
     ncount?: number,
-    tier?: Tier
+    tier?: Tier,
+    extern_type?: string,
+    extern?: any
 }
 
 /** Arguments required to rotate an identfier */
@@ -134,6 +136,8 @@ export class Identifier {
         let count = kargs.count
         let ncount = kargs.ncount
         let tier = kargs.tier
+        let extern_type = kargs.extern_type
+        let extern = kargs.extern
 
         let xargs = {
             transferable: transferable,
@@ -157,7 +161,9 @@ export class Identifier {
             bran: bran,
             count: count,
             ncount: ncount,
-            tier: tier
+            tier: tier,
+            extern_type: extern_type,
+            extern: extern
         }
 
         let keeper = this.client.manager!.new(algo, this.client.pidx, xargs)
