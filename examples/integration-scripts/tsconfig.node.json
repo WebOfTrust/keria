@@ -5,6 +5,9 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "noEmit": true,
+    "emitDeclarationOnly": false, // added emitDeclarationOnly option
+    "allowImportingTsExtensions": true // moved this option to be used with noEmit or emitDeclarationOnly
+    }
   }
-}
