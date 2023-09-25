@@ -77,7 +77,7 @@ class NotificationCollectionEnd:
                 case '/multisig/vcp':
                     out.append(NotificationCollectionEnd.vcp(agent.hby, agent.org, attrs))
                 case '/multisig/iss':
-                    pass
+                    out.append(NotificationCollectionEnd.iss(agent.hby, agent.org, attrs))
                 case '/multisig/rev':
                     pass
                 case '/multisig/exn':
@@ -111,7 +111,30 @@ class NotificationCollectionEnd:
             r=attrs['r'],
             d=said,
             exn=exn.ked,
-            senderAllias=senderAlias
+            senderAlias=senderAlias
+        )
+
+    @staticmethod
+    def iss(hby, org, attrs):
+
+        said = attrs["d"]
+        exn, pathed = exchanging.cloneMessage(hby, said=said)
+
+        sender = exn.ked['i']
+        payload = exn.ked['a']
+        gid = payload["gid"]
+        hab = hby.habs[gid] if gid in hby.habs else None
+        if hab is None:
+            raise ValueError(f"credential issuer not a valid AID={gid}")
+
+        contact = org.get(sender)
+        senderAlias = contact['alias']
+
+        return dict(
+            r=attrs['r'],
+            d=said,
+            exn=exn.ked,
+            senderAlias=senderAlias
         )
 
 
