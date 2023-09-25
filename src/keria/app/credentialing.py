@@ -6,6 +6,7 @@ keria.app.credentialing module
 services and endpoint for ACDC credential managements
 """
 import json
+from time import sleep
 
 import falcon
 from keri import kering
@@ -159,6 +160,7 @@ class RegistryCollectionEnd:
             raise falcon.HTTPNotFound(description="alias is not a valid reference to an identfier")
 
         registry = agent.rgy.makeSignifyRegistry(name=rname, prefix=hab.pre, regser=vcp)
+
         if hab.kever.estOnly:
             op = self.identifierResource.rotate(agent, name, body)
         else:
@@ -626,6 +628,7 @@ class CredentialResourceEnd:
         rep.status = falcon.HTTP_200
         rep.data = op.to_json().encode("utf-8")
 
+
 def signPaths(hab, pather, sigers):
     """ Sign the SAD or SAIDs with the keys from the Habitat.
 
@@ -685,8 +688,6 @@ class Registrar:
             self.rgy.reger.tpwe.add(keys=(registry.regk, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
 
         else:
-            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
-
             print("Waiting for TEL registry vcp event mulisig anchoring event")
             self.rgy.reger.tmse.add(keys=(registry.regk, rseq.qb64, registry.regd), val=(prefixer, seqner, saider))
 

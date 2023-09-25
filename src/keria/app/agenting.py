@@ -326,8 +326,7 @@ class Agent(doing.DoDoer):
             ParserDoer(kvy=self.kvy, parser=self.parser),
             Witnesser(receiptor=receiptor, witners=self.witners),
             Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
-            GroupRequester(hby=hby, agentHab=agentHab, postman=self.postman, counselor=self.counselor,
-                           groups=self.groups),
+            GroupRequester(hby=hby, agentHab=agentHab, counselor=self.counselor, groups=self.groups),
             SeekerDoer(seeker=self.seeker, cues=self.verifier.cues)
         ])
 
@@ -451,10 +450,9 @@ class Initer(doing.Doer):
 
 class GroupRequester(doing.Doer):
 
-    def __init__(self, hby, agentHab, postman, counselor, groups):
+    def __init__(self, hby, agentHab, counselor, groups):
         self.hby = hby
         self.agentHab = agentHab
-        self.postman = postman
         self.counselor = counselor
         self.groups = groups
 
@@ -465,13 +463,8 @@ class GroupRequester(doing.Doer):
         if self.groups:
             msg = self.groups.popleft()
             serder = msg["serder"]
-            sigers = msg["sigers"]
 
             ghab = self.hby.habs[serder.pre]
-            atc = bytearray()  # attachment
-            atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
-            for siger in sigers:
-                atc.extend(siger.qb64b)
 
             prefixer = coring.Prefixer(qb64=serder.pre)
             seqner = coring.Seqner(sn=serder.sn)

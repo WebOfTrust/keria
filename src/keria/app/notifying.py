@@ -7,6 +7,7 @@ keria.app.notifying module
 import json
 
 import falcon
+from keri.peer import exchanging
 
 from keria.core import httping
 
@@ -47,6 +48,7 @@ class NotificationCollectionEnd:
               description: List of contact information for remote identifiers
         """
         agent = req.context.agent
+
         rng = req.get_header("Range")
         if rng is None:
             rep.status = falcon.HTTP_200
@@ -60,13 +62,57 @@ class NotificationCollectionEnd:
         notes = agent.notifier.getNotes(start=start, end=end)
         out = []
         for note in notes:
-            out.append(note.pad)
+            attrs = note.attrs
+            route = attrs['r']
+
+            match route:
+                case '/multisig/icp':
+                    out.append(attrs)
+                case '/multisig/ixn':
+                    pass
+                case '/multisig/rot':
+                    pass
+                case '/multisig/rpy':
+                    pass
+                case '/multisig/vcp':
+                    out.append(NotificationCollectionEnd.vcp(agent.hby, agent.org, attrs))
+                case '/multisig/iss':
+                    pass
+                case '/multisig/rev':
+                    pass
+                case '/multisig/exn':
+                    pass
+                case _:
+                    continue
 
         end = start + (len(out) - 1) if len(out) > 0 else 0
         rep.set_header("Accept-Ranges", "notes")
         rep.set_header("Content-Range", f"notes {start}-{end}/{count}")
         rep.status = falcon.HTTP_200
         rep.data = json.dumps(out).encode("utf-8")
+
+    @staticmethod
+    def vcp(hby, org, attrs):
+
+        said = attrs["d"]
+        exn, pathed = exchanging.cloneMessage(hby, said=said)
+
+        sender = exn.ked['i']
+        payload = exn.ked['a']
+        gid = payload["gid"]
+        hab = hby.habs[gid] if gid in hby.habs else None
+        if hab is None:
+            raise ValueError(f"credential issuer not a valid AID={gid}")
+
+        contact = org.get(sender)
+        senderAlias = contact['alias']
+
+        return dict(
+            r=attrs['r'],
+            d=said,
+            exn=exn.ked,
+            senderAllias=senderAlias
+        )
 
 
 class NotificationResourceEnd:
