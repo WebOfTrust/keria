@@ -161,7 +161,8 @@ class Seeker(dbing.LMDBer):
                                    schema=IndexRecord, )
 
         for name, idx in self.dynIdx.getItemIter():
-            self.indexes[name] = subing.CesrDupSuber(db=self, subkey=idx.subkey, klas=coring.Saider)
+            key = ".".join(name)
+            self.indexes[key] = subing.CesrDupSuber(db=self, subkey=idx.subkey, klas=coring.Saider)
 
         # Create persistent Indexes if they don't already exist
         self.createIndex(SCHEMA_FIELD.qb64)
