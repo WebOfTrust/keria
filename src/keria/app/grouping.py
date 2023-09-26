@@ -132,6 +132,15 @@ class MultisigRequestResourceEnd:
                     sender = serder.ked['i']
                     if (c := agent.org.get(sender)) is not None:
                         d['sender'] = c['alias']
+                case ["", "multisig", "iss"]:
+                    gid = payload["gid"]
+                    ghab = agent.hby.habs[gid]
+                    d['groupName'] = ghab.name
+                    d['memberName'] = ghab.mhab.name
+
+                    sender = serder.ked['i']
+                    if (c := agent.org.get(sender)) is not None:
+                        d['sender'] = c['alias']
 
         rep.status = falcon.HTTP_200
         rep.data = json.dumps(exns).encode("utf-8")

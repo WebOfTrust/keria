@@ -1,7 +1,8 @@
 import json
 
 from keri.app import habbing
-from keri.core import parsing
+from keri.core import parsing, coring
+from keri.core.eventing import SealEvent
 from keri.peer import exchanging
 from keri.vdr.credentialing import Regery, Registrar
 
@@ -48,7 +49,15 @@ def test_presentation(helpers, seeder, mockHelpingNowUTC):
 
         conf = dict(nonce='AGu8jwfkyvVXQ2nqEb5yVigEtR31KSytcpe2U2f7NArr')
 
-        registry, _ = registrar.incept(name="issuer", pre=hab.pre, conf=conf)
+        registry = rgy.makeRegistry(name="issuer", prefix=hab.pre, **conf)
+        assert registry.regk == "EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4"
+
+        rseal = SealEvent(registry.regk, "0", registry.regd)
+        rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
+        anc = hab.interact(data=[rseal])
+
+        aserder = coring.Serder(raw=bytes(anc))
+        registrar.incept(iserder=registry.vcp, anc=aserder)
         assert registry.regk == "EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4"
 
         issuer.createRegistry(hab.pre, name="issuer")

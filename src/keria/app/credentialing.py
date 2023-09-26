@@ -665,12 +665,15 @@ class CredentialResourceEnd:
 
         if hab.kever.estOnly:
             op = self.identifierResource.rotate(agent, name, body)
+            anc = httping.getRequiredParam(body, "rot")
         else:
             op = self.identifierResource.interact(agent, name, body)
+            anc = httping.getRequiredParam(body, "ixn")
 
         try:
-            agent.registrar.revoke(regk, rserder)
-        except:
+            agent.registrar.revoke(regk, rserder, anc)
+        except Exception as e:
+            print(e)
             raise falcon.HTTPBadRequest(description=f"invalid revocation event.")
 
         rep.status = falcon.HTTP_200
@@ -954,29 +957,22 @@ class Credentialer:
             serder (Serder): KEL or TEL anchoring event
 
         """
-        regk = creder.crd["ri"]
-        registry = self.rgy.regs[regk]
-        hab = registry.hab
-        rseq = coring.Seqner(sn=0)
-
-        if isinstance(hab, SignifyGroupHab):
-            # escrow waiting for other signatures
-            self.rgy.reger.cmse.put(keys=(creder.said, rseq.qb64), val=creder)
-        else:
-            self.rgy.reger.ccrd.put(keys=(creder.said,), val=creder)
-
         prefixer = coring.Prefixer(qb64=serder.pre)
         seqner = coring.Seqner(sn=serder.sn)
+
+        self.rgy.reger.cmse.put(keys=(creder.said, seqner.qb64), val=creder)
+
         try:
             self.verifier.processCredential(creder=creder, prefixer=prefixer, seqner=seqner, saider=serder.saider)
-        except (kering.MissingRegistryError, kering.MissingSchemaError):
+        except kering.MissingRegistryError:
             pass
 
     def processCredentialMissingSigEscrow(self):
         for (said, snq), creder in self.rgy.reger.cmse.getItemIter():
             rseq = coring.Seqner(qb64=snq)
+            if not self.registrar.complete(pre=said, sn=rseq.sn):
+                continue
 
-            # Look for the saved saider
             saider = self.rgy.reger.saved.get(keys=said)
             if saider is None:
                 continue
