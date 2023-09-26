@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 KERIA
-keria.app.grouping module
+keria.app.ending module
 
 Testing the Mark II Agent Grouping endpoints
 

@@ -7,6 +7,7 @@ keria.app.notifying module
 import json
 
 import falcon
+from keri.peer import exchanging
 
 from keria.core import httping
 
@@ -47,6 +48,7 @@ class NotificationCollectionEnd:
               description: List of contact information for remote identifiers
         """
         agent = req.context.agent
+
         rng = req.get_header("Range")
         if rng is None:
             rep.status = falcon.HTTP_200
@@ -60,7 +62,8 @@ class NotificationCollectionEnd:
         notes = agent.notifier.getNotes(start=start, end=end)
         out = []
         for note in notes:
-            out.append(note.pad)
+            attrs = note.pad
+            out.append(attrs)
 
         end = start + (len(out) - 1) if len(out) > 0 else 0
         rep.set_header("Accept-Ranges", "notes")

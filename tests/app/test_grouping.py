@@ -6,6 +6,12 @@ keria.app.grouping module
 Testing the Mark II Agent Grouping endpoints
 
 """
+import json
+from pprint import pprint
+
+from keri.core import eventing, coring
+from keri.peer import exchanging
+
 from keria.app import grouping, aiding
 
 
@@ -29,52 +35,123 @@ def test_multisig_request_ends(helpers):
 
         end = aiding.IdentifierCollectionEnd()
         app.add_route("/identifiers", end)
+        aidEnd = aiding.IdentifierResourceEnd()
+        app.add_route("/identifiers/{name}", aidEnd)
+        msrCol = grouping.MultisigRequestCollectionEnd()
+        app.add_route("/identifiers/{name}/multisig/request", msrCol)
+        msrRes = grouping.MultisigRequestResourceEnd()
+        app.add_route("/multisig/request/{said}", msrRes)
 
-        # First create participants (aid1, aid2) in a multisig AID
+        # First create participants (aid0, aid1) in a multisig AID
         salt0 = b'0123456789abcdef'
-        op = helpers.createAid(client, "aid1", salt0)
-        aid = op["response"]
-        pre = aid['i']
-        assert pre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+        op = helpers.createAid(client, "aid0", salt0)
+        aid0 = op["response"]
+        pre0 = aid0['i']
+        assert pre0 == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+        serder, signers0 = helpers.incept(salt0, "signify:aid", pidx=0)
+        assert serder.pre == pre0
+        signer0 = signers0[0]
 
-        icp = {
-            "v": "KERI10JSON0002c7_",
-            "t": "dip",
-            "d": "EAbkBt1AkiKskBb-SBACC07ioQ1sx9Q44SpKRZwKjMaU",
-            "i": "EAbkBt1AkiKskBb-SBACC07ioQ1sx9Q44SpKRZwKjMaU",
-            "s": "0",
-            "kt": [
-                "1/3",
-                "1/3",
-                "1/3"
-            ],
-            "k": [
-                "DPmhSfdhCPxr3EqjxzEtF8TVy0YX7ATo0Uc8oo2cnmY9",
-                "DM1XbVrBOpVRyXDCKlvMWNE_qkkGU4rVq-7_bHP7za8W",
-                "DNwaetMMIMbt708EPsdCGHZpMe3gf1OZV-R7LTcJBLnK"
-            ],
-            "nt": [
-                "1/3",
-                "1/3",
-                "1/3"
-            ],
-            "n": [
-                "EAORnRtObOgNiOlMolji-KijC_isa3lRDpHCsol79cOc",
-                "EPJy-TM6OHBJeAFTpb31YVrDSPXQTYmhvDc7DioakK8h",
-                "EHUXA8lpGe1MObjP8RZs9WijzNsjKdoSql_zajgJGLQ6"
-            ],
-            "bt": "2",
-            "b": [
-                "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
-                "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
-                "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"
-            ],
-            "c": [],
-            "a": [],
-            "di": "EHpD0-CDWOdu5RJ8jHBSUkOqBZ3cXeDVHWNb_Ul89VI7"
+        salt1 = b'abcdef0123456789'
+        op = helpers.createAid(client, "aid1", salt1)
+        aid1 = op["response"]
+        pre1 = aid1['i']
+        assert pre1 == "EMgdjM1qALk3jlh4P2YyLRSTcjSOjLXD3e_uYpxbdbg6"
+        serder, signers1 = helpers.incept(salt1, "signify:aid", pidx=0)
+        assert serder.pre == pre1
+        signer1 = signers1[0]
+
+        # Get their hab dicts
+        m0 = client.simulate_get("/identifiers/aid0").json
+        m1 = client.simulate_get("/identifiers/aid1").json
+
+        assert m0["prefix"] == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+        assert m1["prefix"] == "EMgdjM1qALk3jlh4P2YyLRSTcjSOjLXD3e_uYpxbdbg6"
+
+        keys = [m0['state']['k'][0], m1['state']['k'][0]]
+        ndigs = [m0['state']['n'][0], m1['state']['n'][0]]
+
+        # Create the mutlsig inception event
+        serder = eventing.incept(keys=keys,
+                                 isith="2",
+                                 nsith="2",
+                                 ndigs=ndigs,
+                                 code=coring.MtrDex.Blake3_256,
+                                 toad=0,
+                                 wits=[])
+        assert serder.said == "EG8p1Zb4BfyKYkA9SkpyTvCo9xoCsISlOl7YlsB5b1Vt"
+
+        # Send in all signatures as if we are joining the inception event
+        sigers = [signer0.sign(ser=serder.raw, index=0).qb64, signer1.sign(ser=serder.raw, index=1).qb64]
+        states = nstates = [m0['state'], m1['state']]
+
+        body = {
+            'name': 'multisig',
+            'icp': serder.ked,
+            'sigs': sigers,
+            "smids": states,
+            "rmids": nstates,
+            'group': {
+                "mhab": m0,
+                "keys": keys,
+                "ndigs": ndigs
+            }
         }
 
+        res = client.simulate_post(path="/identifiers", body=json.dumps(body))
+        assert res.status_code == 202
 
+        # Get the multisig AID hab dict
+        m2 = client.simulate_get(path="/identifiers/multisig").json
+        pre2 = m2['prefix']
+        assert pre2 == "EG8p1Zb4BfyKYkA9SkpyTvCo9xoCsISlOl7YlsB5b1Vt"
 
-        client.simulate_post()
+        payload = dict(i=pre2, words="these are the words being signed for this response")
+        cexn, _ = exchanging.exchange(route="/challenge/response", payload=payload, sender=agent.agentHab.pre)
 
+        # Signing this with agentHab because I'm lazing.  Nothing will be done with this signature
+        cha = agent.agentHab.endorse(serder=cexn, last=False, pipelined=False)
+
+        embeds = dict(
+            exn=cha
+        )
+        exn, end = exchanging.exchange(route="/multisig/exn", payload=dict(gid=pre2), embeds=embeds ,
+                                       sender=pre0)
+        sig = signer0.sign(exn.raw, index=0).qb64
+        body = dict(
+            exn=exn.ked,
+            sigs=[sig],
+            atc=end.decode("utf-8")
+        )
+
+        res = client.simulate_post(path="/identifiers/badaid/multisig/request", json=body)
+        assert res.status_code == 404
+
+        res = client.simulate_post(path="/identifiers/aid1/multisig/request", json=body)
+        assert res.status_code == 400
+
+        res = client.simulate_post(path="/identifiers/multisig/multisig/request", json=body)
+        assert res.status_code == 200
+        assert res.json == exn.ked
+
+        said = exn.said
+
+        # Fudge this because we won't be able to save a message from someone else:
+        esaid = exn.ked['e']['d']
+        agent.hby.db.meids.add(keys=(esaid,), val=exn.saider)
+
+        res = client.simulate_get(path=f"/multisig/request/BADSAID")
+        assert res.status_code == 404
+
+        res = client.simulate_get(path=f"/multisig/request/{said}")
+        assert res.status_code == 200
+        assert len(res.json) == 1
+
+        req = res.json[0]
+
+        assert req['exn'] == exn.ked
+        path = req['paths']['exn']
+        assert '-LA35AACAA-e-exn'+path == end.decode("utf-8")
+
+        # We've send this one exn to our other participants
+        assert len(agent.postman.evts) == 1

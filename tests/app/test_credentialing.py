@@ -12,16 +12,13 @@ from falcon import testing
 from hio.base import doing
 from keri.app import habbing
 from keri.core import scheming, coring, parsing
-from keri.core.eventing import TraitCodex
+from keri.core.eventing import TraitCodex, SealEvent
 from keri.vc import proving
 from keri.vdr import eventing
 from keri.vdr.credentialing import Regery, Registrar
 
 from keria.app import credentialing, aiding
 from keria.core import longrunning
-
-import time
-
 
 def test_load_ends(helpers):
     with helpers.openKeria() as (agency, agent, app, client):
@@ -240,7 +237,7 @@ def test_issue_credential(helpers, seeder):
             iss=regser.ked,
             ixn=serder.ked,
             sigs=sigers,
-            cred=creder.ked,
+            acdc=creder.ked,
             csigs=csigers,
             path=pather.qb64)
         
@@ -292,7 +289,16 @@ def test_credentialing_ends(helpers, seeder):
 
         conf = dict(nonce='AGu8jwfkyvVXQ2nqEb5yVigEtR31KSytcpe2U2f7NArr')
 
-        registry, _ = registrar.incept(name="issuer", pre=hab.pre, conf=conf)
+        registry = rgy.makeRegistry(name="issuer", prefix=hab.pre, **conf)
+        assert registry.regk == "EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4"
+
+        rseal = SealEvent(registry.regk, "0", registry.regd)
+        rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
+        anc = hab.interact(data=[rseal])
+
+        aserder = coring.Serder(raw=bytes(anc))
+        registrar.incept(iserder=registry.vcp, anc=aserder)
+
         assert registry.regk == "EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4"
 
         issuer.createRegistry(hab.pre, name="issuer")
@@ -391,7 +397,7 @@ def test_credentialing_ends(helpers, seeder):
         
 
 # TODO: Rewrite this test after IPEX is implemented
-def xtest_revoke_credential(helpers, seeder):
+def test_revoke_credential(helpers, seeder):
     with helpers.openKeria() as (agency, agent, app, client):
         idResEnd = aiding.IdentifierResourceEnd()
         app.add_route("/identifiers/{name}", idResEnd)
@@ -458,7 +464,7 @@ def xtest_revoke_credential(helpers, seeder):
             iss=regser.ked,
             ixn=serder.ked,
             sigs=sigers,
-            cred=creder.ked,
+            acdc=creder.ked,
             csigs=csigers,
             path=pather.qb64)
         

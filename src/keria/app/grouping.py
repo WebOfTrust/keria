@@ -96,7 +96,7 @@ class MultisigRequestResourceEnd:
         agent = req.context.agent
         exn = agent.hby.db.exns.get(keys=(said,))
         if exn is None:
-            raise falcon.HTTPNotFound(f"no multisig request with said={said} found")
+            raise falcon.HTTPNotFound(description=f"no multisig request with said={said} found")
 
         route = exn.ked['r']
         if not route.startswith("/multisig"):
@@ -124,6 +124,15 @@ class MultisigRequestResourceEnd:
                 case ["", "multisig", "icp"]:
                     pass
                 case ["", "multisig", "vcp"]:
+                    gid = payload["gid"]
+                    ghab = agent.hby.habs[gid]
+                    d['groupName'] = ghab.name
+                    d['memberName'] = ghab.mhab.name
+
+                    sender = serder.ked['i']
+                    if (c := agent.org.get(sender)) is not None:
+                        d['sender'] = c['alias']
+                case ["", "multisig", "iss"]:
                     gid = payload["gid"]
                     ghab = agent.hby.habs[gid]
                     d['groupName'] = ghab.name

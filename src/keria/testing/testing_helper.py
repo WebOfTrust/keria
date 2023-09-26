@@ -14,6 +14,7 @@ from keri import kering
 from keri.app import keeping, habbing, configing, signing
 from keri.core import coring, eventing, parsing, routing, scheming
 from keri.core.coring import MtrDex
+from keri.core.eventing import SealEvent
 from keri.help import helping
 from keri.vc import proving
 from keri.vdr import credentialing, verifying
@@ -570,20 +571,30 @@ class Issuer:
     date = "2021-06-27T21:26:21.233257+00:00"
 
     def __init__(self, name, hby):
+        self.hby = hby
         self.rgy = Regery(hby=hby, name=name, temp=True)
         self.registrar = Registrar(hby=hby, rgy=self.rgy, counselor=None)
         self.verifier = verifying.Verifier(hby=hby, reger=self.rgy.reger)
 
     def createRegistry(self, pre, name):
         conf = dict(nonce='AGu8jwfkyvVXQ2nqEb5yVigEtR31KSytcpe2U2f7NArr')
+        hab = self.hby.habs[pre]
 
-        registry, _ = self.registrar.incept(name=name, pre=pre, conf=conf)
+        registry = self.rgy.makeRegistry(name=name, prefix=pre, **conf)
         assert registry.regk == "EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4"
+
+        rseal = SealEvent(registry.regk, "0", registry.regd)
+        rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
+        anc = hab.interact(data=[rseal])
+
+        aserder = coring.Serder(raw=bytes(anc))
+        self.registrar.incept(iserder=registry.vcp, anc=aserder)
 
         # Process escrows to clear event
         self.rgy.processEscrows()
         self.registrar.processEscrows()
-        assert self.registrar.complete(registry.regk) is True
+
+        assert self.rgy.reger.ctel.get(keys=(registry.regk, coring.Seqner(sn=0).qb64)) is not None
 
     def issueLegalEntityvLEI(self, reg, issuer, issuee, LEI):
         registry = self.rgy.registryByName(reg)
@@ -601,10 +612,20 @@ class Issuer:
                                     status=registry.regk,
                                     source={}, rules={})
 
-        pre, sn, said = self.registrar.issue(regk=registry.regk, said=creder.said, dt=self.date)
-        prefixer = coring.Prefixer(qb64=pre)
-        seqner = coring.Seqner(sn=sn)
-        saider = coring.Saider(qb64=said)
+        iserder = registry.issue(said=creder.said, dt=self.date)
+
+        vcid = iserder.ked["i"]
+        rseq = coring.Seqner(snh=iserder.ked["s"])
+        rseal = eventing.SealEvent(vcid, rseq.snh, iserder.said)
+        rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
+
+        anc = issuer.interact(data=[rseal])
+        aserder = coring.Serder(raw=anc)
+        self.registrar.issue(creder=creder, iserder=iserder, anc=aserder)
+
+        prefixer = coring.Prefixer(qb64=iserder.pre)
+        seqner = coring.Seqner(sn=iserder.sn)
+        saider = coring.Saider(qb64=iserder.said)
         craw = signing.serialize(creder, prefixer, seqner, saider)
 
         # Process escrows to clear event
@@ -632,11 +653,20 @@ class Issuer:
                                     data=credSubject,
                                     status=registry.regk)
 
-        pre, sn, said = self.registrar.issue(regk=registry.regk, said=creder.said, dt=self.date)
+        iserder = registry.issue(said=creder.said, dt=self.date)
 
-        prefixer = coring.Prefixer(qb64=pre)
-        seqner = coring.Seqner(sn=sn)
-        saider = coring.Saider(qb64=said)
+        vcid = iserder.ked["i"]
+        rseq = coring.Seqner(snh=iserder.ked["s"])
+        rseal = eventing.SealEvent(vcid, rseq.snh, iserder.said)
+        rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
+
+        anc = issuer.interact(data=[rseal])
+        aserder = coring.Serder(raw=anc)
+        self.registrar.issue(creder=creder, iserder=iserder, anc=aserder)
+
+        prefixer = coring.Prefixer(qb64=iserder.pre)
+        seqner = coring.Seqner(sn=iserder.sn)
+        saider = coring.Saider(qb64=iserder.said)
         craw = signing.serialize(creder, prefixer, seqner, saider)
 
         # Process escrows to clear event
