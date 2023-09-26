@@ -96,7 +96,7 @@ class MultisigRequestResourceEnd:
         agent = req.context.agent
         exn = agent.hby.db.exns.get(keys=(said,))
         if exn is None:
-            raise falcon.HTTPNotFound(f"no multisig request with said={said} found")
+            raise falcon.HTTPNotFound(description=f"no multisig request with said={said} found")
 
         route = exn.ked['r']
         if not route.startswith("/multisig"):
