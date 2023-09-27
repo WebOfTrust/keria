@@ -9,6 +9,7 @@ import {Siger} from "../core/siger"
 import {Prefixer} from "../core/prefixer"
 import {randomNonce} from "./coring"
 import {TextDecoder} from "util"
+import { TraitDex } from "./habery"
 
 
 /** Types of credentials */
@@ -438,16 +439,26 @@ export class Registries {
      * @async
      * @param {string} name Name or alias of the identifier
      * @param {string} registryName Name for the registry
+     * @param {boolean}[noBackers=true] config property for using backers (a ledger of some kind)
+     * @param {string[]}[baks=[]] List of backers if used
      * @param {string} [nonce] Nonce used to generate the registry. If not provided a random nonce will be generated
      * @returns {Promise<any>} A promise to the long-running operation
      */
-    async create(name: string, registryName: string, nonce?:string): Promise<any> {
-        // TODO add backers option
-        // TODO get estOnly from get_identifier ?
-
+    async create(name: string, registryName: string, noBackers:boolean = true, baks:string[] = [], nonce?:string): Promise<any> {
         let hab = await this.client.identifiers().get(name)
         let pre: string = hab.prefix
 
+        let cnfg: string[] = [];
+        if (noBackers) {
+            cnfg.push(TraitDex.NoBackers);
+        }
+
+        let state = hab.state
+        let estOnly = (state.c !== undefined && state.c.includes("EO"));
+        if (estOnly) {
+            cnfg.push(TraitDex.EstOnly);
+        }
+        
         nonce = nonce !== undefined ? nonce : randomNonce()
 
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
@@ -458,9 +469,9 @@ export class Registries {
             i: "",
             ii: pre,
             s: "0",
-            c: ['NB'],
+            c: cnfg,
             bt: "0",
-            b: [],
+            b: baks,
             n: nonce
         }
 
@@ -471,14 +482,7 @@ export class Registries {
         let ixn = {}
         let sigs = []
 
-        let state = hab.state
-        let estOnly = false
-        if (state.c !== undefined && state.c.includes("EO")) {
-            estOnly = true
-        }
-
         if (estOnly) {
-            // TODO implement rotation event
             throw new Error("establishment only not implemented")
 
         } else {
