@@ -1,6 +1,6 @@
 import { SignifyClient } from "./clienting"
 import {Salter} from "../core/salter"
-import { interact, messagize} from "../core/eventing"
+import {incept, interact, messagize} from "../core/eventing"
 import {b, Dict, Ident, Ilks, Serials, versify} from "../core/core"
 import {MtrDex} from "../core/matter"
 import {Saider} from "../core/saider"
@@ -10,6 +10,7 @@ import {Prefixer} from "../core/prefixer"
 import {randomNonce} from "./coring"
 import {TextDecoder} from "util"
 import { TraitDex } from "./habery"
+import { re } from "mathjs"
 
 
 /** Types of credentials */
@@ -407,6 +408,37 @@ export class Credentials {
     }
 }
 
+export class RegistryResult {
+    private readonly _vcp: any
+    private readonly _serder: Serder
+    private readonly _sigs: string[]
+    private readonly promise: Promise<Response>
+
+    constructor(vcp: object, serder: Serder, sigs: any[], promise: Promise<Response>) {
+        this._vcp = vcp
+        this._serder = serder
+        this._sigs = sigs
+        this.promise = promise
+    }
+
+    get vcp() {
+        return this._serder
+    }
+
+    get serder() {
+        return this._serder
+    }
+
+    get sigs() {
+        return this._sigs
+    }
+
+    async op(): Promise<any> {
+        let res = await this.promise
+        return await res.json()
+    }
+}
+
 /**
  * Registries
  */
@@ -442,9 +474,9 @@ export class Registries {
      * @param {boolean}[noBackers=true] config property for using backers (a ledger of some kind)
      * @param {string[]}[baks=[]] List of backers if used
      * @param {string} [nonce] Nonce used to generate the registry. If not provided a random nonce will be generated
-     * @returns {Promise<any>} A promise to the long-running operation
+     * @returns {Promise<[any, Serder, any[], object]> } A promise to the long-running operation
      */
-    async create(name: string, registryName: string, noBackers:boolean = true, baks:string[] = [], nonce?:string): Promise<any> {
+    async create(name: string, registryName: string, noBackers:boolean = true, baks:string[] = [], nonce?:string): Promise<RegistryResult> {
         let hab = await this.client.identifiers().get(name)
         let pre: string = hab.prefix
 
@@ -480,11 +512,10 @@ export class Registries {
         vcp.d = prefixer.qb64
 
         let ixn = {}
-        let sigs = []
+        let sigs: any[] = []
 
         if (estOnly) {
             throw new Error("establishment only not implemented")
-
         } else {
             let state = hab.state
             let sn = Number(state.s)
@@ -500,9 +531,10 @@ export class Registries {
             let keeper = this.client!.manager!.get(hab)
             sigs = keeper.sign(b(serder.raw))
             ixn = serder.ked
-        }
 
-        return await this.createFromEvents(hab, name, registryName, vcp, ixn, sigs)
+            let res = await this.createFromEvents(hab, name, registryName, vcp, ixn, sigs)
+            return new RegistryResult(vcp, serder, sigs, res);
+        }
     }
 
     async createFromEvents(hab: Dict<any>, name: string, registryName: string, vcp: Dict<any>, ixn: Dict<any>, sigs: any[]) {

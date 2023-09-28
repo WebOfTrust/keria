@@ -209,7 +209,7 @@ export class Identifier {
         }
         jsondata[algo] = keeper.params()
 
-            this.client.pidx = this.client.pidx + 1
+        this.client.pidx = this.client.pidx + 1
         let res = this.client.fetch("/identifiers", "POST", jsondata)
         return new EventResult(serder, sigs, res)
     }

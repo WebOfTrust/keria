@@ -536,7 +536,7 @@ async function run() {
     res = await client3.groups().getRequest(msgSaid)
     exn = res[0].exn
     
-    icpResult3 = await client3.identifiers().rotate("multisig",{states: states,rstates: rstates})
+    icpResult3 = await client3.identifiers().rotate("`multisig",{states: states,rstates: rstates})
     op3 = await icpResult3.op()
     serder = icpResult3.serder
     sigs = icpResult3.sigs
@@ -569,4 +569,102 @@ async function run() {
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     console.log("Multisig rotation completed!")
+
+    console.log("Starting multisig registry creation")
+
+    let vcpRes1 = await client1.registries().create("member1", "vLEI Registry", "AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s");
+    op1 = await vcpRes1.op();
+    serder = vcpRes1.serder
+    sigs = vcpRes1.sigs
+
+    sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}))
+
+    let regbeds = {
+        vcp: vcpRes1.vcp,
+        anc: signify.messagize(serder, sigs)
+    }
+
+    await client1.exchanges().send("member1", "multisig", aid1, "/multisig/vcp", regbeds)
+    console.log("Member1 initiated registry, waiting for others to join...")
+
+    // Member2 check for notifications and join the create registry event
+    msgSaid = ""
+    while (msgSaid=="") {
+        let notifications = await client2.notifications().list()
+        for (let notif of notifications.notes){
+            if (notif.a.r == '/multisig/vcp') {
+                msgSaid = notif.a.d
+                await client2.notifications().mark(notif.i)
+                console.log("Member2 received exchange message to join the create registry event")
+            }
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    res = await client2.groups().getRequest(msgSaid)
+    exn = res[0].exn
+
+    let vcpRes2 = await client2.registries().create("member1", "vLEI Registry", "AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s");
+    op2 = await vcpRes2.op()
+    serder = vcpRes2.serder
+    sigs = vcpRes2.sigs
+
+    sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}))
+
+    regbeds = {
+        vcp: vcpRes2.vcp,
+        anc: signify.messagize(serder, sigs)
+    }
+
+    await client2.exchanges().send("member2", "multisig", aid2, "/multisig/vcp", regbeds)
+    console.log("Member2 joins rotation event, waiting for others...")
+
+    // Member3 check for notifications and join the create registry event
+    msgSaid = ""
+    while (msgSaid=="") {
+        let notifications = await client2.notifications().list()
+        for (let notif of notifications.notes){
+            if (notif.a.r == '/multisig/vcp') {
+                msgSaid = notif.a.d
+                await client2.notifications().mark(notif.i)
+                console.log("Member3 received exchange message to join the create registry event")
+            }
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    res = await client2.groups().getRequest(msgSaid)
+    exn = res[0].exn
+
+    let vcpRes3 = await client2.registries().create("member3", "vLEI Registry", "AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s");
+    op3 = await vcpRes3.op()
+    serder = vcpRes3.serder
+    sigs = vcpRes3.sigs
+
+    sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}))
+
+    regbeds = {
+        vcp: vcpRes3.vcp,
+        anc: signify.messagize(serder, sigs)
+    }
+
+    await client3.exchanges().send("member3", "multisig", aid3, "/multisig/vcp", regbeds)
+
+    // Done
+    while (!op1["done"]) {
+        op1 = await client1.operations().get(op1.name);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    while (!op2["done"]) {
+        op2 = await client2.operations().get(op2.name);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    while (!op3["done"]) {
+        op3 = await client3.operations().get(op3.name);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
 }
