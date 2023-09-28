@@ -54,6 +54,12 @@ parser.add_argument("--config-dir",
                     action="store",
                     default=None,
                     help="directory override for configuration data")
+parser.add_argument("--keypath", action="store", required=False, default=None,
+                    help="TLS server private key file")
+parser.add_argument("--certpath", action="store", required=False, default=None,
+                    help="TLS server signed certificate (public key) file")
+parser.add_argument("--cafilepath", action="store", required=False, default=None,
+                    help="TLS server CA certificate chain")
 
 
 def launch(args):
@@ -72,16 +78,19 @@ def launch(args):
              http=int(args.http),
              boot=int(args.boot),
              configFile=args.configFile,
-             configDir=args.configDir)
+             configDir=args.configDir,
+             keypath=args.keypath,
+             certpath=args.certpath,
+             cafilepath=args.cafilepath)
 
     logger.info("******* Ended Agent for %s listening: admin/%s, http/%s"
                 ".******", args.name, args.admin, args.http)
 
 
 def runAgent(name="ahab", base="", bran="", admin=3901, http=3902, boot=3903, configFile=None,
-             configDir=None, expire=0.0):
+             configDir=None, keypath=None, certpath=None, cafilepath=None, expire=0.0):
     """
-    Setup and run one witness
+    Setup and run a KERIA Agency
     """
 
     doers = []
@@ -90,6 +99,9 @@ def runAgent(name="ahab", base="", bran="", admin=3901, http=3902, boot=3903, co
                                 httpPort=http,
                                 bootPort=boot,
                                 configFile=configFile,
-                                configDir=configDir))
+                                configDir=configDir,
+                                keypath=keypath,
+                                certpath=certpath,
+                                cafilepath=cafilepath))
 
     directing.runController(doers=doers, expire=expire)
