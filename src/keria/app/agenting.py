@@ -317,6 +317,7 @@ class Agent(doing.DoDoer):
         self.monitor = longrunning.Monitor(hby=hby, swain=self.swain, counselor=self.counselor, temp=hby.temp,
                                            registrar=self.registrar, credentialer=self.credentialer)
         self.seeker = basing.Seeker(name=hby.name, db=hby.db, reger=self.rgy.reger, reopen=True, temp=self.hby.temp)
+        self.exnseeker = basing.ExnSeeker(name=hby.name, db=hby.db, reopen=True, temp=self.hby.temp)
 
         challengeHandler = challenging.ChallengeHandler(db=hby.db, signaler=signaler)
 
@@ -354,7 +355,8 @@ class Agent(doing.DoDoer):
             Witnesser(receiptor=receiptor, witners=self.witners),
             Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
             GroupRequester(hby=hby, agentHab=agentHab, counselor=self.counselor, groups=self.groups),
-            SeekerDoer(seeker=self.seeker, cues=self.verifier.cues)
+            SeekerDoer(seeker=self.seeker, cues=self.verifier.cues),
+            ExnSeekerDoer(seeker=self.exnseeker, cues=self.exc.cues)
         ])
 
         super(Agent, self).__init__(doers=doers, always=True, **opts)
@@ -458,6 +460,23 @@ class SeekerDoer(doing.Doer):
                 creder = cue["creder"]
                 print(f"indexing {creder.said}")
                 self.seeker.index(said=creder.said)
+
+
+class ExnSeekerDoer(doing.Doer):
+
+    def __init__(self, seeker, cues):
+        self.seeker = seeker
+        self.cues = cues
+
+        super(ExnSeekerDoer, self).__init__()
+
+    def recur(self, tyme=None):
+        if self.cues:
+            cue = self.cues.popleft()
+            if cue["kin"] == "saved":
+                said = cue["said"]
+                print(f"indexing exn said={said}")
+                self.seeker.index(said=said)
 
 
 class Initer(doing.Doer):

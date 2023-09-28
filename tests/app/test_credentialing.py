@@ -396,7 +396,6 @@ def test_credentialing_ends(helpers, seeder):
         assert res.status_code == 404
         
 
-# TODO: Rewrite this test after IPEX is implemented
 def test_revoke_credential(helpers, seeder):
     with helpers.openKeria() as (agency, agent, app, client):
         idResEnd = aiding.IdentifierResourceEnd()
