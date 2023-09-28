@@ -8,14 +8,10 @@ Testing the Mark II Agent Grouping endpoints
 """
 import json
 
-from keri.app import habbing, signing
-from keri.core import coring, parsing
-from keri.peer.exchanging import exchange, Exchanger
-from keri.vc import protocoling
+from keri.core import coring
+from keri.peer.exchanging import exchange
 
-from keria.app import aiding, credentialing
-from keria.core import longrunning
-from keria.db import basing
+from keria.app import aiding
 from keria.peer import exchanging
 
 
