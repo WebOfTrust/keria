@@ -1,16 +1,13 @@
 import { SignifyClient } from "./clienting"
-import {Salter} from "../core/salter"
-import {incept, interact, messagize} from "../core/eventing"
-import {b, Dict, Ident, Ilks, Serials, versify} from "../core/core"
-import {MtrDex} from "../core/matter"
-import {Saider} from "../core/saider"
-import {Serder} from "../core/serder"
-import {Siger} from "../core/siger"
-import {Prefixer} from "../core/prefixer"
-import {randomNonce} from "./coring"
-import {TextDecoder} from "util"
+import { Salter } from "../core/salter"
+import { interact, messagize } from "../core/eventing"
+import { vdr } from "../core/vdring"
+import { b, Dict, Ident, Ilks, Serials, versify, Versionage } from "../core/core"
+import { Saider } from "../core/saider"
+import { Serder } from "../core/serder"
+import { Siger } from "../core/siger"
+import { TextDecoder } from "util"
 import { TraitDex } from "./habery"
-import { re } from "mathjs"
 
 
 /** Types of credentials */
@@ -408,21 +405,31 @@ export class Credentials {
     }
 }
 
+export interface CreateRegistryArgs {
+    name: string, 
+    registryName: string, 
+    toad?: string | number | undefined
+    noBackers?:boolean, 
+    baks?:string[], 
+    nonce?:string
+}
+
+
 export class RegistryResult {
-    private readonly _vcp: any
+    private readonly _regser: any
     private readonly _serder: Serder
     private readonly _sigs: string[]
     private readonly promise: Promise<Response>
 
-    constructor(vcp: object, serder: Serder, sigs: any[], promise: Promise<Response>) {
-        this._vcp = vcp
+    constructor(regser: Serder, serder: Serder, sigs: any[], promise: Promise<Response>) {
+        this._regser = regser
         this._serder = serder
         this._sigs = sigs
         this.promise = promise
     }
 
-    get vcp() {
-        return this._serder
+    get regser() {
+        return this._regser
     }
 
     get serder() {
@@ -469,14 +476,10 @@ export class Registries {
     /**
      * Create a registry
      * @async
-     * @param {string} name Name or alias of the identifier
-     * @param {string} registryName Name for the registry
-     * @param {boolean}[noBackers=true] config property for using backers (a ledger of some kind)
-     * @param {string[]}[baks=[]] List of backers if used
-     * @param {string} [nonce] Nonce used to generate the registry. If not provided a random nonce will be generated
+     * @param {CreateRegistryArgs}
      * @returns {Promise<[any, Serder, any[], object]> } A promise to the long-running operation
      */
-    async create(name: string, registryName: string, noBackers:boolean = true, baks:string[] = [], nonce?:string): Promise<RegistryResult> {
+    async create({ name, registryName, noBackers=true, toad=0, baks=[], nonce}: CreateRegistryArgs): Promise<RegistryResult> {
         let hab = await this.client.identifiers().get(name)
         let pre: string = hab.prefix
 
@@ -490,54 +493,31 @@ export class Registries {
         if (estOnly) {
             cnfg.push(TraitDex.EstOnly);
         }
-        
-        nonce = nonce !== undefined ? nonce : randomNonce()
 
-        const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
-        let vcp = {
-            v: vs,
-            t: Ilks.vcp,
-            d: "",
-            i: "",
-            ii: pre,
-            s: "0",
-            c: cnfg,
-            bt: "0",
-            b: baks,
-            n: nonce
-        }
-
-        let prefixer = new Prefixer({code: MtrDex.Blake3_256}, vcp)
-        vcp.i = prefixer.qb64
-        vcp.d = prefixer.qb64
-
-        let ixn = {}
-        let sigs: any[] = []
+        let regser = vdr.incept({pre, baks, toad, nonce, cnfg});
 
         if (estOnly) {
-            throw new Error("establishment only not implemented")
+            throw new Error("establishment only not implemented");
         } else {
             let state = hab.state
             let sn = Number(state.s)
             let dig = state.d
 
             let data: any = [{
-                i: prefixer.qb64,
+                i: regser.pre,
                 s: "0",
-                d: prefixer.qb64
+                d: regser.pre
             }]
 
-            let serder = interact({pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined})
-            let keeper = this.client!.manager!.get(hab)
-            sigs = keeper.sign(b(serder.raw))
-            ixn = serder.ked
-
-            let res = await this.createFromEvents(hab, name, registryName, vcp, ixn, sigs)
-            return new RegistryResult(vcp, serder, sigs, res);
+            let serder = interact({pre: pre, sn: sn + 1, data: data, dig: dig, version: Versionage, kind: Serials.JSON})
+            let keeper = this.client.manager!.get(hab)
+            let sigs = keeper.sign(b(serder.raw))
+            let res = this.createFromEvents(hab, name, registryName, regser.ked, serder.ked, sigs)
+            return new RegistryResult(regser, serder, sigs, res);
         }
     }
 
-    async createFromEvents(hab: Dict<any>, name: string, registryName: string, vcp: Dict<any>, ixn: Dict<any>, sigs: any[]) {
+    createFromEvents(hab: Dict<any>, name: string, registryName: string, vcp: Dict<any>, ixn: Dict<any>, sigs: any[]) {
 
         let path = `/identifiers/${name}/registries`
         let method = 'POST'
@@ -545,14 +525,14 @@ export class Registries {
         let data: any = {
             name: registryName,
             vcp: vcp,
-            ixn: ixn!,
+            ixn: ixn,
             sigs: sigs
         }
         let keeper = this.client!.manager!.get(hab)
         data[keeper.algo] = keeper.params()
 
-        let res = await this.client.fetch(path, method, data)
-        return await res.json()
+        return this.client.fetch(path, method, data)
+        
     }
 
 }

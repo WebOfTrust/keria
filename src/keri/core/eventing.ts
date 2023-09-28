@@ -200,7 +200,7 @@ export function rotate({
     return new Serder(ked)
 }
 
-function ample(n: number, f?: number, weak = true) {
+export function ample(n: number, f?: number, weak = true) {
     n = Math.max(0, n)  // no negatives
     let f1
     if (f == undefined) {

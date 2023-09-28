@@ -3,10 +3,10 @@
   "type": "module",
   "private": true,
   "version": "0.0.0",
-  "scripts": {
-  },
+  "scripts": {},
   "dependencies": {
-    "signify-ts": "file:../../"
+    "signify-ts": "file:../../",
+    "ts-node": "^10.9.1"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.57.1",

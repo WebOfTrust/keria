@@ -138,6 +138,7 @@ async function run() {
     })
     op1 = await icpResult1.op()
     let serder = icpResult1.serder
+    
     let sigs = icpResult1.sigs
     let sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}))
 
@@ -157,7 +158,7 @@ async function run() {
     // Second member check notifications and join the multisig  
     let msgSaid = ""
     while (msgSaid=="") {
-        let notifications = await client2.notifications().list()
+        let notifications = await client2.notifications().list()        
         for (let notif of notifications.notes){
             if (notif.a.r == '/multisig/icp') {
                 msgSaid = notif.a.d
@@ -276,10 +277,14 @@ async function run() {
     assert.equal(identifiers3.aids[0].name, "member3")
     assert.equal(identifiers3.aids[1].name, "multisig")
 
-    console.log("Client 1 managed AIDs:", identifiers1.aids[0].name, identifiers1.aids[1].name)
-    console.log("Client 2 managed AIDs:", identifiers2.aids[0].name, identifiers2.aids[1].name)
-    console.log("Client 3 managed AIDs:", identifiers3.aids[0].name, identifiers3.aids[1].name)
+    console.log("Client 1 managed AIDs:\n",   identifiers1.aids[0].name, `[${identifiers1.aids[0].prefix}]\n`, 
+                                            identifiers1.aids[1].name, `[${identifiers1.aids[1].prefix}]`)
+    console.log("Client 2 managed AIDs:\n",   identifiers2.aids[0].name, `[${identifiers2.aids[0].prefix}]\n`, 
+                                            identifiers2.aids[1].name, `[${identifiers2.aids[1].prefix}]`)
+    console.log("Client 3 managed AIDs:\n",   identifiers3.aids[0].name, `[${identifiers3.aids[0].prefix}]\n`, 
+                                            identifiers3.aids[1].name, `[${identifiers3.aids[1].prefix}]`)
 
+    let multisig = identifiers3.aids[1].prefix
 
     // MultiSig Interaction
 
@@ -536,7 +541,7 @@ async function run() {
     res = await client3.groups().getRequest(msgSaid)
     exn = res[0].exn
     
-    icpResult3 = await client3.identifiers().rotate("`multisig",{states: states,rstates: rstates})
+    icpResult3 = await client3.identifiers().rotate("multisig",{states: states,rstates: rstates})
     op3 = await icpResult3.op()
     serder = icpResult3.serder
     sigs = icpResult3.sigs
@@ -571,20 +576,26 @@ async function run() {
     console.log("Multisig rotation completed!")
 
     console.log("Starting multisig registry creation")
-
-    let vcpRes1 = await client1.registries().create("member1", "vLEI Registry", "AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s");
+    
+    let vcpRes1 = await client1.registries().create({name: "member1", registryName: "vLEI Registry", nonce: "AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s"});
     op1 = await vcpRes1.op();
-    serder = vcpRes1.serder
+    serder = vcpRes1.regser
+    let anc = vcpRes1.serder
     sigs = vcpRes1.sigs
 
-    sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}))
+    sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}));
 
+    ims = signify.d(signify.messagize(anc, sigers));
+    atc = ims.substring(anc.size);
     let regbeds = {
-        vcp: vcpRes1.vcp,
-        anc: signify.messagize(serder, sigs)
+        vcp: [serder, ""],
+        anc: [anc, atc]
     }
 
-    await client1.exchanges().send("member1", "multisig", aid1, "/multisig/vcp", regbeds)
+    recp = [aid2["state"], aid3["state"]].map((state) =>  state['i'])
+    res = await client1.exchanges().send("member1", "registry", aid1, "/multisig/vcp",
+        {gid:multisig, usage:"Issue vLEIs"}, regbeds, recp);
+
     console.log("Member1 initiated registry, waiting for others to join...")
 
     // Member2 check for notifications and join the create registry event
@@ -605,29 +616,34 @@ async function run() {
     res = await client2.groups().getRequest(msgSaid)
     exn = res[0].exn
 
-    let vcpRes2 = await client2.registries().create("member1", "vLEI Registry", "AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s");
+    let vcpRes2 = await client2.registries().create({name: "member2", registryName: "vLEI Registry", nonce: "AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s"});
     op2 = await vcpRes2.op()
-    serder = vcpRes2.serder
+    serder = vcpRes2.regser
+    anc = vcpRes2.serder
     sigs = vcpRes2.sigs
 
     sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}))
 
+    ims = signify.d(signify.messagize(anc, sigers));
+    atc = ims.substring(anc.size);
     regbeds = {
-        vcp: vcpRes2.vcp,
-        anc: signify.messagize(serder, sigs)
+        vcp: [serder, ""],
+        anc: [anc, atc]
     }
 
-    await client2.exchanges().send("member2", "multisig", aid2, "/multisig/vcp", regbeds)
+    recp = [aid1["state"], aid3["state"]].map((state) =>  state['i'])
+    await client2.exchanges().send("member2", "registry", aid2, "/multisig/vcp", 
+        {gid:multisig, usage:"Issue vLEIs"}, regbeds, recp);
     console.log("Member2 joins rotation event, waiting for others...")
 
     // Member3 check for notifications and join the create registry event
     msgSaid = ""
     while (msgSaid=="") {
-        let notifications = await client2.notifications().list()
+        let notifications = await client3.notifications().list()
         for (let notif of notifications.notes){
             if (notif.a.r == '/multisig/vcp') {
                 msgSaid = notif.a.d
-                await client2.notifications().mark(notif.i)
+                await client3.notifications().mark(notif.i)
                 console.log("Member3 received exchange message to join the create registry event")
             }
         }
@@ -635,22 +651,27 @@ async function run() {
     }
 
     await new Promise(resolve => setTimeout(resolve, 5000));
-    res = await client2.groups().getRequest(msgSaid)
+    res = await client3.groups().getRequest(msgSaid)
     exn = res[0].exn
 
-    let vcpRes3 = await client2.registries().create("member3", "vLEI Registry", "AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s");
+    let vcpRes3 = await client3.registries().create({name: "member3", registryName: "vLEI Registry", nonce: "AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s"});
     op3 = await vcpRes3.op()
-    serder = vcpRes3.serder
-    sigs = vcpRes3.sigs
+    serder = vcpRes2.regser
+    anc = vcpRes2.serder
+    sigs = vcpRes2.sigs
 
     sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}))
 
+    ims = signify.d(signify.messagize(anc, sigers));
+    atc = ims.substring(anc.size);
     regbeds = {
-        vcp: vcpRes3.vcp,
-        anc: signify.messagize(serder, sigs)
+        vcp: [serder, ""],
+        anc: [anc, atc]
     }
 
-    await client3.exchanges().send("member3", "multisig", aid3, "/multisig/vcp", regbeds)
+    recp = [aid1["state"], aid2["state"]].map((state) =>  state['i'])
+    await client3.exchanges().send("member3", "multisig", aid3, "/multisig/vcp", 
+        {gid:multisig, usage:"Issue vLEIs"}, regbeds, recp);
 
     // Done
     while (!op1["done"]) {
@@ -667,4 +688,5 @@ async function run() {
         op3 = await client3.operations().get(op3.name);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
+    // console.log("Multisig create registry completed!")
 }
