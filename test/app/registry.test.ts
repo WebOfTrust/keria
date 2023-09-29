@@ -55,4 +55,4 @@ describe('registry', () => {
                 message: 'establishment only not implemented',
             });
     });
-})
+});
