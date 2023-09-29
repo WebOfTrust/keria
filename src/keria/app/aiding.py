@@ -51,6 +51,8 @@ def loadEnds(app, agency, authn):
     app.add_route("/challenges", chaEnd)
     chaResEnd = ChallengeResourceEnd()
     app.add_route("/challenges/{name}", chaResEnd)
+    chaVerResEnd = ChallengeVerifyResourceEnd()
+    app.add_route("/challenges/{name}/verify/{source}", chaVerResEnd)
 
     contactColEnd = ContactCollectionEnd()
     app.add_route("/contacts", contactColEnd)
@@ -819,7 +821,7 @@ class ChallengeCollectionEnd:
             rep: falcon.Response HTTP response
 
         ---
-        summary:  Get list of agent identifiers
+        summary:  Get random list of words for a 2 factor auth challenge
         description:  Get the list of identifiers associated with this agent
         tags:
            - Challenge/Response
@@ -832,7 +834,7 @@ class ChallengeCollectionEnd:
              required: false
         responses:
             200:
-              description: An array of Identifier key state information
+              description: An array of random words
               content:
                   application/json:
                     schema:
@@ -919,14 +921,79 @@ class ChallengeResourceEnd:
 
         rep.status = falcon.HTTP_202
 
+
+class ChallengeVerifyResourceEnd:
+    """ Resource for Challenge/Response Verification Endpoints """
+
     @staticmethod
-    def on_put(req, rep, name):
+    def on_post(req, rep, name, source):
+        """ Challenge POST endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            name: human readable name of identifier to use to sign the challange/response
+            source: qb64 AID of of source of signed response to verify
+
+        ---
+        summary:  Sign challange message and forward to peer identfiier
+        description:  Sign a challenge word list received out of bands and send `exn` peer to peer message
+                      to recipient
+        tags:
+           - Challenge/Response
+        parameters:
+          - in: path
+            name: name
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the identifier to create
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: Challenge response
+                    properties:
+                        recipient:
+                          type: string
+                          description: human readable alias recipient identifier to send signed challenge to
+                        words:
+                          type: array
+                          description:  challenge in form of word list
+                          items:
+                              type: string
+        responses:
+           202:
+              description: Success submission of signed challenge/response
+        """
+        agent = req.context.agent
+        hab = agent.hby.habByName(name)
+        if hab is None:
+            raise falcon.HTTPNotFound(description="no matching Hab for alias {name}")
+
+        body = req.get_media()
+        words = httping.getRequiredParam(body, "words")
+        if source not in agent.hby.kevers:
+            raise falcon.HTTPNotFound(description=f"challenge response source={source} not found")
+
+        meta = dict(words=words)
+        op = agent.monitor.submit(source, longrunning.OpTypes.challenge, metadata=meta)
+        rep.status = falcon.HTTP_202
+        rep.content_type = "application/json"
+        rep.data = op.to_json().encode("utf-8")
+
+        rep.status = falcon.HTTP_202
+
+    @staticmethod
+    def on_put(req, rep, name, source):
         """ Challenge PUT accept endpoint
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
             name: human readable name of identifier to use to sign the challange/response
+            source: qb64 AID of of source of signed response to verify
 
         ---
         summary:  Mark challenge response exn message as signed
@@ -962,16 +1029,18 @@ class ChallengeResourceEnd:
         agent = req.context.agent
         hab = agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPBadRequest(description="no matching Hab for alias {name}")
+            raise falcon.HTTPNotFound(description="no matching Hab for alias {name}")
 
         body = req.get_media()
-        if "aid" not in body or "said" not in body:
+        if "said" not in body:
             raise falcon.HTTPBadRequest(description="challenge response acceptance requires 'aid' and 'said'")
 
-        aid = body["aid"]
+        if source not in agent.hby.kevers:
+            raise falcon.HTTPNotFound(description=f"challenge response source={source} not found")
+
         said = body["said"]
         saider = coring.Saider(qb64=said)
-        agent.hby.db.chas.add(keys=(aid,), val=saider)
+        agent.hby.db.chas.add(keys=(source,), val=saider)
 
         rep.status = falcon.HTTP_202
 

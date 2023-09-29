@@ -851,6 +851,8 @@ def test_challenge_ends(helpers):
         app.add_route("/challenges", chaEnd)
         chaResEnd = aiding.ChallengeResourceEnd()
         app.add_route("/challenges/{name}", chaResEnd)
+        chaVerResEnd = aiding.ChallengeVerifyResourceEnd()
+        app.add_route("/challenges/{name}/verify/{source}", chaVerResEnd)
 
         client = testing.TestClient(app)
 
@@ -895,19 +897,28 @@ def test_challenge_ends(helpers):
         assert result.status == falcon.HTTP_202
 
         data = dict()
-        data["aid"] = "Eo6MekLECO_ZprzHwfi7wG2ubOt2DWKZQcMZvTbenBNU"
         b = json.dumps(data).encode("utf-8")
-        result = client.simulate_put(path="/challenges/henk", body=b)
-        assert result.status == falcon.HTTP_400  # Missing recipient
+        result = client.simulate_put(path="/challenges/henk/verify/Eo6MekLECO_ZprzHwfi7wG2ubOt2DWKZQcMZvTbenBNU", body=b)
+        assert result.status == falcon.HTTP_404  # Missing recipient
 
         b = json.dumps(data).encode("utf-8")
-        result = client.simulate_put(path="/challenges/pal", body=b)
+        result = client.simulate_put(path=f"/challenges/pal/verify/{aid['i']}", body=b)
         assert result.status == falcon.HTTP_400  # Missing said
 
         data["said"] = exn.said
         b = json.dumps(data).encode("utf-8")
-        result = client.simulate_put(path="/challenges/pal", body=b)
+        result = client.simulate_put(path=f"/challenges/pal/verify/{aid['i']}", body=b)
         assert result.status == falcon.HTTP_202
+
+        data = dict(
+            words=words,
+            said=exn.said
+        )
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path=f"/challenges/pal/verify/{aid['i']}", body=b)
+        assert result.status == falcon.HTTP_202
+
+
 
 
 def test_contact_ends(helpers):
