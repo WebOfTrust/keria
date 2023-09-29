@@ -17,10 +17,10 @@ from keri.db import dbing, koming
 from keri.help import helping
 
 # long running operationt types
-Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole done')
+Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole challenge done')
 
 OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation', group='group', query='query',
-                  registry='registry', credential='credential', endrole='endrole', done='done')
+                  registry='registry', credential='credential', endrole='endrole', challenge='challenge', done='done')
 
 
 @dataclass_json
@@ -330,6 +330,29 @@ class Monitor:
             else:
                 operation.done = False
 
+        elif op.type in (OpTypes.challenge,):
+            if op.oid not in self.hby.kevers:
+                operation.done = False
+
+            if "words" not in op.metadata:
+                raise kering.ValidationError(
+                    f"invalid long running {op.type} operaiton, metadata missing 'ced' field")
+
+            found = False
+            words = op.metadata["words"]
+            saiders = self.hby.db.reps.get(keys=(op.oid,))
+            for saider in saiders:
+                exn = self.hby.db.exns.get(keys=(saider.qb64,))
+                if words == exn.ked['a']['words']:
+                    found = True
+                    break
+
+            if found:
+                operation.done = True
+                operation.response = dict(exn=exn.ked)
+            else:
+                operation.done = False
+
         elif op.type in (OpTypes.done, ):
             operation.done = True
             operation.response = op.metadata["response"]
@@ -344,9 +367,6 @@ class Monitor:
 
 class OperationResourceEnd:
     """ Single Resource REST endpoint for long running operations
-
-    Attributes:
-        monitor(Monitor): long running operation monitor
 
     """
 
