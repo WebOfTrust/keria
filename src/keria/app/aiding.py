@@ -694,6 +694,16 @@ class EndRoleCollectionEnd:
 
     @staticmethod
     def on_get(req, rep, name=None, aid=None, role=None):
+        """  GET endpoint for end role collection
+
+        Parameters:
+            req (Request): falcon HTTP request object
+            rep (Response): falcon HTTP response object
+            name (str): human readable alias for AID
+            aid (str): aid to use instead of name
+            role (str): optional role to search for
+
+        """
         agent = req.context.agent
 
         if name is not None:
@@ -721,7 +731,7 @@ class EndRoleCollectionEnd:
 
     @staticmethod
     def on_post(req, rep, name, aid=None, role=None):
-        """
+        """ POST endpoint for end role collection
 
         Args:
             req (Request): Falcon HTTP request object
@@ -760,21 +770,6 @@ class EndRoleCollectionEnd:
             agent.hby.rvy.processReply(rserder, tsgs=[tsg])
         except kering.UnverifiedReplyError:
             pass
-
-        if isinstance(hab, habbing.SignifyGroupHab):
-            seal = eventing.SealEvent(i=hab.kever.prefixer.qb64,
-                                      s=hex(hab.kever.lastEst.s),
-                                      d=hab.kever.lastEst.d)
-            msg = eventing.messagize(serder=rserder,
-                                     sigers=rsigers,
-                                     seal=seal,
-                                     pipelined=True)
-            atc = bytes(msg[rserder.size:])
-
-            others = [smid for smid in hab.db.signingMembers(hab.pre) if smid != hab.mhab.pre]
-            for o in others:
-                agent.postman.send(hab=agent.agentHab, dest=o, topic="multisig", serder=rserder,
-                                   attachment=atc)
 
         oid = ".".join([pre, role, eid])
         op = agent.monitor.submit(oid, longrunning.OpTypes.endrole, metadata=dict(cid=pre, role=role, eid=eid))
