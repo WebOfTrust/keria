@@ -26,6 +26,8 @@ from keri.core import coring, parsing, eventing, routing
 from keri.core.coring import Ilks, randomNonce
 from keri.db import dbing
 from keri.db.basing import OobiRecord
+from keri.vc import protocoling
+
 from keria.end import ending
 from keri.help import helping, ogler
 from keri.peer import exchanging
@@ -324,6 +326,7 @@ class Agent(doing.DoDoer):
         handlers = [challengeHandler]
         self.exc = exchanging.Exchanger(hby=hby, handlers=handlers)
         grouping.loadHandlers(exc=self.exc, mux=self.mux)
+        protocoling.loadHandlers(hby=self.hby, exc=self.exc, rgy=self.rgy, notifier=self.notifier)
 
         self.rvy = routing.Revery(db=hby.db, cues=self.cues)
         self.kvy = eventing.Kevery(db=hby.db,
