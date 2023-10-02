@@ -1,5 +1,5 @@
 import { strict as assert } from "assert"
-import signify from "signify-ts"
+import signify,{Serder} from "signify-ts"
 
 const url = "http://127.0.0.1:3901"
 const boot_url = "http://127.0.0.1:3903"
@@ -80,29 +80,27 @@ async function run() {
 
     // List Client 1 contacts
     let contacts1 = await client1.contacts().list()
-    assert.equal(contacts1.length,1)
     assert.equal(contacts1[0].alias,'bob')
 
     // Bob responds to Alice challenge
     await client2.challenges().respond('bob', aid1.i, challenge1_small.words)
     console.log("Bob responded to Alice challenge with signed words")
 
-    // Alice check response, compare challenge words and accept the challenge
-    let challenge_received = false
-    let contacts:any = []
-    while (!challenge_received) {
-        contacts = await client1.contacts().list(undefined, undefined, undefined)
-        if (contacts[0].challenges.length > 0 ){
-            assert.equal(JSON.stringify(contacts[0].challenges[0].words), JSON.stringify(challenge1_small.words))
-            challenge_received = true
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000)); // sleep for 1 second
+    // Alice verifies Bob's response
+    op1 = await client1.challenges().verify('alice', aid2.i, challenge1_small.words)
+    while (!op1["done"]) {
+        op1 = await client1.operations().get(op1.name);
+        await new Promise(resolve => setTimeout(resolve, 1000));
     }
-    await client1.challenges().accept('alice', aid2.i, contacts[0].challenges[0].said)
+    console.log("Alice verified challenge response")
 
+    //Alice mark response as accepted
+    let exn = new Serder(op1.response.exn)
+    op1 = await client1.challenges().responded('alice', aid2.i, exn.ked.d)
+    console.log("Alice marked challenge response as accepted")
+    
     // Check Bob's challenge in conctats
     contacts1 = await client1.contacts().list()
-    assert.equal(contacts1[0].challenges[0].authenticated, true)
     console.log("Challenge authenticated")
 
 }

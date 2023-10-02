@@ -1,5 +1,5 @@
 import { strict as assert } from "assert"
-import signify from "signify-ts"
+import signify, {Serder} from "signify-ts"
 
 const url = "http://127.0.0.1:3901"
 const boot_url = "http://127.0.0.1:3903"
@@ -119,7 +119,40 @@ async function run() {
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     console.log("Member3 resolved 2 OOBIs")
-    
+
+    // First member challenge the other members with a random list of words
+    // List of words should be passed to the other members out of band
+    // The other members should do the same challenge/response flow, not shown here for brevity
+    const words  = (await client1.challenges().generate(128)).words
+    console.log("Member1 generated challenge words:", words)
+
+    await client2.challenges().respond('member2', aid1.prefix, words)
+    console.log("Member2 responded challenge with signed words")
+
+    await client3.challenges().respond('member3', aid1.prefix, words)
+    console.log("Member3 responded challenge with signed words")
+
+    op1 = await client1.challenges().verify('member1', aid2.prefix, words)
+    while (!op1["done"]) {
+        op1 = await client1.operations().get(op1.name);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    console.log("Member1 verified challenge response from member2")
+    let exnwords = new Serder(op1.response.exn)
+    op1 = await client1.challenges().responded('member1', aid2.prefix, exnwords.ked.d)
+    console.log("Member1 marked challenge response as accepted")
+
+
+    op1 = await client1.challenges().verify('member1', aid3.prefix, words)
+    while (!op1["done"]) {
+        op1 = await client1.operations().get(op1.name);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    console.log("Member1 verified challenge response from member3")
+    exnwords = new Serder(op1.response.exn)
+    op1 = await client1.challenges().responded('member1', aid3.prefix, exnwords.ked.d)
+    console.log("Member1 marked challenge response as accepted")
+
     // First member start the creation of a multisig identifier
     let rstates = [aid1["state"], aid2["state"], aid3["state"]]
     let states = rstates
