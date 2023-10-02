@@ -1,10 +1,4 @@
 import { SignifyClient } from "./clienting"
-import { messagize} from "../core/eventing"
-import {b, Ident, Ilks, Serials, versify} from "../core/core"
-import {Saider} from "../core/saider"
-import {Serder} from "../core/serder"
-import {Siger} from "../core/siger"
-import {TextDecoder} from "util"
 
 /**
  * Contacts
@@ -139,65 +133,45 @@ export class Challenges {
      * @returns {Promise<Response>} A promise to the result of the response
      */
     async respond(name: string, recipient: string, words: string[]): Promise<Response> {
-        let path = `/challenges/${name}`
-        let method = 'POST'
 
         let hab = await this.client.identifiers().get(name)
-        let pre: string = hab.prefix
-        let data = {
-            i: pre,
-            words: words
-        }
-
-        const vs = versify(Ident.KERI, undefined, Serials.JSON, 0)
-
-        const _sad = {
-            v: vs,
-            t: Ilks.exn,
-            d: "",
-            dt: new Date().toISOString().replace("Z","000+00:00"),
-            r: "/challenge/response",
-            q: {},
-            a: data
-        }
-        const [, sad] = Saider.saidify(_sad)
-        const exn = new Serder(sad)
-
-        let keeper = this.client!.manager!.get(hab)
-
-        let sig = keeper.sign(b(exn.raw),true)
-
-        let siger = new Siger({qb64:sig[0]})
-        let seal = ["SealLast" , {i:pre}]
-        let ims = messagize(exn,[siger],seal, undefined, undefined, true)
-        ims = ims.slice(JSON.stringify(exn.ked).length)
-
-        let jsondata = {
-            recipient: recipient,
-            words: words,
-            exn: exn.ked,
-            sig: new TextDecoder().decode(ims)
-        }
-
-        return await this.client.fetch(path, method, jsondata)
+        let exchanges = this.client.exchanges()
+        let resp = await exchanges.send(name, "challenge", hab, "/challenge/response", {words: words},{},[recipient])
+        return resp
     }
 
     /**
-     * Accept a challenge response as valid (list of words are correct)
+     * Ask Agent to verify a given sender signed the provided words
      * @param {string} name Name or alias of the identifier
-     * @param {string} pre Prefix of the identifier that was challenged
-     * @param {string} said SAID of the challenge response message
-     * @returns {Promise<Response>} A promise to the result of the response
+     * @param {string} source Prefix of the identifier that was challenged
+     * @param {Array<string>} words List of challenge words to check for
+     * @returns {Promise<Response>} A promise to the result
      */
-    async accept(name: string, pre: string, said: string): Promise<Response> {
-        let path = `/challenges/${name}`
-        let method = 'PUT'
+    async verify(name: string, source: string, words: string[]): Promise<Response> {
+        let path = `/challenges/${name}/verify/${source}`
+        let method = 'POST'
         let data = {
-            aid: pre,
-            said: said
+            words: words
         }
         let res = await this.client.fetch(path, method, data)
 
+        return await res.json()
+    }
+
+    /**
+     * Mark challenge response as signed and accepted
+     * @param {string} name Name or alias of the identifier
+     * @param {string} source Prefix of the identifier that was challenged
+     * @param {string} said qb64 AID of exn message representing the signed response
+     * @returns {Promise<Response>} A promise to the result
+     */
+    async responded(name:string, source:string, said:string): Promise<Response> {
+        let path = `/challenges/${name}/verify/${source}`
+        let method = 'PUT'
+        let data = {
+            said: said
+        }
+        let res = await this.client.fetch(path, method, data)
         return res
     }
 }

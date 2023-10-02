@@ -181,23 +181,21 @@ describe('Contacting', () => {
         const words = ["shell", "gloom", "mimic", "cereal", "stool", "furnace", "nominee", "nation", "sauce", "sausage", "rather", "venue"]
         await challenges.respond("aid1","EG2XjQN-3jPN5rcR4spLjaJyM4zA6Lgg-Hd5vSMymu5p",words)
         lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
-        assert.equal(lastCall[0]!,url+'/challenges/aid1')
+        assert.equal(lastCall[0]!,url+'/identifiers/aid1/exchanges')
         assert.equal(lastCall[1]!.method,'POST')
         let lastBody = JSON.parse(lastCall[1]!.body!.toString())
-        assert.deepEqual(lastBody.words,words)
-        assert.equal(lastBody.recipient,"EG2XjQN-3jPN5rcR4spLjaJyM4zA6Lgg-Hd5vSMymu5p")
+        assert.equal(lastBody.tpc,"challenge")
         assert.equal(lastBody.exn.r,"/challenge/response")
-        assert.equal(lastBody.exn.a.i,"ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK")
+        assert.equal(lastBody.exn.i,"ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK")
         assert.deepEqual(lastBody.exn.a.words,words)
-        assert.equal(lastBody.sig.length,144)
+        assert.equal(lastBody.sigs[0].length,88)
 
-        await challenges.accept("aid1","EG2XjQN-3jPN5rcR4spLjaJyM4zA6Lgg-Hd5vSMymu5p","EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
+        await challenges.verify("aid1","EG2XjQN-3jPN5rcR4spLjaJyM4zA6Lgg-Hd5vSMymu5p",words)
         lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length-1]!
-        assert.equal(lastCall[0]!,url+'/challenges/aid1')
-        assert.equal(lastCall[1]!.method,'PUT')
+        assert.equal(lastCall[0]!,url+'/challenges/aid1/verify/EG2XjQN-3jPN5rcR4spLjaJyM4zA6Lgg-Hd5vSMymu5p')
+        assert.equal(lastCall[1]!.method,'POST')
         lastBody = JSON.parse(lastCall[1]!.body!.toString())
-        assert.equal(lastBody.aid,"EG2XjQN-3jPN5rcR4spLjaJyM4zA6Lgg-Hd5vSMymu5p")
-        assert.equal(lastBody.said,"EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
+        assert.deepEqual(lastBody.words,words)
 
     })
 
