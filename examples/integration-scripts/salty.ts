@@ -16,7 +16,7 @@ async function run() {
     const state1 = await client1.state()
     console.log("Client 1 connected. Client AID:",state1.controller.state.i,"Agent AID: ", state1.agent.i)
 
-    let icpResult = client1.identifiers().create('aid1', {bran: '0123456789abcdefghijk'})
+    let icpResult = await client1.identifiers().create('aid1', {bran: '0123456789abcdefghijk'})
     let op = await icpResult.op()
     assert.equal(op['done'], true)
     const aid1 = op['response']
@@ -37,7 +37,7 @@ async function run() {
     assert.equal(salt.stem, 'signify:aid')
     assert.equal(aid.prefix, icp.pre)
 
-    icpResult = client1.identifiers().create('aid2', {count:3, ncount:3, isith:"2", nsith:"2", bran:"0123456789lmnopqrstuv"})
+    icpResult = await client1.identifiers().create('aid2', {count:3, ncount:3, isith:"2", nsith:"2", bran:"0123456789lmnopqrstuv"})
     op = await icpResult.op()
     assert.equal(op['done'], true)
     const aid2 = op['response']

@@ -66,7 +66,16 @@ export class KeyManager {
         } else if (Algos.group in aid) {
             let kargs = aid[Algos.group]
             return new GroupKeeper(this, kargs["mhab"], kargs["states"], kargs["rstates"],kargs["keys"],kargs["ndigs"])
-        } else{
+        } else if (Algos.extern in aid) {
+            let kargs = aid[Algos.randy]
+            let typ = kargs.extern_type
+            if ( typ in this.modules) {
+                let mod = new this.modules[typ](kargs["pidx"],kargs)
+                return mod
+            } else {
+                throw new Error(`unsupported external module type ${typ}`)
+            }
+        } else {
             throw new Error(`Algo not allowed yet`)
         }
     }
@@ -403,7 +412,7 @@ export class RandyKeeper {
         this.gdigs = rstates.map(state => state['n'][0])
         return [this.gkeys, this.gdigs]
     }
-    sign(ser:Uint8Array, indexed:boolean=true, _indices:number[]|undefined=undefined, _ondices:number[]|undefined=undefined):Siger[]|Cigar[]{
+    async sign(ser:Uint8Array, indexed:boolean=true, _indices:number[]|undefined=undefined, _ondices:number[]|undefined=undefined):Promise<Siger[]|Cigar[]>{
         let key = this.mhab['state']['k'][0]
         let ndig = this.mhab['state']['n'][0]
 
@@ -411,7 +420,7 @@ export class RandyKeeper {
         let pni = this.gdigs!.indexOf(ndig)
         let mkeeper = this.manager.get(this.mhab)
 
-        return mkeeper.sign(ser, indexed, [csi], [pni])
+        return await mkeeper.sign(ser, indexed, [csi], [pni])
     }
 
     params(){

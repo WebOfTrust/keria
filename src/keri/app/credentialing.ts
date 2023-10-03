@@ -150,7 +150,7 @@ export class Credentials {
         // Create paths and sign
         let cpath = '6AABAAA-'
         let keeper = this.client!.manager!.get(hab)
-        let csigs = keeper.sign(b(JSON.stringify(vc)))
+        let csigs = await keeper.sign(b(JSON.stringify(vc)))
 
         // Create ixn
         let ixn = {}
@@ -178,7 +178,7 @@ export class Credentials {
 
         } else {
             let serder = interact({ pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined })
-            sigs = keeper.sign(b(serder.raw))
+            sigs = await keeper.sign(b(serder.raw))
             ixn = serder.ked
         }
 
@@ -259,7 +259,7 @@ export class Credentials {
         } else {
             let serder = interact({ pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined })
             let keeper = this.client!.manager!.get(hab)
-            sigs = keeper.sign(b(serder.raw))
+            sigs = await keeper.sign(b(serder.raw))
             ixn = serder.ked
         }
 
@@ -379,7 +379,7 @@ export class Credentials {
 
         let keeper = this.client!.manager!.get(hab)
 
-        let sig = keeper.sign(b(exn.raw),true)
+        let sig = await keeper.sign(b(exn.raw),true)
 
         let siger = new Siger({qb64:sig[0]})
         let seal = ["SealLast" , {i:pre}]
@@ -511,7 +511,7 @@ export class Registries {
 
             let serder = interact({pre: pre, sn: sn + 1, data: data, dig: dig, version: Versionage, kind: Serials.JSON})
             let keeper = this.client.manager!.get(hab)
-            let sigs = keeper.sign(b(serder.raw))
+            let sigs = await keeper.sign(b(serder.raw))
             let res = this.createFromEvents(hab, name, registryName, regser.ked, serder.ked, sigs)
             return new RegistryResult(regser, serder, sigs, res);
         }

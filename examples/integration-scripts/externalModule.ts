@@ -21,7 +21,7 @@ async function run() {
     const state1 = await client1.state()
     console.log("Client 1 connected. Client AID:",state1.controller.state.i,"Agent AID: ", state1.agent.i)
     let words = new BIP39Shim(0,{}).generateMnemonic(256)
-    let icpResult = client1.identifiers().create('aid1', {algo: signify.Algos.extern, extern_type:"bip39_shim", extern:{mnemonics: words}})
+    let icpResult = await client1.identifiers().create('aid1', {algo: signify.Algos.extern, extern_type:"bip39_shim", extern:{mnemonics: words}})
     let op = await icpResult.op()
     assert.equal(op['done'], true)
 }
