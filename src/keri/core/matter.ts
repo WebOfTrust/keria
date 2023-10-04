@@ -18,17 +18,27 @@ export class MatterCodex extends Codex {
     X25519:               string = 'C'    // X25519 public encryption key, converted from Ed25519 or Ed25519N.
     Ed25519:              string = 'D'    // Ed25519 verification key basic derivation
     Blake3_256:           string = 'E'    // Blake3 256 bit digest self-addressing derivation.
+    SHA3_256:             string = 'H'    // SHA3 256 bit digest self-addressing derivation.
+    SHA2_256:             string = 'I'    // SHA2 256 bit digest self-addressing derivation.
+    ECDSA_256k1_Seed:     string = 'J'    // ECDSA secp256k1 256 bit random Seed for private key
     X25519_Private:       string = 'O'    // X25519 private decryption key converted from Ed25519
     X25519_Cipher_Seed:   string = 'P'    // X25519 124 char b64 Cipher of 44 char qb64 Seed
-    X25519_Cipher_Salt:   string = '1AAH' // X25519 100 char b64 Cipher of 24 char qb64 Salt
+    ECDSA_256r1_Seed:     string = 'Q'    // ECDSA secp256r1 256 bit random Seed for private key
     Salt_128:             string = '0A'   // 128 bit random salt or 128 bit number (see Huge)
     Ed25519_Sig:          string = '0B'   // Ed25519 signature.
-    StrB64_L0:            string = '4A'   //String Base64 Only Lead Size 0
-    StrB64_L1:            string = '5A'   //String Base64 Only Lead Size 1
-    StrB64_L2:            string = '6A'   //String Base64 Only Lead Size 2
-    StrB64_Big_L0:        string = '7AAA' //String Base64 Only Big Lead Size 0
-    StrB64_Big_L1:        string = '8AAA' //String Base64 Only Big Lead Size 1
-    StrB64_Big_L2:        string = '9AAA' //String Base64 Only Big Lead Size 2
+    ECDSA_256k1_Sig:      string = '0C'   // ECDSA secp256k1 signature.
+    ECDSA_256r1_Sig:      string = '0I'   // ECDSA secp256r1 signature.
+    StrB64_L0:            string = '4A'   // String Base64 Only Lead Size 0
+    StrB64_L1:            string = '5A'   // String Base64 Only Lead Size 1
+    StrB64_L2:            string = '6A'   // String Base64 Only Lead Size 2
+    ECDSA_256k1N:         string = '1AAA' // ECDSA secp256k1 verification key non-transferable, basic derivation.
+    ECDSA_256k1:          string = '1AAB' // ECDSA public verification or encryption key, basic derivation
+    X25519_Cipher_Salt:   string = '1AAH' // X25519 100 char b64 Cipher of 24 char qb64 Salt
+    ECDSA_256r1N:         string = '1AAI' // ECDSA secp256r1 verification key non-transferable, basic derivation.
+    ECDSA_256r1:          string = '1AAJ' // ECDSA secp256r1 verification or encryption key, basic derivation
+    StrB64_Big_L0:        string = '7AAA' // String Base64 Only Big Lead Size 0
+    StrB64_Big_L1:        string = '8AAA' // String Base64 Only Big Lead Size 1
+    StrB64_Big_L2:        string = '9AAA' // String Base64 Only Big Lead Size 2
 }
 
 export const MtrDex = new MatterCodex()
@@ -38,6 +48,7 @@ export class NonTransCodex extends Codex {
     Ed25519N: string = 'B'  // Ed25519 verification key non-transferable, basic derivation.
     ECDSA_256k1N: string = '1AAA'  // ECDSA secp256k1 verification key non-transferable, basic derivation.
     Ed448N: string = '1AAC'  // Ed448 non-transferable prefix public signing verification key. Basic derivation.
+    ECDSA_256r1N: string = '1AAI' // ECDSA secp256r1 verification key non-transferable, basic derivation.
 }
 
 export const NonTransDex = new NonTransCodex()
