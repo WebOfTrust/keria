@@ -40,10 +40,6 @@ describe('Verfer', () => {
       102, 68, 15, 209, 63, 175, 7, 18, 183, 229, 54, 139, 232, 16, 195, 251, 111, 185, 137]))
   });
   it('should verify secp256r1', async () => {
-    await libsodium.ready;
-    // let seed = libsodium.randombytes_buf(libsodium.crypto_sign_SEEDBYTES);
-    // const keypair = libsodium.crypto_sign_seed_keypair(seed);
-
     const privateKey = secp256r1.generateKey()
     const publicKey = base64ToUint8Array(privateKey.toCompressedPublicKey())
     let verfer = new Verfer({raw: publicKey, code: MtrDex.ECDSA_256r1})
@@ -66,6 +62,17 @@ describe('Verfer', () => {
         57, 110,  21, 165, 206,  23, 164, 227,
         223
       ]))
+  });
+  it('should not verify secp256k1', async () => {
+
+    let publicKey = new Uint8Array([
+          2,  79,  93,  30, 107, 249, 254, 237,
+        205,  87,   8, 149, 203, 214,  36, 187,
+        162, 251,  58, 206, 241, 203,  27,  76,
+        236,  37, 189, 148, 240, 178, 204, 133,
+        31
+      ])
+    expect(function(){new Verfer({raw: publicKey, code: MtrDex.ECDSA_256k1})}).toThrow(new Error(`Unsupported code = 1AAB for verifier.`))
   });
 });
 
