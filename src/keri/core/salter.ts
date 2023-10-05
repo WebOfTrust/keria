@@ -1,36 +1,47 @@
-import {Signer} from "./signer";
+import { Signer } from './signer';
 
 import { Matter, MtrDex } from './matter';
-import { EmptyMaterialError } from './kering'
-import libsodium  from 'libsodium-wrappers-sumo';
+import { EmptyMaterialError } from './kering';
+import libsodium from 'libsodium-wrappers-sumo';
 
 export enum Tier {
-    low = "low",
-    med = "med",
-    high = "high"
+    low = 'low',
+    med = 'med',
+    high = 'high',
 }
 
 interface SalterArgs {
-    raw?: Uint8Array | undefined
-    code? :string
-    tier?:Tier
-    qb64b? :Uint8Array | undefined
-    qb64?: string
-    qb2?: Uint8Array | undefined
+    raw?: Uint8Array | undefined;
+    code?: string;
+    tier?: Tier;
+    qb64b?: Uint8Array | undefined;
+    qb64?: string;
+    qb2?: Uint8Array | undefined;
 }
 export class Salter extends Matter {
     private readonly _tier: Tier | null;
 
-    constructor({raw, code = MtrDex.Salt_128, tier=Tier.low, qb64, qb64b, qb2}:SalterArgs) {
+    constructor({
+        raw,
+        code = MtrDex.Salt_128,
+        tier = Tier.low,
+        qb64,
+        qb64b,
+        qb2,
+    }: SalterArgs) {
         try {
-            super({raw, code, qb64, qb64b, qb2});
+            super({ raw, code, qb64, qb64b, qb2 });
         } catch (e) {
-            if(e instanceof EmptyMaterialError) {
+            if (e instanceof EmptyMaterialError) {
                 if (code == MtrDex.Salt_128) {
-                    let salt = libsodium.randombytes_buf(libsodium.crypto_pwhash_SALTBYTES);
-                    super({raw: salt, code: code})
+                    let salt = libsodium.randombytes_buf(
+                        libsodium.crypto_pwhash_SALTBYTES
+                    );
+                    super({ raw: salt, code: code });
                 } else {
-                    throw new Error("invalid code for Salter, only Salt_128 accepted")
+                    throw new Error(
+                        'invalid code for Salter, only Salt_128 accepted'
+                    );
                 }
             } else {
                 throw e;
@@ -38,53 +49,72 @@ export class Salter extends Matter {
         }
 
         if (this.code != MtrDex.Salt_128) {
-            throw new Error("invalid code for Salter, only Salt_128 accepted")
+            throw new Error('invalid code for Salter, only Salt_128 accepted');
         }
 
-        this._tier = tier !== null ? tier : Tier.low
+        this._tier = tier !== null ? tier : Tier.low;
     }
 
-    private stretch(size: number = 32, path: string = "", tier: Tier | null = null, temp: boolean = false): Uint8Array {
+    private stretch(
+        size: number = 32,
+        path: string = '',
+        tier: Tier | null = null,
+        temp: boolean = false
+    ): Uint8Array {
         tier = tier == null ? this.tier : tier;
 
-        let opslimit: number, memlimit: number
+        let opslimit: number, memlimit: number;
 
         // Harcoded values based on keripy
         if (temp) {
-            opslimit = 1 //libsodium.crypto_pwhash_OPSLIMIT_MIN
-            memlimit = 8192 //libsodium.crypto_pwhash_MEMLIMIT_MIN
-
+            opslimit = 1; //libsodium.crypto_pwhash_OPSLIMIT_MIN
+            memlimit = 8192; //libsodium.crypto_pwhash_MEMLIMIT_MIN
         } else {
             switch (tier) {
                 case Tier.low:
-                    opslimit = 2 //libsodium.crypto_pwhash_OPSLIMIT_INTERACTIVE
-                    memlimit = 67108864 //libsodium.crypto_pwhash_MEMLIMIT_INTERACTIVE
+                    opslimit = 2; //libsodium.crypto_pwhash_OPSLIMIT_INTERACTIVE
+                    memlimit = 67108864; //libsodium.crypto_pwhash_MEMLIMIT_INTERACTIVE
                     break;
                 case Tier.med:
-                    opslimit = 3 //libsodium.crypto_pwhash_OPSLIMIT_MODERATE
-                    memlimit = 268435456 //libsodium.crypto_pwhash_MEMLIMIT_MODERATE
+                    opslimit = 3; //libsodium.crypto_pwhash_OPSLIMIT_MODERATE
+                    memlimit = 268435456; //libsodium.crypto_pwhash_MEMLIMIT_MODERATE
                     break;
                 case Tier.high:
-                    opslimit = 4 //libsodium.crypto_pwhash_OPSLIMIT_SENSITIVE
-                    memlimit = 1073741824 //libsodium.crypto_pwhash_MEMLIMIT_SENSITIVE
+                    opslimit = 4; //libsodium.crypto_pwhash_OPSLIMIT_SENSITIVE
+                    memlimit = 1073741824; //libsodium.crypto_pwhash_MEMLIMIT_SENSITIVE
                     break;
                 default:
-                    throw new Error(`Unsupported security tier = ${tier}.`)
+                    throw new Error(`Unsupported security tier = ${tier}.`);
             }
         }
 
-        return libsodium.crypto_pwhash(size, path, this.raw, opslimit, memlimit, libsodium.crypto_pwhash_ALG_ARGON2ID13)
+        return libsodium.crypto_pwhash(
+            size,
+            path,
+            this.raw,
+            opslimit,
+            memlimit,
+            libsodium.crypto_pwhash_ALG_ARGON2ID13
+        );
     }
 
-    signer(code: string=MtrDex.Ed25519_Seed, transferable: boolean=true, path: string = "",
-           tier: Tier | null = null, temp:boolean = false): Signer {
-        let seed = this.stretch(Matter._rawSize(code), path, tier, temp)
+    signer(
+        code: string = MtrDex.Ed25519_Seed,
+        transferable: boolean = true,
+        path: string = '',
+        tier: Tier | null = null,
+        temp: boolean = false
+    ): Signer {
+        let seed = this.stretch(Matter._rawSize(code), path, tier, temp);
 
-        return new Signer({raw: seed, code: code, transferable: transferable})
+        return new Signer({
+            raw: seed,
+            code: code,
+            transferable: transferable,
+        });
     }
 
     get tier(): Tier | null {
         return this._tier;
     }
-
 }

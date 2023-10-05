@@ -1,20 +1,30 @@
-import { strict as assert } from "assert"
-import signify from "signify-ts"
+import { strict as assert } from 'assert';
+import signify from 'signify-ts';
 
-const url = "http://127.0.0.1:3901"
-const boot_url = "http://127.0.0.1:3903"
+const url = 'http://127.0.0.1:3901';
+const boot_url = 'http://127.0.0.1:3903';
 
-await run()
+await run();
 
 async function run() {
-    await signify.ready()
+    await signify.ready();
     // Boot client
-    const bran1 = signify.randomPasscode()
-    const client1 = new signify.SignifyClient(url, bran1, signify.Tier.low, boot_url);
-    await client1.boot()
-    await client1.connect()
-    const state1 = await client1.state()
-    console.log("Client 1 connected. Client AID:",state1.controller.state.i,"Agent AID: ", state1.agent.i)
+    const bran1 = signify.randomPasscode();
+    const client1 = new signify.SignifyClient(
+        url,
+        bran1,
+        signify.Tier.low,
+        boot_url
+    );
+    await client1.boot();
+    await client1.connect();
+    const state1 = await client1.state();
+    console.log(
+        'Client 1 connected. Client AID:',
+        state1.controller.state.i,
+        'Agent AID: ',
+        state1.agent.i
+    );
 
     let icpResult = await client1.identifiers().create('aid1', {bran: '0123456789abcdefghijk'})
     let op = await icpResult.op()
@@ -62,64 +72,69 @@ async function run() {
     assert.equal(salt.stem, 'signify:aid')
     assert.equal(aid.prefix, icp2.pre)
 
-    await client1.identifiers().create('aid3')
-    aids = await client1.identifiers().list()
-    assert.equal(aids.aids.length, 3)
-    aid = aids.aids[0]
-    assert.equal(aid.name, 'aid1')
+    await client1.identifiers().create('aid3');
+    aids = await client1.identifiers().list();
+    assert.equal(aids.aids.length, 3);
+    aid = aids.aids[0];
+    assert.equal(aid.name, 'aid1');
 
-    aids = await client1.identifiers().list(1,2)
-    assert.equal(aids.aids.length, 2)
-    aid = aids.aids[0]
-    assert.equal(aid.name, 'aid2')
+    aids = await client1.identifiers().list(1, 2);
+    assert.equal(aids.aids.length, 2);
+    aid = aids.aids[0];
+    assert.equal(aid.name, 'aid2');
 
-    aids = await client1.identifiers().list(2,2)
-    assert.equal(aids.aids.length, 1)
-    aid = aids.aids[0]
-    assert.equal(aid.name, 'aid3')
+    aids = await client1.identifiers().list(2, 2);
+    assert.equal(aids.aids.length, 1);
+    aid = aids.aids[0];
+    assert.equal(aid.name, 'aid3');
 
-    icpResult = await client1.identifiers().rotate('aid1')
-    op = await icpResult.op()
-    assert.equal(op['done'], true)
-    let ked = op['response']
-    let rot = new signify.Serder(ked)
-    assert.equal(rot.ked['d'], 'EBQABdRgaxJONrSLcgrdtbASflkvLxJkiDO0H-XmuhGg')
-    assert.equal(rot.ked['s'], '1')
-    assert.equal(rot.verfers.length, 1)
-    assert.equal(rot.digers.length, 1)
-    assert.equal(rot.verfers[0].qb64, 'DHgomzINlGJHr-XP3sv2ZcR9QsIEYS3LJhs4KRaZYKly')
-    assert.equal(rot.digers[0].qb64, 'EJMovBlrBuD6BVeUsGSxLjczbLEbZU9YnTSud9K4nVzk')
+    icpResult = await client1.identifiers().rotate('aid1');
+    op = await icpResult.op();
+    assert.equal(op['done'], true);
+    let ked = op['response'];
+    let rot = new signify.Serder(ked);
+    assert.equal(rot.ked['d'], 'EBQABdRgaxJONrSLcgrdtbASflkvLxJkiDO0H-XmuhGg');
+    assert.equal(rot.ked['s'], '1');
+    assert.equal(rot.verfers.length, 1);
+    assert.equal(rot.digers.length, 1);
+    assert.equal(
+        rot.verfers[0].qb64,
+        'DHgomzINlGJHr-XP3sv2ZcR9QsIEYS3LJhs4KRaZYKly'
+    );
+    assert.equal(
+        rot.digers[0].qb64,
+        'EJMovBlrBuD6BVeUsGSxLjczbLEbZU9YnTSud9K4nVzk'
+    );
 
-    icpResult = await client1.identifiers().interact("aid1", [icp.pre])
-    op = await icpResult.op()
-    assert.equal(op['done'], true)
-    ked = op['response']
-    let ixn = new signify.Serder(ked)
-    assert.equal(ixn.ked['d'], 'ENsmRAg_oM7Hl1S-GTRMA7s4y760lQMjzl0aqOQ2iTce')
-    assert.equal(ixn.ked['s'], '2')
-    assert.deepEqual(ixn.ked['a'], [icp.pre])
+    icpResult = await client1.identifiers().interact('aid1', [icp.pre]);
+    op = await icpResult.op();
+    assert.equal(op['done'], true);
+    ked = op['response'];
+    let ixn = new signify.Serder(ked);
+    assert.equal(ixn.ked['d'], 'ENsmRAg_oM7Hl1S-GTRMA7s4y760lQMjzl0aqOQ2iTce');
+    assert.equal(ixn.ked['s'], '2');
+    assert.deepEqual(ixn.ked['a'], [icp.pre]);
 
-    aid = await client1.identifiers().get("aid1")
-    const state = aid["state"]
+    aid = await client1.identifiers().get('aid1');
+    const state = aid['state'];
 
-    assert.equal(state['s'], '2')
-    assert.equal(state['f'], '2')
-    assert.equal(state['et'], 'ixn')
-    assert.equal(state['d'], ixn.ked['d'])
-    assert.equal(state['ee']['d'], rot.ked['d'])
+    assert.equal(state['s'], '2');
+    assert.equal(state['f'], '2');
+    assert.equal(state['et'], 'ixn');
+    assert.equal(state['d'], ixn.ked['d']);
+    assert.equal(state['ee']['d'], rot.ked['d']);
 
-    const events = client1.keyEvents()
-    const log = await events.get(aid["prefix"])
-    assert.equal(log.length, 3)
-    let serder = new signify.Serder(log[0])
-    assert.equal(serder.pre, icp.pre)
-    assert.equal(serder.ked['d'], icp.ked['d'])
-    serder = new signify.Serder(log[1])
-    assert.equal(serder.pre, rot.pre)
-    assert.equal(serder.ked['d'], rot.ked['d'])
-    serder = new signify.Serder(log[2])
-    assert.equal(serder.pre, ixn.pre)
-    assert.equal(serder.ked['d'], ixn.ked['d'])
-    console.log("Salty test passed")
-
+    const events = client1.keyEvents();
+    const log = await events.get(aid['prefix']);
+    assert.equal(log.length, 3);
+    let serder = new signify.Serder(log[0]);
+    assert.equal(serder.pre, icp.pre);
+    assert.equal(serder.ked['d'], icp.ked['d']);
+    serder = new signify.Serder(log[1]);
+    assert.equal(serder.pre, rot.pre);
+    assert.equal(serder.ked['d'], rot.ked['d']);
+    serder = new signify.Serder(log[2]);
+    assert.equal(serder.pre, ixn.pre);
+    assert.equal(serder.ked['d'], ixn.ked['d']);
+    console.log('Salty test passed');
 }

@@ -1,10 +1,9 @@
-import {BexDex, Matter, MatterArgs, MtrDex} from "./matter";
-import {EmptyMaterialError} from "./kering";
-import Base64 from "urlsafe-base64";
+import { BexDex, Matter, MatterArgs, MtrDex } from './matter';
+import { EmptyMaterialError } from './kering';
+import Base64 from 'urlsafe-base64';
 
-const B64REX = "^[A-Za-z0-9\\-_]*$"
-export const Reb64 = new RegExp(B64REX)
-
+const B64REX = '^[A-Za-z0-9\\-_]*$';
+export const Reb64 = new RegExp(B64REX);
 
 /*
 
@@ -83,51 +82,57 @@ export const Reb64 = new RegExp(B64REX)
  */
 
 export class Bexter extends Matter {
-    constructor({raw, code = MtrDex.StrB64_L0, qb64b, qb64, qb2}: MatterArgs, bext?: string) {
-        if (raw === undefined && qb64b === undefined && qb64 === undefined && qb2 === undefined) {
+    constructor(
+        { raw, code = MtrDex.StrB64_L0, qb64b, qb64, qb2 }: MatterArgs,
+        bext?: string
+    ) {
+        if (
+            raw === undefined &&
+            qb64b === undefined &&
+            qb64 === undefined &&
+            qb2 === undefined
+        ) {
             if (bext === undefined)
-                throw new EmptyMaterialError("Missing bext string.")
+                throw new EmptyMaterialError('Missing bext string.');
 
-            let match = Reb64.exec(bext)
-            if (!match)
-                throw new Error("Invalid Base64.")
+            let match = Reb64.exec(bext);
+            if (!match) throw new Error('Invalid Base64.');
 
-            raw = Bexter._rawify(bext)
+            raw = Bexter._rawify(bext);
         }
 
-        super({raw, code, qb64b, qb64, qb2});
+        super({ raw, code, qb64b, qb64, qb2 });
 
         if (!BexDex.has(this.code))
-            throw new Error(`Invalid code = ${this.code} for Bexter.`)
+            throw new Error(`Invalid code = ${this.code} for Bexter.`);
     }
 
     static _rawify(bext: string): Uint8Array {
-        let ts = bext.length % 4  // bext size mod 4
-        let ws = (4 - ts) % 4  // pre conv wad size in chars
-        let ls = (3 - ts) % 3  // post conv lead size in bytes
-        let wad = new Array(ws)
-        wad.fill('A')
-        let base = wad.join('') + bext  // pre pad with wad of zeros in Base64 == 'A'
-        let raw = Base64.decode(base) // [ls:]  // convert and remove leader
+        let ts = bext.length % 4; // bext size mod 4
+        let ws = (4 - ts) % 4; // pre conv wad size in chars
+        let ls = (3 - ts) % 3; // post conv lead size in bytes
+        let wad = new Array(ws);
+        wad.fill('A');
+        let base = wad.join('') + bext; // pre pad with wad of zeros in Base64 == 'A'
+        let raw = Base64.decode(base); // [ls:]  // convert and remove leader
 
-        return Uint8Array.from(raw).subarray(ls)  // raw binary equivalent of text
-
+        return Uint8Array.from(raw).subarray(ls); // raw binary equivalent of text
     }
 
     get bext(): string {
-        let sizage = Matter.Sizes.get(this.code)
-        let wad = Uint8Array.from(new Array(sizage?.ls).fill(0))
-        let bext = Base64.encode(Buffer.from([...wad, ...this.raw]))
+        let sizage = Matter.Sizes.get(this.code);
+        let wad = Uint8Array.from(new Array(sizage?.ls).fill(0));
+        let bext = Base64.encode(Buffer.from([...wad, ...this.raw]));
 
-        let ws = 0
+        let ws = 0;
         if (sizage?.ls === 0 && bext !== undefined) {
             if (bext[0] === 'A') {
-                ws = 1
+                ws = 1;
             }
         } else {
-            ws = (sizage?.ls! + 1) % 4
+            ws = (sizage?.ls! + 1) % 4;
         }
 
-        return bext.substring(ws)
+        return bext.substring(ws);
     }
 }

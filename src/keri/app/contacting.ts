@@ -1,39 +1,44 @@
-import { SignifyClient } from "./clienting"
+import { SignifyClient } from './clienting';
 
 /**
  * Contacts
  */
 export class Contacts {
-    client: SignifyClient
+    client: SignifyClient;
     /**
      * Contacts
-     * @param {SignifyClient} client 
+     * @param {SignifyClient} client
      */
     constructor(client: SignifyClient) {
-        this.client = client
+        this.client = client;
     }
 
     /**
      * List contacts
      * @async
-     * @param {string} [group] Optional group name to filter contacts 
+     * @param {string} [group] Optional group name to filter contacts
      * @param {string} [filterField] Optional field name to filter contacts
      * @param {string} [filterValue] Optional field value to filter contacts
      * @returns {Promise<any>} A promise to the list of contacts
      */
-    async list(group?:string, filterField?:string, filterValue?:string): Promise<any> {
-        let params = new URLSearchParams()
-        if (group !== undefined) {params.append('group', group)}
+    async list(
+        group?: string,
+        filterField?: string,
+        filterValue?: string
+    ): Promise<any> {
+        let params = new URLSearchParams();
+        if (group !== undefined) {
+            params.append('group', group);
+        }
         if (filterField !== undefined && filterValue !== undefined) {
-            params.append("filter_field", filterField);
-            params.append("filter_value", filterValue);
+            params.append('filter_field', filterField);
+            params.append('filter_value', filterValue);
         }
 
-        let path = `/contacts`+ '?' + params.toString()
-        let method = 'GET'
-        let res = await this.client.fetch(path, method, null)
-        return await res.json()
-
+        let path = `/contacts` + '?' + params.toString();
+        let method = 'GET';
+        let res = await this.client.fetch(path, method, null);
+        return await res.json();
     }
 
     /**
@@ -42,13 +47,11 @@ export class Contacts {
      * @param {string} pre Prefix of the contact
      * @returns {Promise<any>} A promise to the contact
      */
-    async get(pre:string): Promise<any> {
-
-        let path = `/contacts/`+ pre
-        let method = 'GET'
-        let res = await this.client.fetch(path, method, null)
-        return await res.json()
-
+    async get(pre: string): Promise<any> {
+        let path = `/contacts/` + pre;
+        let method = 'GET';
+        let res = await this.client.fetch(path, method, null);
+        return await res.json();
     }
 
     /**
@@ -59,11 +62,11 @@ export class Contacts {
      * @returns {Promise<any>} A promise to the result of the addition
      */
     async add(pre: string, info: any): Promise<any> {
-        let path = `/contacts/`+ pre
-        let method = 'POST'
+        let path = `/contacts/` + pre;
+        let method = 'POST';
 
-        let res = await this.client.fetch(path, method, info)
-        return await res.json()
+        let res = await this.client.fetch(path, method, info);
+        return await res.json();
     }
 
     /**
@@ -73,11 +76,11 @@ export class Contacts {
      * @returns {Promise<any>} A promise to the result of the deletion
      */
     async delete(pre: string): Promise<any> {
-        let path = `/contacts/`+ pre
-        let method = 'DELETE'
+        let path = `/contacts/` + pre;
+        let method = 'DELETE';
 
-        let res = await this.client.fetch(path, method, null)
-        return await res.json()
+        let res = await this.client.fetch(path, method, null);
+        return await res.json();
     }
 
     /**
@@ -88,27 +91,25 @@ export class Contacts {
      * @returns {Promise<any>} A promise to the result of the update
      */
     async update(pre: string, info: any): Promise<any> {
-        let path = `/contacts/` + pre
-        let method = 'PUT'
+        let path = `/contacts/` + pre;
+        let method = 'PUT';
 
-        let res = await this.client.fetch(path, method, info)
-        return await res.json()
+        let res = await this.client.fetch(path, method, info);
+        return await res.json();
     }
-
 }
-
 
 /**
  * Challenges
  */
 export class Challenges {
-    client: SignifyClient
+    client: SignifyClient;
     /**
      * Challenges
-     * @param {SignifyClient} client 
+     * @param {SignifyClient} client
      */
     constructor(client: SignifyClient) {
-        this.client = client
+        this.client = client;
     }
 
     /**
@@ -118,10 +119,10 @@ export class Challenges {
      * @returns {Promise<any>} A promise to the list of random words
      */
     async generate(strength: number = 128): Promise<any> {
-        let path = `/challenges?strength=${strength.toString()}`
-        let method = 'GET'
-        let res = await this.client.fetch(path, method, null)
-        return await res.json()
+        let path = `/challenges?strength=${strength.toString()}`;
+        let method = 'GET';
+        let res = await this.client.fetch(path, method, null);
+        return await res.json();
     }
 
     /**
@@ -132,12 +133,23 @@ export class Challenges {
      * @param {Array<string>} words List of words to embed in the signed response
      * @returns {Promise<Response>} A promise to the result of the response
      */
-    async respond(name: string, recipient: string, words: string[]): Promise<Response> {
-
-        let hab = await this.client.identifiers().get(name)
-        let exchanges = this.client.exchanges()
-        let resp = await exchanges.send(name, "challenge", hab, "/challenge/response", {words: words},{},[recipient])
-        return resp
+    async respond(
+        name: string,
+        recipient: string,
+        words: string[]
+    ): Promise<Response> {
+        let hab = await this.client.identifiers().get(name);
+        let exchanges = this.client.exchanges();
+        let resp = await exchanges.send(
+            name,
+            'challenge',
+            hab,
+            '/challenge/response',
+            { words: words },
+            {},
+            [recipient]
+        );
+        return resp;
     }
 
     /**
@@ -147,15 +159,19 @@ export class Challenges {
      * @param {Array<string>} words List of challenge words to check for
      * @returns {Promise<Response>} A promise to the result
      */
-    async verify(name: string, source: string, words: string[]): Promise<Response> {
-        let path = `/challenges/${name}/verify/${source}`
-        let method = 'POST'
+    async verify(
+        name: string,
+        source: string,
+        words: string[]
+    ): Promise<Response> {
+        let path = `/challenges/${name}/verify/${source}`;
+        let method = 'POST';
         let data = {
-            words: words
-        }
-        let res = await this.client.fetch(path, method, data)
+            words: words,
+        };
+        let res = await this.client.fetch(path, method, data);
 
-        return await res.json()
+        return await res.json();
     }
 
     /**
@@ -165,13 +181,17 @@ export class Challenges {
      * @param {string} said qb64 AID of exn message representing the signed response
      * @returns {Promise<Response>} A promise to the result
      */
-    async responded(name:string, source:string, said:string): Promise<Response> {
-        let path = `/challenges/${name}/verify/${source}`
-        let method = 'PUT'
+    async responded(
+        name: string,
+        source: string,
+        said: string
+    ): Promise<Response> {
+        let path = `/challenges/${name}/verify/${source}`;
+        let method = 'PUT';
         let data = {
-            said: said
-        }
-        let res = await this.client.fetch(path, method, data)
-        return res
+            said: said,
+        };
+        let res = await this.client.fetch(path, method, data);
+        return res;
     }
 }

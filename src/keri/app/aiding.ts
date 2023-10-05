@@ -1,12 +1,12 @@
-import { SignifyClient } from "./clienting"
-import { Tier} from "../core/salter"
-import {Algos} from '../core/manager'
-import {incept, interact, reply, rotate} from "../core/eventing"
-import {b,Serials, Versionage} from "../core/core"
-import {Tholder} from "../core/tholder"
-import {MtrDex} from "../core/matter"
-import {Serder} from "../core/serder"
-import {parseRangeHeaders} from "../core/httping"
+import { SignifyClient } from './clienting';
+import { Tier } from '../core/salter';
+import { Algos } from '../core/manager';
+import { incept, interact, reply, rotate } from '../core/eventing';
+import { b, Serials, Versionage } from '../core/core';
+import { Tholder } from '../core/tholder';
+import { MtrDex } from '../core/matter';
+import { Serder } from '../core/serder';
+import { parseRangeHeaders } from '../core/httping';
 
 /** Arguments required to create an identfier */
 export interface CreateIdentiferArgs {
@@ -38,28 +38,28 @@ export interface CreateIdentiferArgs {
 
 /** Arguments required to rotate an identfier */
 export interface RotateIdentifierArgs {
-    transferable?: boolean,
-    nsith?: string | number | string[],
-    toad?: number,
-    cuts?: string[],
-    adds?: string[],
-    data?: Array<object>,
-    ncode?: string,
-    ncount?: number,
-    ncodes?: string[],
-    states?: any[],
-    rstates?: any[]
+    transferable?: boolean;
+    nsith?: string | number | string[];
+    toad?: number;
+    cuts?: string[];
+    adds?: string[];
+    data?: Array<object>;
+    ncode?: string;
+    ncount?: number;
+    ncodes?: string[];
+    states?: any[];
+    rstates?: any[];
 }
 
 /** Identifier */
 export class Identifier {
-    public client: SignifyClient
+    public client: SignifyClient;
     /**
      * Identifier
-     * @param {SignifyClient} client 
+     * @param {SignifyClient} client
      */
     constructor(client: SignifyClient) {
-        this.client = client
+        this.client = client;
     }
 
     /**
@@ -69,45 +69,45 @@ export class Identifier {
      * @param {number} [end=24] End index of list of notifications, defaults to 24
      * @returns {Promise<any>} A promise to the list of managed identifiers
      */
-    async list(start:number=0, end:number=24): Promise<any> {
-        let extraHeaders = new Headers()
-        extraHeaders.append('Range', `aids=${start}-${end}`)
-        
-        let path = `/identifiers`
-        let data = null
-        let method = 'GET'
-        let res = await this.client.fetch(path, method, data, extraHeaders)
+    async list(start: number = 0, end: number = 24): Promise<any> {
+        let extraHeaders = new Headers();
+        extraHeaders.append('Range', `aids=${start}-${end}`);
 
-        let cr = res.headers.get('content-range')
-        let range = parseRangeHeaders(cr,"aids")
-        let aids = await res.json()
+        let path = `/identifiers`;
+        let data = null;
+        let method = 'GET';
+        let res = await this.client.fetch(path, method, data, extraHeaders);
+
+        let cr = res.headers.get('content-range');
+        let range = parseRangeHeaders(cr, 'aids');
+        let aids = await res.json();
 
         return {
             start: range.start,
             end: range.end,
             total: range.total,
-            aids: aids
-        }
+            aids: aids,
+        };
     }
 
-    /** 
+    /**
      * Get information for a managed identifier
      * @async
      * @param {string} name Name or alias of the identifier
      * @returns {Promise<any>} A promise to the identifier information
-    */
+     */
     async get(name: string): Promise<any> {
-        let path = `/identifiers/${name}`
-        let data = null
-        let method = 'GET'
-        let res = await this.client.fetch(path, method, data)
-        return await res.json()
+        let path = `/identifiers/${name}`;
+        let data = null;
+        let method = 'GET';
+        let res = await this.client.fetch(path, method, data);
+        return await res.json();
     }
 
     /**
      * Create a managed identifier
      * @async
-     * @param {string} name Name or alias of the identifier 
+     * @param {string} name Name or alias of the identifier
      * @param {CreateIdentiferArgs} [kargs] Optional parameters to create the identifier
      * @returns {EventResult} The inception result
      */
@@ -183,9 +183,8 @@ export class Identifier {
                 version: Versionage,
                 kind: Serials.JSON,
                 code: dcode,
-                intive: false
-            })
-
+                intive: false,
+            });
         } else {
             serder = incept({
                 keys: keys!,
@@ -200,8 +199,8 @@ export class Identifier {
                 kind: Serials.JSON,
                 code: dcode,
                 intive: false,
-                delpre: delpre
-            })
+                delpre: delpre,
+            });
         }
 
         let sigs = await keeper!.sign(b(serder.raw))
@@ -210,14 +209,20 @@ export class Identifier {
             icp: serder.ked,
             sigs: sigs,
             proxy: proxy,
-            smids: states != undefined ? states.map(state => state.i) : undefined,
-            rmids: rstates != undefined ? rstates.map(state => state.i) : undefined
-        }
-        jsondata[algo] = keeper.params()
+            smids:
+                states != undefined
+                    ? states.map((state) => state.i)
+                    : undefined,
+            rmids:
+                rstates != undefined
+                    ? rstates.map((state) => state.i)
+                    : undefined,
+        };
+        jsondata[algo] = keeper.params();
 
-        this.client.pidx = this.client.pidx + 1
-        let res = this.client.fetch("/identifiers", "POST", jsondata)
-        return new EventResult(serder, sigs, res)
+        this.client.pidx = this.client.pidx + 1;
+        let res = this.client.fetch('/identifiers', 'POST', jsondata);
+        return new EventResult(serder, sigs, res);
     }
 
     /**
@@ -228,13 +233,14 @@ export class Identifier {
      * @returns {Promise<EventResult>} A promise to the interaction event result
      */
     async interact(name: string, data?: any): Promise<EventResult> {
+        let hab = await this.get(name);
+        let pre: string = hab.prefix;
 
-        let hab = await this.get(name)
-        let pre: string = hab.prefix
+        let state = hab.state;
+        let sn = Number(state.s);
+        let dig = state.d;
 
-        let state = hab.state
-        let sn = Number(state.s)
-        let dig = state.d
+        data = Array.isArray(data) ? data : [data];
 
         data = Array.isArray(data) ? data : [data]
 
@@ -245,13 +251,16 @@ export class Identifier {
         let jsondata: any = {
             ixn: serder.ked,
             sigs: sigs,
-        }
-        jsondata[keeper.algo] = keeper.params()
+        };
+        jsondata[keeper.algo] = keeper.params();
 
-        let res = this.client.fetch("/identifiers/" + name + "?type=ixn", "PUT", jsondata)
-        return new EventResult(serder, sigs, res)
+        let res = this.client.fetch(
+            '/identifiers/' + name + '?type=ixn',
+            'PUT',
+            jsondata
+        );
+        return new EventResult(serder, sigs, res);
     }
-
 
     /**
      * Generate a rotation event in a managed identifier
@@ -259,46 +268,50 @@ export class Identifier {
      * @param {RotateIdentifierArgs} [kargs] Optional parameters requiered to generate the rotation event
      * @returns {Promise<EventResult>} A promise to the rotation event result
      */
-    async rotate(name: string, kargs: RotateIdentifierArgs={}): Promise<EventResult> {
+    async rotate(
+        name: string,
+        kargs: RotateIdentifierArgs = {}
+    ): Promise<EventResult> {
+        let transferable = kargs.transferable ?? true;
+        let ncode = kargs.ncode ?? MtrDex.Ed25519_Seed;
+        let ncount = kargs.ncount ?? 1;
 
-        let transferable = kargs.transferable ?? true
-        let ncode = kargs.ncode ?? MtrDex.Ed25519_Seed
-        let ncount = kargs.ncount ?? 1
+        let hab = await this.get(name);
+        let pre = hab.prefix;
 
-        let hab = await this.get(name)
-        let pre = hab.prefix
+        let state = hab.state;
+        let count = state.k.length;
+        let dig = state.d;
+        let ridx = Number(state.s) + 1;
+        let wits = state.b;
+        let isith = state.kt;
 
-        let state = hab.state
-        let count = state.k.length
-        let dig = state.d
-        let ridx = (Number(state.s) + 1)
-        let wits = state.b
-        let isith = state.kt
-
-        let nsith = kargs.nsith ?? isith
+        let nsith = kargs.nsith ?? isith;
 
         // if isith is None:  # compute default from newly rotated verfers above
-        if (isith == undefined) isith = `${Math.max(1, Math.ceil(count / 2)).toString(16)}`
+        if (isith == undefined)
+            isith = `${Math.max(1, Math.ceil(count / 2)).toString(16)}`;
 
         // if nsith is None:  # compute default from newly rotated digers above
-        if (nsith == undefined) nsith = `${Math.max(1, Math.ceil(ncount / 2)).toString(16)}`
+        if (nsith == undefined)
+            nsith = `${Math.max(1, Math.ceil(ncount / 2)).toString(16)}`;
 
-        let cst = new Tholder({sith: isith}).sith  // current signing threshold
-        let nst = new Tholder({sith: nsith}).sith  // next signing threshold
+        let cst = new Tholder({ sith: isith }).sith; // current signing threshold
+        let nst = new Tholder({ sith: nsith }).sith; // next signing threshold
 
         // Regenerate next keys to sign rotation event
-        let keeper = this.client.manager!.get(hab)
+        let keeper = this.client.manager!.get(hab);
         // Create new keys for next digests
-        let ncodes = kargs.ncodes ?? new Array(ncount).fill(ncode)
+        let ncodes = kargs.ncodes ?? new Array(ncount).fill(ncode);
 
         let states = kargs.states == undefined? [] : kargs.states
         let rstates = kargs.rstates == undefined? [] : kargs.rstates
         let [keys, ndigs] = await keeper!.rotate(ncodes, transferable, states, rstates)
 
-        let cuts = kargs.cuts ?? []
-        let adds = kargs.adds ?? []
-        let data = kargs.data != undefined ? [kargs.data] : []
-        let toad = kargs.toad
+        let cuts = kargs.cuts ?? [];
+        let adds = kargs.adds ?? [];
+        let data = kargs.data != undefined ? [kargs.data] : [];
+        let toad = kargs.toad;
         let serder = rotate({
             pre: pre,
             keys: keys,
@@ -311,21 +324,27 @@ export class Identifier {
             wits: wits,
             cuts: cuts,
             adds: adds,
-            data: data
-        })
+            data: data,
+        });
 
         let sigs = await keeper.sign(b(serder.raw))
 
         var jsondata: any = {
             rot: serder.ked,
             sigs: sigs,
-            smids: states != undefined ? states.map(state => state.i) : undefined,
-            rmids: rstates != undefined ? rstates.map(state => state.i) : undefined
-        }
-        jsondata[keeper.algo] = keeper.params()
+            smids:
+                states != undefined
+                    ? states.map((state) => state.i)
+                    : undefined,
+            rmids:
+                rstates != undefined
+                    ? rstates.map((state) => state.i)
+                    : undefined,
+        };
+        jsondata[keeper.algo] = keeper.params();
 
-        let res = this.client.fetch("/identifiers/" + name, "PUT", jsondata)
-        return new EventResult(serder, sigs, res)
+        let res = this.client.fetch('/identifiers/' + name, 'PUT', jsondata);
+        return new EventResult(serder, sigs, res);
     }
 
     /**
@@ -339,9 +358,14 @@ export class Identifier {
      * @param {string} [stamp=now] Optional date-time-stamp RFC-3339 profile of iso8601 datetime. Now is the default if not provided
      * @returns {Promise<any>} A promise to the result of the authorization
      */
-    async addEndRole(name: string, role: string, eid?: string, stamp?: string): Promise<any> {
-        const hab = await this.get(name)
-        const pre = hab.prefix
+    async addEndRole(
+        name: string,
+        role: string,
+        eid?: string,
+        stamp?: string
+    ): Promise<any> {
+        const hab = await this.get(name);
+        const pre = hab.prefix;
 
         const rpy = this.makeEndRole(pre, role, eid, stamp)
         const keeper = this.client.manager!.get(hab)
@@ -349,12 +373,15 @@ export class Identifier {
 
         const jsondata = {
             rpy: rpy.ked,
-            sigs: sigs
-        }
+            sigs: sigs,
+        };
 
-        let res = await this.client.fetch("/identifiers/" + name + "/endroles", "POST", jsondata)
-        return await res.json()
-
+        let res = await this.client.fetch(
+            '/identifiers/' + name + '/endroles',
+            'POST',
+            jsondata
+        );
+        return await res.json();
     }
 
     /**
@@ -365,16 +392,21 @@ export class Identifier {
      * @param {string} [stamp=now] Optional date-time-stamp RFC-3339 profile of iso8601 datetime. Now is the default if not provided
      * @returns {Serder} The reply message
      */
-    private makeEndRole(pre: string, role: string, eid?: string, stamp?: string): Serder {
+    private makeEndRole(
+        pre: string,
+        role: string,
+        eid?: string,
+        stamp?: string
+    ): Serder {
         const data: any = {
             cid: pre,
-            role: role
-        }
+            role: role,
+        };
         if (eid != undefined) {
-            data.eid = eid
+            data.eid = eid;
         }
-        const route = "/end/role/add"
-        return reply(route, data, stamp, undefined, Serials.JSON)
+        const route = '/end/role/add';
+        return reply(route, data, stamp, undefined, Serials.JSON);
     }
 
     /**
@@ -384,33 +416,37 @@ export class Identifier {
      * @returns {Promise<any>} - A promise to the list of members
      */
     async members(name: string): Promise<any> {
-        let res = await this.client.fetch("/identifiers/" + name + "/members", "GET", undefined)
-        return await res.json()
+        let res = await this.client.fetch(
+            '/identifiers/' + name + '/members',
+            'GET',
+            undefined
+        );
+        return await res.json();
     }
 }
 
 /** Event Result */
 export class EventResult {
-    private readonly _serder: Serder
-    private readonly _sigs: string[]
-    private readonly promise: Promise<Response>
+    private readonly _serder: Serder;
+    private readonly _sigs: string[];
+    private readonly promise: Promise<Response>;
 
     constructor(serder: Serder, sigs: string[], promise: Promise<Response>) {
-        this._serder = serder
-        this._sigs = sigs
-        this.promise = promise
+        this._serder = serder;
+        this._sigs = sigs;
+        this.promise = promise;
     }
 
     get serder() {
-        return this._serder
+        return this._serder;
     }
 
     get sigs() {
-        return this._sigs
+        return this._sigs;
     }
 
     async op(): Promise<any> {
-        let res = await this.promise
-        return await res.json()
+        let res = await this.promise;
+        return await res.json();
     }
 }

@@ -1,6 +1,5 @@
-
 export function pad(n: any, width = 3, z = 0) {
-  return (String(z).repeat(width) + String(n)).slice(String(n).length);
+    return (String(z).repeat(width) + String(n)).slice(String(n).length);
 }
 
 /**
@@ -11,19 +10,19 @@ export function pad(n: any, width = 3, z = 0) {
  * @param {*} labels    labels is list of element labels in ked from which to extract values
  */
 export function extractValues(ked: any, labels: any) {
-  let values = [];
-  for (let label of labels) {
-    values = extractElementValues(ked[label], values);
-  }
+    let values = [];
+    for (let label of labels) {
+        values = extractElementValues(ked[label], values);
+    }
 
-  return values;
+    return values;
 }
 
 export function arrayEquals(ar1: Uint8Array, ar2: Uint8Array) {
-  return (
-      ar1.length === ar2.length &&
-      ar1.every((val, index) => val === ar2[index])
-  );
+    return (
+        ar1.length === ar2.length &&
+        ar1.every((val, index) => val === ar2[index])
+    );
 }
 
 /**
@@ -36,26 +35,21 @@ export function arrayEquals(ar1: Uint8Array, ar2: Uint8Array) {
  */
 
 function extractElementValues(element: any, values: any) {
-  let data = [];
+    let data = [];
 
-
-  try {
-    if((element instanceof Array) && !(typeof(element) == 'string')) {
-      for(let k in element)
-        extractElementValues(element[k], values);
-    } else if (typeof(element) == 'string') {
-      values.push(element);
+    try {
+        if (element instanceof Array && !(typeof element == 'string')) {
+            for (let k in element) extractElementValues(element[k], values);
+        } else if (typeof element == 'string') {
+            values.push(element);
+        }
+        data = values;
+    } catch (error) {
+        throw new Error(error as string);
     }
-    data = values;
-  } catch (error) {
-    throw new Error(error as string);
-  }
 
-  return data;
+    return data;
 }
-
-
-
 
 /**
  * @description Returns True if obj is non-string iterable, False otherwise
@@ -68,52 +62,50 @@ function extractElementValues(element: any, values: any) {
 //     return  instanceof(obj, (str, bytes)) && instanceof(obj, Iterable))
 // }
 
-
 export function nowUTC(): Date {
-  return new Date()
+    return new Date();
 }
 
-
 export function range(start: number, stop: number, step: number) {
-  if (typeof stop == 'undefined') {
-    // one param defined
-    stop = start;
-    start = 0;
-  }
+    if (typeof stop == 'undefined') {
+        // one param defined
+        stop = start;
+        start = 0;
+    }
 
-  if (typeof step == 'undefined') {
-    step = 1;
-  }
+    if (typeof step == 'undefined') {
+        step = 1;
+    }
 
-  if ((step > 0 && start >= stop) || (step < 0 && start <= stop)) {
-    return [];
-  }
+    if ((step > 0 && start >= stop) || (step < 0 && start <= stop)) {
+        return [];
+    }
 
-  let result = new Array<number>();
-  for (let i: number = start; step > 0 ? i < stop : i > stop; i += step) {
-    result.push(i);
-  }
+    let result = new Array<number>();
+    for (let i: number = start; step > 0 ? i < stop : i > stop; i += step) {
+        result.push(i);
+    }
 
-  return result;
+    return result;
 }
 
 export function intToBytes(value: number, length: number): Uint8Array {
-  const byteArray = new Uint8Array(length); // Assuming a 4-byte integer (32 bits)
+    const byteArray = new Uint8Array(length); // Assuming a 4-byte integer (32 bits)
 
-  for ( let index = 0; index < byteArray.length; index ++ ) {
-    let byte = value & 0xff;
-    byteArray [ index ] = byte;
-    value = (value - byte) / 256 ;
-  }
-  
-  return byteArray;
+    for (let index = 0; index < byteArray.length; index++) {
+        let byte = value & 0xff;
+        byteArray[index] = byte;
+        value = (value - byte) / 256;
+    }
+
+    return byteArray;
 }
 
 export function bytesToInt(ar: Uint8Array): number {
-  let value = 0;
-  for (let i = ar.length - 1; i >= 0; i--) {
-    value = (value * 256) + ar[i];
-  }
+    let value = 0;
+    for (let i = ar.length - 1; i >= 0; i--) {
+        value = value * 256 + ar[i];
+    }
 
-  return value;
+    return value;
 }

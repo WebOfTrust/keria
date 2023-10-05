@@ -1,13 +1,13 @@
-import {EmptyMaterialError} from "./kering";
+import { EmptyMaterialError } from './kering';
 
 export {};
 import libsodium from 'libsodium-wrappers-sumo';
-import {Matter} from './matter';
-import {MtrDex} from './matter';
-import {Verfer} from "./verfer";
-import {Cigar} from "./cigar";
-import {Siger} from "./siger";
-import {IdrDex} from "./indexer";
+import { Matter } from './matter';
+import { MtrDex } from './matter';
+import { Verfer } from './verfer';
+import { Cigar } from './cigar';
+import { Siger } from './siger';
+import { IdrDex } from './indexer';
 import { Buffer } from 'buffer';
 
 /**
@@ -19,47 +19,56 @@ import { Buffer } from 'buffer';
  as cipher suite for creating key-pair.
  */
 interface SignerArgs {
-    raw?: Uint8Array | undefined
-    code?: string
-    qb64b?: Uint8Array | undefined
-    qb64?: string
-    qb2?: Uint8Array | undefined
-    transferable?: boolean
+    raw?: Uint8Array | undefined;
+    code?: string;
+    qb64b?: Uint8Array | undefined;
+    qb64?: string;
+    qb2?: Uint8Array | undefined;
+    transferable?: boolean;
 }
 
 export class Signer extends Matter {
-    private readonly _sign: Function
-    private readonly _verfer: Verfer
+    private readonly _sign: Function;
+    private readonly _verfer: Verfer;
 
-    constructor({raw, code = MtrDex.Ed25519_Seed, qb64, qb64b, qb2, transferable = true}: SignerArgs) {
+    constructor({
+        raw,
+        code = MtrDex.Ed25519_Seed,
+        qb64,
+        qb64b,
+        qb2,
+        transferable = true,
+    }: SignerArgs) {
         try {
-            super({raw, code, qb64, qb64b, qb2})
+            super({ raw, code, qb64, qb64b, qb2 });
         } catch (e) {
             if (e instanceof EmptyMaterialError) {
                 if (code == MtrDex.Ed25519_Seed) {
-                    let raw = libsodium.randombytes_buf(libsodium.crypto_sign_SEEDBYTES);
-                    super({raw, code, qb64, qb64b, qb2})
+                    let raw = libsodium.randombytes_buf(
+                        libsodium.crypto_sign_SEEDBYTES
+                    );
+                    super({ raw, code, qb64, qb64b, qb2 });
                 } else {
-                    throw new Error(`Unsupported signer code = ${code}.`)
+                    throw new Error(`Unsupported signer code = ${code}.`);
                 }
             } else {
-                throw e
+                throw e;
             }
         }
-        let verfer
+        let verfer;
         if (this.code == MtrDex.Ed25519_Seed) {
-            this._sign = this._ed25519
-            const keypair = libsodium.crypto_sign_seed_keypair(this.raw)
-            verfer = new Verfer({raw: keypair.publicKey, code: transferable ? MtrDex.Ed25519 : MtrDex.Ed25519N})
-
+            this._sign = this._ed25519;
+            const keypair = libsodium.crypto_sign_seed_keypair(this.raw);
+            verfer = new Verfer({
+                raw: keypair.publicKey,
+                code: transferable ? MtrDex.Ed25519 : MtrDex.Ed25519N,
+            });
         } else {
-            throw new Error(`Unsupported signer code = ${this.code}.`)
+            throw new Error(`Unsupported signer code = ${this.code}.`);
         }
 
-        this._verfer = verfer
-
+        this._verfer = verfer;
     }
-
 
     /**
      * @description Property verfer:
@@ -70,44 +79,55 @@ export class Signer extends Matter {
         return this._verfer;
     }
 
-    sign(ser: Uint8Array, index: number | null = null, only: boolean = false,
-         ondex: number | undefined = undefined): Siger | Cigar {
-        return this._sign(ser, this.raw, this.verfer, index, only, ondex)
+    sign(
+        ser: Uint8Array,
+        index: number | null = null,
+        only: boolean = false,
+        ondex: number | undefined = undefined
+    ): Siger | Cigar {
+        return this._sign(ser, this.raw, this.verfer, index, only, ondex);
     }
 
-    _ed25519(ser: Uint8Array, seed: Uint8Array, verfer: Verfer, index: number | null,
-             only: boolean = false, ondex: number | undefined) {
-
+    _ed25519(
+        ser: Uint8Array,
+        seed: Uint8Array,
+        verfer: Verfer,
+        index: number | null,
+        only: boolean = false,
+        ondex: number | undefined
+    ) {
         let sig = libsodium.crypto_sign_detached(
             ser,
-            Buffer.concat([seed, verfer.raw]),
+            Buffer.concat([seed, verfer.raw])
         );
 
         if (index == null) {
-            return new Cigar({raw: sig, code: MtrDex.Ed25519_Sig}, verfer);
+            return new Cigar({ raw: sig, code: MtrDex.Ed25519_Sig }, verfer);
         } else {
             let code;
             if (only) {
-                ondex = undefined
+                ondex = undefined;
                 if (index <= 63) {
-                    code = IdrDex.Ed25519_Crt_Sig
+                    code = IdrDex.Ed25519_Crt_Sig;
                 } else {
-                    code = IdrDex.Ed25519_Big_Crt_Sig
+                    code = IdrDex.Ed25519_Big_Crt_Sig;
                 }
             } else {
-                if(ondex == undefined) {
-                    ondex = index
+                if (ondex == undefined) {
+                    ondex = index;
                 }
 
-                if (ondex == index && index <= 63) // both same and small
-                    code = IdrDex.Ed25519_Sig  //  use  small both same
-                else  //  otherwise big or both not same so use big both
-                    code = IdrDex.Ed25519_Big_Sig   // use use big both
-
+                if (ondex == index && index <= 63)
+                    // both same and small
+                    code = IdrDex.Ed25519_Sig; //  use  small both same
+                //  otherwise big or both not same so use big both
+                else code = IdrDex.Ed25519_Big_Sig; // use use big both
             }
 
-            return new Siger({raw: sig, code: code, index: index, ondex: ondex}, verfer)
+            return new Siger(
+                { raw: sig, code: code, index: index, ondex: ondex },
+                verfer
+            );
         }
-
     }
 }

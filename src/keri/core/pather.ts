@@ -1,7 +1,6 @@
-
-import {Bexter, Reb64} from "./bexter";
-import {MatterArgs, MtrDex} from "./matter";
-import {EmptyMaterialError} from "./kering";
+import { Bexter, Reb64 } from './bexter';
+import { MatterArgs, MtrDex } from './matter';
+import { EmptyMaterialError } from './kering';
 
 /*
     Pather is a subclass of Bexter that provides SAD Path language specific functionality
@@ -36,56 +35,64 @@ import {EmptyMaterialError} from "./kering";
  */
 
 export class Pather extends Bexter {
-    constructor({raw, code = MtrDex.StrB64_L0, qb64b, qb64, qb2}: MatterArgs, bext?: string, path?: string[]) {
-        if (raw === undefined && bext === undefined && qb64b === undefined && qb64 === undefined && qb2 === undefined) {
+    constructor(
+        { raw, code = MtrDex.StrB64_L0, qb64b, qb64, qb2 }: MatterArgs,
+        bext?: string,
+        path?: string[]
+    ) {
+        if (
+            raw === undefined &&
+            bext === undefined &&
+            qb64b === undefined &&
+            qb64 === undefined &&
+            qb2 === undefined
+        ) {
             if (path === undefined)
-                throw new EmptyMaterialError("Missing bext string.")
+                throw new EmptyMaterialError('Missing bext string.');
 
-            bext = Pather._bextify(path)
+            bext = Pather._bextify(path);
         }
 
-        super({raw, code, qb64b, qb64, qb2}, bext);
-
+        super({ raw, code, qb64b, qb64, qb2 }, bext);
     }
 
     // TODO: implement SAD access methods like resolve, root, strip, startswith and tail
 
     get path(): string[] {
-        if (!this.bext.startsWith("-")) {
-            throw new Error("invalid SAD ptr")
+        if (!this.bext.startsWith('-')) {
+            throw new Error('invalid SAD ptr');
         }
 
-        let path = this.bext
-        while(path.charAt(0) === '-')
-        {
+        let path = this.bext;
+        while (path.charAt(0) === '-') {
             path = path.substring(1);
         }
 
-        let apath = path.split("-")
+        let apath = path.split('-');
         if (apath[0] !== '') {
-            return apath
+            return apath;
         } else {
-            return []
+            return [];
         }
     }
 
     static _bextify(path: any[]): string {
-        let vath = []
+        let vath = [];
         for (const p of path) {
-            let sp = ""
-            if (typeof(p) === "number") {
-                sp = p.toString()
+            let sp = '';
+            if (typeof p === 'number') {
+                sp = p.toString();
             } else {
-                sp = p
+                sp = p;
             }
 
-            let match = Reb64.exec(sp)
+            let match = Reb64.exec(sp);
             if (!match) {
-                throw new Error(`"Non Base64 path component = ${p}.`)
+                throw new Error(`"Non Base64 path component = ${p}.`);
             }
 
-            vath.push(sp)
+            vath.push(sp);
         }
-        return "-" + vath.join("-")
+        return '-' + vath.join('-');
     }
 }

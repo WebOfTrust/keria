@@ -1,18 +1,18 @@
-import { SignifyClient } from "./clienting"
-import { Dict} from "../core/core"
+import { SignifyClient } from './clienting';
+import { Dict } from '../core/core';
 
 /**
  * Groups
  */
 export class Groups {
-    client: SignifyClient
+    client: SignifyClient;
 
     /**
      * Groups
      * @param {SignifyClient} client
      */
     constructor(client: SignifyClient) {
-        this.client = client
+        this.client = client;
     }
 
     /**
@@ -21,12 +21,11 @@ export class Groups {
      * @param {string} [said] SAID of exn message to load
      * @returns {Promise<any>} A promise to the list of replay messages
      */
-    async getRequest(said:string): Promise<any> {
-
-        let path = `/multisig/request/` + said
-        let method = 'GET'
-        let res =  await this.client.fetch(path, method, null)
-        return await res.json()
+    async getRequest(said: string): Promise<any> {
+        let path = `/multisig/request/` + said;
+        let method = 'GET';
+        let res = await this.client.fetch(path, method, null);
+        return await res.json();
     }
 
     /**
@@ -38,16 +37,20 @@ export class Groups {
      * @param {string} [atc] additional attachments from embedded events in exn
      * @returns {Promise<any>} A promise to the list of replay messages
      */
-    async sendRequest(name: string, exn:Dict<any>, sigs: string[], atc: string): Promise<any> {
-
-        let path = `/identifiers/${name}/multisig/request`
-        let method = 'POST'
+    async sendRequest(
+        name: string,
+        exn: Dict<any>,
+        sigs: string[],
+        atc: string
+    ): Promise<any> {
+        let path = `/identifiers/${name}/multisig/request`;
+        let method = 'POST';
         let data = {
             exn: exn,
             sigs: sigs,
-            atc: atc
-        }
-        let res = await this.client.fetch(path, method, data)
-        return await res.json()
+            atc: atc,
+        };
+        let res = await this.client.fetch(path, method, data);
+        return await res.json();
     }
 }

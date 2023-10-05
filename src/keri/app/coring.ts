@@ -1,13 +1,13 @@
-import { SignifyClient } from "./clienting"
-import libsodium from "libsodium-wrappers-sumo";
-import { Salter } from "../core/salter";
+import { SignifyClient } from './clienting';
+import libsodium from 'libsodium-wrappers-sumo';
+import { Salter } from '../core/salter';
 import { Matter, MtrDex } from '../core/matter';
 
 export function randomPasscode(): string {
     let raw = libsodium.randombytes_buf(16);
-    let salter = new Salter({ raw: raw })
+    let salter = new Salter({ raw: raw });
 
-    return salter.qb64.substring(2)
+    return salter.qb64.substring(2);
 }
 
 export function randomNonce(): string {
@@ -17,13 +17,13 @@ export function randomNonce(): string {
 }
 
 export class Oobis {
-    public client: SignifyClient
+    public client: SignifyClient;
     /**
      * Oobis
-     * @param {SignifyClient} client 
+     * @param {SignifyClient} client
      */
     constructor(client: SignifyClient) {
-        this.client = client
+        this.client = client;
     }
 
     /**
@@ -33,32 +33,30 @@ export class Oobis {
      * @returns {Promise<any>} A promise to the OOBI(s)
      */
     async get(name: string, role: string = 'agent'): Promise<any> {
-        let path = `/identifiers/${name}/oobis?role=${role}`
-        let method = 'GET'
-        let res = await this.client.fetch(path, method, null)
-        return await res.json()
-
+        let path = `/identifiers/${name}/oobis?role=${role}`;
+        let method = 'GET';
+        let res = await this.client.fetch(path, method, null);
+        return await res.json();
     }
 
     /**
      * Resolve an OOBI
      * @async
      * @param {string} oobi The OOBI to be resolver
-     * @param {string} [alias] Optional name or alias to link the OOBI resolution to a contact 
+     * @param {string} [alias] Optional name or alias to link the OOBI resolution to a contact
      * @returns {Promise<any>} A promise to the long-running operation
      */
     async resolve(oobi: string, alias?: string): Promise<any> {
-        let path = `/oobis`
+        let path = `/oobis`;
         let data: any = {
-            url: oobi
-        }
+            url: oobi,
+        };
         if (alias !== undefined) {
-            data.oobialias = alias
+            data.oobialias = alias;
         }
-        let method = 'POST'
-        let res = await this.client.fetch(path, method, data)
-        return await res.json()
-
+        let method = 'POST';
+        let res = await this.client.fetch(path, method, data);
+        return await res.json();
     }
 }
 
@@ -68,13 +66,13 @@ export class Oobis {
  * Operations represent the status and result of long running tasks performed by KERIA agent
  */
 export class Operations {
-    public client: SignifyClient
+    public client: SignifyClient;
     /**
      * Operations
-     * @param {SignifyClient} client 
+     * @param {SignifyClient} client
      */
     constructor(client: SignifyClient) {
-        this.client = client
+        this.client = client;
     }
 
     /**
@@ -84,12 +82,11 @@ export class Operations {
      * @returns {Promise<any>} A promise to the status of the operation
      */
     async get(name: string): Promise<any> {
-        let path = `/operations/${name}`
-        let data = null
-        let method = 'GET'
-        let res = await this.client.fetch(path, method, data)
-        return await res.json()
-
+        let path = `/operations/${name}`;
+        let data = null;
+        let method = 'GET';
+        let res = await this.client.fetch(path, method, data);
+        return await res.json();
     }
 }
 
@@ -97,13 +94,13 @@ export class Operations {
  * KeyEvents
  */
 export class KeyEvents {
-    public client: SignifyClient
+    public client: SignifyClient;
     /**
      * KeyEvents
-     * @param {SignifyClient} client 
+     * @param {SignifyClient} client
      */
     constructor(client: SignifyClient) {
-        this.client = client
+        this.client = client;
     }
 
     /**
@@ -113,12 +110,11 @@ export class KeyEvents {
      * @returns {Promise<any>} A promise to the key events
      */
     async get(pre: string): Promise<any> {
-        let path = `/events?pre=${pre}`
-        let data = null
-        let method = 'GET'
-        let res = await this.client.fetch(path, method, data)
-        return await res.json()
-
+        let path = `/events?pre=${pre}`;
+        let data = null;
+        let method = 'GET';
+        let res = await this.client.fetch(path, method, data);
+        return await res.json();
     }
 }
 
@@ -126,13 +122,13 @@ export class KeyEvents {
  * KeyStates
  */
 export class KeyStates {
-    public client: SignifyClient
+    public client: SignifyClient;
     /**
      * KeyStates
-     * @param {SignifyClient} client 
+     * @param {SignifyClient} client
      */
     constructor(client: SignifyClient) {
-        this.client = client
+        this.client = client;
     }
 
     /**
@@ -142,12 +138,11 @@ export class KeyStates {
      * @returns {Promise<any>} A promise to the key states
      */
     async get(pre: string): Promise<any> {
-        let path = `/states?pre=${pre}`
-        let data = null
-        let method = 'GET'
-        let res = await this.client.fetch(path, method, data)
-        return await res.json()
-
+        let path = `/states?pre=${pre}`;
+        let data = null;
+        let method = 'GET';
+        let res = await this.client.fetch(path, method, data);
+        return await res.json();
     }
 
     /**
@@ -157,12 +152,11 @@ export class KeyStates {
      * @returns {Promise<any>} A promise to the key states
      */
     async list(pres: string[]): Promise<any> {
-        let path = `/states?${pres.map(pre => `pre=${pre}`).join('&')}`
-        let data = null
-        let method = 'GET'
-        let res = await this.client.fetch(path, method, data)
-        return await res.json()
-
+        let path = `/states?${pres.map((pre) => `pre=${pre}`).join('&')}`;
+        let data = null;
+        let method = 'GET';
+        let res = await this.client.fetch(path, method, data);
+        return await res.json();
     }
 
     /**
@@ -174,20 +168,19 @@ export class KeyStates {
      * @returns {Promise<any>} A promise to the long-running operation
      */
     async query(pre: string, sn?: number, anchor?: string): Promise<any> {
-        let path = `/queries`
+        let path = `/queries`;
         let data: any = {
-            pre: pre
-        }
+            pre: pre,
+        };
         if (sn !== undefined) {
-            data.sn = sn
+            data.sn = sn;
         }
         if (anchor !== undefined) {
-            data.anchor = anchor
+            data.anchor = anchor;
         }
 
-        let method = 'POST'
-        let res = await this.client.fetch(path, method, data)
-        return await res.json()
+        let method = 'POST';
+        let res = await this.client.fetch(path, method, data);
+        return await res.json();
     }
 }
-
