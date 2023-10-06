@@ -10,16 +10,10 @@ import { Siger } from './siger';
 import { b } from './core';
 
 export enum Algos {
-<<<<<<< HEAD
-    randy = "randy",
-    salty = "salty",
-    group = "group",
-    extern = "extern"
-=======
     randy = 'randy',
     salty = 'salty',
     group = 'group',
->>>>>>> e42f976 (adds prettier)
+    extern = 'extern',
 }
 
 class PubLot {

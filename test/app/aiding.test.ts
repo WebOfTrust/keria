@@ -211,15 +211,13 @@ describe('Aiding', () => {
         assert.deepEqual(lastBody.salty.dcode, 'E');
         assert.deepEqual(lastBody.salty.transferable, true);
 
-        await client
-            .identifiers()
-            .create('aid2', {
-                count: 3,
-                ncount: 3,
-                isith: '2',
-                nsith: '2',
-                bran: '0123456789lmnopqrstuv',
-            });
+        await client.identifiers().create('aid2', {
+            count: 3,
+            ncount: 3,
+            isith: '2',
+            nsith: '2',
+            bran: '0123456789lmnopqrstuv',
+        });
         lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
         lastBody = JSON.parse(lastCall[1]!.body!.toString());
         assert.equal(lastCall[0]!, url + '/identifiers');
@@ -360,12 +358,10 @@ describe('Aiding', () => {
         assert.equal(lastCall[0]!, url + '/identifiers');
         assert.equal(lastCall[1]!.method, 'GET');
 
-        await client
-            .identifiers()
-            .create('aid1', {
-                bran: '0123456789abcdefghijk',
-                algo: Algos.randy,
-            });
+        await client.identifiers().create('aid1', {
+            bran: '0123456789abcdefghijk',
+            algo: Algos.randy,
+        });
         lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
         let lastBody = JSON.parse(lastCall[1]!.body!.toString());
         assert.equal(lastCall[0]!, url + '/identifiers');

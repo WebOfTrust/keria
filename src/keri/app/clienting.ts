@@ -1,7 +1,7 @@
-import { Agent, Controller } from "./controller"
-import { Tier } from "../core/salter"
-import { Authenticater } from "../core/authing"
-import { ExternalModule, KeyManager } from "../core/keeping"
+import { Agent, Controller } from './controller';
+import { Tier } from '../core/salter';
+import { Authenticater } from '../core/authing';
+import { ExternalModule, KeyManager } from '../core/keeping';
 
 import { Identifier } from './aiding';
 import { Contacts, Challenges } from './contacting';
@@ -30,16 +30,16 @@ class State {
 
 /** SignifyClient */
 export class SignifyClient {
-    public controller: Controller
-    public url: string
-    public bran: string
-    public pidx: number
-    public agent: Agent | null
-    public authn: Authenticater | null
-    public manager: KeyManager | null
-    public tier: Tier
-    public bootUrl: string
-    public exteralModules: ExternalModule[]
+    public controller: Controller;
+    public url: string;
+    public bran: string;
+    public pidx: number;
+    public agent: Agent | null;
+    public authn: Authenticater | null;
+    public manager: KeyManager | null;
+    public tier: Tier;
+    public bootUrl: string;
+    public exteralModules: ExternalModule[];
 
     /**
      * SignifyClient constructor
@@ -47,22 +47,28 @@ export class SignifyClient {
      * @param {string} bran Base64 21 char string that is used as base material for seed of the client AID
      * @param {Tier} tier Security tier for generating keys of the client AID (high | mewdium | low)
      * @param {string} bootUrl KERIA boot interface URL
-     * @param {ExternalModule[]} externalModules list of external modules to load 
+     * @param {ExternalModule[]} externalModules list of external modules to load
      */
-    constructor(url: string, bran: string, tier: Tier = Tier.low, bootUrl: string = DEFAULT_BOOT_URL, externalModules:ExternalModule[]=[]) {
-        this.url = url
+    constructor(
+        url: string,
+        bran: string,
+        tier: Tier = Tier.low,
+        bootUrl: string = DEFAULT_BOOT_URL,
+        externalModules: ExternalModule[] = []
+    ) {
+        this.url = url;
         if (bran.length < 21) {
             throw Error('bran must be 21 characters');
         }
-        this.bran = bran
-        this.pidx = 0
-        this.controller = new Controller(bran, tier)
-        this.authn = null
-        this.agent = null
-        this.manager = null
-        this.tier = tier
-        this.bootUrl = bootUrl
-        this.exteralModules = externalModules
+        this.bran = bran;
+        this.pidx = 0;
+        this.controller = new Controller(bran, tier);
+        this.authn = null;
+        this.agent = null;
+        this.manager = null;
+        this.tier = tier;
+        this.bootUrl = bootUrl;
+        this.exteralModules = externalModules;
     }
 
     get data() {
@@ -139,8 +145,14 @@ export class SignifyClient {
         if (this.controller.serder.ked.s == 0) {
             await this.approveDelegation();
         }
-        this.manager = new KeyManager(this.controller.salter, this.exteralModules)
-        this.authn = new Authenticater(this.controller.signer, this.agent.verfer!)
+        this.manager = new KeyManager(
+            this.controller.salter,
+            this.exteralModules
+        );
+        this.authn = new Authenticater(
+            this.controller.signer,
+            this.agent.verfer!
+        );
     }
 
     /**

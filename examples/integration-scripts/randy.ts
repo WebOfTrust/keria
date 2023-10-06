@@ -26,15 +26,17 @@ async function run() {
         state1.agent.i
     );
 
-    let icpResult = await client1.identifiers().create('aid1', {algo: signify.Algos.randy})
-    let op = await icpResult.op()
-    assert.equal(op['done'], true)
-    let aid = op['response']
-    const icp = new signify.Serder(aid)
-    assert.equal(icp.verfers.length, 1)
-    assert.equal(icp.digers.length, 1)
-    assert.equal(icp.ked['kt'], '1')
-    assert.equal(icp.ked['nt'], '1')
+    let icpResult = await client1
+        .identifiers()
+        .create('aid1', { algo: signify.Algos.randy });
+    let op = await icpResult.op();
+    assert.equal(op['done'], true);
+    let aid = op['response'];
+    const icp = new signify.Serder(aid);
+    assert.equal(icp.verfers.length, 1);
+    assert.equal(icp.digers.length, 1);
+    assert.equal(icp.ked['kt'], '1');
+    assert.equal(icp.ked['nt'], '1');
 
     let aids = await client1.identifiers().list();
     assert.equal(aids.aids.length, 1);

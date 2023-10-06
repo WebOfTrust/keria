@@ -169,9 +169,9 @@ export class Credentials {
         let [, iss] = Saider.saidify(_iss);
 
         // Create paths and sign
-        let cpath = '6AABAAA-'
-        let keeper = this.client!.manager!.get(hab)
-        let csigs = await keeper.sign(b(JSON.stringify(vc)))
+        let cpath = '6AABAAA-';
+        let keeper = this.client!.manager!.get(hab);
+        let csigs = await keeper.sign(b(JSON.stringify(vc)));
 
         // Create ixn
         let ixn = {};
@@ -198,9 +198,16 @@ export class Credentials {
             // TODO implement rotation event
             throw new Error('Establishment only not implemented');
         } else {
-            let serder = interact({ pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined })
-            sigs = await keeper.sign(b(serder.raw))
-            ixn = serder.ked
+            let serder = interact({
+                pre: pre,
+                sn: sn + 1,
+                data: data,
+                dig: dig,
+                version: undefined,
+                kind: undefined,
+            });
+            sigs = await keeper.sign(b(serder.raw));
+            ixn = serder.ked;
         }
 
         let body = {
@@ -276,10 +283,17 @@ export class Credentials {
             // TODO implement rotation event
             throw new Error('Establishment only not implemented');
         } else {
-            let serder = interact({ pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined })
-            let keeper = this.client!.manager!.get(hab)
-            sigs = await keeper.sign(b(serder.raw))
-            ixn = serder.ked
+            let serder = interact({
+                pre: pre,
+                sn: sn + 1,
+                data: data,
+                dig: dig,
+                version: undefined,
+                kind: undefined,
+            });
+            let keeper = this.client!.manager!.get(hab);
+            sigs = await keeper.sign(b(serder.raw));
+            ixn = serder.ked;
         }
 
         let body = {
@@ -402,12 +416,7 @@ export class Credentials {
 
         let keeper = this.client!.manager!.get(hab);
 
-        let sig = await keeper.sign(b(exn.raw),true)
-
-        let siger = new Siger({qb64:sig[0]})
-        let seal = ["SealLast" , {i:pre}]
-        let ims = messagize(exn,[siger],seal, undefined, undefined, true)
-        ims = ims.slice(JSON.stringify(exn.ked).length)
+        let sig = await keeper.sign(b(exn.raw), true);
 
         let siger = new Siger({ qb64: sig[0] });
         let seal = ['SealLast', { i: pre }];
@@ -546,10 +555,24 @@ export class Registries {
                 },
             ];
 
-            let serder = interact({pre: pre, sn: sn + 1, data: data, dig: dig, version: Versionage, kind: Serials.JSON})
-            let keeper = this.client.manager!.get(hab)
-            let sigs = await keeper.sign(b(serder.raw))
-            let res = this.createFromEvents(hab, name, registryName, regser.ked, serder.ked, sigs)
+            let serder = interact({
+                pre: pre,
+                sn: sn + 1,
+                data: data,
+                dig: dig,
+                version: Versionage,
+                kind: Serials.JSON,
+            });
+            let keeper = this.client.manager!.get(hab);
+            let sigs = await keeper.sign(b(serder.raw));
+            let res = this.createFromEvents(
+                hab,
+                name,
+                registryName,
+                regser.ked,
+                serder.ked,
+                sigs
+            );
             return new RegistryResult(regser, serder, sigs, res);
         }
     }

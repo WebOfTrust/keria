@@ -10,30 +10,30 @@ import { parseRangeHeaders } from '../core/httping';
 
 /** Arguments required to create an identfier */
 export interface CreateIdentiferArgs {
-    transferable?: boolean,
-    isith?: string | number | string[],
-    nsith?: string | number | string[],
-    wits?: string[],
-    toad?: number,
-    proxy?: string,
-    delpre?: string,
-    dcode?: string,
-    data?: any,
-    algo?: Algos,
-    pre?: string,
-    states?: any[],
-    rstates?: any[]
-    prxs?: any[],
-    nxts?: any[],
-    mhab?: any,
-    keys?: any[],
-    ndigs?: any[],
-    bran?: string,
-    count?: number,
-    ncount?: number,
-    tier?: Tier,
-    extern_type?: string,
-    extern?: any
+    transferable?: boolean;
+    isith?: string | number | string[];
+    nsith?: string | number | string[];
+    wits?: string[];
+    toad?: number;
+    proxy?: string;
+    delpre?: string;
+    dcode?: string;
+    data?: any;
+    algo?: Algos;
+    pre?: string;
+    states?: any[];
+    rstates?: any[];
+    prxs?: any[];
+    nxts?: any[];
+    mhab?: any;
+    keys?: any[];
+    ndigs?: any[];
+    bran?: string;
+    count?: number;
+    ncount?: number;
+    tier?: Tier;
+    extern_type?: string;
+    extern?: any;
 }
 
 /** Arguments required to rotate an identfier */
@@ -111,33 +111,35 @@ export class Identifier {
      * @param {CreateIdentiferArgs} [kargs] Optional parameters to create the identifier
      * @returns {EventResult} The inception result
      */
-    async create(name: string, kargs:CreateIdentiferArgs={}): Promise<EventResult> {
+    async create(
+        name: string,
+        kargs: CreateIdentiferArgs = {}
+    ): Promise<EventResult> {
+        const algo = kargs.algo == undefined ? Algos.salty : kargs.algo;
 
-        const algo = kargs.algo == undefined ? Algos.salty : kargs.algo
-
-        let transferable = kargs.transferable ?? true
-        let isith = kargs.isith ?? "1"
-        let nsith = kargs.nsith ?? "1"
-        let wits = kargs.wits ?? []
-        let toad = kargs.toad ?? 0
-        let dcode = kargs.dcode ?? MtrDex.Blake3_256
-        let proxy = kargs.proxy
-        let delpre = kargs.delpre
-        let data = kargs.data != undefined ? [kargs.data] : []
-        let pre = kargs.pre
-        let states = kargs.states
-        let rstates = kargs.rstates
-        let prxs = kargs.prxs
-        let nxts = kargs.nxts
-        let mhab = kargs.mhab
-        let _keys = kargs.keys
-        let _ndigs = kargs.ndigs
-        let bran = kargs.bran
-        let count = kargs.count
-        let ncount = kargs.ncount
-        let tier = kargs.tier
-        let extern_type = kargs.extern_type
-        let extern = kargs.extern
+        let transferable = kargs.transferable ?? true;
+        let isith = kargs.isith ?? '1';
+        let nsith = kargs.nsith ?? '1';
+        let wits = kargs.wits ?? [];
+        let toad = kargs.toad ?? 0;
+        let dcode = kargs.dcode ?? MtrDex.Blake3_256;
+        let proxy = kargs.proxy;
+        let delpre = kargs.delpre;
+        let data = kargs.data != undefined ? [kargs.data] : [];
+        let pre = kargs.pre;
+        let states = kargs.states;
+        let rstates = kargs.rstates;
+        let prxs = kargs.prxs;
+        let nxts = kargs.nxts;
+        let mhab = kargs.mhab;
+        let _keys = kargs.keys;
+        let _ndigs = kargs.ndigs;
+        let bran = kargs.bran;
+        let count = kargs.count;
+        let ncount = kargs.ncount;
+        let tier = kargs.tier;
+        let extern_type = kargs.extern_type;
+        let extern = kargs.extern;
 
         let xargs = {
             transferable: transferable,
@@ -163,13 +165,13 @@ export class Identifier {
             ncount: ncount,
             tier: tier,
             extern_type: extern_type,
-            extern: extern
-        }
+            extern: extern,
+        };
 
-        let keeper = this.client.manager!.new(algo, this.client.pidx, xargs)
-        let [keys, ndigs] = await keeper!.incept(transferable)
-        wits = wits !== undefined ? wits : []
-        let serder: Serder|undefined = undefined
+        let keeper = this.client.manager!.new(algo, this.client.pidx, xargs);
+        let [keys, ndigs] = await keeper!.incept(transferable);
+        wits = wits !== undefined ? wits : [];
+        let serder: Serder | undefined = undefined;
         if (delpre == undefined) {
             serder = incept({
                 keys: keys!,
@@ -203,7 +205,7 @@ export class Identifier {
             });
         }
 
-        let sigs = await keeper!.sign(b(serder.raw))
+        let sigs = await keeper!.sign(b(serder.raw));
         var jsondata: any = {
             name: name,
             icp: serder.ked,
@@ -242,11 +244,18 @@ export class Identifier {
 
         data = Array.isArray(data) ? data : [data];
 
-        data = Array.isArray(data) ? data : [data]
+        data = Array.isArray(data) ? data : [data];
 
-        let serder = interact({ pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined })
-        let keeper = this.client!.manager!.get(hab)
-        let sigs = await keeper.sign(b(serder.raw))
+        let serder = interact({
+            pre: pre,
+            sn: sn + 1,
+            data: data,
+            dig: dig,
+            version: undefined,
+            kind: undefined,
+        });
+        let keeper = this.client!.manager!.get(hab);
+        let sigs = await keeper.sign(b(serder.raw));
 
         let jsondata: any = {
             ixn: serder.ked,
@@ -304,9 +313,14 @@ export class Identifier {
         // Create new keys for next digests
         let ncodes = kargs.ncodes ?? new Array(ncount).fill(ncode);
 
-        let states = kargs.states == undefined? [] : kargs.states
-        let rstates = kargs.rstates == undefined? [] : kargs.rstates
-        let [keys, ndigs] = await keeper!.rotate(ncodes, transferable, states, rstates)
+        let states = kargs.states == undefined ? [] : kargs.states;
+        let rstates = kargs.rstates == undefined ? [] : kargs.rstates;
+        let [keys, ndigs] = await keeper!.rotate(
+            ncodes,
+            transferable,
+            states,
+            rstates
+        );
 
         let cuts = kargs.cuts ?? [];
         let adds = kargs.adds ?? [];
@@ -327,7 +341,7 @@ export class Identifier {
             data: data,
         });
 
-        let sigs = await keeper.sign(b(serder.raw))
+        let sigs = await keeper.sign(b(serder.raw));
 
         var jsondata: any = {
             rot: serder.ked,
@@ -367,9 +381,9 @@ export class Identifier {
         const hab = await this.get(name);
         const pre = hab.prefix;
 
-        const rpy = this.makeEndRole(pre, role, eid, stamp)
-        const keeper = this.client.manager!.get(hab)
-        const sigs = await keeper.sign(b(rpy.raw))
+        const rpy = this.makeEndRole(pre, role, eid, stamp);
+        const keeper = this.client.manager!.get(hab);
+        const sigs = await keeper.sign(b(rpy.raw));
 
         const jsondata = {
             rpy: rpy.ked,

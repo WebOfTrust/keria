@@ -16,31 +16,21 @@ export {};
 
 /** External module definition */
 export interface ExternalModule {
-    type: string, 
-    name: string, 
-    module: any, 
+    type: string;
+    name: string;
+    module: any;
 }
 
 export class KeyManager {
-<<<<<<< HEAD
-    private salter?: Salter
-    private modules?: any
-
-    constructor(salter: Salter, externalModules: ExternalModule[] = [] ) {
-
-        this.salter = salter
-        this.modules = []
-        externalModules.forEach((mod) => {
-            this.modules[mod.type] = mod.module
-        })
-=======
     private salter?: Salter;
-    // private externalModulees?: any
+    private modules?: any;
 
-    constructor(salter: Salter, _externalModules: any = undefined) {
+    constructor(salter: Salter, externalModules: ExternalModule[] = []) {
         this.salter = salter;
-        // this.externalModulees = _externalModules
->>>>>>> e42f976 (adds prettier)
+        this.modules = [];
+        externalModules.forEach((mod) => {
+            this.modules[mod.type] = mod.module;
+        });
     }
 
     new(algo: Algos, pidx: number, kargs: any) {
@@ -78,17 +68,6 @@ export class KeyManager {
                     kargs['nxts']
                 );
             case Algos.group:
-<<<<<<< HEAD
-                return new GroupKeeper(this, kargs["mhab"], kargs["states"], kargs["rstates"],kargs["keys"],kargs["ndigs"])
-            case Algos.extern:
-                let typ = kargs.extern_type
-                if ( typ in this.modules) {
-                    let mod = new this.modules[typ](pidx,kargs)
-                    return mod
-                } else {
-                    throw new Error(`unsupported external module type ${typ}`)
-                }
-=======
                 return new GroupKeeper(
                     this,
                     kargs['mhab'],
@@ -97,7 +76,14 @@ export class KeyManager {
                     kargs['keys'],
                     kargs['ndigs']
                 );
->>>>>>> e42f976 (adds prettier)
+            case Algos.extern:
+                let typ = kargs.extern_type;
+                if (typ in this.modules) {
+                    let mod = new this.modules[typ](pidx, kargs);
+                    return mod;
+                } else {
+                    throw new Error(`unsupported external module type ${typ}`);
+                }
             default:
                 throw new Error('Unknown algo');
         }
@@ -140,21 +126,6 @@ export class KeyManager {
                 kargs['nxts']
             );
         } else if (Algos.group in aid) {
-<<<<<<< HEAD
-            let kargs = aid[Algos.group]
-            return new GroupKeeper(this, kargs["mhab"], kargs["states"], kargs["rstates"],kargs["keys"],kargs["ndigs"])
-        } else if (Algos.extern in aid) {
-            let kargs = aid[Algos.randy]
-            let typ = kargs.extern_type
-            if ( typ in this.modules) {
-                let mod = new this.modules[typ](kargs["pidx"],kargs)
-                return mod
-            } else {
-                throw new Error(`unsupported external module type ${typ}`)
-            }
-        } else {
-            throw new Error(`Algo not allowed yet`)
-=======
             let kargs = aid[Algos.group];
             return new GroupKeeper(
                 this,
@@ -164,9 +135,17 @@ export class KeyManager {
                 kargs['keys'],
                 kargs['ndigs']
             );
+        } else if (Algos.extern in aid) {
+            let kargs = aid[Algos.randy];
+            let typ = kargs.extern_type;
+            if (typ in this.modules) {
+                let mod = new this.modules[typ](kargs['pidx'], kargs);
+                return mod;
+            } else {
+                throw new Error(`unsupported external module type ${typ}`);
+            }
         } else {
             throw new Error(`Algo not allowed yet`);
->>>>>>> e42f976 (adds prettier)
         }
     }
 }
@@ -678,30 +657,21 @@ export class GroupKeeper {
         this.gdigs = rstates.map((state) => state['n'][0]);
         return [this.gkeys, this.gdigs];
     }
-<<<<<<< HEAD
-    async sign(ser:Uint8Array, indexed:boolean=true, _indices:number[]|undefined=undefined, _ondices:number[]|undefined=undefined):Promise<Siger[]|Cigar[]>{
-        let key = this.mhab['state']['k'][0]
-        let ndig = this.mhab['state']['n'][0]
-=======
-    sign(
+
+    async sign(
         ser: Uint8Array,
         indexed: boolean = true,
         _indices: number[] | undefined = undefined,
         _ondices: number[] | undefined = undefined
-    ): Siger[] | Cigar[] {
+    ): Promise<Siger[] | Cigar[]> {
         let key = this.mhab['state']['k'][0];
         let ndig = this.mhab['state']['n'][0];
->>>>>>> e42f976 (adds prettier)
 
         let csi = this.gkeys!.indexOf(key);
         let pni = this.gdigs!.indexOf(ndig);
         let mkeeper = this.manager.get(this.mhab);
 
-<<<<<<< HEAD
-        return await mkeeper.sign(ser, indexed, [csi], [pni])
-=======
-        return mkeeper.sign(ser, indexed, [csi], [pni]);
->>>>>>> e42f976 (adds prettier)
+        return await mkeeper.sign(ser, indexed, [csi], [pni]);
     }
 
     params() {

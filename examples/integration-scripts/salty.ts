@@ -26,51 +26,85 @@ async function run() {
         state1.agent.i
     );
 
-    let icpResult = await client1.identifiers().create('aid1', {bran: '0123456789abcdefghijk'})
-    let op = await icpResult.op()
-    assert.equal(op['done'], true)
-    const aid1 = op['response']
-    const icp = new signify.Serder(aid1)
-    assert.equal(icp.pre, 'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK')
-    assert.equal(icp.verfers.length, 1)
-    assert.equal(icp.verfers[0].qb64, 'DPmhSfdhCPxr3EqjxzEtF8TVy0YX7ATo0Uc8oo2cnmY9')
-    assert.equal(icp.digers.length, 1)
-    assert.equal(icp.digers[0].qb64, 'EAORnRtObOgNiOlMolji-KijC_isa3lRDpHCsol79cOc')
-    assert.equal(icp.ked['kt'], '1')
-    assert.equal(icp.ked['nt'], '1')
-    let aids = await client1.identifiers().list()
-    assert.equal(aids.aids.length, 1)
-    let aid = aids.aids.pop()
-    assert.equal(aid.name, 'aid1')
-    let salt  = aid.salty
-    assert.equal(salt.pidx, 0)
-    assert.equal(salt.stem, 'signify:aid')
-    assert.equal(aid.prefix, icp.pre)
+    let icpResult = await client1
+        .identifiers()
+        .create('aid1', { bran: '0123456789abcdefghijk' });
+    let op = await icpResult.op();
+    assert.equal(op['done'], true);
+    const aid1 = op['response'];
+    const icp = new signify.Serder(aid1);
+    assert.equal(icp.pre, 'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK');
+    assert.equal(icp.verfers.length, 1);
+    assert.equal(
+        icp.verfers[0].qb64,
+        'DPmhSfdhCPxr3EqjxzEtF8TVy0YX7ATo0Uc8oo2cnmY9'
+    );
+    assert.equal(icp.digers.length, 1);
+    assert.equal(
+        icp.digers[0].qb64,
+        'EAORnRtObOgNiOlMolji-KijC_isa3lRDpHCsol79cOc'
+    );
+    assert.equal(icp.ked['kt'], '1');
+    assert.equal(icp.ked['nt'], '1');
+    let aids = await client1.identifiers().list();
+    assert.equal(aids.aids.length, 1);
+    let aid = aids.aids.pop();
+    assert.equal(aid.name, 'aid1');
+    let salt = aid.salty;
+    assert.equal(salt.pidx, 0);
+    assert.equal(salt.stem, 'signify:aid');
+    assert.equal(aid.prefix, icp.pre);
 
-    icpResult = await client1.identifiers().create('aid2', {count:3, ncount:3, isith:"2", nsith:"2", bran:"0123456789lmnopqrstuv"})
-    op = await icpResult.op()
-    assert.equal(op['done'], true)
-    const aid2 = op['response']
-    const icp2 = new signify.Serder(aid2)
-    assert.equal(icp2.pre,'EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX')
-    assert.equal(icp2.verfers.length, 3)
-    assert.equal(icp2.verfers[0].qb64, 'DGBw7C7AfC7jbD3jLLRS3SzIWFndM947TyNWKQ52iQx5')
-    assert.equal(icp2.verfers[1].qb64, 'DD_bHYFsgWXuCbz3SD0HjCIe_ITjRvEoCGuZ4PcNFFDz')
-    assert.equal(icp2.verfers[2].qb64, 'DEe9u8k0fm1wMFAuOIsCtCNrpduoaV5R21rAcJl0awze')
-    assert.equal(icp2.digers.length, 3)
-    assert.equal(icp2.digers[0].qb64, 'EML5FrjCpz8SEl4dh0U15l8bMRhV_O5iDcR1opLJGBSH')
-    assert.equal(icp2.digers[1].qb64, 'EJpKquuibYTqpwMDqEFAFs0gwq0PASAHZ_iDmSF3I2Vg')
-    assert.equal(icp2.digers[2].qb64, 'ELplTAiEKdobFhlf-dh1vUb2iVDW0dYOSzs1dR7fQo60')
-    assert.equal(icp2.ked['kt'], '2')
-    assert.equal(icp2.ked['nt'], '2')
-    aids = await client1.identifiers().list()
-    assert.equal(aids.aids.length, 2)
-    aid = aids.aids[1]
-    assert.equal(aid.name, 'aid2')
-    salt  = aid.salty
-    assert.equal(salt.pidx, 1)
-    assert.equal(salt.stem, 'signify:aid')
-    assert.equal(aid.prefix, icp2.pre)
+    icpResult = await client1
+        .identifiers()
+        .create('aid2', {
+            count: 3,
+            ncount: 3,
+            isith: '2',
+            nsith: '2',
+            bran: '0123456789lmnopqrstuv',
+        });
+    op = await icpResult.op();
+    assert.equal(op['done'], true);
+    const aid2 = op['response'];
+    const icp2 = new signify.Serder(aid2);
+    assert.equal(icp2.pre, 'EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX');
+    assert.equal(icp2.verfers.length, 3);
+    assert.equal(
+        icp2.verfers[0].qb64,
+        'DGBw7C7AfC7jbD3jLLRS3SzIWFndM947TyNWKQ52iQx5'
+    );
+    assert.equal(
+        icp2.verfers[1].qb64,
+        'DD_bHYFsgWXuCbz3SD0HjCIe_ITjRvEoCGuZ4PcNFFDz'
+    );
+    assert.equal(
+        icp2.verfers[2].qb64,
+        'DEe9u8k0fm1wMFAuOIsCtCNrpduoaV5R21rAcJl0awze'
+    );
+    assert.equal(icp2.digers.length, 3);
+    assert.equal(
+        icp2.digers[0].qb64,
+        'EML5FrjCpz8SEl4dh0U15l8bMRhV_O5iDcR1opLJGBSH'
+    );
+    assert.equal(
+        icp2.digers[1].qb64,
+        'EJpKquuibYTqpwMDqEFAFs0gwq0PASAHZ_iDmSF3I2Vg'
+    );
+    assert.equal(
+        icp2.digers[2].qb64,
+        'ELplTAiEKdobFhlf-dh1vUb2iVDW0dYOSzs1dR7fQo60'
+    );
+    assert.equal(icp2.ked['kt'], '2');
+    assert.equal(icp2.ked['nt'], '2');
+    aids = await client1.identifiers().list();
+    assert.equal(aids.aids.length, 2);
+    aid = aids.aids[1];
+    assert.equal(aid.name, 'aid2');
+    salt = aid.salty;
+    assert.equal(salt.pidx, 1);
+    assert.equal(salt.stem, 'signify:aid');
+    assert.equal(aid.prefix, icp2.pre);
 
     await client1.identifiers().create('aid3');
     aids = await client1.identifiers().list();

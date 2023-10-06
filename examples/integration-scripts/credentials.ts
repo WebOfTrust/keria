@@ -59,7 +59,7 @@ async function run() {
     );
 
     // Create two identifiers, one for each client
-    let icpResult1 = await client1.identifiers().create('issuer',  {
+    let icpResult1 = await client1.identifiers().create('issuer', {
         toad: 3,
         wits: [
             'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
@@ -177,7 +177,9 @@ async function run() {
     console.log('Verifier resolved 3 OOBIs');
 
     // Create registry for issuer
-    op1 = await client1.registries().create('issuer', 'vLEI');
+    op1 = await client1
+        .registries()
+        .create({ name: 'issuer', registryName: 'vLEI' });
     while (!op1['done']) {
         op1 = await client1.operations().get(op1.name);
         await new Promise((resolve) => setTimeout(resolve, 1000));

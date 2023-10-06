@@ -29,9 +29,15 @@ export class Exchanges {
      * @param payload
      * @param embeds
      */
-    async createExchangeMessage(sender: Dict<any>, route: string, payload: Dict<any>, embeds: Dict<any>): Promise<[Serder, string[], string]> {
-        let keeper = this.client.manager!.get(sender)
-        let [exn, end] = exchange(route,
+    async createExchangeMessage(
+        sender: Dict<any>,
+        route: string,
+        payload: Dict<any>,
+        embeds: Dict<any>
+    ): Promise<[Serder, string[], string]> {
+        let keeper = this.client.manager!.get(sender);
+        let [exn, end] = exchange(
+            route,
             payload,
             sender['prefix'],
             undefined,
@@ -41,8 +47,8 @@ export class Exchanges {
             embeds
         );
 
-        let sigs = await keeper.sign(b(exn.raw))
-        return [exn, sigs, d(end)]
+        let sigs = await keeper.sign(b(exn.raw));
+        return [exn, sigs, d(end)];
     }
 
     /**
@@ -57,12 +63,29 @@ export class Exchanges {
      * @param embeds
      * @param recipients
      */
-    async send(name: string, topic: string, sender: Dict<any>, route: string, payload: Dict<any>, embeds: Dict<any>,
-        recipients: string[]): Promise<any> {
-
-        let [exn, sigs, atc] = await this.createExchangeMessage(sender, route, payload, embeds)
-        return await this.sendFromEvents(name, topic, exn, sigs, atc, recipients)
-
+    async send(
+        name: string,
+        topic: string,
+        sender: Dict<any>,
+        route: string,
+        payload: Dict<any>,
+        embeds: Dict<any>,
+        recipients: string[]
+    ): Promise<any> {
+        let [exn, sigs, atc] = await this.createExchangeMessage(
+            sender,
+            route,
+            payload,
+            embeds
+        );
+        return await this.sendFromEvents(
+            name,
+            topic,
+            exn,
+            sigs,
+            atc,
+            recipients
+        );
     }
 
     /**

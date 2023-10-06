@@ -59,7 +59,7 @@ async function run() {
     );
 
     // Create three identifiers, one for each client
-    let icpResult1 = await client1.identifiers().create('member1',  {
+    let icpResult1 = await client1.identifiers().create('member1', {
         toad: 3,
         wits: [
             'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
@@ -78,7 +78,7 @@ async function run() {
         .addEndRole('member1', 'agent', client1!.agent!.pre);
     console.log("Member1's AID:", aid1.prefix);
 
-    let icpResult2 = await client2.identifiers().create('member2',  {
+    let icpResult2 = await client2.identifiers().create('member2', {
         toad: 3,
         wits: [
             'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
@@ -97,7 +97,7 @@ async function run() {
         .addEndRole('member2', 'agent', client2!.agent!.pre);
     console.log("Member2's AID:", aid2.prefix);
 
-    let icpResult3 = await client3.identifiers().create('member3',  {
+    let icpResult3 = await client3.identifiers().create('member3', {
         toad: 3,
         wits: [
             'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
@@ -195,9 +195,9 @@ async function run() {
     console.log('Member1 marked challenge response as accepted');
 
     // First member start the creation of a multisig identifier
-    let rstates = [aid1["state"], aid2["state"], aid3["state"]]
-    let states = rstates
-    icpResult1 = await client1.identifiers().create("multisig",{
+    let rstates = [aid1['state'], aid2['state'], aid3['state']];
+    let states = rstates;
+    icpResult1 = await client1.identifiers().create('multisig', {
         algo: signify.Algos.group,
         mhab: aid1,
         isith: 3,
@@ -255,11 +255,11 @@ async function run() {
         await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
-    let res = await client2.groups().getRequest(msgSaid)
-    let exn = res[0].exn
-    let icp = exn.e.icp
-    
-    icpResult2 = await client2.identifiers().create("multisig",{
+    let res = await client2.groups().getRequest(msgSaid);
+    let exn = res[0].exn;
+    let icp = exn.e.icp;
+
+    icpResult2 = await client2.identifiers().create('multisig', {
         algo: signify.Algos.group,
         mhab: aid2,
         isith: icp.kt,
@@ -312,10 +312,10 @@ async function run() {
         await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
-    res = await client3.groups().getRequest(msgSaid)
-    exn = res[0].exn
-    icp = exn.e.icp
-    icpResult3 = await client3.identifiers().create("multisig",{
+    res = await client3.groups().getRequest(msgSaid);
+    exn = res[0].exn;
+    icp = exn.e.icp;
+    icpResult3 = await client3.identifiers().create('multisig', {
         algo: signify.Algos.group,
         mhab: aid3,
         isith: icp.kt,
@@ -769,13 +769,11 @@ async function run() {
 
     console.log('Starting multisig registry creation');
 
-    let vcpRes1 = await client1
-        .registries()
-        .create({
-            name: 'member1',
-            registryName: 'vLEI Registry',
-            nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
-        });
+    let vcpRes1 = await client1.registries().create({
+        name: 'member1',
+        registryName: 'vLEI Registry',
+        nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
+    });
     op1 = await vcpRes1.op();
     serder = vcpRes1.regser;
     let anc = vcpRes1.serder;
@@ -825,13 +823,11 @@ async function run() {
     res = await client2.groups().getRequest(msgSaid);
     exn = res[0].exn;
 
-    let vcpRes2 = await client2
-        .registries()
-        .create({
-            name: 'member2',
-            registryName: 'vLEI Registry',
-            nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
-        });
+    let vcpRes2 = await client2.registries().create({
+        name: 'member2',
+        registryName: 'vLEI Registry',
+        nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
+    });
     op2 = await vcpRes2.op();
     serder = vcpRes2.regser;
     anc = vcpRes2.serder;
@@ -880,13 +876,11 @@ async function run() {
     res = await client3.groups().getRequest(msgSaid);
     exn = res[0].exn;
 
-    let vcpRes3 = await client3
-        .registries()
-        .create({
-            name: 'member3',
-            registryName: 'vLEI Registry',
-            nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
-        });
+    let vcpRes3 = await client3.registries().create({
+        name: 'member3',
+        registryName: 'vLEI Registry',
+        nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
+    });
     op3 = await vcpRes3.op();
     serder = vcpRes2.regser;
     anc = vcpRes2.serder;

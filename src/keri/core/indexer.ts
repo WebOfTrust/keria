@@ -4,74 +4,43 @@ import Base64 from 'urlsafe-base64';
 import { Buffer } from 'buffer';
 
 export class IndexerCodex {
-<<<<<<< HEAD
-    Ed25519_Sig: string = 'A'  // Ed25519 sig appears same in both lists if any.
-    Ed25519_Crt_Sig: string = 'B'  // Ed25519 sig appears in current list only.
-    ECDSA_256k1_Sig: string = 'C'  // ECDSA secp256k1 sig appears same in both lists if any.
-    ECDSA_256k1_Crt_Sig: string = 'D'  // ECDSA secp256k1 sig appears in current list.
-    ECDSA_256r1_Sig: string = "E"  // ECDSA secp256r1 sig appears same in both lists if any.
-    ECDSA_256r1_Crt_Sig: string = "F"  // ECDSA secp256r1 sig appears in current list.
-    Ed448_Sig: string = '0A'  // Ed448 signature appears in both lists.
-    Ed448_Crt_Sig: string = '0B'  // Ed448 signature appears in current list only.
-    Ed25519_Big_Sig: string = '2A'  // Ed25519 sig appears in both lists.
-    Ed25519_Big_Crt_Sig: string = '2B'  // Ed25519 sig appears in current list only.
-    ECDSA_256k1_Big_Sig: string = '2C'  // ECDSA secp256k1 sig appears in both lists.
-    ECDSA_256k1_Big_Crt_Sig: string = '2D'  // ECDSA secp256k1 sig appears in current list only.
-    ECDSA_256r1_Big_Sig: string = "2E"  // ECDSA secp256r1 sig appears in both lists.
-    ECDSA_256r1_Big_Crt_Sig: string = "2F"  // ECDSA secp256r1 sig appears in current list only.
-    Ed448_Big_Sig: string = '3A'  // Ed448 signature appears in both lists.
-    Ed448_Big_Crt_Sig: string = '3B'  // Ed448 signature appears in current list only.
-    
-=======
     Ed25519_Sig: string = 'A'; // Ed25519 sig appears same in both lists if any.
     Ed25519_Crt_Sig: string = 'B'; // Ed25519 sig appears in current list only.
     ECDSA_256k1_Sig: string = 'C'; // ECDSA secp256k1 sig appears same in both lists if any.
     ECDSA_256k1_Crt_Sig: string = 'D'; // ECDSA secp256k1 sig appears in current list.
+    ECDSA_256r1_Sig: string = 'E'; // ECDSA secp256r1 sig appears same in both lists if any.
+    ECDSA_256r1_Crt_Sig: string = 'F'; // ECDSA secp256r1 sig appears in current list.
     Ed448_Sig: string = '0A'; // Ed448 signature appears in both lists.
     Ed448_Crt_Sig: string = '0B'; // Ed448 signature appears in current list only.
     Ed25519_Big_Sig: string = '2A'; // Ed25519 sig appears in both lists.
     Ed25519_Big_Crt_Sig: string = '2B'; // Ed25519 sig appears in current list only.
     ECDSA_256k1_Big_Sig: string = '2C'; // ECDSA secp256k1 sig appears in both lists.
     ECDSA_256k1_Big_Crt_Sig: string = '2D'; // ECDSA secp256k1 sig appears in current list only.
+    ECDSA_256r1_Big_Sig: string = '2E'; // ECDSA secp256r1 sig appears in both lists.
+    ECDSA_256r1_Big_Crt_Sig: string = '2F'; // ECDSA secp256r1 sig appears in current list only.
     Ed448_Big_Sig: string = '3A'; // Ed448 signature appears in both lists.
     Ed448_Big_Crt_Sig: string = '3B'; // Ed448 signature appears in current list only.
->>>>>>> e42f976 (adds prettier)
 }
 
 export const IdrDex = new IndexerCodex();
 
 export class IndexedSigCodex {
-<<<<<<< HEAD
-    Ed25519_Sig: string = 'A'  // Ed25519 sig appears same in both lists if any.
-    Ed25519_Crt_Sig: string = 'B'  // Ed25519 sig appears in current list only.
-    ECDSA_256k1_Sig: string = 'C'  // ECDSA secp256k1 sig appears same in both lists if any.
-    ECDSA_256k1_Crt_Sig: string = 'D'  // ECDSA secp256k1 sig appears in current list.
-    ECDSA_256r1_Sig: string = "E"  // ECDSA secp256r1 sig appears same in both lists if any.
-    ECDSA_256r1_Crt_Sig: string = "F"  // ECDSA secp256r1 sig appears in current list.
-    Ed448_Sig: string = '0A'  // Ed448 signature appears in both lists.
-    Ed448_Crt_Sig: string = '0B'  // Ed448 signature appears in current list only.
-    Ed25519_Big_Sig: string = '2A'  // Ed25519 sig appears in both lists.
-    Ed25519_Big_Crt_Sig: string = '2B'  // Ed25519 sig appears in current list only.
-    ECDSA_256k1_Big_Sig: string = '2C'  // ECDSA secp256k1 sig appears in both lists.
-    ECDSA_256k1_Big_Crt_Sig: string = '2D'  // ECDSA secp256k1 sig appears in current list only.
-    ECDSA_256r1_Big_Sig: string = "2E"  // ECDSA secp256r1 sig appears in both lists.
-    ECDSA_256r1_Big_Crt_Sig: string = "2F"  // ECDSA secp256r1 sig appears in current list only.
-    Ed448_Big_Sig: string = '3A'  // Ed448 signature appears in both lists.
-    Ed448_Big_Crt_Sig: string = '3B'  // Ed448 signature appears in current list only.
-=======
     Ed25519_Sig: string = 'A'; // Ed25519 sig appears same in both lists if any.
     Ed25519_Crt_Sig: string = 'B'; // Ed25519 sig appears in current list only.
     ECDSA_256k1_Sig: string = 'C'; // ECDSA secp256k1 sig appears same in both lists if any.
     ECDSA_256k1_Crt_Sig: string = 'D'; // ECDSA secp256k1 sig appears in current list.
+    ECDSA_256r1_Sig: string = 'E'; // ECDSA secp256r1 sig appears same in both lists if any.
+    ECDSA_256r1_Crt_Sig: string = 'F'; // ECDSA secp256r1 sig appears in current list.
     Ed448_Sig: string = '0A'; // Ed448 signature appears in both lists.
     Ed448_Crt_Sig: string = '0B'; // Ed448 signature appears in current list only.
     Ed25519_Big_Sig: string = '2A'; // Ed25519 sig appears in both lists.
     Ed25519_Big_Crt_Sig: string = '2B'; // Ed25519 sig appears in current list only.
     ECDSA_256k1_Big_Sig: string = '2C'; // ECDSA secp256k1 sig appears in both lists.
     ECDSA_256k1_Big_Crt_Sig: string = '2D'; // ECDSA secp256k1 sig appears in current list only.
+    ECDSA_256r1_Big_Sig: string = '2E'; // ECDSA secp256r1 sig appears in both lists.
+    ECDSA_256r1_Big_Crt_Sig: string = '2F'; // ECDSA secp256r1 sig appears in current list only.
     Ed448_Big_Sig: string = '3A'; // Ed448 signature appears in both lists.
     Ed448_Big_Crt_Sig: string = '3B'; // Ed448 signature appears in current list only.
->>>>>>> e42f976 (adds prettier)
 
     has(prop: string): boolean {
         let m = new Map(Array.from(Object.entries(this), (v) => [v[1], v[0]]));
@@ -82,23 +51,14 @@ export class IndexedSigCodex {
 export const IdxSigDex = new IndexedSigCodex();
 
 export class IndexedCurrentSigCodex {
-<<<<<<< HEAD
-    Ed25519_Crt_Sig: string =  'B'  // Ed25519 sig appears in current list only.
-    ECDSA_256k1_Crt_Sig: string =  'D'  // ECDSA secp256k1 sig appears in current list only.
-    ECDSA_256r1_Crt_Sig: string = "F"  // ECDSA secp256r1 sig appears in current list.
-    Ed448_Crt_Sig: string =  '0B'  // Ed448 signature appears in current list only.
-    Ed25519_Big_Crt_Sig: string =  '2B'  // Ed25519 sig appears in current list only.
-    ECDSA_256k1_Big_Crt_Sig: string =  '2D'  // ECDSA secp256k1 sig appears in current list only.
-    ECDSA_256r1_Big_Crt_Sig: string = "2F"  // ECDSA secp256r1 sig appears in current list only.
-    Ed448_Big_Crt_Sig: string =  '3B'  // Ed448 signature appears in current list only.
-=======
     Ed25519_Crt_Sig: string = 'B'; // Ed25519 sig appears in current list only.
     ECDSA_256k1_Crt_Sig: string = 'D'; // ECDSA secp256k1 sig appears in current list only.
+    ECDSA_256r1_Crt_Sig: string = 'F'; // ECDSA secp256r1 sig appears in current list.
     Ed448_Crt_Sig: string = '0B'; // Ed448 signature appears in current list only.
     Ed25519_Big_Crt_Sig: string = '2B'; // Ed25519 sig appears in current list only.
     ECDSA_256k1_Big_Crt_Sig: string = '2D'; // ECDSA secp256k1 sig appears in current list only.
+    ECDSA_256r1_Big_Crt_Sig: string = '2F'; // ECDSA secp256r1 sig appears in current list only.
     Ed448_Big_Crt_Sig: string = '3B'; // Ed448 signature appears in current list only.
->>>>>>> e42f976 (adds prettier)
 
     has(prop: string): boolean {
         let m = new Map(Array.from(Object.entries(this), (v) => [v[1], v[0]]));
@@ -213,30 +173,14 @@ export class Indexer {
         ['4', 2],
     ]);
 
-<<<<<<< HEAD
-    static Sizes = new Map(Object.entries({
-        'A': new Xizage(1, 1, 0, 88, 0),
-        'B': new Xizage(1, 1, 0, 88, 0),
-        'C': new Xizage(1, 1, 0, 88, 0),
-        'D': new Xizage(1, 1, 0, 88, 0),
-        'E': new Xizage(1, 1, 0, 88, 0),
-        'F': new Xizage(1, 1, 0, 88, 0),
-        '0A': new Xizage(2, 2, 1, 156, 0),
-        '0B': new Xizage(2, 2, 1, 156, 0),
-
-        '2A': new Xizage(2, 4, 2, 92, 0),
-        '2B': new Xizage(2, 4, 2, 92, 0),
-        '2C': new Xizage(2, 4, 2, 92, 0),
-        '2D': new Xizage(2, 4, 2, 92, 0),
-        '2E': new Xizage(2, 4, 2, 92, 0),
-        '2F': new Xizage(2, 4, 2, 92, 0),
-=======
     static Sizes = new Map(
         Object.entries({
             A: new Xizage(1, 1, 0, 88, 0),
             B: new Xizage(1, 1, 0, 88, 0),
             C: new Xizage(1, 1, 0, 88, 0),
             D: new Xizage(1, 1, 0, 88, 0),
+            E: new Xizage(1, 1, 0, 88, 0),
+            F: new Xizage(1, 1, 0, 88, 0),
             '0A': new Xizage(2, 2, 1, 156, 0),
             '0B': new Xizage(2, 2, 1, 156, 0),
 
@@ -244,7 +188,8 @@ export class Indexer {
             '2B': new Xizage(2, 4, 2, 92, 0),
             '2C': new Xizage(2, 4, 2, 92, 0),
             '2D': new Xizage(2, 4, 2, 92, 0),
->>>>>>> e42f976 (adds prettier)
+            '2E': new Xizage(2, 4, 2, 92, 0),
+            '2F': new Xizage(2, 4, 2, 92, 0),
 
             '3A': new Xizage(2, 6, 3, 160, 0),
             '3B': new Xizage(2, 6, 3, 160, 0),
