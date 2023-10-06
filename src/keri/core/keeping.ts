@@ -14,14 +14,24 @@ import { Cigar } from './cigar';
 
 export {};
 
+/** External module definition */
+export interface ExternalModule {
+    type: string, 
+    name: string, 
+    module: any, 
+}
+
 export class KeyManager {
     private salter?: Salter
-    // private externalModulees?: any
+    private modules?: any
 
-    constructor(salter: Salter, _externalModules: any = undefined ) {
+    constructor(salter: Salter, externalModules: ExternalModule[] = [] ) {
 
         this.salter = salter
-        // this.externalModulees = _externalModules
+        this.modules = []
+        externalModules.forEach((mod) => {
+            this.modules[mod.type] = mod.module
+        })
     }
 
     new(algo: Algos, pidx: number, kargs: any){
@@ -32,6 +42,14 @@ export class KeyManager {
                 return new RandyKeeper(this.salter!, kargs["code"], kargs["count"], kargs["icodes"], kargs["transferable"], kargs["ncode"], kargs["ncount"], kargs["ncodes"], kargs["dcode"], kargs["prxs"], kargs["nxts"])
             case Algos.group:
                 return new GroupKeeper(this, kargs["mhab"], kargs["states"], kargs["rstates"],kargs["keys"],kargs["ndigs"])
+            case Algos.extern:
+                let typ = kargs.extern_type
+                if ( typ in this.modules) {
+                    let mod = new this.modules[typ](pidx,kargs)
+                    return mod
+                } else {
+                    throw new Error(`unsupported external module type ${typ}`)
+                }
             default:
                 throw new Error('Unknown algo')
         }
@@ -48,7 +66,16 @@ export class KeyManager {
         } else if (Algos.group in aid) {
             let kargs = aid[Algos.group]
             return new GroupKeeper(this, kargs["mhab"], kargs["states"], kargs["rstates"],kargs["keys"],kargs["ndigs"])
-        } else{
+        } else if (Algos.extern in aid) {
+            let kargs = aid[Algos.randy]
+            let typ = kargs.extern_type
+            if ( typ in this.modules) {
+                let mod = new this.modules[typ](kargs["pidx"],kargs)
+                return mod
+            } else {
+                throw new Error(`unsupported external module type ${typ}`)
+            }
+        } else {
             throw new Error(`Algo not allowed yet`)
         }
     }
@@ -385,7 +412,7 @@ export class RandyKeeper {
         this.gdigs = rstates.map(state => state['n'][0])
         return [this.gkeys, this.gdigs]
     }
-    sign(ser:Uint8Array, indexed:boolean=true, _indices:number[]|undefined=undefined, _ondices:number[]|undefined=undefined):Siger[]|Cigar[]{
+    async sign(ser:Uint8Array, indexed:boolean=true, _indices:number[]|undefined=undefined, _ondices:number[]|undefined=undefined):Promise<Siger[]|Cigar[]>{
         let key = this.mhab['state']['k'][0]
         let ndig = this.mhab['state']['n'][0]
 
@@ -393,7 +420,7 @@ export class RandyKeeper {
         let pni = this.gdigs!.indexOf(ndig)
         let mkeeper = this.manager.get(this.mhab)
 
-        return mkeeper.sign(ser, indexed, [csi], [pni])
+        return await mkeeper.sign(ser, indexed, [csi], [pni])
     }
 
     params(){

@@ -31,7 +31,9 @@ export interface CreateIdentiferArgs {
     bran?: string,
     count?: number,
     ncount?: number,
-    tier?: Tier
+    tier?: Tier,
+    extern_type?: string,
+    extern?: any
 }
 
 /** Arguments required to rotate an identfier */
@@ -109,7 +111,7 @@ export class Identifier {
      * @param {CreateIdentiferArgs} [kargs] Optional parameters to create the identifier
      * @returns {EventResult} The inception result
      */
-    create(name: string, kargs:CreateIdentiferArgs={}): EventResult {
+    async create(name: string, kargs:CreateIdentiferArgs={}): Promise<EventResult> {
 
         const algo = kargs.algo == undefined ? Algos.salty : kargs.algo
 
@@ -134,6 +136,8 @@ export class Identifier {
         let count = kargs.count
         let ncount = kargs.ncount
         let tier = kargs.tier
+        let extern_type = kargs.extern_type
+        let extern = kargs.extern
 
         let xargs = {
             transferable: transferable,
@@ -157,11 +161,13 @@ export class Identifier {
             bran: bran,
             count: count,
             ncount: ncount,
-            tier: tier
+            tier: tier,
+            extern_type: extern_type,
+            extern: extern
         }
 
         let keeper = this.client.manager!.new(algo, this.client.pidx, xargs)
-        let [keys, ndigs] = keeper!.incept(transferable)
+        let [keys, ndigs] = await keeper!.incept(transferable)
         wits = wits !== undefined ? wits : []
         let serder: Serder|undefined = undefined
         if (delpre == undefined) {
@@ -198,7 +204,7 @@ export class Identifier {
             })
         }
 
-        let sigs = keeper!.sign(b(serder.raw))
+        let sigs = await keeper!.sign(b(serder.raw))
         var jsondata: any = {
             name: name,
             icp: serder.ked,
@@ -234,7 +240,7 @@ export class Identifier {
 
         let serder = interact({ pre: pre, sn: sn + 1, data: data, dig: dig, version: undefined, kind: undefined })
         let keeper = this.client!.manager!.get(hab)
-        let sigs = keeper.sign(b(serder.raw))
+        let sigs = await keeper.sign(b(serder.raw))
 
         let jsondata: any = {
             ixn: serder.ked,
@@ -287,7 +293,7 @@ export class Identifier {
 
         let states = kargs.states == undefined? [] : kargs.states
         let rstates = kargs.rstates == undefined? [] : kargs.rstates
-        let [keys, ndigs] = keeper!.rotate(ncodes, transferable, states, rstates)
+        let [keys, ndigs] = await keeper!.rotate(ncodes, transferable, states, rstates)
 
         let cuts = kargs.cuts ?? []
         let adds = kargs.adds ?? []
@@ -308,7 +314,7 @@ export class Identifier {
             data: data
         })
 
-        let sigs = keeper.sign(b(serder.raw))
+        let sigs = await keeper.sign(b(serder.raw))
 
         var jsondata: any = {
             rot: serder.ked,
@@ -339,7 +345,7 @@ export class Identifier {
 
         const rpy = this.makeEndRole(pre, role, eid, stamp)
         const keeper = this.client.manager!.get(hab)
-        const sigs = keeper.sign(b(rpy.raw))
+        const sigs = await keeper.sign(b(rpy.raw))
 
         const jsondata = {
             rpy: rpy.ked,

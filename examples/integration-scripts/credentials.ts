@@ -30,7 +30,7 @@ async function run() {
 
 
     // Create two identifiers, one for each client
-    let icpResult1 = client1.identifiers().create('issuer',  {
+    let icpResult1 = await client1.identifiers().create('issuer',  {
         toad: 3,
         wits: [
             "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",

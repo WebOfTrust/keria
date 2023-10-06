@@ -1,0 +1,20 @@
+{
+    "name": "bip39_shim",
+    "type": "module",
+    "private": true,
+    "version": "0.0.1",
+    "scripts": {},
+    "dependencies": {
+        "bip39": "^3.1.0",
+        "bip39-light": "^1.0.7",
+        "signify-ts": "file:../../../"
+    },
+    "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "^5.57.1",
+        "@typescript-eslint/parser": "^5.57.1",
+        "eslint": "^8.38.0",
+        "eslint-plugin-react-hooks": "^4.6.0",
+        "eslint-plugin-react-refresh": "^0.3.4",
+        "typescript": "^5.0.2"
+    }
+}

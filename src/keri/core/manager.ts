@@ -13,7 +13,8 @@ import {b} from "./core";
 export enum Algos {
     randy = "randy",
     salty = "salty",
-    group = "group"
+    group = "group",
+    extern = "extern"
 }
 
 class PubLot {

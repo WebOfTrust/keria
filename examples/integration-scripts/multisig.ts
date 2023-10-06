@@ -30,7 +30,7 @@ async function run() {
 
 
     // Create three identifiers, one for each client
-    let icpResult1 = client1.identifiers().create('member1',  {
+    let icpResult1 = await client1.identifiers().create('member1',  {
         toad: 3,
         wits: [
             "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
@@ -46,7 +46,7 @@ async function run() {
     await client1.identifiers().addEndRole("member1", 'agent', client1!.agent!.pre)
     console.log("Member1's AID:", aid1.prefix)
 
-    let icpResult2 = client2.identifiers().create('member2',  {
+    let icpResult2 = await client2.identifiers().create('member2',  {
         toad: 3,
         wits: [
             "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
@@ -62,7 +62,7 @@ async function run() {
     await client2.identifiers().addEndRole("member2", 'agent', client2!.agent!.pre)
     console.log("Member2's AID:", aid2.prefix)
 
-    let icpResult3 = client3.identifiers().create('member3',  {
+    let icpResult3 = await client3.identifiers().create('member3',  {
         toad: 3,
         wits: [
             "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
@@ -156,7 +156,7 @@ async function run() {
     // First member start the creation of a multisig identifier
     let rstates = [aid1["state"], aid2["state"], aid3["state"]]
     let states = rstates
-    icpResult1 = client1.identifiers().create("multisig",{
+    icpResult1 = await client1.identifiers().create("multisig",{
         algo: signify.Algos.group,
         mhab: aid1,
         isith: 3, 
@@ -206,7 +206,7 @@ async function run() {
     let exn = res[0].exn
     let icp = exn.e.icp
     
-    icpResult2 = client2.identifiers().create("multisig",{
+    icpResult2 = await client2.identifiers().create("multisig",{
         algo: signify.Algos.group,
         mhab: aid2,
         isith: icp.kt, 
@@ -252,7 +252,7 @@ async function run() {
     res = await client3.groups().getRequest(msgSaid)
     exn = res[0].exn
     icp = exn.e.icp
-    icpResult3 = client3.identifiers().create("multisig",{
+    icpResult3 = await client3.identifiers().create("multisig",{
         algo: signify.Algos.group,
         mhab: aid3,
         isith: icp.kt, 
