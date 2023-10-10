@@ -79,7 +79,7 @@ class RegistryCollectionEnd:
 
         hab = agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description="name is not a valid reference to an identfier")
+            raise falcon.HTTPNotFound(description="name is not a valid reference to an identifier")
 
         res = []
         for name, registry in agent.rgy.regs.items():
@@ -136,7 +136,7 @@ class RegistryCollectionEnd:
                       type: array
                       items:
                          type: string
-                      description: List of qb64 AIDs of witnesses to be used for the new group identfier.
+                      description: List of qb64 AIDs of witnesses to be used for the new group identifier.
                     estOnly:
                       type: boolean
                       required: false
@@ -159,7 +159,7 @@ class RegistryCollectionEnd:
 
         hab = agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description="alias is not a valid reference to an identfier")
+            raise falcon.HTTPNotFound(description="alias is not a valid reference to an identifier")
 
         registry = agent.rgy.makeSignifyRegistry(name=rname, prefix=hab.pre, regser=vcp)
 
@@ -207,7 +207,7 @@ class RegistryResourceEnd:
 
         hab = agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identfier")
+            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
 
         registry = agent.rgy.registryByName(registryName)
         if registry is None:
@@ -354,7 +354,7 @@ class CredentialQueryCollectionEnd:
         agent = req.context.agent
         hab = agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description="name is not a valid reference to an identfier")
+            raise falcon.HTTPNotFound(description="name is not a valid reference to an identifier")
 
         try:
             body = req.get_media()
@@ -473,7 +473,7 @@ class CredentialCollectionEnd:
         body = req.get_media()
         hab = agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description="name is not a valid reference to an identfier")
+            raise falcon.HTTPNotFound(description="name is not a valid reference to an identifier")
 
         creder = proving.Creder(ked=httping.getRequiredParam(body, "acdc"))
         iserder = coring.Serder(ked=httping.getRequiredParam(body, "iss"))
@@ -559,7 +559,7 @@ class CredentialResourceEnd:
 
         hab = agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description="name is not a valid reference to an identfier")
+            raise falcon.HTTPNotFound(description="name is not a valid reference to an identifier")
 
         accept = req.get_header("accept")
         if accept == "application/json+cesr":
@@ -650,7 +650,7 @@ class CredentialResourceEnd:
         body = req.get_media()
         hab = agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description="name is not a valid reference to an identfier")
+            raise falcon.HTTPNotFound(description="name is not a valid reference to an identifier")
 
         rserder = coring.Serder(ked=httping.getRequiredParam(body, "rev"))
 
