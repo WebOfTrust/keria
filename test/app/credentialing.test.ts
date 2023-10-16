@@ -1,11 +1,12 @@
-import { strict as assert } from 'assert';
-import { SignifyClient } from '../../src/keri/app/clienting';
+import {strict as assert} from 'assert';
+import {SignifyClient} from '../../src/keri/app/clienting';
 
-import { Authenticater } from '../../src/keri/core/authing';
-import { Salter, Tier } from '../../src/keri/core/salter';
+import {Authenticater} from '../../src/keri/core/authing';
+import {Salter, Tier} from '../../src/keri/core/salter';
 import libsodium from 'libsodium-wrappers-sumo';
 import fetchMock from 'jest-fetch-mock';
 import 'whatwg-fetch';
+import {Ident, Ilks, interact, Saider, Serder, Serials, versify} from "../../src";
 
 fetchMock.enableMocks();
 
@@ -104,7 +105,7 @@ const mockCredential = {
         d: 'ENf3IEYwYtFmlq5ZzoI-zFzeR7E3ZNRN2YH_0KAFbdJW',
         ri: 'EGK216v1yguLfex4YRFnG7k1sXRjh3OKY7QqzdKsx7df',
         ra: {},
-        a: { s: 2, d: 'EIpgyKVF0z0Pcn2_HgbWhEKmJhOXFeD4SA62SrxYXOLt' },
+        a: {s: 2, d: 'EIpgyKVF0z0Pcn2_HgbWhEKmJhOXFeD4SA62SrxYXOLt'},
         dt: '2023-08-23T15:16:07.553000+00:00',
         et: 'iss',
     },
@@ -112,9 +113,9 @@ const mockCredential = {
 
 fetchMock.mockResponse((req) => {
     if (req.url.startsWith(url + '/agent')) {
-        return Promise.resolve({ body: mockConnect, init: { status: 202 } });
+        return Promise.resolve({body: mockConnect, init: {status: 202}});
     } else if (req.url == boot_url + '/boot') {
-        return Promise.resolve({ body: '', init: { status: 202 } });
+        return Promise.resolve({body: '', init: {status: 202}});
     } else {
         let headers = new Headers();
         let signed_headers = new Headers();
@@ -130,7 +131,7 @@ fetchMock.mockResponse((req) => {
         headers.set('Content-Type', 'application/json');
 
         const requrl = new URL(req.url);
-        let salter = new Salter({ qb64: '0AAwMTIzNDU2Nzg5YWJjZGVm' });
+        let salter = new Salter({qb64: '0AAwMTIzNDU2Nzg5YWJjZGVm'});
         let signer = salter.signer(
             'A',
             true,
@@ -150,7 +151,7 @@ fetchMock.mockResponse((req) => {
 
         return Promise.resolve({
             body: JSON.stringify(body),
-            init: { status: 202, headers: signed_headers },
+            init: {status: 202, headers: signed_headers},
         });
     }
 });
@@ -169,9 +170,9 @@ describe('Credentialing', () => {
 
         let kargs = {
             filter: {
-                '-i': { $eq: 'EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX' },
+                '-i': {$eq: 'EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX'},
             },
-            sort: [{ '-s': 1 }],
+            sort: [{'-s': 1}],
             limit: 25,
             skip: 5,
         };
@@ -191,7 +192,7 @@ describe('Credentialing', () => {
         assert.equal(
             lastCall[0]!,
             url +
-                '/identifiers/aid1/credentials/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao'
+            '/identifiers/aid1/credentials/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao'
         );
         assert.equal(lastCall[1]!.method, 'GET');
 
@@ -203,33 +204,31 @@ describe('Credentialing', () => {
             registry,
             schema,
             isuee,
-            { LEI: '1234' },
+            {LEI: '1234'},
             {},
             {},
+            undefined,
             false
         );
         lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
         lastBody = JSON.parse(lastCall[1]!.body!.toString());
         assert.equal(lastCall[0]!, url + '/identifiers/aid1/credentials');
         assert.equal(lastCall[1]!.method, 'POST');
-        assert.equal(lastBody.cred.ri, registry);
-        assert.equal(lastBody.cred.s, schema);
-        assert.equal(lastBody.cred.a.i, isuee);
-        assert.equal(lastBody.cred.a.LEI, '1234');
+        assert.equal(lastBody.acdc.ri, registry);
+        assert.equal(lastBody.acdc.s, schema);
+        assert.equal(lastBody.acdc.a.i, isuee);
+        assert.equal(lastBody.acdc.a.LEI, '1234');
         assert.equal(lastBody.iss.s, '0');
         assert.equal(lastBody.iss.t, 'iss');
         assert.equal(lastBody.iss.ri, registry);
-        assert.equal(lastBody.iss.i, lastBody.cred.d);
+        assert.equal(lastBody.iss.i, lastBody.acdc.d);
         assert.equal(lastBody.ixn.t, 'ixn');
-        assert.equal(lastBody.ixn.i, lastBody.cred.i);
-        assert.equal(lastBody.ixn.p, lastBody.cred.i);
-        assert.equal(lastBody.path, '6AABAAA-');
-        assert.equal(lastBody.csigs[0].substring(0, 2), 'AA');
-        assert.equal(lastBody.csigs[0].length, 88);
+        assert.equal(lastBody.ixn.i, lastBody.acdc.i);
+        assert.equal(lastBody.ixn.p, lastBody.acdc.i);
         assert.equal(lastBody.sigs[0].substring(0, 2), 'AA');
         assert.equal(lastBody.sigs[0].length, 88);
 
-        const credential = lastBody.cred.i;
+        const credential = lastBody.acdc.i;
         await credentials.revoke('aid1', credential);
         lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
         lastBody = JSON.parse(lastCall[1]!.body!.toString());
@@ -271,9 +270,9 @@ describe('Credentialing', () => {
         assert.equal(
             lastCall[0]!,
             url +
-                '/identifiers/aid1/credentials/' +
-                credential +
-                '/presentations'
+            '/identifiers/aid1/credentials/' +
+            credential +
+            '/presentations'
         );
         assert.equal(lastCall[1]!.method, 'POST');
         assert.equal(lastBody.exn.t, 'exn');
@@ -314,3 +313,106 @@ describe('Credentialing', () => {
         );
     });
 });
+
+
+describe("Ipex", () => {
+    it('Ipex', async () => {
+        await libsodium.ready;
+        const bran = '0123456789abcdefghijk';
+        let client = new SignifyClient(url, bran, Tier.low, boot_url);
+
+        await client.boot();
+        await client.connect();
+
+        let ipex = client.ipex();
+
+        let holder = "ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k"
+        let acdc = new Serder(mockCredential.sad)
+        // Create iss
+        const vs = versify(Ident.KERI, undefined, Serials.JSON, 0);
+        let _iss = {
+            v: vs,
+            t: Ilks.iss,
+            d: '',
+            i: mockCredential.sad.d,
+            s: '0',
+            ri: mockCredential.sad.ri,
+            dt: mockCredential.sad.a.dt,
+        };
+
+        let [, iss] = Saider.saidify(_iss);
+        let iserder = new Serder(iss)
+        let anc = interact({
+            pre: mockCredential.sad.i,
+            sn: 1,
+            data: [{}],
+            dig: mockCredential.sad.d,
+            version: undefined,
+            kind: undefined,})
+
+        let [grant, gsigs, end] = await ipex.grant(
+            "multisig",
+            holder,
+            "",
+            acdc,
+            iserder,
+            anc,
+            "-vtest",
+            undefined,
+            mockCredential.sad.a.dt)
+
+        assert.deepStrictEqual(grant.ked, {
+                v: 'KERI10JSON0004b1_',
+                t: 'exn',
+                d: 'ECO262mMZcwP94aY0cUl5IL6LOK_R_Md1irVDdQEwtHl',
+                i: 'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK',
+                p: '',
+                dt: '2023-08-23T15:16:07.553000+00:00',
+                r: '/ipex/grant',
+                q: {},
+                a: { m: '', i: 'ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k' },
+                e: {
+                    acdc: {
+                        v: 'ACDC10JSON000197_',
+                        d: 'EMwcsEMUEruPXVwPCW7zmqmN8m0I3CihxolBm-RDrsJo',
+                        i: 'EMQQpnSkgfUOgWdzQTWfrgiVHKIDAhvAZIPQ6z3EAfz1',
+                        ri: 'EGK216v1yguLfex4YRFnG7k1sXRjh3OKY7QqzdKsx7df',
+                        s: 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao',
+                        a:  {
+                            d: 'EK0GOjijKd8_RLYz9qDuuG29YbbXjU8yJuTQanf07b6P',
+                            i: 'EKvn1M6shPLnXTb47bugVJblKMuWC0TcLIePP8p98Bby',
+                            dt: '2023-08-23T15:16:07.553000+00:00',
+                            LEI: '5493001KJTIIGC8Y1R17'
+                        }
+                    },
+                    iss: {
+                        v: 'KERI10JSON0000ed_',
+                        t: 'iss',
+                        d: 'ENf3IEYwYtFmlq5ZzoI-zFzeR7E3ZNRN2YH_0KAFbdJW',
+                        i: 'EMwcsEMUEruPXVwPCW7zmqmN8m0I3CihxolBm-RDrsJo',
+                        s: '0',
+                        ri: 'EGK216v1yguLfex4YRFnG7k1sXRjh3OKY7QqzdKsx7df',
+                        dt: '2023-08-23T15:16:07.553000+00:00'
+                    },
+                    anc: {
+                        v: 'KERI10JSON0000cd_',
+                        t: 'ixn',
+                        d: 'ECVCyxNpB4PJkpLbWqI02WXs1wf7VUxPNY2W28SN2qqm',
+                        i: 'EMQQpnSkgfUOgWdzQTWfrgiVHKIDAhvAZIPQ6z3EAfz1',
+                        s: '1',
+                        p: 'EMwcsEMUEruPXVwPCW7zmqmN8m0I3CihxolBm-RDrsJo',
+                        a: [{}]
+                    },
+                    d: 'EGpSjqjavdzgjQiyt0AtrOutWfKrj5gR63lOUUq-1sL-'
+                }
+
+        })
+
+        assert.deepStrictEqual(gsigs, [
+                'AAAebNnWRghQuqDS0nXjy1MYht4D1_Sk_tozU0dikS-bOmmGV4AB3Ekt_sl04D7fIgkFGPQJ9gNhqNNS_uxsjNQE'
+            ]
+        )
+        assert.equal(end, "-LAD4AACA-e-acdc-LAD5AACAA-e-iss-LAE5AACAA-e-anc-vtest")
+
+    })
+})
