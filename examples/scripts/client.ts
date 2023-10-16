@@ -37,7 +37,7 @@ async function connect() {
     const exchanges = client.exchanges();
 
     let salt = 'abcdefghijk0123456789';
-    let res = identifiers.create('multisig-ts', { bran: salt });
+    let res = await identifiers.create('multisig-ts', { bran: salt });
     let op = await res.op();
     let aid = op['response'];
 
@@ -86,7 +86,7 @@ async function connect() {
     let sigTs = aid['state'];
 
     let states = [sigPy, kli, sigTs];
-    let ires = identifiers.create('multisig', {
+    let ires = await identifiers.create('multisig', {
         algo: signify.Algos.group,
         mhab: aid,
         delpre: 'EHpD0-CDWOdu5RJ8jHBSUkOqBZ3cXeDVHWNb_Ul89VI7',

@@ -21,4 +21,5 @@ kli multisig incept --name multisig-kli --alias multisig-kli --group multisig --
 
 read -n 1 -r -p "Press any key to create endpoints for multisig AID..."
 
-kli multisig ends add --name multisig-kli --alias multisig --role agent --role mailbox
+
+kli ends add --name multisig-kli --alias multisig --role mailbox --eid BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX

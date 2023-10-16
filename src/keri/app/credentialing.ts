@@ -31,6 +31,49 @@ export interface CredentialFilter {
     limit?: number;
 }
 
+export class CredentialResult {
+    private readonly _acdc: any;
+    private readonly _iserder: Serder;
+    private readonly _anc: Serder;
+    private readonly _sigs: string[];
+    private readonly promise: Promise<Response>;
+
+    constructor(
+        acdc: Dict<any>,
+        iserder: Serder,
+        anc: Serder,
+        sigs: any[],
+        promise: Promise<Response>
+    ) {
+        this._acdc = acdc;
+        this._iserder = iserder;
+        this._anc = anc;
+        this._sigs = sigs;
+        this.promise = promise;
+    }
+
+    get acdc() {
+        return this._acdc;
+    }
+
+    get iserder() {
+        return this._iserder;
+    }
+
+    get anc() {
+        return this._anc
+    }
+
+    get sigs() {
+        return this._sigs;
+    }
+
+    async op(): Promise<any> {
+        let res = await this.promise;
+        return await res.json();
+    }
+}
+
 /**
  * Credentials
  */
@@ -103,6 +146,7 @@ export class Credentials {
      * @param {any} [credentialData] Optional credential data
      * @param {any} [rules] Optional credential rules
      * @param {any} [source] Optional credential sources
+     * @param {string} [datetime] Optional datetime to set for the credential
      * @param {boolean} [priv=false] Flag to issue a credential with privacy preserving features
      * @returns {Promise<any>} A promise to the long-running operation
      */
@@ -114,12 +158,14 @@ export class Credentials {
         credentialData?: any,
         rules?: any,
         source?: any,
+        datetime?: string,
         priv: boolean = false
     ): Promise<any> {
         // Create Credential
         let hab = await this.client.identifiers().get(name);
         let pre: string = hab.prefix;
-        const dt = new Date().toISOString().replace('Z', '000+00:00');
+
+        const dt = datetime === undefined ? new Date().toISOString().replace('Z', '000+00:00') : datetime;
 
         const vsacdc = versify(Ident.ACDC, undefined, Serials.JSON, 0);
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0);
@@ -167,15 +213,10 @@ export class Credentials {
         };
 
         let [, iss] = Saider.saidify(_iss);
+        let iserder = new Serder(iss)
 
         // Create paths and sign
-        let cpath = '6AABAAA-';
         let keeper = this.client!.manager!.get(hab);
-        let csigs = await keeper.sign(b(JSON.stringify(vc)));
-
-        // Create ixn
-        let ixn = {};
-        let sigs = [];
 
         let state = hab.state;
         if (state.c !== undefined && state.c.includes('EO')) {
@@ -194,11 +235,15 @@ export class Credentials {
             },
         ];
 
+        // Create ixn
+        let ixn = {};
+        let anc: Serder;
+        let sigs = [];
         if (estOnly) {
             // TODO implement rotation event
             throw new Error('Establishment only not implemented');
         } else {
-            let serder = interact({
+            anc = interact({
                 pre: pre,
                 sn: sn + 1,
                 data: data,
@@ -206,26 +251,38 @@ export class Credentials {
                 version: undefined,
                 kind: undefined,
             });
-            sigs = await keeper.sign(b(serder.raw));
-            ixn = serder.ked;
+            sigs = await keeper.sign(b(anc.raw));
+            ixn = anc.ked;
         }
 
-        let body = {
-            cred: vc,
-            csigs: csigs,
-            path: cpath,
+        let res = this.issueFromEvents(hab,name, vc, iss, ixn, sigs)
+        return new CredentialResult(vc, iserder, anc, sigs, res)
+
+    }
+
+    issueFromEvents(
+        hab: Dict<any>,
+        name: string,
+        vc: Dict<any>,
+        iss: Dict<any>,
+        ixn: Dict<any>,
+        sigs: any[]
+    ) {
+        let path = `/identifiers/${name}/credentials`;
+        let method = 'POST';
+        let body: any = {
+            acdc: vc,
             iss: iss,
             ixn: ixn,
             sigs: sigs,
         };
+        let keeper = this.client!.manager!.get(hab);
+        body[keeper.algo] = keeper.params();
 
-        let path = `/identifiers/${name}/credentials`;
-        let method = 'POST';
         let headers = new Headers({
             Accept: 'application/json+cesr',
         });
-        let res = await this.client.fetch(path, method, body, headers);
-        return await res.json();
+        return this.client.fetch(path, method, body, headers);
     }
 
     /**
