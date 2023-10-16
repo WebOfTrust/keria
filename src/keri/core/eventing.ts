@@ -432,9 +432,9 @@ export function messagize(
                     new Counter({ code: CtrDex.TransIdxSigGroups, count: 1 })
                         .qb64b
                 );
-                atc = concat(atc, seal.i.encode('utf-8'));
+                atc = concat(atc, new TextEncoder().encode(seal[1].i));
                 atc = concat(atc, new Seqner(seal[1].s).qb64b);
-                atc = concat(atc, seal.d.encode('utf-8'));
+                atc = concat(atc, new TextEncoder().encode(seal[1].d));
             } else if (seal[0] == 'SealLast') {
                 atc = concat(
                     atc,

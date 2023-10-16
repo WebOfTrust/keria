@@ -28,21 +28,27 @@ export class Exchanges {
      * @param route
      * @param payload
      * @param embeds
+     * @param recipient
+     * @param datetime
+     * @param dig
      */
     async createExchangeMessage(
         sender: Dict<any>,
         route: string,
         payload: Dict<any>,
-        embeds: Dict<any>
+        embeds: Dict<any>,
+        recipient?: string,
+        datetime?: string,
+        dig?: string
     ): Promise<[Serder, string[], string]> {
         let keeper = this.client.manager!.get(sender);
         let [exn, end] = exchange(
             route,
             payload,
             sender['prefix'],
-            undefined,
-            undefined,
-            undefined,
+            recipient,
+            datetime,
+            dig,
             undefined,
             embeds
         );

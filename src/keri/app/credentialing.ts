@@ -695,3 +695,68 @@ export class Schemas {
         return await res.json();
     }
 }
+
+
+/**
+ * Ipex
+ */
+
+export class Ipex {
+    client: SignifyClient;
+    /**
+     * Schemas
+     * @param {SignifyClient} client
+     */
+    constructor(client: SignifyClient) {
+        this.client = client;
+    }
+
+    /**
+     * Create an IPEX grant EXN message
+     * @async
+     * @param {string} name Name or alias of the identifier
+     * @param {string} recp qb64 AID of recipient of the grant
+     * @param {string} message accompany human readable description of the credential being issued
+     * @param {Serder} acdc Credential
+     * @param {Serder} iss TEL issuance event
+     * @param {Serder} anc Anchoring event
+     * @param {string} atc attachments for the anchoring event
+     * @param {string} agree Option qb64 SAID of agree message this grant is responding to
+     * @param {string} datetime Optional datetime to set for the credential
+     * @returns {Promise<any>} A promise to the long-running operation
+     */
+    async grant(
+        name: string,
+        recp: string,
+        message: string,
+        acdc: Serder,
+        iss: Serder,
+        anc:Serder,
+        atc: string,
+        agree?:string,
+        datetime?: string,
+    ): Promise<[Serder, string[], string]> {
+        let hab = await this.client.identifiers().get(name);
+        let data: any = {
+            m: message,
+            i: recp
+        }
+
+        let embeds: any = {
+            acdc: [acdc, ''],
+            iss: [iss, ''],
+            anc: [anc, atc],
+        };
+
+        return this.client.exchanges().createExchangeMessage(
+            hab,
+            '/ipex/grant',
+            data,
+            embeds,
+            undefined,
+            datetime,
+            agree
+        );
+    }
+
+}

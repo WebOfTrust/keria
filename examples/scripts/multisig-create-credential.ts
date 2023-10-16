@@ -180,7 +180,7 @@ async function connect() {
     };
     let holder = "ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k"
 
-    let TIME="2023-09-25T16:01:37.000000+00:00"
+    let TIME = "2023-09-25T16:01:37.000000+00:00"
     let credRes = await client.credentials().issue('multisig', regk, schemaSAID, holder, vcdata,
         undefined, undefined, TIME);
     op1 = await credRes.op()
@@ -215,5 +215,32 @@ async function connect() {
         await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
+    console.log("Creating IPEX grant message to send...")
 
+    let [grant, gsigs, end] = await client.ipex().grant("multisig", holder, "", acdc, iss, ianc, atc, undefined, TIME)
+    let m = await client.identifiers().get("multisig")
+
+    let mstate = m["state"]
+    let seal = ['SealEvent', {i: m['prefix'], s: mstate["ee"]["s"], d: mstate["ee"]["d"]}];
+    sigers = gsigs.map((sig: any) => new signify.Siger({qb64: sig}));
+
+    let gims = signify.d(signify.messagize(grant, sigers, seal, undefined, undefined, true));
+    atc = gims.substring(grant.size)
+    atc += end
+
+    let gembeds: any = {
+        exn: [grant, atc]
+    }
+
+    await client.exchanges().send(
+        'agent0',
+        'multisig',
+        aid,
+        '/multisig/exn',
+        {gid: multisigAID},
+        gembeds,
+        recp
+    );
+
+    console.log("... done!")
 }
