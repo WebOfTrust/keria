@@ -32,13 +32,11 @@ async function run() {
         state1.agent.i
     );
     let words = new BIP39Shim(0, {}).generateMnemonic(256);
-    let icpResult = await client1
-        .identifiers()
-        .create('aid1', {
-            algo: signify.Algos.extern,
-            extern_type: 'bip39_shim',
-            extern: { mnemonics: words },
-        });
+    let icpResult = await client1.identifiers().create('aid1', {
+        algo: signify.Algos.extern,
+        extern_type: 'bip39_shim',
+        extern: { mnemonics: words },
+    });
     let op = await icpResult.op();
     assert.equal(op['done'], true);
 }
