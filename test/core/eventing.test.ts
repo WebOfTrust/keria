@@ -172,5 +172,18 @@ describe('key event function', () => {
                 '"nt":1,"n":["EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":0,"b":[],"c":[],"a":[]}' +
                 '-AABAABB3MJGmBXxSEryNHw3YwZZLRl_6Ws4Me2WFq8PrQ6WlluSOpPqbwXuiG9RvNWZkqeW8A_0VRjokGMVRZ3m-c0I'
         );
+        let seal = [
+            'SealEvent',
+            { i: 'EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL', s: '0', d: 'EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL' },
+        ];
+        let msgseal = messagize(serder0, [siger], seal);
+        assert.equal(
+            d(msgseal),
+            '{"v":"KERI10JSON000125_","t":"icp","d":"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","i"'+
+            ':"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","s":"0","kt":1,"k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"]'+
+            ',"nt":1,"n":["EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":0,"b":[],"c":[],"a"'+
+            ':[]}-FABEIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL0AAAAAAAAAAAAAAAAAAAAAAAEIflL4H4134zYoRM6ls6Q086RLC_'+
+            'BhfNFh5uk-WxvhsL-AABAABB3MJGmBXxSEryNHw3YwZZLRl_6Ws4Me2WFq8PrQ6WlluSOpPqbwXuiG9RvNWZkqeW8A_0VRjokGMVRZ3m-c0I'
+        );
     });
 });
