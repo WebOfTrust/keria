@@ -361,7 +361,7 @@ export class Identifier {
         return new EventResult(serder, sigs, res);
     }
 
-    /**
+        /**
      * Authorize an endpoint provider in a given role for a managed identifier
      * @remarks
      * Typically used to authorize the agent to be the endpoint provider for the identifier in the role of `agent`
@@ -370,7 +370,7 @@ export class Identifier {
      * @param {string} role Authorized role for eid
      * @param {string} [eid] Optional qb64 of endpoint provider to be authorized
      * @param {string} [stamp=now] Optional date-time-stamp RFC-3339 profile of iso8601 datetime. Now is the default if not provided
-     * @returns {Promise<any>} A promise to the result of the authorization
+     * @returns {Promise<EventResult>} A promise to the result of the authorization
      */
     async addEndRole(
         name: string,
@@ -390,12 +390,12 @@ export class Identifier {
             sigs: sigs,
         };
 
-        let res = await this.client.fetch(
+        let res = this.client.fetch(
             '/identifiers/' + name + '/endroles',
             'POST',
             jsondata
         );
-        return await res.json();
+        return new EventResult(rpy,sigs, res);
     }
 
     /**

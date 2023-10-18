@@ -366,7 +366,6 @@ async function run() {
         await new Promise((resolve) => setTimeout(resolve, 1000));
     }
     console.log('Multisig created!');
-
     const identifiers1 = await client1.identifiers().list();
     assert.equal(identifiers1.aids.length, 2);
     assert.equal(identifiers1.aids[0].name, 'member1');
@@ -405,6 +404,160 @@ async function run() {
     );
 
     let multisig = identifiers3.aids[1].prefix;
+
+
+    // Multisig end role
+    // for brevity, this script authorize only the agent of member 1
+    // a full implementation should repeat the process to authorize all agents
+
+    let members = await client1.identifiers().members('multisig');
+    let hab = await client1.identifiers().get('multisig');
+    let aid = hab['prefix'];
+    let signing = members['signing'];
+    let eid1 = Object.keys(signing[0].ends.agent)[0]; //agent of member 1
+    // other agent eids can be obtained with
+    // let eid2 = Object.keys(signing[1].ends.agent)[0];
+    // let eid3 = Object.keys(signing[2].ends.agent)[0];
+    console.log(`Starting multisig end role authorization for agent ${eid1}`);
+
+    // initial stamp for the event that will be passed in the exn message
+    // to the other members
+    let stamp = new Date().toISOString().replace('Z', '000+00:00');
+
+    let endRoleRes = await client1.identifiers().addEndRole('multisig','agent',eid1,stamp);
+    op1 = await endRoleRes.op();
+    let rpy = endRoleRes.serder;
+    sigs = endRoleRes.sigs;
+    let mstate = hab["state"];
+    let seal = ['SealEvent', {i: hab['prefix'], s: mstate["ee"]["s"], d: mstate["ee"]["d"]}];
+    sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}));
+    let roleims = signify.d(signify.messagize(rpy, sigers, seal, undefined, undefined, false));
+    atc = roleims.substring(rpy.size);
+    let roleembeds: any = {
+        rpy: [rpy, atc]
+    }
+    recp = [aid2['state'], aid3['state']].map((state) => state['i']);
+    res = await client1.exchanges().send(
+        'member1',
+        'multisig',
+        aid1,
+        '/multisig/rpy',
+        {gid:  aid},
+        roleembeds,
+        recp
+    );
+    console.log(`Member1 authorized agent role to ${eid1}, waiting for others to authorize...`);
+
+    //Member2 check for notifications and join the authorization
+    msgSaid = '';
+    while (msgSaid == '') {
+        let notifications = await client2.notifications().list(1);
+        for (let notif of notifications.notes) {
+            if (notif.a.r == '/multisig/rpy') {
+                msgSaid = notif.a.d;
+                await client2.notifications().mark(notif.i);
+                console.log(
+                    'Member2 received exchange message to join the end role authorization'
+                );
+            }
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    res = await client2.groups().getRequest(msgSaid);
+    exn = res[0].exn;
+    // stamp, eid and role are provided in the exn message
+    let rpystamp = exn.e.rpy.dt;
+    let rpyrole = exn.e.rpy.a.role;
+    let rpyeid = exn.e.rpy.a.eid;
+    endRoleRes = await client2.identifiers().addEndRole('multisig',rpyrole,rpyeid,rpystamp);
+    op2 = await endRoleRes.op()
+    rpy = endRoleRes.serder;
+    sigs = endRoleRes.sigs;
+
+    hab = await client2.identifiers().get('multisig');
+    mstate = hab["state"]
+    seal = ['SealEvent', {i: hab['prefix'], s: mstate["ee"]["s"], d: mstate["ee"]["d"]}];
+    sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}));
+    roleims = signify.d(signify.messagize(rpy, sigers, seal, undefined, undefined, false));
+    atc = roleims.substring(rpy.size);
+    roleembeds = {
+        rpy: [rpy, atc]
+    }
+    recp = [aid1['state'], aid3['state']].map((state) => state['i']);
+    res = await client2.exchanges().send(
+        'member2',
+        'multisig',
+        aid2,
+        '/multisig/rpy',
+        {gid:  aid},
+        roleembeds,
+        recp
+    );
+    console.log(`Member2 authorized agent role to ${eid1}, waiting for others to authorize...`);
+
+    //Member3 check for notifications and join the authorization
+    msgSaid = '';
+    while (msgSaid == '') {
+        let notifications = await client3.notifications().list(1);
+        for (let notif of notifications.notes) {
+            if (notif.a.r == '/multisig/rpy') {
+                msgSaid = notif.a.d;
+                await client3.notifications().mark(notif.i);
+                console.log(
+                    'Member3 received exchange message to join the end role authorization'
+                );
+            }
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    res = await client3.groups().getRequest(msgSaid);
+    exn = res[0].exn;
+    rpystamp = exn.e.rpy.dt;
+    rpyrole = exn.e.rpy.a.role;
+    rpyeid = exn.e.rpy.a.eid;
+    endRoleRes = await client3.identifiers().addEndRole('multisig',rpyrole,rpyeid,rpystamp);
+
+    op3 = await endRoleRes.op()
+    rpy = endRoleRes.serder;
+    sigs = endRoleRes.sigs;
+    hab = await client3.identifiers().get('multisig');
+    mstate = hab["state"]
+    seal = ['SealEvent', {i: hab['prefix'], s: mstate["ee"]["s"], d: mstate["ee"]["d"]}];
+    sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}));
+    roleims = signify.d(signify.messagize(rpy, sigers, seal, undefined, undefined, false));
+    atc = roleims.substring(rpy.size);
+    roleembeds = {
+        rpy: [rpy, atc]
+    }
+    recp = [aid1['state'], aid2['state']].map((state) => state['i']);
+    res = await client3.exchanges().send(
+        'member3',
+        'multisig',
+        aid3,
+        '/multisig/rpy',
+        {gid:  aid},
+        roleembeds,
+        recp
+    );
+    console.log(`Member3 authorized agent role to ${eid1}, waiting for others to authorize...`);
+
+
+    // Check for completion
+    while (!op1['done']) {
+        op1 = await client1.operations().get(op1.name);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+
+    while (!op2['done']) {
+        op2 = await client2.operations().get(op2.name);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+
+    while (!op3['done']) {
+        op3 = await client3.operations().get(op3.name);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    console.log(`End role authorization for agent ${eid1}completed!`);
 
     // MultiSig Interaction
 
@@ -767,6 +920,8 @@ async function run() {
     }
     console.log('Multisig rotation completed!');
 
+    // Multisig Registry creation
+
     console.log('Starting multisig registry creation');
 
     let vcpRes1 = await client1.registries().create({
@@ -854,7 +1009,7 @@ async function run() {
             regbeds,
             recp
         );
-    console.log('Member2 joins rotation event, waiting for others...');
+    console.log('Member2 joins registry event, waiting for others...');
 
     // Member3 check for notifications and join the create registry event
     msgSaid = '';
@@ -923,5 +1078,6 @@ async function run() {
         op3 = await client3.operations().get(op3.name);
         await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    // console.log("Multisig create registry completed!")
+    console.log("Multisig create registry completed!");
+
 }
