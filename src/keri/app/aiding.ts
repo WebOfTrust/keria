@@ -361,7 +361,7 @@ export class Identifier {
         return new EventResult(serder, sigs, res);
     }
 
-        /**
+    /**
      * Authorize an endpoint provider in a given role for a managed identifier
      * @remarks
      * Typically used to authorize the agent to be the endpoint provider for the identifier in the role of `agent`
@@ -395,7 +395,7 @@ export class Identifier {
             'POST',
             jsondata
         );
-        return new EventResult(rpy,sigs, res);
+        return new EventResult(rpy, sigs, res);
     }
 
     /**

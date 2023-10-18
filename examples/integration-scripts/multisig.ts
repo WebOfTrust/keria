@@ -405,7 +405,6 @@ async function run() {
 
     let multisig = identifiers3.aids[1].prefix;
 
-
     // Multisig end role
     // for brevity, this script authorize only the agent of member 1
     // a full implementation should repeat the process to authorize all agents
@@ -424,29 +423,40 @@ async function run() {
     // to the other members
     let stamp = new Date().toISOString().replace('Z', '000+00:00');
 
-    let endRoleRes = await client1.identifiers().addEndRole('multisig','agent',eid1,stamp);
+    let endRoleRes = await client1
+        .identifiers()
+        .addEndRole('multisig', 'agent', eid1, stamp);
     op1 = await endRoleRes.op();
     let rpy = endRoleRes.serder;
     sigs = endRoleRes.sigs;
-    let mstate = hab["state"];
-    let seal = ['SealEvent', {i: hab['prefix'], s: mstate["ee"]["s"], d: mstate["ee"]["d"]}];
-    sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}));
-    let roleims = signify.d(signify.messagize(rpy, sigers, seal, undefined, undefined, false));
+    let mstate = hab['state'];
+    let seal = [
+        'SealEvent',
+        { i: hab['prefix'], s: mstate['ee']['s'], d: mstate['ee']['d'] },
+    ];
+    sigers = sigs.map((sig: any) => new signify.Siger({ qb64: sig }));
+    let roleims = signify.d(
+        signify.messagize(rpy, sigers, seal, undefined, undefined, false)
+    );
     atc = roleims.substring(rpy.size);
     let roleembeds: any = {
-        rpy: [rpy, atc]
-    }
+        rpy: [rpy, atc],
+    };
     recp = [aid2['state'], aid3['state']].map((state) => state['i']);
-    res = await client1.exchanges().send(
-        'member1',
-        'multisig',
-        aid1,
-        '/multisig/rpy',
-        {gid:  aid},
-        roleembeds,
-        recp
+    res = await client1
+        .exchanges()
+        .send(
+            'member1',
+            'multisig',
+            aid1,
+            '/multisig/rpy',
+            { gid: aid },
+            roleembeds,
+            recp
+        );
+    console.log(
+        `Member1 authorized agent role to ${eid1}, waiting for others to authorize...`
     );
-    console.log(`Member1 authorized agent role to ${eid1}, waiting for others to authorize...`);
 
     //Member2 check for notifications and join the authorization
     msgSaid = '';
@@ -469,31 +479,42 @@ async function run() {
     let rpystamp = exn.e.rpy.dt;
     let rpyrole = exn.e.rpy.a.role;
     let rpyeid = exn.e.rpy.a.eid;
-    endRoleRes = await client2.identifiers().addEndRole('multisig',rpyrole,rpyeid,rpystamp);
-    op2 = await endRoleRes.op()
+    endRoleRes = await client2
+        .identifiers()
+        .addEndRole('multisig', rpyrole, rpyeid, rpystamp);
+    op2 = await endRoleRes.op();
     rpy = endRoleRes.serder;
     sigs = endRoleRes.sigs;
 
     hab = await client2.identifiers().get('multisig');
-    mstate = hab["state"]
-    seal = ['SealEvent', {i: hab['prefix'], s: mstate["ee"]["s"], d: mstate["ee"]["d"]}];
-    sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}));
-    roleims = signify.d(signify.messagize(rpy, sigers, seal, undefined, undefined, false));
+    mstate = hab['state'];
+    seal = [
+        'SealEvent',
+        { i: hab['prefix'], s: mstate['ee']['s'], d: mstate['ee']['d'] },
+    ];
+    sigers = sigs.map((sig: any) => new signify.Siger({ qb64: sig }));
+    roleims = signify.d(
+        signify.messagize(rpy, sigers, seal, undefined, undefined, false)
+    );
     atc = roleims.substring(rpy.size);
     roleembeds = {
-        rpy: [rpy, atc]
-    }
+        rpy: [rpy, atc],
+    };
     recp = [aid1['state'], aid3['state']].map((state) => state['i']);
-    res = await client2.exchanges().send(
-        'member2',
-        'multisig',
-        aid2,
-        '/multisig/rpy',
-        {gid:  aid},
-        roleembeds,
-        recp
+    res = await client2
+        .exchanges()
+        .send(
+            'member2',
+            'multisig',
+            aid2,
+            '/multisig/rpy',
+            { gid: aid },
+            roleembeds,
+            recp
+        );
+    console.log(
+        `Member2 authorized agent role to ${eid1}, waiting for others to authorize...`
     );
-    console.log(`Member2 authorized agent role to ${eid1}, waiting for others to authorize...`);
 
     //Member3 check for notifications and join the authorization
     msgSaid = '';
@@ -515,32 +536,42 @@ async function run() {
     rpystamp = exn.e.rpy.dt;
     rpyrole = exn.e.rpy.a.role;
     rpyeid = exn.e.rpy.a.eid;
-    endRoleRes = await client3.identifiers().addEndRole('multisig',rpyrole,rpyeid,rpystamp);
+    endRoleRes = await client3
+        .identifiers()
+        .addEndRole('multisig', rpyrole, rpyeid, rpystamp);
 
-    op3 = await endRoleRes.op()
+    op3 = await endRoleRes.op();
     rpy = endRoleRes.serder;
     sigs = endRoleRes.sigs;
     hab = await client3.identifiers().get('multisig');
-    mstate = hab["state"]
-    seal = ['SealEvent', {i: hab['prefix'], s: mstate["ee"]["s"], d: mstate["ee"]["d"]}];
-    sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}));
-    roleims = signify.d(signify.messagize(rpy, sigers, seal, undefined, undefined, false));
+    mstate = hab['state'];
+    seal = [
+        'SealEvent',
+        { i: hab['prefix'], s: mstate['ee']['s'], d: mstate['ee']['d'] },
+    ];
+    sigers = sigs.map((sig: any) => new signify.Siger({ qb64: sig }));
+    roleims = signify.d(
+        signify.messagize(rpy, sigers, seal, undefined, undefined, false)
+    );
     atc = roleims.substring(rpy.size);
     roleembeds = {
-        rpy: [rpy, atc]
-    }
+        rpy: [rpy, atc],
+    };
     recp = [aid1['state'], aid2['state']].map((state) => state['i']);
-    res = await client3.exchanges().send(
-        'member3',
-        'multisig',
-        aid3,
-        '/multisig/rpy',
-        {gid:  aid},
-        roleembeds,
-        recp
+    res = await client3
+        .exchanges()
+        .send(
+            'member3',
+            'multisig',
+            aid3,
+            '/multisig/rpy',
+            { gid: aid },
+            roleembeds,
+            recp
+        );
+    console.log(
+        `Member3 authorized agent role to ${eid1}, waiting for others to authorize...`
     );
-    console.log(`Member3 authorized agent role to ${eid1}, waiting for others to authorize...`);
-
 
     // Check for completion
     while (!op1['done']) {
@@ -1078,6 +1109,5 @@ async function run() {
         op3 = await client3.operations().get(op3.name);
         await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    console.log("Multisig create registry completed!");
-
+    console.log('Multisig create registry completed!');
 }
