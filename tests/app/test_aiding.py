@@ -1230,7 +1230,8 @@ def test_oobi_ends(helpers):
 
         # Test before endroles are added
         res = client.simulate_get("/identifiers/pal/oobis?role=agent")
-        assert res.status_code == 404
+        assert res.status_code == 200
+        assert res.json == {'oobis': [], 'role': 'agent'}
 
         rpy = helpers.endrole(iserder.pre, agent.agentHab.pre)
         sigs = helpers.sign(salt, 0, 0, rpy.raw)

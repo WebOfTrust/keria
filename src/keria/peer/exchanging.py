@@ -75,14 +75,11 @@ class ExchangeCollectionEnd:
         # now get rid of the event so we can pass it as atc to send
         del ims[:serder.size]
 
-        for recp in rec:  # now let's send it off the all the recipients
-            agent.postman.send(hab=agent.agentHab,
-                               dest=recp,
-                               topic=topic,
-                               serder=serder,
-                               attachment=ims)
+        msg = dict(said=serder.said, pre=hab.pre, rec=rec, topic=topic)
 
-        rep.status = falcon.HTTP_200
+        agent.exchanges.append(msg)
+
+        rep.status = falcon.HTTP_202
         rep.data = json.dumps(serder.ked).encode("utf-8")
 
 
@@ -169,7 +166,7 @@ class ExchangeResourceEnd:
         if serder is None:
             raise falcon.HTTPNotFound(description=f"SAID {said} does not match a verified EXN message")
 
-        exn = dict(exn=serder.ked, pathed=pathed)
+        exn = dict(exn=serder.ked, pathed={k: v.decode("utf-8") for k, v in pathed.items()})
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(exn).encode("utf-8")
