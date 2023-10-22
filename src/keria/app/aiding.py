@@ -664,24 +664,46 @@ class IdentifierOOBICollectionEnd:
         elif role in (kering.Roles.agent,):  # Fetch URL OOBIs for all witnesses
             roleUrls = hab.fetchRoleUrls(cid=hab.pre, role=kering.Roles.agent, scheme=kering.Schemes.http) or hab.fetchRoleUrls(cid=hab.pre, role=kering.Roles.agent, scheme=kering.Schemes.https)
             if kering.Roles.agent not in roleUrls:
-                raise falcon.HTTPNotFound(description=f"unable to query agent roles for {hab.pre}, no http endpoint")
+                res['oobis'] = []
+            else:
+                aoobis = roleUrls[kering.Roles.agent]
 
-            aoobis = roleUrls[kering.Roles.agent]
+                oobis = list()
+                for agent in set(aoobis.keys()):
+                    murls = aoobis.naball(agent)
+                    for murl in murls:
+                        urls = []
+                        if kering.Schemes.http in murl:
+                            urls.extend(murl.naball(kering.Schemes.http))
+                        if kering.Schemes.https in murl:
+                            urls.extend(murl.naball(kering.Schemes.https))
+                        for url in urls:
+                            up = urlparse(url)
+                            oobis.append(urljoin(up.geturl(), f"/oobi/{hab.pre}/agent/{agent}"))
 
-            oobis = list()
-            for agent in set(aoobis.keys()):
-                murls = aoobis.naball(agent)
-                for murl in murls:
-                    urls = []
-                    if kering.Schemes.http in murl:
-                        urls.extend(murl.naball(kering.Schemes.http))
-                    if kering.Schemes.https in murl:
-                        urls.extend(murl.naball(kering.Schemes.https))
-                    for url in urls:
-                        up = urlparse(url)
-                        oobis.append(urljoin(up.geturl(), f"/oobi/{hab.pre}/agent/{agent}"))
+                res["oobis"] = oobis
+        elif role in (kering.Roles.mailbox,):  # Fetch URL OOBIs for all witnesses
+            roleUrls = (hab.fetchRoleUrls(cid=hab.pre, role=kering.Roles.mailbox, scheme=kering.Schemes.http) or
+                        hab.fetchRoleUrls(cid=hab.pre, role=kering.Roles.mailbox, scheme=kering.Schemes.https))
+            if kering.Roles.mailbox not in roleUrls:
+                res['oobis'] = []
+            else:
+                aoobis = roleUrls[kering.Roles.mailbox]
 
-            res["oobis"] = oobis
+                oobis = list()
+                for mailbox in set(aoobis.keys()):
+                    murls = aoobis.naball(mailbox)
+                    for murl in murls:
+                        urls = []
+                        if kering.Schemes.http in murl:
+                            urls.extend(murl.naball(kering.Schemes.http))
+                        if kering.Schemes.https in murl:
+                            urls.extend(murl.naball(kering.Schemes.https))
+                        for url in urls:
+                            up = urlparse(url)
+                            oobis.append(urljoin(up.geturl(), f"/oobi/{hab.pre}/mailbox/{mailbox}"))
+
+                res["oobis"] = oobis
         else:
             raise falcon.HTTPBadRequest(description=f"unsupport role type {role} for oobi request")
 

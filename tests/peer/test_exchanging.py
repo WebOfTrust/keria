@@ -8,6 +8,7 @@ Testing the Mark II Agent Grouping endpoints
 """
 import json
 
+from hio.base import doing
 from keri.core import coring
 from keri.peer.exchanging import exchange
 
@@ -30,6 +31,12 @@ def test_load_ends(helpers):
 def test_exchange_end(helpers):
     with helpers.openKeria() as (agency, agent, app, client):
         exchanging.loadEnds(app=app)
+
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+
+        deeds = doist.enter(doers=[agent])
 
         end = aiding.IdentifierCollectionEnd()
         app.add_route("/identifiers", end)
@@ -65,9 +72,14 @@ def test_exchange_end(helpers):
         )
 
         res = client.simulate_post(path="/identifiers/aid1/exchanges", json=body)
-        assert res.status_code == 200
+        assert res.status_code == 202
         assert res.json == cexn.ked
+        assert len(agent.exchanges) == 1
+
+        doist.recur(deeds=deeds)
+
         assert len(agent.postman.evts) == 1
+        assert len(agent.exchanges) == 0
         agent.exnseeker.index(cexn.said)
 
         QVI_SAID = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
@@ -92,9 +104,14 @@ def test_exchange_end(helpers):
         assert res.status_code == 404
 
         res = client.simulate_post(path="/identifiers/aid1/exchanges", json=body)
-        assert res.status_code == 200
+        assert res.status_code == 202
+        assert len(agent.exchanges) == 1
         assert res.json == exn.ked
-        assert len(agent.postman.evts) == 2
+
+        doist.recur(deeds=deeds)
+
+        assert len(agent.postman.evts) == 1
+        assert len(agent.exchanges) == 0
         agent.exnseeker.index(exn.said)
 
         body = json.dumps({}).encode("utf-8")

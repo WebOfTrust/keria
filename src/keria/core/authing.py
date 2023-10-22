@@ -4,7 +4,7 @@ KERIA
 keria.core.authing module
 
 """
-
+from urllib.parse import quote, unquote
 import falcon
 from hio.help import Hict
 from keri import kering
@@ -167,9 +167,12 @@ class SignatureValidationComponent(object):
             if req.path.startswith(path):
                 return
 
+        req.path = quote(req.path)
+
         try:
             # Use Authenticater to verify the signature on the request
             if self.authn.verify(req):
+                req.path = unquote(req.path)
                 resource = self.authn.resource(req)
                 agent = self.agency.get(caid=resource)
 
@@ -198,6 +201,7 @@ class SignatureValidationComponent(object):
         """
 
         if hasattr(req.context, "agent"):
+            req.path = quote(req.path)
             agent = req.context.agent
             rep.set_header('Signify-Resource', agent.agentHab.pre)
             rep.set_header('Signify-Timestamp', helping.nowIso8601())

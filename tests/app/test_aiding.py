@@ -1230,7 +1230,8 @@ def test_oobi_ends(helpers):
 
         # Test before endroles are added
         res = client.simulate_get("/identifiers/pal/oobis?role=agent")
-        assert res.status_code == 404
+        assert res.status_code == 200
+        assert res.json == {'oobis': [], 'role': 'agent'}
 
         rpy = helpers.endrole(iserder.pre, agent.agentHab.pre)
         sigs = helpers.sign(salt, 0, 0, rpy.raw)
@@ -1299,6 +1300,27 @@ def test_oobi_ends(helpers):
         assert role == "controller"
         assert len(oobis) == 1
         assert oobis[0] == "http://localhost:1234/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/controller"
+
+
+        rpy = helpers.endrole(iserder.pre, agent.agentHab.pre, role="mailbox")
+        sigs = helpers.sign(salt, 0, 0, rpy.raw)
+        body = dict(rpy=rpy.ked, sigs=sigs)
+
+        res = client.simulate_post(path=f"/identifiers/pal/endroles", json=body)
+        op = res.json
+        ked = op["response"]
+        serder = coring.Serder(ked=ked)
+        assert serder.raw == rpy.raw
+
+        res = client.simulate_get("/identifiers/pal/oobis?role=mailbox")
+        assert res.status_code == 200
+        role = res.json['role']
+        oobis = res.json['oobis']
+
+        assert role == "mailbox"
+        assert len(oobis) == 1
+        assert oobis[0] == "http://127.0.0.1:3902/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/mailbox/EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
+
 
 
 def test_rpy_escow_end(helpers):

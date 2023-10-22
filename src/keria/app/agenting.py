@@ -292,6 +292,7 @@ class Agent(doing.DoDoer):
         self.anchors = decking.Deck()
         self.witners = decking.Deck()
         self.queries = decking.Deck()
+        self.exchanges = decking.Deck()
 
         receiptor = agenting.Receiptor(hby=hby)
         self.postman = forwarding.Poster(hby=hby)
@@ -357,6 +358,7 @@ class Agent(doing.DoDoer):
             ParserDoer(kvy=self.kvy, parser=self.parser),
             Witnesser(receiptor=receiptor, witners=self.witners),
             Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
+            ExchangeSender(hby=hby, agentHab=agentHab, exc=self.exc, postman=self.postman, exchanges=self.exchanges),
             GroupRequester(hby=hby, agentHab=agentHab, counselor=self.counselor, groups=self.groups),
             SeekerDoer(seeker=self.seeker, cues=self.verifier.cues),
             ExnSeekerDoer(seeker=self.exnseeker, cues=self.exc.cues)
@@ -446,6 +448,41 @@ class Delegator(doing.Doer):
             self.swain.delegation(pre=msg["pre"], sn=sn, proxy=self.agentHab)
 
         return False
+
+
+class ExchangeSender(doing.Doer):
+
+    def __init__(self, hby, agentHab, postman, exc, exchanges):
+        self.hby = hby
+        self.agentHab = agentHab
+        self.postman = postman
+        self.exc = exc
+        self.exchanges = exchanges
+        super(ExchangeSender, self).__init__()
+
+    def recur(self, tyme):
+        if self.exchanges:
+            msg = self.exchanges.popleft()
+            said = msg['said']
+            if not self.exc.complete(said=said):
+                self.exchanges.append(msg)
+                return False
+
+            serder, pathed = exchanging.cloneMessage(self.hby, said)
+
+            pre = msg["pre"]
+            rec = msg["rec"]
+            topic = msg['topic']
+            hab = self.hby.habs[pre]
+            if self.exc.lead(hab, said=said):
+                atc = exchanging.serializeMessage(self.hby, said)
+                del atc[:serder.size]
+                for recp in rec:
+                    self.postman.send(hab=self.agentHab,
+                                      dest=recp,
+                                      topic=topic,
+                                      serder=serder,
+                                      attachment=atc)
 
 
 class SeekerDoer(doing.Doer):
