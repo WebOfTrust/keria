@@ -143,7 +143,16 @@ class Monitor:
         ops = self.opr.ops.getItemIter()
         if type != None:
             ops = filter(lambda i: i[1].type == type, ops)
-        return [self.status(op) for (_, op) in ops]
+        def get_status(op):
+            try:
+                return self.status(op)
+            except Exception as err:
+                return Operation(
+                    name=f"{op.type}.{op.oid}", 
+                    metadata=op.metadata, 
+                    done=False, 
+                    error=Status(code=500, message=f"{err}"))
+        return [get_status(op) for (_, op) in ops]
 
     def rem(self, name):
         """ Remove tracking of the long running operation represented by name """
