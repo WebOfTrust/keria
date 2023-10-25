@@ -61,7 +61,7 @@ export class CredentialResult {
     }
 
     get anc() {
-        return this._anc
+        return this._anc;
     }
 
     get sigs() {
@@ -165,7 +165,10 @@ export class Credentials {
         let hab = await this.client.identifiers().get(name);
         let pre: string = hab.prefix;
 
-        const dt = datetime === undefined ? new Date().toISOString().replace('Z', '000+00:00') : datetime;
+        const dt =
+            datetime === undefined
+                ? new Date().toISOString().replace('Z', '000+00:00')
+                : datetime;
 
         const vsacdc = versify(Ident.ACDC, undefined, Serials.JSON, 0);
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0);
@@ -213,7 +216,7 @@ export class Credentials {
         };
 
         let [, iss] = Saider.saidify(_iss);
-        let iserder = new Serder(iss)
+        let iserder = new Serder(iss);
 
         // Create paths and sign
         let keeper = this.client!.manager!.get(hab);
@@ -255,9 +258,8 @@ export class Credentials {
             ixn = anc.ked;
         }
 
-        let res = this.issueFromEvents(hab,name, vc, iss, ixn, sigs)
-        return new CredentialResult(vc, iserder, anc, sigs, res)
-
+        let res = this.issueFromEvents(hab, name, vc, iss, ixn, sigs);
+        return new CredentialResult(vc, iserder, anc, sigs, res);
     }
 
     issueFromEvents(
@@ -696,7 +698,6 @@ export class Schemas {
     }
 }
 
-
 /**
  * Ipex
  */
@@ -731,16 +732,16 @@ export class Ipex {
         message: string,
         acdc: Serder,
         iss: Serder,
-        anc:Serder,
+        anc: Serder,
         atc: string,
-        agree?:string,
-        datetime?: string,
+        agree?: string,
+        datetime?: string
     ): Promise<[Serder, string[], string]> {
         let hab = await this.client.identifiers().get(name);
         let data: any = {
             m: message,
-            i: recp
-        }
+            i: recp,
+        };
 
         let embeds: any = {
             acdc: [acdc, ''],
@@ -748,15 +749,17 @@ export class Ipex {
             anc: [anc, atc],
         };
 
-        return this.client.exchanges().createExchangeMessage(
-            hab,
-            '/ipex/grant',
-            data,
-            embeds,
-            undefined,
-            datetime,
-            agree
-        );
+        return this.client
+            .exchanges()
+            .createExchangeMessage(
+                hab,
+                '/ipex/grant',
+                data,
+                embeds,
+                undefined,
+                datetime,
+                agree
+            );
     }
 
     /**
@@ -772,22 +775,23 @@ export class Ipex {
         name: string,
         message: string,
         grant: string,
-        datetime?: string,
+        datetime?: string
     ): Promise<[Serder, string[], string]> {
         let hab = await this.client.identifiers().get(name);
         let data: any = {
             m: message,
-        }
+        };
 
-        return this.client.exchanges().createExchangeMessage(
-            hab,
-            '/ipex/admit',
-            data,
-            {},
-            undefined,
-            datetime,
-            grant
-        );
+        return this.client
+            .exchanges()
+            .createExchangeMessage(
+                hab,
+                '/ipex/admit',
+                data,
+                {},
+                undefined,
+                datetime,
+                grant
+            );
     }
-
 }

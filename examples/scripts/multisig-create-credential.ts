@@ -37,7 +37,7 @@ async function connect() {
     const exchanges = client.exchanges();
 
     let salt = '0123456789lmnopqrstuv';
-    let res = await identifiers.create('agent0', {bran: salt});
+    let res = await identifiers.create('agent0', { bran: salt });
     let op = await res.op();
     let aid = op['response'];
 
@@ -90,7 +90,7 @@ async function connect() {
 
     let serder = ires.serder;
     let sigs = ires.sigs;
-    let sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}));
+    let sigers = sigs.map((sig: any) => new signify.Siger({ qb64: sig }));
 
     let ims = signify.d(signify.messagize(serder, sigers));
     let atc = ims.substring(serder.size);
@@ -106,22 +106,22 @@ async function connect() {
         'multisig',
         aid,
         '/multisig/icp',
-        {gid: serder.pre, smids: smids, rmids: smids},
+        { gid: serder.pre, smids: smids, rmids: smids },
         embeds,
         recp
     );
 
-    let multisigAID = serder.pre
-    console.log("Waiting for multisig AID to be created")
+    let multisigAID = serder.pre;
+    console.log('Waiting for multisig AID to be created');
 
-    op = await ires.op()
+    op = await ires.op();
     while (!op['done']) {
         op = await operations.get(op['name']);
         await new Promise((resolve) => setTimeout(resolve, 1000)); // sleep for 1 second
     }
     console.log('done.');
 
-    console.log("Resolving schema...")
+    console.log('Resolving schema...');
     op = await oobis.resolve(
         'http://127.0.0.1:7723/oobi/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao',
         'schema'
@@ -131,10 +131,9 @@ async function connect() {
         await new Promise((resolve) => setTimeout(resolve, 1000)); // sleep for 1 second
     }
     console.log('done.');
-    let schemaSAID = "EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao"
+    let schemaSAID = 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao';
 
-
-    console.log("Creating registry...")
+    console.log('Creating registry...');
     let vcpRes1 = await client.registries().create({
         name: 'multisig',
         registryName: 'vLEI Registry',
@@ -143,11 +142,11 @@ async function connect() {
 
     let op1 = await vcpRes1.op();
     serder = vcpRes1.regser;
-    let regk = serder.pre
+    let regk = serder.pre;
     let anc = vcpRes1.serder;
     sigs = vcpRes1.sigs;
 
-    sigers = sigs.map((sig: any) => new signify.Siger({qb64: sig}));
+    sigers = sigs.map((sig: any) => new signify.Siger({ qb64: sig }));
     ims = signify.d(signify.messagize(anc, sigers));
     atc = ims.substring(anc.size);
 
@@ -156,16 +155,21 @@ async function connect() {
         anc: [anc, atc],
     };
 
-    recp = ["EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4", "EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1"]
-    await client.exchanges().send(
-        'agent0',
-        'multisig',
-        aid,
-        '/multisig/vcp',
-        {gid: multisigAID, usage: 'Issue vLEIs'},
-        regbeds,
-        recp
-    );
+    recp = [
+        'EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4',
+        'EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1',
+    ];
+    await client
+        .exchanges()
+        .send(
+            'agent0',
+            'multisig',
+            aid,
+            '/multisig/vcp',
+            { gid: multisigAID, usage: 'Issue vLEIs' },
+            regbeds,
+            recp
+        );
 
     while (!op1['done']) {
         op1 = await operations.get(op1['name']);
@@ -173,24 +177,34 @@ async function connect() {
     }
     console.log('done.');
 
-    console.log("Creating credential from multisig...")
+    console.log('Creating credential from multisig...');
     // Issue credential
     const vcdata = {
         LEI: '5493001KJTIIGC8Y1R17',
     };
-    let holder = "ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k"
+    let holder = 'ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k';
 
-    let TIME = "2023-09-25T16:01:37.000000+00:00"
-    let credRes = await client.credentials().issue('multisig', regk, schemaSAID, holder, vcdata,
-        undefined, undefined, TIME);
-    op1 = await credRes.op()
+    let TIME = '2023-09-25T16:01:37.000000+00:00';
+    let credRes = await client
+        .credentials()
+        .issue(
+            'multisig',
+            regk,
+            schemaSAID,
+            holder,
+            vcdata,
+            undefined,
+            undefined,
+            TIME
+        );
+    op1 = await credRes.op();
 
-    let acdc = new signify.Serder(credRes.acdc)
-    let iss = credRes.iserder
-    let ianc = credRes.anc
-    let isigs = credRes.sigs
+    let acdc = new signify.Serder(credRes.acdc);
+    let iss = credRes.iserder;
+    let ianc = credRes.anc;
+    let isigs = credRes.sigs;
 
-    sigers = isigs.map((sig: any) => new signify.Siger({qb64: sig}));
+    sigers = isigs.map((sig: any) => new signify.Siger({ qb64: sig }));
     ims = signify.d(signify.messagize(ianc, sigers));
     atc = ims.substring(anc.size);
 
@@ -200,47 +214,58 @@ async function connect() {
         anc: [ianc, atc],
     };
 
-    await client.exchanges().send(
-        'agent0',
-        'multisig',
-        aid,
-        '/multisig/iss',
-        {gid: multisigAID},
-        vcembeds,
-        recp
-    );
+    await client
+        .exchanges()
+        .send(
+            'agent0',
+            'multisig',
+            aid,
+            '/multisig/iss',
+            { gid: multisigAID },
+            vcembeds,
+            recp
+        );
 
     while (!op1['done']) {
         op1 = await client.operations().get(op1.name);
         await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
-    console.log("Creating IPEX grant message to send...")
+    console.log('Creating IPEX grant message to send...');
 
-    let [grant, gsigs, end] = await client.ipex().grant("multisig", holder, "", acdc, iss, ianc, atc, undefined, TIME)
-    let m = await client.identifiers().get("multisig")
+    let [grant, gsigs, end] = await client
+        .ipex()
+        .grant('multisig', holder, '', acdc, iss, ianc, atc, undefined, TIME);
+    let m = await client.identifiers().get('multisig');
 
-    let mstate = m["state"]
-    let seal = ['SealEvent', {i: m['prefix'], s: mstate["ee"]["s"], d: mstate["ee"]["d"]}];
-    sigers = gsigs.map((sig: any) => new signify.Siger({qb64: sig}));
+    let mstate = m['state'];
+    let seal = [
+        'SealEvent',
+        { i: m['prefix'], s: mstate['ee']['s'], d: mstate['ee']['d'] },
+    ];
+    sigers = gsigs.map((sig: any) => new signify.Siger({ qb64: sig }));
 
-    let gims = signify.d(signify.messagize(grant, sigers, seal, undefined, undefined, true));
-    atc = gims.substring(grant.size)
-    atc += end
+    let gims = signify.d(
+        signify.messagize(grant, sigers, seal, undefined, undefined, true)
+    );
+    atc = gims.substring(grant.size);
+    atc += end;
 
     let gembeds: any = {
-        exn: [grant, atc]
-    }
+        exn: [grant, atc],
+    };
 
-    await client.exchanges().send(
-        'agent0',
-        'multisig',
-        aid,
-        '/multisig/exn',
-        {gid: multisigAID},
-        gembeds,
-        recp
-    );
+    await client
+        .exchanges()
+        .send(
+            'agent0',
+            'multisig',
+            aid,
+            '/multisig/exn',
+            { gid: multisigAID },
+            gembeds,
+            recp
+        );
 
-    console.log("... done!")
+    console.log('... done!');
 }

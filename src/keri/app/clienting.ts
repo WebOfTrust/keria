@@ -6,7 +6,7 @@ import { ExternalModule, KeyManager } from '../core/keeping';
 import { Identifier } from './aiding';
 import { Contacts, Challenges } from './contacting';
 import { Oobis, Operations, KeyEvents, KeyStates } from './coring';
-import {Credentials, Ipex, Registries, Schemas} from './credentialing';
+import { Credentials, Ipex, Registries, Schemas } from './credentialing';
 import { Notifications } from './notifying';
 import { Escrows } from './escrowing';
 import { Groups } from './grouping';
@@ -416,7 +416,6 @@ export class SignifyClient {
     credentials(): Credentials {
         return new Credentials(this);
     }
-
 
     /**
      * Get IPEX resource
