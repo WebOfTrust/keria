@@ -414,5 +414,30 @@ describe("Ipex", () => {
         )
         assert.equal(end, "-LAD4AACA-e-acdc-LAD5AACAA-e-iss-LAE5AACAA-e-anc-vtest")
 
+
+        let [admit, asigs, aend] = await ipex.admit(
+            'holder',
+            '',
+            grant.ked.d,
+            mockCredential.sad.a.dt)
+
+        assert.deepStrictEqual(admit.ked, {
+            v: 'KERI10JSON000111_',
+            t: 'exn', 
+            d: 'EB7FkJBteJSZVV_dsjd0dmx6ORoRO6hJY91HR0z-x9tF', 
+            i: 'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK', 
+            p: 'ECO262mMZcwP94aY0cUl5IL6LOK_R_Md1irVDdQEwtHl', 
+            dt: '2023-08-23T15:16:07.553000+00:00', 
+            r: '/ipex/admit', 
+            q: {}, 
+            a: {'m': ''}, 
+            e: {}, 
+            })
+
+        assert.deepStrictEqual(asigs, [
+            'AAD6NAWzEr_KonMJhKL32JLTVZ2_xwVNMqlr-ovAwoIQS5IEWZ8POd4rbWO49-8NqK8GedjUyii3y9o1b0QkYzQJ'
+        ])
+
+        assert.equal(aend, "") 
     })
 })

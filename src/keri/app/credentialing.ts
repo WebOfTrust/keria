@@ -759,4 +759,35 @@ export class Ipex {
         );
     }
 
+    /**
+     * Create an IPEX admit EXN message
+     * @async
+     * @param {string} name Name or alias of the identifier
+     * @param {string} message accompany human readable description of the credential being admitted
+     * @param {string} grant qb64 SAID of grant message this admit is responding to
+     * @param {string} datetime Optional datetime to set for the credential
+     * @returns {Promise<[Serder, string[], string]>} A promise to the long-running operation
+     */
+    async admit(
+        name: string,
+        message: string,
+        grant: string,
+        datetime?: string,
+    ): Promise<[Serder, string[], string]> {
+        let hab = await this.client.identifiers().get(name);
+        let data: any = {
+            m: message,
+        }
+
+        return this.client.exchanges().createExchangeMessage(
+            hab,
+            '/ipex/admit',
+            data,
+            {},
+            undefined,
+            datetime,
+            grant
+        );
+    }
+
 }
