@@ -615,7 +615,7 @@ def info(hab, rm, full=False):
 
 class IdentifierOOBICollectionEnd:
     """
-      This class represents the OOBI subresource collection endpoint for Identfiiers
+      This class represents the OOBI subresource collection endpoint for identifiers
 
     """
 
@@ -855,12 +855,12 @@ class ChallengeCollectionEnd:
               content:
                   application/json:
                     schema:
-                        description: Randon word list
+                        description: Random word list
                         type: object
                         properties:
                             words:
                                 type: array
-                                description: random challange word list
+                                description: random challenge word list
                                 items:
                                     type: string
 
@@ -886,10 +886,10 @@ class ChallengeResourceEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name: human readable name of identifier to use to sign the challange/response
+            name: human readable name of identifier to use to sign the challenge/response
 
         ---
-        summary:  Sign challange message and forward to peer identfiier
+        summary:  Sign challenge message and forward to peer identifier
         description:  Sign a challenge word list received out of bands and send `exn` peer to peer message
                       to recipient
         tags:
@@ -949,11 +949,11 @@ class ChallengeVerifyResourceEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name: human readable name of identifier to use to sign the challange/response
+            name: human readable name of identifier to use to sign the challenge/response
             source: qb64 AID of of source of signed response to verify
 
         ---
-        summary:  Sign challange message and forward to peer identfiier
+        summary:  Sign challenge message and forward to peer identifier
         description:  Sign a challenge word list received out of bands and send `exn` peer to peer message
                       to recipient
         tags:
@@ -1009,7 +1009,7 @@ class ChallengeVerifyResourceEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name: human readable name of identifier to use to sign the challange/response
+            name: human readable name of identifier to use to sign the challenge/response
             source: qb64 AID of of source of signed response to verify
 
         ---
@@ -1174,8 +1174,8 @@ class ContactImageResourceEnd:
             prefix: qb64 identifier prefix of contact to associate with image
 
         ---
-         summary: Uploads an image to associate with identfier.
-         description: Uploads an image to associate with identfier.
+         summary: Uploads an image to associate with identifier.
+         description: Uploads an image to associate with identifier.
          tags:
             - Contacts
          parameters:
@@ -1268,8 +1268,8 @@ class ContactResourceEnd:
             prefix: qb64 identifier prefix of contact information to get
 
        ---
-        summary:  Get contact information associated with single remote identfier
-        description:  Get contact information associated with single remote identfier.  All
+        summary:  Get contact information associated with single remote identifier
+        description:  Get contact information associated with single remote identifier.  All
                       information is meta-data and kept in local storage only
         tags:
            - Contacts
@@ -1331,7 +1331,7 @@ class ContactResourceEnd:
            200:
               description: Updated contact information for remote identifier
            400:
-              description: Invalid identfier used to update contact information
+              description: Invalid identifier used to update contact information
            404:
               description: Prefix not found in identifier contact information
         """
@@ -1367,8 +1367,8 @@ class ContactResourceEnd:
             prefix: qb64 identifier to update contact information
 
         ---
-        summary:  Update provided fields in contact information associated with remote identfier prefix
-        description:  Update provided fields in contact information associated with remote identfier prefix.  All
+        summary:  Update provided fields in contact information associated with remote identifier prefix
+        description:  Update provided fields in contact information associated with remote identifier prefix.  All
                       information is metadata and kept in local storage only
         tags:
            - Contacts
@@ -1391,7 +1391,7 @@ class ContactResourceEnd:
            200:
               description: Updated contact information for remote identifier
            400:
-              description: Invalid identfier used to update contact information
+              description: Invalid identifier used to update contact information
            404:
               description: Prefix not found in identifier contact information
         """
@@ -1424,8 +1424,8 @@ class ContactResourceEnd:
             prefix: qb64 identifier prefix to delete contact information
 
         ---
-        summary:  Delete contact information associated with remote identfier
-        description:  Delete contact information associated with remote identfier
+        summary:  Delete contact information associated with remote identifier
+        description:  Delete contact information associated with remote identifier
         tags:
            - Contacts
         parameters:

@@ -40,7 +40,7 @@ class MultisigRequestCollectionEnd:
         # Get the hab
         hab = agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identfier")
+            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
 
         # ...and make sure we're a Group
         if not isinstance(hab, habbing.SignifyGroupHab):

@@ -43,7 +43,7 @@ class ExchangeCollectionEnd:
         # Get the hab
         hab = agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identfier")
+            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
 
         # Get the exn, sigs, additional attachments and recipients  from the request
         ked = httping.getRequiredParam(body, "exn")
@@ -98,7 +98,7 @@ class ExchangeQueryCollectionEnd:
         agent = req.context.agent
         hab = agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description="name is not a valid reference to an identfier")
+            raise falcon.HTTPNotFound(description="name is not a valid reference to an identifier")
 
         try:
             body = req.get_media()
@@ -159,7 +159,7 @@ class ExchangeResourceEnd:
         # Get the hab
         hab = agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identfier")
+            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
 
         serder, pathed = exchanging.cloneMessage(agent.hby, said)
 
