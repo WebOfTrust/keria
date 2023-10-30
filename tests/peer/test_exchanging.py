@@ -7,9 +7,10 @@ Testing the Mark II Agent Grouping endpoints
 
 """
 import json
+from pprint import pprint
 
 from hio.base import doing
-from keri.core import coring
+from keri.core import coring, eventing
 from keri.peer.exchanging import exchange
 
 from keria.app import aiding
@@ -49,9 +50,11 @@ def test_exchange_end(helpers):
         aid = op["response"]
         pre = aid['i']
         assert pre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
-        serder, signers = helpers.incept(salt, "signify:aid", pidx=0)
+        serder, sigers = helpers.incept(salt, "signify:aid", pidx=0)
         assert serder.pre == pre
-        signer = signers[0]
+        signer = sigers[0]
+
+        ims = eventing.messagize(serder=serder, sigers=sigers)
 
         salt1 = b'abcdef0123456789'
         op = helpers.createAid(client, "aid2", salt1)
@@ -145,3 +148,43 @@ def test_exchange_end(helpers):
         assert res.status_code == 200
         serder = coring.Serder(ked=res.json['exn'])
         assert serder.said == exn.said
+
+        payload = dict(
+            m="Please give me credential",
+            s=QVI_SAID,
+            a=dict(),
+            i=pre1
+        )
+
+        embeds = dict(
+            icp=ims,
+        )
+        exn, atc = exchange(route="/ipex/offer", payload=payload, sender=pre, embeds=embeds)
+        sig = signer.sign(ser=exn.raw, index=0).qb64
+
+        body = dict(
+            exn=exn.ked,
+            sigs=[sig],
+            atc=atc.decode("utf-8"),
+            rec=[pre1],
+            tpc="/ipex"
+        )
+
+        res = client.simulate_post(path="/identifiers/aid1/exchanges", json=body)
+        assert res.status_code == 202
+        assert len(agent.exchanges) == 1
+        assert res.json == exn.ked
+
+        doist.recur(deeds=deeds)
+        agent.exnseeker.index(exn.said)
+
+        body = json.dumps({'sort': ['-dt']}).encode("utf-8")
+        res = client.simulate_post(f"/identifiers/aid1/exchanges/query", body=body)
+        assert res.status_code == 200
+        assert len(res.json) == 3
+
+        offer = res.json[2]
+        assert offer['pathed'] == {'icp': '-AABADzZ23DyzL4TLQqTtjx5IKkWwRt3_NYHHIqc9g1rBjwr'}
+
+
+
