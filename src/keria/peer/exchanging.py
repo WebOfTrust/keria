@@ -133,7 +133,7 @@ class ExchangeQueryCollectionEnd:
         exns = []
         for said in saids:
             serder, pathed = exchanging.cloneMessage(agent.hby, said.qb64)
-            exns.append(dict(exn=serder.ked, pathed=pathed))
+            exns.append(dict(exn=serder.ked, pathed={k: v.decode("utf-8") for k, v in pathed.items()}))
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
