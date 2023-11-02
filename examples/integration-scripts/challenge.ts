@@ -104,7 +104,7 @@ async function run() {
 
     // List Client 1 contacts
     let contacts1 = await client1.contacts().list();
-    assert.equal(contacts1[0].alias, 'bob');
+    assert.equal(contacts1[3].alias, 'bob');
 
     // Bob responds to Alice challenge
     await client2.challenges().respond('bob', aid1.i, challenge1_small.words);
