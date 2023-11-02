@@ -247,7 +247,6 @@ async function run() {
     });
 
     console.log('Credential issued', creds);
-    // await grantCredential(issuerClient, 'issuer');
 
     const grantNotification = await waitForNotification(
         holderClient,
