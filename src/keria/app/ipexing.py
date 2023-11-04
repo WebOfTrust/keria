@@ -99,12 +99,12 @@ class IpexAdmitCollectonEnd:
 
         embeds = ked['e']
         admit = embeds['exn']
-        if ked['r'] != "/ipex/admit":
+        if admit['r'] != "/ipex/admit":
             raise falcon.HTTPBadRequest(f"invalid route for embedded ipex admit {ked['r']}")
 
         holder = admit['a']['i']
         serder = coring.Serder(ked=admit)
-        ims = bytearray(serder.raw) + atc['exn']
+        ims = bytearray(serder.raw) + atc['exn'].encode("utf-8")
         agent.hby.psr.parseOne(ims=ims)
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=holder, topic="credential"))
         agent.admits.append(dict(said=admit['p'], pre=hab.pre))
@@ -120,7 +120,7 @@ class IpexAdmitCollectonEnd:
         ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
 
         # Have to add the atc to the end... this will be Pathed signatures for embeds
-        ims.extend(atc.encode("utf-8"))  # add the pathed attachments
+        ims.extend(atc['exn'].encode("utf-8"))  # add the pathed attachments
 
         # make a copy and parse
         agent.hby.psr.parseOne(ims=bytearray(ims))
