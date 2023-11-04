@@ -72,9 +72,6 @@ class ExchangeCollectionEnd:
         # make a copy and parse
         agent.hby.psr.parseOne(ims=bytearray(ims))
 
-        # now get rid of the event so we can pass it as atc to send
-        del ims[:serder.size]
-
         msg = dict(said=serder.said, pre=hab.pre, rec=rec, topic=topic)
 
         agent.exchanges.append(msg)

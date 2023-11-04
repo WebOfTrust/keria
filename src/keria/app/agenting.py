@@ -36,7 +36,7 @@ from keri.vdr.credentialing import Regery
 from keri.vdr.eventing import Tevery
 from keri.app import challenging
 
-from . import aiding, notifying, indirecting, credentialing, presenting
+from . import aiding, notifying, indirecting, credentialing, presenting, ipexing
 from . import grouping as keriagrouping
 from ..peer import exchanging as keriaexchanging
 from .specing import AgentSpecResource
@@ -87,6 +87,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
     notifying.loadEnds(app=app)
     keriagrouping.loadEnds(app=app)
     keriaexchanging.loadEnds(app=app)
+    ipexing.loadEnds(app=app)
 
     if httpPort:
         happ = falcon.App(middleware=falcon.CORSMiddleware(
@@ -293,15 +294,17 @@ class Agent(doing.DoDoer):
         self.witners = decking.Deck()
         self.queries = decking.Deck()
         self.exchanges = decking.Deck()
+        self.admits = decking.Deck()
 
         receiptor = agenting.Receiptor(hby=hby)
         self.postman = forwarding.Poster(hby=hby)
+        self.witq = agenting.WitnessInquisitor(hby=self.hby)
         self.witPub = agenting.WitnessPublisher(hby=self.hby)
         self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
 
         self.rep = storing.Respondant(hby=hby, cues=self.cues, mbx=Mailboxer(name=self.hby.name, temp=self.hby.temp))
 
-        doers = [habbing.HaberyDoer(habery=hby), receiptor, self.postman, self.witPub, self.rep, self.swain,
+        doers = [habbing.HaberyDoer(habery=hby), receiptor, self.postman, self.witq, self.witPub, self.rep, self.swain,
                  self.counselor, self.witDoer, *oobiery.doers]
 
         signaler = signaling.Signaler()
@@ -359,6 +362,7 @@ class Agent(doing.DoDoer):
             Witnesser(receiptor=receiptor, witners=self.witners),
             Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
             ExchangeSender(hby=hby, agentHab=agentHab, exc=self.exc, postman=self.postman, exchanges=self.exchanges),
+            Admitter(hby=hby, witq=self.witq, psr=self.parser, agentHab=agentHab, exc=self.exc, admits=self.admits),
             GroupRequester(hby=hby, agentHab=agentHab, counselor=self.counselor, groups=self.groups),
             SeekerDoer(seeker=self.seeker, cues=self.verifier.cues),
             ExnSeekerDoer(seeker=self.exnseeker, cues=self.exc.cues)
@@ -483,6 +487,44 @@ class ExchangeSender(doing.Doer):
                                       topic=topic,
                                       serder=serder,
                                       attachment=atc)
+
+
+class Admitter(doing.Doer):
+
+    def __init__(self, hby, witq, psr, agentHab, exc, admits):
+        self.hby = hby
+        self.agentHab = agentHab
+        self.witq = witq
+        self.psr = psr
+        self.exc = exc
+        self.admits = admits
+        super(Admitter, self).__init__()
+
+    def recur(self, tyme):
+        if self.admits:
+            msg = self.admits.popleft()
+            said = msg['said']
+            if not self.exc.complete(said=said):
+                self.admits.append(msg)
+                return False
+
+            hab = self.hby.habs[msg['pre']]
+            grant, pathed = exchanging.cloneMessage(self.hby, said)
+
+            embeds = grant.ked['e']
+            acdc = embeds["acdc"]
+            issr = acdc['i']
+
+            # Lets get the latest KEL and Registry if needed
+            self.witq.query(hab=self.agentHab, pre=issr)
+            if "ri" in acdc:
+                self.witq.telquery(hab=self.agentHab, wits=hab.kevers[issr].wits, ri=acdc["ri"], i=acdc["d"])
+
+            for label in ("anc", "iss", "acdc"):
+                ked = embeds[label]
+                sadder = coring.Sadder(ked=ked)
+                ims = bytearray(sadder.raw) + pathed[label]
+                self.psr.parseOne(ims=ims)
 
 
 class SeekerDoer(doing.Doer):
