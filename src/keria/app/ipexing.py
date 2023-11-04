@@ -106,7 +106,7 @@ class IpexAdmitCollectonEnd:
         serder = coring.Serder(ked=admit)
         ims = bytearray(serder.raw) + atc['exn']
         agent.hby.psr.parseOne(ims=ims)
-        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=holder, topic=topic))
+        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=holder, topic="credential"))
         agent.admits.append(dict(said=admit['p'], pre=hab.pre))
 
         # use that data to create th Serder and Sigers for the exn
