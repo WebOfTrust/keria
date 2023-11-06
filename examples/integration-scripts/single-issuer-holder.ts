@@ -11,7 +11,7 @@ import signify, {
 const URL = 'http://127.0.0.1:3901';
 const BOOT_URL = 'http://127.0.0.1:3903';
 const SCHEMA_SAID = 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao';
-const WITNESS_AIDS = []; // ['BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha'];
+const WITNESS_AIDS: string[] = []; // ['BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha'];
 const SCHEMA_OOBI =
     'http://127.0.0.1:7723/oobi/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao';
 
