@@ -11,6 +11,7 @@ import signify, {
 const URL = 'http://127.0.0.1:3901';
 const BOOT_URL = 'http://127.0.0.1:3903';
 const SCHEMA_SAID = 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao';
+const WITNESS_AIDS = []; // ['BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha'];
 const SCHEMA_OOBI =
     'http://127.0.0.1:7723/oobi/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao';
 
@@ -37,8 +38,8 @@ async function connect() {
 
 async function createIdentifier(client: signify.SignifyClient, name: string) {
     const icpResult1 = await client.identifiers().create(name, {
-        toad: 0,
-        wits: [],
+        toad: WITNESS_AIDS.length,
+        wits: WITNESS_AIDS,
     });
     let op = await icpResult1.op();
     while (!op.done) {
@@ -94,12 +95,6 @@ async function createRegistry(
     assert.equal(registries[0].name, registryName);
 
     return registries[0];
-    // const schema = await client.schemas().get(SCHEMA_SAID);
-    // assert.equal(schema.$id, SCHEMA_SAID);
-    // const schemas = await client.schemas().list();
-    // assert.equal(schemas.length, 1);
-    // assert.equal(schemas[0].$id, SCHEMA_SAID);
-    // console.log('Registry created');
 }
 
 async function issueCredential(
@@ -182,17 +177,14 @@ async function waitForNotification(
 async function admitCredential(
     client: SignifyClient,
     name: string,
-    said: string
+    said: string,
+    recipient: string
 ) {
     const dt = createTimestamp();
 
     const [admit, sigs, end] = await client.ipex().admit(name, '', said, dt);
 
-    const response = await client
-        .exchanges()
-        .sendFromEvents(name, 'credential', admit, sigs, end, []);
-
-    return response;
+    await client.ipex().submitAdmit(name, admit, sigs, end, [recipient]);
 }
 
 async function run() {
@@ -255,11 +247,20 @@ async function run() {
 
     console.log(grantNotification);
 
-    await admitCredential(holderClient, 'holder', grantNotification.a.d!);
+    const repsonse = await admitCredential(
+        holderClient,
+        'holder',
+        grantNotification.a.d!,
+        issuerPrefix
+    );
+    console.log('Admit sent!');
+
     await holderClient.notifications().mark(grantNotification.i);
+    console.log('Notification marked!');
 
     // TODO: Do we need to do something more before this step?
 
+    console.log('Listing credentials...');
     let credentials = await holderClient.credentials().list('holder');
     while (credentials.length < 1) {
         console.log('No credentials yet...');

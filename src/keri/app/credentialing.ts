@@ -794,4 +794,27 @@ export class Ipex {
                 grant
             );
     }
+
+    async submitAdmit(
+        name: string,
+        exn: Serder,
+        sigs: string[],
+        atc: string,
+        recp: string[]
+    ): Promise<any> {
+        const body = {
+            exn: exn.ked,
+            sigs: sigs,
+            atc: atc,
+            rec: recp,
+        };
+
+        const response = await this.client.fetch(
+            `/identifiers/${name}/ipex/admit`,
+            'POST',
+            body
+        );
+
+        return response.json();
+    }
 }
