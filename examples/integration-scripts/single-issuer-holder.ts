@@ -247,7 +247,7 @@ async function run() {
 
     console.log(grantNotification);
 
-    const repsonse = await admitCredential(
+    await admitCredential(
         holderClient,
         'holder',
         grantNotification.a.d!,
