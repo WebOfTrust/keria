@@ -59,6 +59,8 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
                         'signify-resource', 'signify-timestamp']))
 
     bootServer = createHttpServer(bootPort, bootApp, keypath, certpath, cafilepath)
+    if not bootServer.reopen():
+        raise RuntimeError(f"cannot create boot http server on port {bootPort}")
     bootServerDoer = http.ServerDoer(server=bootServer)
     bootEnd = BootEnd(agency)
     bootApp.add_route("/boot", bootEnd)
@@ -77,6 +79,8 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
     app.resp_options.media_handlers.update(media.Handlers())
 
     adminServer = createHttpServer(adminPort, app, keypath, certpath, cafilepath)
+    if not adminServer.reopen():
+        raise RuntimeError(f"cannot create admin http server on port {adminPort}")
     adminServerDoer = http.ServerDoer(server=adminServer)
 
     doers = [agency, bootServerDoer, adminServerDoer]
@@ -100,6 +104,8 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
         indirecting.loadEnds(agency=agency, app=happ)
 
         server = createHttpServer(httpPort, happ, keypath, certpath, cafilepath)
+        if not server.reopen():
+            raise RuntimeError(f"cannot create local http server on port {httpPort}")
         httpServerDoer = http.ServerDoer(server=server)
         doers.append(httpServerDoer)
 
