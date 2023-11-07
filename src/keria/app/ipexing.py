@@ -80,6 +80,9 @@ class IpexAdmitCollectonEnd:
         ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
 
         # Have to add the atc to the end... this will be Pathed signatures for embeds
+        if not atc:
+            raise falcon.HTTPBadRequest(description=f"attachment missing for ACDC, unable to process request.")
+
         ims.extend(atc.encode("utf-8"))  # add the pathed attachments
 
         # make a copy and parse
@@ -120,6 +123,9 @@ class IpexAdmitCollectonEnd:
         ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
 
         # Have to add the atc to the end... this will be Pathed signatures for embeds
+        if 'exn' not in atc or not atc['exn']:
+            raise falcon.HTTPBadRequest(description=f"attachment missing for ACDC, unable to process request.")
+
         ims.extend(atc['exn'].encode("utf-8"))  # add the pathed attachments
 
         # make a copy and parse

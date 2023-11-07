@@ -93,6 +93,20 @@ def test_ipex_admit(helpers, mockHelpingNowIso8601):
         data = json.dumps(body).encode("utf-8")
         res = client.simulate_post(path="/identifiers/test/ipex/admit", body=data)
 
+        assert res.status_code == 400
+        assert res.json == {'description': 'attachment missing for ACDC, unable to process request.',
+                            'title': '400 Bad Request'}
+
+        body = dict(
+            exn=exn.ked,
+            sigs=sigs,
+            atc="this is a fake attachment",
+            rec=[pre1]
+        )
+
+        data = json.dumps(body).encode("utf-8")
+        res = client.simulate_post(path="/identifiers/test/ipex/admit", body=data)
+
         assert res.status_code == 202
         assert len(agent.exchanges) == 1
         assert len(agent.admits) == 1
