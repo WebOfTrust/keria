@@ -260,14 +260,14 @@ async function run() {
     await holderClient.notifications().mark(grantNotification.i);
     console.log('Notification marked!');
 
-    // TODO: Do we need to do something more before this step?
-
     console.log('Listing credentials...');
     let credentials = await holderClient.credentials().list('holder');
     while (credentials.length < 1) {
         console.log('No credentials yet...');
         await new Promise((resolve) => setTimeout(resolve, 1000));
+        credentials = await holderClient.credentials().list('holder');
     }
 
     console.log('Succeeded');
+    console.dir(credentials, { depth: 15 });
 }
