@@ -17,8 +17,6 @@ import { Serder } from '../core/serder';
 import { Siger } from '../core/siger';
 import { TextDecoder } from 'util';
 import { TraitDex } from './habery';
-import { Prefixer } from '../core/prefixer';
-import { Seqner } from '../core/seqner';
 import {
     serializeACDCAttachment,
     serializeIssExnAttachment,
@@ -776,9 +774,7 @@ export class Ipex {
             i: recp,
         };
 
-        let prefixer = new Prefixer({ raw: b(acdc.raw) });
-        let seqner = new Seqner({ sn: acdc.sn });
-        let acdcAtc = d(serializeACDCAttachment(prefixer, seqner, acdcSaider));
+        let acdcAtc = d(serializeACDCAttachment(acdc, acdcSaider));
         let issAtc = d(serializeIssExnAttachment(anc, issSaider));
 
         let embeds: any = {

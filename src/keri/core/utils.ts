@@ -3,6 +3,7 @@ import { Seqner } from './seqner';
 import { Prefixer } from './prefixer';
 import { Saider } from './saider';
 import { Serder } from './serder';
+import { b } from './core';
 
 export function pad(n: any, width = 3, z = 0) {
     return (String(z).repeat(width) + String(n)).slice(String(n).length);
@@ -116,33 +117,12 @@ export function bytesToInt(ar: Uint8Array): number {
     return value;
 }
 
-export function serialize(
-    creder: any,
-    prefixer: any,
-    seqner: any,
-    saider: any
-) {
-    let craw = creder.raw;
-    let ctr = new Counter({ code: CtrDex.SealSourceTriples, count: 1 }).qb64b;
-    let prefix = prefixer.qb64b;
-    let seq = seqner.qb64b;
-    let said = saider.qb64b;
-    let newCraw = new Uint8Array(
-        craw.length + ctr.length + prefix.length + seq.length + said.length
-    );
-    newCraw.set(craw);
-    newCraw.set(ctr, craw.length);
-    newCraw.set(prefix, craw.length + ctr.length);
-    newCraw.set(seq, craw.length + ctr.length + prefix.length);
-    newCraw.set(said, craw.length + ctr.length + prefix.length + seq.length);
-    return newCraw;
-}
-
 export function serializeACDCAttachment(
-    prefixer: Prefixer,
-    seqner: Seqner,
+    acdc: Serder,
     saider: Saider
 ): Uint8Array {
+    let prefixer = new Prefixer({ raw: b(acdc.raw) });
+    let seqner = new Seqner({ sn: acdc.sn });
     let craw = new Uint8Array();
     let ctr = new Counter({ code: CtrDex.SealSourceTriples, count: 1 }).qb64b;
     let prefix = prefixer.qb64b;
