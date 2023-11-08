@@ -106,6 +106,8 @@ class MultisigRequestResourceEnd:
         match route.split("/"):
             case ["", "multisig", "icp"]:
                 pass
+            case ["", "multisig", "rot"]:
+                pass
             case ["", "multisig", *_]:
                 gid = payload["gid"]
                 if gid not in agent.hby.habs:
@@ -123,6 +125,13 @@ class MultisigRequestResourceEnd:
             match route.split("/"):
                 case ["", "multisig", "icp"]:
                     pass
+                case ["", "multisig", "rot"]:
+                    gid = payload["gid"]
+                    if gid in agent.hby.habs:
+                        ghab = agent.hby.habs[gid]
+                        d['groupName'] = ghab.name
+                        d['memberName'] = ghab.mhab.name
+
                 case ["", "multisig", "vcp"]:
                     gid = payload["gid"]
                     ghab = agent.hby.habs[gid]

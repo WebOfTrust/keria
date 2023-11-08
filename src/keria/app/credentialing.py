@@ -38,7 +38,7 @@ def loadEnds(app, identifierResource):
     app.add_route("/identifiers/{name}/credentials/{said}", credentialResourceEnd)
 
     queryCollectionEnd = CredentialQueryCollectionEnd()
-    app.add_route("/identifiers/{name}/credentials/query", queryCollectionEnd)
+    app.add_route("/credentials/query", queryCollectionEnd)
 
 
 class RegistryCollectionEnd:
@@ -307,13 +307,12 @@ class CredentialQueryCollectionEnd:
     """
 
     @staticmethod
-    def on_post(req, rep, name):
+    def on_post(req, rep):
         """ Credentials GET endpoint
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable alias for AID to use as issuer
 
         ---
         summary:  List credentials in credential store (wallet)
@@ -352,10 +351,6 @@ class CredentialQueryCollectionEnd:
 
         """
         agent = req.context.agent
-        hab = agent.hby.habByName(name)
-        if hab is None:
-            raise falcon.HTTPNotFound(description="name is not a valid reference to an identifier")
-
         try:
             body = req.get_media()
             if "filter" in body:
@@ -386,6 +381,10 @@ class CredentialQueryCollectionEnd:
         cur = agent.seeker.find(filtr=filtr, sort=sort, skip=skip, limit=limit)
         saids = [coring.Saider(qb64=said) for said in cur]
         creds = agent.rgy.reger.cloneCreds(saids=saids, db=agent.hby.db)
+
+        end = skip + (len(creds) - 1) if len(creds) > 0 else 0
+        rep.set_header("Accept-Ranges", "credentials")
+        rep.set_header("Content-Range", f"credentials {skip}-{end}/{limit}")
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"

@@ -200,8 +200,9 @@ class Agency(doing.DoDoer):
                       configDir=self.configDir,
                       configFile=self.configFile)
 
-        self.adb.agnt.pin(keys=(caid,),
-                          val=coring.Prefixer(qb64=agent.pre))
+        res = self.adb.agnt.pin(keys=(caid,),
+                                val=coring.Prefixer(qb64=agent.pre))
+
         self.adb.ctrl.pin(keys=(agent.pre,),
                           val=coring.Prefixer(qb64=caid))
 
@@ -1012,7 +1013,8 @@ class OobiResourceEnd:
         if role in (kering.Roles.witness,):  # Fetch URL OOBIs for all witnesses
             oobis = []
             for wit in hab.kever.wits:
-                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit,
+                                                                                           scheme=kering.Schemes.https)
                 if not urls:
                     raise falcon.HTTPNotFound(description=f"unable to query witness {wit}, no http endpoint")
 
@@ -1022,7 +1024,8 @@ class OobiResourceEnd:
             res["oobis"] = oobis
         elif role in (kering.Roles.controller,):  # Fetch any controller URL OOBIs
             oobis = []
-            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http) or hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.https)
+            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http) or hab.fetchUrls(eid=hab.pre,
+                                                                                           scheme=kering.Schemes.https)
             if not urls:
                 raise falcon.HTTPNotFound(description=f"unable to query controller {hab.pre}, no http endpoint")
 
@@ -1032,7 +1035,10 @@ class OobiResourceEnd:
             res["oobis"] = oobis
         elif role in (kering.Roles.agent,):
             oobis = []
-            roleUrls = hab.fetchRoleUrls(hab.pre, scheme=kering.Schemes.http, role=kering.Roles.agent) or hab.fetchRoleurls(hab.pre, scheme=kering.Schemes.https, role=kering.Roles.agent)
+            roleUrls = hab.fetchRoleUrls(hab.pre, scheme=kering.Schemes.http,
+                                         role=kering.Roles.agent) or hab.fetchRoleurls(hab.pre,
+                                                                                       scheme=kering.Schemes.https,
+                                                                                       role=kering.Roles.agent)
             if not roleUrls:
                 raise falcon.HTTPNotFound(description=f"unable to query controller {hab.pre}, no http endpoint")
 
