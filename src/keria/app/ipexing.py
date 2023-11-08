@@ -67,7 +67,7 @@ class IpexAdmitCollectonEnd:
     def sendAdmit(agent, hab, ked, sigs, rec):
         for recp in rec:  # Have to verify we already know all the recipients.
             if recp not in agent.hby.kevers:
-                raise falcon.HTTPBadRequest(f"attempt to send to unknown AID={recp}")
+                raise falcon.HTTPBadRequest(description=f"attempt to send to unknown AID={recp}")
 
         # use that data to create th Serder and Sigers for the exn
         serder = coring.Serder(ked=ked)
@@ -92,12 +92,16 @@ class IpexAdmitCollectonEnd:
     def sendMultisigExn(agent, hab, ked, sigs, atc, rec):
         for recp in rec:  # Have to verify we already know all the recipients.
             if recp not in agent.hby.kevers:
-                raise falcon.HTTPBadRequest(f"attempt to send to unknown AID={recp}")
+                raise falcon.HTTPBadRequest(description=f"attempt to send to unknown AID={recp}")
 
         embeds = ked['e']
         admit = embeds['exn']
         if admit['r'] != "/ipex/admit":
-            raise falcon.HTTPBadRequest(f"invalid route for embedded ipex admit {ked['r']}")
+            raise falcon.HTTPBadRequest(description=f"invalid route for embedded ipex admit {ked['r']}")
+
+        # Have to add the atc to the end... this will be Pathed signatures for embeds
+        if 'exn' not in atc or not atc['exn']:
+            raise falcon.HTTPBadRequest(description=f"attachment missing for ACDC, unable to process request.")
 
         holder = admit['a']['i']
         serder = coring.Serder(ked=admit)
@@ -116,9 +120,6 @@ class IpexAdmitCollectonEnd:
 
         ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
 
-        # Have to add the atc to the end... this will be Pathed signatures for embeds
-        if 'exn' not in atc or not atc['exn']:
-            raise falcon.HTTPBadRequest(description=f"attachment missing for ACDC, unable to process request.")
 
         ims.extend(atc['exn'].encode("utf-8"))  # add the pathed attachments
 

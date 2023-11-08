@@ -103,6 +103,10 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
         # Assure that no knew index tables needed to be created
         assert len(seeker.indexes) == 29
 
+        # Test with a bad credential SAID
+        with pytest.raises(ValueError):
+            seeker.index("EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM")
+
         # test credemtial with "oneOf"
         seeker.generateIndexes(said="EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
 
@@ -269,6 +273,9 @@ def test_exnseeker(helpers, seeder, mockHelpingNowUTC):
         msg.extend(atc)
         parsing.Parser().parseOne(ims=msg, exc=exc)
         seeker.index(apply.said)
+
+        saids = seeker.find({})
+        assert list(saids) == [apply.said]
 
         saids = seeker.find({'-i': {'$eq': issuerHab.pre}})
         assert list(saids) == [apply.said]

@@ -21,6 +21,7 @@ from keri.app.agenting import Receiptor
 from keri.core import coring
 from keri.core.coring import MtrDex
 from keri.db import basing
+from keri.vc import proving
 from keri.vdr import credentialing
 
 from keria.app import agenting, aiding
@@ -388,6 +389,7 @@ def test_querier(helpers):
         assert isinstance(qryDoer, querying.QueryDoer) is True
         assert qryDoer.pre == "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
 
+
 class MockServerTls:
     def __init__(self,  certify, keypath, certpath, cafilepath, port):
         pass
@@ -414,8 +416,29 @@ def test_createHttpServer(monkeypatch):
     assert isinstance(server.servant, MockServerTls)
 
 
+def test_seeker_doer(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        cues = decking.Deck()
+        seeker = agenting.SeekerDoer(agent.seeker, cues)
 
+        creder = proving.Creder(ked={
+            "v": "ACDC10JSON000197_",
+            "d": "EG7ZlUq0Z6a1EUPTM_Qg1LGEg1BWiypHLAekxo8crGzK",
+            "i": "EPbOCiPM7IItIMzMwslKWfPM4tqNIKUCyVVuYJNQHwMB",
+            "ri": "EE5upBEf9JlH0ZCkZwLcNOOQYkiowcF7QBa-SDZg3GLo",
+            "s": "EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao",
+            "a": {
+                "d": "EH8sB2FZuSYBi6dj8edmPMxS-ZoikR2ova3LAVJvelMe",
+                "i": "ECfRBXooQPoNNQC4i0bkwNfKm-VwV3QsUce14uFfejyj",
+                "dt": "2023-11-07T23:38:05.508152+00:00",
+                "LEI": "5493001KJTIIGC8Y1R17"
+            }
+        })
 
+        assert creder.said == "EG7ZlUq0Z6a1EUPTM_Qg1LGEg1BWiypHLAekxo8crGzK"
 
+        cues.append(dict(kin="saved", creder=creder))
 
-
+        result = seeker.recur()
+        assert result is False
+        assert len(cues) == 1

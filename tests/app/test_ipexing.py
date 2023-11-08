@@ -80,8 +80,9 @@ def test_ipex_admit(helpers, mockHelpingNowIso8601):
         res = client.simulate_post(path="/identifiers/test/ipex/admit", body=data)
 
         assert res.status_code == 400
-        assert res.json == {'title': 'attempt to send to unknown '
-                                     'AID=EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM'}
+        assert res.json == {'description': 'attempt to send to unknown '
+                                           'AID=EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM',
+                            'title': '400 Bad Request'}
 
         body = dict(
             exn=exn.ked,
@@ -89,6 +90,11 @@ def test_ipex_admit(helpers, mockHelpingNowIso8601):
             atc="",
             rec=[pre1]
         )
+
+        #Bad Sender
+        data = json.dumps(body).encode("utf-8")
+        res = client.simulate_post(path="/identifiers/BAD/ipex/admit", body=data)
+        assert res.status_code == 404
 
         data = json.dumps(body).encode("utf-8")
         res = client.simulate_post(path="/identifiers/test/ipex/admit", body=data)
@@ -108,6 +114,35 @@ def test_ipex_admit(helpers, mockHelpingNowIso8601):
                                        embeds=dict(exn=ims),
                                        dig=dig,
                                        date=helping.nowIso8601())
+
+        # Bad recipient
+        body = dict(
+            exn=exn.ked,
+            sigs=sigs,
+            atc=dict(exn=end.decode("utf-8")),
+            rec=["EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"]
+        )
+
+        data = json.dumps(body).encode("utf-8")
+        res = client.simulate_post(path="/identifiers/test/ipex/admit", body=data)
+        assert res.status_code == 400
+        assert res.json == {'description': 'attempt to send to unknown '
+                                           'AID=EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM',
+                            'title': '400 Bad Request'}
+
+        # Bad attachments
+        body = dict(
+            exn=exn.ked,
+            sigs=sigs,
+            atc=dict(bad=end.decode("utf-8")),
+            rec=[pre1]
+        )
+
+        data = json.dumps(body).encode("utf-8")
+        res = client.simulate_post(path="/identifiers/test/ipex/admit", body=data)
+        assert res.status_code == 400
+        assert res.json == {'description': 'attachment missing for ACDC, unable to process request.',
+                            'title': '400 Bad Request'}
 
         body = dict(
             exn=exn.ked,
