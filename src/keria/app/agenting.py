@@ -508,8 +508,9 @@ class Admitter(doing.Doer):
                 self.admits.append(msg)
                 return False
 
+            admit, _ = exchanging.cloneMessage(self.hby, said)
             hab = self.hby.habs[msg['pre']]
-            grant, pathed = exchanging.cloneMessage(self.hby, said)
+            grant, pathed = exchanging.cloneMessage(self.hby, admit.ked['p'])
 
             embeds = grant.ked['e']
             acdc = embeds["acdc"]
@@ -518,10 +519,13 @@ class Admitter(doing.Doer):
             # Lets get the latest KEL and Registry if needed
             self.witq.query(hab=self.agentHab, pre=issr)
             if "ri" in acdc:
-                self.witq.telquery(hab=self.agentHab, wits=hab.kevers[issr].wits, ri=acdc["ri"], i=acdc["d"])
+                self.witq.telquery(hab=self.agentHab, pre=issr, ri=acdc["ri"], i=acdc["d"])
 
             for label in ("anc", "iss", "acdc"):
                 ked = embeds[label]
+                if label not in pathed or not pathed[label]:
+                    continue
+
                 sadder = coring.Sadder(ked=ked)
                 ims = bytearray(sadder.raw) + pathed[label]
                 self.psr.parseOne(ims=ims)
@@ -540,8 +544,14 @@ class SeekerDoer(doing.Doer):
             cue = self.cues.popleft()
             if cue["kin"] == "saved":
                 creder = cue["creder"]
-                print(f"indexing {creder.said}")
-                self.seeker.index(said=creder.said)
+                try:
+                    self.seeker.index(said=creder.said)
+                except Exception:
+                    self.cues.append(cue)
+                    return False
+            else:
+                self.cues.append(cue)
+                return False
 
 
 class ExnSeekerDoer(doing.Doer):

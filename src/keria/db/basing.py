@@ -176,7 +176,7 @@ class Seeker(dbing.LMDBer):
 
     @property
     def table(self):
-        return self.reger.creds
+        return self.reger.saved
 
     def saidIter(self):
         return self.reger.saved.getItemIter()
@@ -187,7 +187,6 @@ class Seeker(dbing.LMDBer):
             self.dynIdx.pin(keys=(key,), val=IndexRecord(subkey=key, paths=[key]))
 
     def index(self, said):
-
         if (saider := self.reger.saved.get(keys=(said,))) is None:
             raise ValueError(f"{said} is not a verified credential")
 
