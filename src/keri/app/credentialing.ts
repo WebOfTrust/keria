@@ -3,19 +3,22 @@ import { Salter } from '../core/salter';
 import { interact, messagize } from '../core/eventing';
 import { vdr } from '../core/vdring';
 import {
-    b,
+    b, d,
     Dict,
     Ident,
     Ilks,
     Serials,
     versify,
-    Versionage,
-} from '../core/core';
+    Versionage
+} from "../core/core";
 import { Saider } from '../core/saider';
 import { Serder } from '../core/serder';
 import { Siger } from '../core/siger';
 import { TextDecoder } from 'util';
 import { TraitDex } from './habery';
+import { Prefixer } from "../core/prefixer";
+import { Seqner } from "../core/seqner";
+import { serializeACDCAttachment, serializeIssExnAttachment } from "../core/utils";
 
 /** Types of credentials */
 export class CredentialTypes {
@@ -36,6 +39,8 @@ export class CredentialResult {
     private readonly _iserder: Serder;
     private readonly _anc: Serder;
     private readonly _sigs: string[];
+    private readonly _acdcSaider: Saider;
+    private readonly _issExnSaider: Saider;
     private readonly promise: Promise<Response>;
 
     constructor(
@@ -43,12 +48,16 @@ export class CredentialResult {
         iserder: Serder,
         anc: Serder,
         sigs: any[],
+        acdcSaider: Saider,
+        issExnSaider: Saider,
         promise: Promise<Response>
     ) {
         this._acdc = acdc;
         this._iserder = iserder;
         this._anc = anc;
         this._sigs = sigs;
+        this._acdcSaider = acdcSaider;
+        this._issExnSaider = issExnSaider;
         this.promise = promise;
     }
 
@@ -58,6 +67,14 @@ export class CredentialResult {
 
     get iserder() {
         return this._iserder;
+    }
+
+    get acdcSaider() {
+        return this._acdcSaider
+    }
+
+    get issExnSaider() {
+        return this._issExnSaider;
     }
 
     get anc() {
@@ -202,7 +219,7 @@ export class Credentials {
         if (rules !== undefined) {
             cred.r = rules;
         }
-        const [, vc] = Saider.saidify(cred);
+        const [vcSaider, vc] = Saider.saidify(cred);
 
         // Create iss
         let _iss = {
@@ -215,7 +232,7 @@ export class Credentials {
             dt: dt,
         };
 
-        let [, iss] = Saider.saidify(_iss);
+        let [issSaider, iss] = Saider.saidify(_iss);
         let iserder = new Serder(iss);
 
         // Create paths and sign
@@ -259,7 +276,7 @@ export class Credentials {
         }
 
         let res = this.issueFromEvents(hab, name, vc, iss, ixn, sigs);
-        return new CredentialResult(vc, iserder, anc, sigs, res);
+        return new CredentialResult(vc, iserder, anc, sigs, vcSaider, issSaider, res);
     }
 
     issueFromEvents(
@@ -719,7 +736,9 @@ export class Ipex {
      * @param {string} recp qb64 AID of recipient of the grant
      * @param {string} message accompany human readable description of the credential being issued
      * @param {Serder} acdc Credential
+     * @param acdcSaider The Saider instance of an ACDC. Typically comes from the Creder instance yet Creder is not yet ported to SignifyTS
      * @param {Serder} iss TEL issuance event
+     * @param issSaider The Saider instance of the iss EXN interaction event for an ACDC. ypically comes from the Creder instance yet Creder is not yet ported to SignifyTS
      * @param {Serder} anc Anchoring event
      * @param {string} atc attachments for the anchoring event
      * @param {string} agree Option qb64 SAID of agree message this grant is responding to
@@ -731,11 +750,13 @@ export class Ipex {
         recp: string,
         message: string,
         acdc: Serder,
+        acdcSaider: Saider,
         iss: Serder,
+        issSaider: Saider,
         anc: Serder,
         atc: string,
         agree?: string,
-        datetime?: string
+        datetime?: string,
     ): Promise<[Serder, string[], string]> {
         let hab = await this.client.identifiers().get(name);
         let data: any = {
@@ -743,9 +764,14 @@ export class Ipex {
             i: recp,
         };
 
+        let prefixer = new Prefixer({raw: b(acdc.raw)})
+        let seqner = new Seqner({sn: acdc.sn})
+        let acdcAtc = d(serializeACDCAttachment(prefixer, seqner, acdcSaider))
+        let issAtc = d(serializeIssExnAttachment(anc, issSaider))
+
         let embeds: any = {
-            acdc: [acdc, ''],
-            iss: [iss, ''],
+            acdc: [acdc, acdcAtc],
+            iss: [iss, issAtc],
             anc: [anc, atc],
         };
 
