@@ -385,7 +385,7 @@ class CredentialQueryCollectionEnd:
 
         cur = agent.seeker.find(filtr=filtr, sort=sort, skip=skip, limit=limit)
         saids = [coring.Saider(qb64=said) for said in cur]
-        creds = agent.rgy.reger.cloneCreds(saids=saids)
+        creds = agent.rgy.reger.cloneCreds(saids=saids, db=agent.hby.db)
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
@@ -567,7 +567,7 @@ class CredentialResourceEnd:
             data = CredentialResourceEnd.outputCred(agent.hby, agent.rgy, said)
         else:
             rep.content_type = "application/json"
-            creds = agent.rgy.reger.cloneCreds([coring.Saider(qb64=said)])
+            creds = agent.rgy.reger.cloneCreds([coring.Saider(qb64=said)], db=agent.hby.db)
             if not creds:
                 raise falcon.HTTPNotFound(description=f"credential for said {said} not found.")
 
@@ -659,7 +659,7 @@ class CredentialResourceEnd:
             raise falcon.HTTPNotFound(description=f"revocation against invalid registry SAID {regk}")
         
         try:
-            agent.rgy.reger.cloneCreds([coring.Saider(qb64=said)])
+            agent.rgy.reger.cloneCreds([coring.Saider(qb64=said)], db=agent.hby.db)
         except:
             raise falcon.HTTPNotFound(description=f"credential for said {said} not found.")
 
