@@ -10,7 +10,7 @@ import {
 } from './core';
 import { Verfer } from './verfer';
 import { Diger } from './diger';
-import { CesrNumber } from "./number";
+import { CesrNumber } from './number';
 
 export class Serder {
     private _kind: Serials;
@@ -59,11 +59,11 @@ export class Serder {
     }
 
     get sner(): CesrNumber {
-        return new CesrNumber({ }, this.ked["s"] );
+        return new CesrNumber({}, this.ked['s']);
     }
 
     get sn(): number {
-        return this.sner.num
+        return this.sner.num;
     }
 
     get kind(): Serials {

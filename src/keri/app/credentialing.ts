@@ -3,22 +3,26 @@ import { Salter } from '../core/salter';
 import { interact, messagize } from '../core/eventing';
 import { vdr } from '../core/vdring';
 import {
-    b, d,
+    b,
+    d,
     Dict,
     Ident,
     Ilks,
     Serials,
     versify,
-    Versionage
-} from "../core/core";
+    Versionage,
+} from '../core/core';
 import { Saider } from '../core/saider';
 import { Serder } from '../core/serder';
 import { Siger } from '../core/siger';
 import { TextDecoder } from 'util';
 import { TraitDex } from './habery';
-import { Prefixer } from "../core/prefixer";
-import { Seqner } from "../core/seqner";
-import { serializeACDCAttachment, serializeIssExnAttachment } from "../core/utils";
+import { Prefixer } from '../core/prefixer';
+import { Seqner } from '../core/seqner';
+import {
+    serializeACDCAttachment,
+    serializeIssExnAttachment,
+} from '../core/utils';
 
 /** Types of credentials */
 export class CredentialTypes {
@@ -70,7 +74,7 @@ export class CredentialResult {
     }
 
     get acdcSaider() {
-        return this._acdcSaider
+        return this._acdcSaider;
     }
 
     get issExnSaider() {
@@ -276,7 +280,15 @@ export class Credentials {
         }
 
         let res = this.issueFromEvents(hab, name, vc, iss, ixn, sigs);
-        return new CredentialResult(vc, iserder, anc, sigs, vcSaider, issSaider, res);
+        return new CredentialResult(
+            vc,
+            iserder,
+            anc,
+            sigs,
+            vcSaider,
+            issSaider,
+            res
+        );
     }
 
     issueFromEvents(
@@ -756,7 +768,7 @@ export class Ipex {
         anc: Serder,
         atc: string,
         agree?: string,
-        datetime?: string,
+        datetime?: string
     ): Promise<[Serder, string[], string]> {
         let hab = await this.client.identifiers().get(name);
         let data: any = {
@@ -764,10 +776,10 @@ export class Ipex {
             i: recp,
         };
 
-        let prefixer = new Prefixer({raw: b(acdc.raw)})
-        let seqner = new Seqner({sn: acdc.sn})
-        let acdcAtc = d(serializeACDCAttachment(prefixer, seqner, acdcSaider))
-        let issAtc = d(serializeIssExnAttachment(anc, issSaider))
+        let prefixer = new Prefixer({ raw: b(acdc.raw) });
+        let seqner = new Seqner({ sn: acdc.sn });
+        let acdcAtc = d(serializeACDCAttachment(prefixer, seqner, acdcSaider));
+        let issAtc = d(serializeIssExnAttachment(anc, issSaider));
 
         let embeds: any = {
             acdc: [acdc, acdcAtc],

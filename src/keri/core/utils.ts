@@ -1,8 +1,8 @@
-import { Counter, CtrDex } from "./counter";
-import { Seqner } from "./seqner";
-import { Prefixer } from "./prefixer";
-import { Saider } from "./saider";
-import { Serder } from "./serder";
+import { Counter, CtrDex } from './counter';
+import { Seqner } from './seqner';
+import { Prefixer } from './prefixer';
+import { Saider } from './saider';
+import { Serder } from './serder';
 
 export function pad(n: any, width = 3, z = 0) {
     return (String(z).repeat(width) + String(n)).slice(String(n).length);
@@ -116,14 +116,19 @@ export function bytesToInt(ar: Uint8Array): number {
     return value;
 }
 
-export function serialize(creder: any, prefixer: any, seqner: any, saider: any) {
+export function serialize(
+    creder: any,
+    prefixer: any,
+    seqner: any,
+    saider: any
+) {
     let craw = creder.raw;
     let ctr = new Counter({ code: CtrDex.SealSourceTriples, count: 1 }).qb64b;
     let prefix = prefixer.qb64b;
     let seq = seqner.qb64b;
     let said = saider.qb64b;
     let newCraw = new Uint8Array(
-      craw.length + ctr.length + prefix.length + seq.length + said.length
+        craw.length + ctr.length + prefix.length + seq.length + said.length
     );
     newCraw.set(craw);
     newCraw.set(ctr, craw.length);
@@ -133,14 +138,18 @@ export function serialize(creder: any, prefixer: any, seqner: any, saider: any) 
     return newCraw;
 }
 
-export function serializeACDCAttachment(prefixer: Prefixer, seqner: Seqner, saider: Saider): Uint8Array {
+export function serializeACDCAttachment(
+    prefixer: Prefixer,
+    seqner: Seqner,
+    saider: Saider
+): Uint8Array {
     let craw = new Uint8Array();
     let ctr = new Counter({ code: CtrDex.SealSourceTriples, count: 1 }).qb64b;
     let prefix = prefixer.qb64b;
     let seq = seqner.qb64b;
     let said = saider.qb64b;
     let newCraw = new Uint8Array(
-      craw.length + ctr.length + prefix.length + seq.length + said.length
+        craw.length + ctr.length + prefix.length + seq.length + said.length
     );
     newCraw.set(craw);
     newCraw.set(ctr, craw.length);
@@ -150,29 +159,37 @@ export function serializeACDCAttachment(prefixer: Prefixer, seqner: Seqner, said
     return newCraw;
 }
 
-export function serializeIssExnAttachment(anc: Serder, ancSaider: Saider): Uint8Array {
-    let seqner = new Seqner({sn: anc.sn})
-    let coupleArray = new Uint8Array(seqner.qb64b.length + ancSaider.qb64b.length)
-    coupleArray.set(seqner.qb64b)
-    coupleArray.set(ancSaider.qb64b, seqner.qb64b.length)
+export function serializeIssExnAttachment(
+    anc: Serder,
+    ancSaider: Saider
+): Uint8Array {
+    let seqner = new Seqner({ sn: anc.sn });
+    let coupleArray = new Uint8Array(
+        seqner.qb64b.length + ancSaider.qb64b.length
+    );
+    coupleArray.set(seqner.qb64b);
+    coupleArray.set(ancSaider.qb64b, seqner.qb64b.length);
     let counter = new Counter({
         code: CtrDex.SealSourceCouples,
-        count:1})
-    let counterQb64b = counter.qb64b
-    let atc = new Uint8Array(counter.qb64b.length + coupleArray.length)
-    atc.set(counterQb64b)
-    atc.set(coupleArray, counterQb64b.length)
+        count: 1,
+    });
+    let counterQb64b = counter.qb64b;
+    let atc = new Uint8Array(counter.qb64b.length + coupleArray.length);
+    atc.set(counterQb64b);
+    atc.set(coupleArray, counterQb64b.length);
 
-    if(atc.length % 4 !== 0){
-        throw new Error(`Invalid attachments size: ${atc.length}, non-integral quadlets detected.`)
+    if (atc.length % 4 !== 0) {
+        throw new Error(
+            `Invalid attachments size: ${atc.length}, non-integral quadlets detected.`
+        );
     }
     let pcnt = new Counter({
         code: CtrDex.AttachedMaterialQuadlets,
-        count: Math.floor(atc.length / 4)
-    })
-    let msg = new Uint8Array(pcnt.qb64b.length + atc.length)
-    msg.set(pcnt.qb64b)
-    msg.set(atc, pcnt.qb64b.length)
+        count: Math.floor(atc.length / 4),
+    });
+    let msg = new Uint8Array(pcnt.qb64b.length + atc.length);
+    msg.set(pcnt.qb64b);
+    msg.set(atc, pcnt.qb64b.length);
 
-    return msg
+    return msg;
 }
