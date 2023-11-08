@@ -334,7 +334,8 @@ describe('Ipex', () => {
         let ipex = client.ipex();
 
         let holder = 'ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k';
-        let acdc = new Serder(mockCredential.sad);
+        let [acdcSaider, acdc] = Saider.saidify(mockCredential.sad);
+
         // Create iss
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0);
         let _iss = {
@@ -347,7 +348,7 @@ describe('Ipex', () => {
             dt: mockCredential.sad.a.dt,
         };
 
-        let [, iss] = Saider.saidify(_iss);
+        let [issSaider, iss] = Saider.saidify(_iss);
         let iserder = new Serder(iss);
         let anc = interact({
             pre: mockCredential.sad.i,
@@ -362,8 +363,10 @@ describe('Ipex', () => {
             'multisig',
             holder,
             '',
-            acdc,
+            new Serder(acdc),
+            acdcSaider,
             iserder,
+            issSaider,
             anc,
             '-vtest',
             undefined,
@@ -421,7 +424,10 @@ describe('Ipex', () => {
         ]);
         assert.equal(
             end,
-            '-LAD4AACA-e-acdc-LAD5AACAA-e-iss-LAE5AACAA-e-anc-vtest'
+            '-LAg4AACA' +
+                '-e-acdc-IABBHsidiI6IkFDREMxMEpTT04wMDAxOTdfIiwiZCI6IkVN0AAAAAAAAAAAAAAAAAAAAAAAEMwcsEMUEruPXVwPCW7zmqmN8m0I3CihxolBm-RDrsJo-LAW5AACAA' +
+                '-e-iss-VAS-GAB0AAAAAAAAAAAAAAAAAAAAAAAENf3IEYwYtFmlq5ZzoI-zFzeR7E3ZNRN2YH_0KAFbdJW-LAE5AACAA' +
+                '-e-anc-vtest'
         );
 
         let [admit, asigs, aend] = await ipex.admit(
