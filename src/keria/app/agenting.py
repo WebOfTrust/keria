@@ -268,8 +268,8 @@ class Agency(doing.DoDoer):
 
 
 class Agent(doing.DoDoer):
-    """ 
-    
+    """
+
     The top level object and DoDoer representing a Habery for a remote controller and all associated processing
 
     """
@@ -366,7 +366,7 @@ class Agent(doing.DoDoer):
             Admitter(hby=hby, witq=self.witq, psr=self.parser, agentHab=agentHab, exc=self.exc, admits=self.admits),
             GroupRequester(hby=hby, agentHab=agentHab, counselor=self.counselor, groups=self.groups),
             SeekerDoer(seeker=self.seeker, cues=self.verifier.cues),
-            ExnSeekerDoer(seeker=self.exnseeker, cues=self.exc.cues)
+            ExchangeCueDoer(seeker=self.exnseeker, cues=self.exc.cues, queries=self.queries)
         ])
 
         super(Agent, self).__init__(doers=doers, always=True, **opts)
@@ -555,21 +555,32 @@ class SeekerDoer(doing.Doer):
                 return False
 
 
-class ExnSeekerDoer(doing.Doer):
+class ExchangeCueDoer(doing.Doer):
 
-    def __init__(self, seeker, cues):
+    def __init__(self, seeker, cues, queries):
         self.seeker = seeker
         self.cues = cues
+        self.queries = queries
 
-        super(ExnSeekerDoer, self).__init__()
+        super(ExchangeCueDoer, self).__init__()
 
     def recur(self, tyme=None):
         if self.cues:
             cue = self.cues.popleft()
             if cue["kin"] == "saved":
                 said = cue["said"]
-                print(f"indexing exn said={said}")
-                self.seeker.index(said=said)
+                try:
+                    self.seeker.index(said=said)
+                except Exception:
+                    self.cues.append(cue)
+                    return False
+            elif cue["kin"] == "query":
+                print("passing it along to the querier!")
+                self.queries.append(cue['q'])
+                return False
+            else:
+                self.cues.append(cue)
+                return False
 
 
 class Initer(doing.Doer):
@@ -627,6 +638,9 @@ class Querier(doing.DoDoer):
         """ Processes query reqests submitting any on the cue"""
         if self.queries:
             msg = self.queries.popleft()
+            if "pre" not in msg:
+                return False
+
             pre = msg["pre"]
 
             if "sn" in msg:
