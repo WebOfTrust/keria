@@ -176,7 +176,12 @@ class Seeker(dbing.LMDBer):
 
     @property
     def table(self):
-        return self.reger.creds
+        return self.reger.saved
+
+    def value(self, said):
+        saider = self.reger.saved.get(keys=(said,))
+        creder = self.reger.creds.get(keys=(saider.qb64,))
+        return creder.crd
 
     def saidIter(self):
         return self.reger.saved.getItemIter()
@@ -187,7 +192,6 @@ class Seeker(dbing.LMDBer):
             self.dynIdx.pin(keys=(key,), val=IndexRecord(subkey=key, paths=[key]))
 
     def index(self, said):
-
         if (saider := self.reger.saved.get(keys=(said,))) is None:
             raise ValueError(f"{said} is not a verified credential")
 
@@ -358,6 +362,10 @@ class ExnSeeker(dbing.LMDBer):
     def table(self):
         return self.db.exns
 
+    def value(self, said):
+        serder = self.db.exns.get(keys=(said,))
+        return serder.ked
+
     def saidIter(self):
         for (said,), _ in self.db.exns.getItemIter():
             yield said
@@ -495,9 +503,9 @@ class Cursor:
     def tableScan(self, saids, ops):
         res = []
         for said in saids:
-            creder = self.seeker.table.get(keys=(said,))
+            val = self.seeker.value(said)
             for op in ops:
-                if op(creder):
+                if op(val):
                     res.append(said)
 
         return res
@@ -591,7 +599,7 @@ class Eq:
         if len(args) != 1:
             raise ValueError(f"invalid argument length={len(args)} for equals operator, must be 2")
 
-        val = self.pather.resolve(args[0].crd)
+        val = self.pather.resolve(args[0])
         return val == self.value
 
     @property
@@ -615,7 +623,7 @@ class Begins:
         if len(args) != 1:
             raise ValueError(f"invalid argument length={len(args)} for begins operator, must be 2")
 
-        val = self.pather.resolve(args[0].crd)
+        val = self.pather.resolve(args[0])
         if not isinstance(val, str):
             raise ValueError(f"invalid type={type(args[0])} for begins, must be `str`")
 
