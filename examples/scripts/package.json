@@ -1,20 +1,13 @@
 {
-  "name": "signify-scripts-ts",
-  "type": "module",
-  "private": true,
-  "version": "0.0.0",
-  "scripts": {},
-  "dependencies": {
-    "prompt-sync": "^4.2.0",
-    "signify-ts": "file:../../"
-  },
-  "devDependencies": {
-    "@types/prompt-sync": "^4.2.0",
-    "@typescript-eslint/eslint-plugin": "^5.57.1",
-    "@typescript-eslint/parser": "^5.57.1",
-    "eslint": "^8.38.0",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.3.4",
-    "typescript": "^5.0.2"
-  }
+    "name": "signify-scripts-ts",
+    "type": "module",
+    "private": true,
+    "dependencies": {
+        "prompt-sync": "^4.2.0",
+        "signify-ts": "file:../../"
+    },
+    "devDependencies": {
+        "@types/prompt-sync": "^4.2.2",
+        "typescript": "^5.2.2"
+    }
 }
