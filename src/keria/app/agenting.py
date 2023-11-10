@@ -200,8 +200,9 @@ class Agency(doing.DoDoer):
                       configDir=self.configDir,
                       configFile=self.configFile)
 
-        self.adb.agnt.pin(keys=(caid,),
-                          val=coring.Prefixer(qb64=agent.pre))
+        res = self.adb.agnt.pin(keys=(caid,),
+                                val=coring.Prefixer(qb64=agent.pre))
+
         self.adb.ctrl.pin(keys=(agent.pre,),
                           val=coring.Prefixer(qb64=caid))
 
@@ -267,8 +268,8 @@ class Agency(doing.DoDoer):
 
 
 class Agent(doing.DoDoer):
-    """ 
-    
+    """
+
     The top level object and DoDoer representing a Habery for a remote controller and all associated processing
 
     """
@@ -365,7 +366,7 @@ class Agent(doing.DoDoer):
             Admitter(hby=hby, witq=self.witq, psr=self.parser, agentHab=agentHab, exc=self.exc, admits=self.admits),
             GroupRequester(hby=hby, agentHab=agentHab, counselor=self.counselor, groups=self.groups),
             SeekerDoer(seeker=self.seeker, cues=self.verifier.cues),
-            ExnSeekerDoer(seeker=self.exnseeker, cues=self.exc.cues)
+            ExchangeCueDoer(seeker=self.exnseeker, cues=self.exc.cues, queries=self.queries)
         ])
 
         super(Agent, self).__init__(doers=doers, always=True, **opts)
@@ -554,21 +555,32 @@ class SeekerDoer(doing.Doer):
                 return False
 
 
-class ExnSeekerDoer(doing.Doer):
+class ExchangeCueDoer(doing.Doer):
 
-    def __init__(self, seeker, cues):
+    def __init__(self, seeker, cues, queries):
         self.seeker = seeker
         self.cues = cues
+        self.queries = queries
 
-        super(ExnSeekerDoer, self).__init__()
+        super(ExchangeCueDoer, self).__init__()
 
     def recur(self, tyme=None):
         if self.cues:
             cue = self.cues.popleft()
             if cue["kin"] == "saved":
                 said = cue["said"]
-                print(f"indexing exn said={said}")
-                self.seeker.index(said=said)
+                try:
+                    self.seeker.index(said=said)
+                except Exception:
+                    self.cues.append(cue)
+                    return False
+            elif cue["kin"] == "query":
+                print("passing it along to the querier!")
+                self.queries.append(cue['q'])
+                return False
+            else:
+                self.cues.append(cue)
+                return False
 
 
 class Initer(doing.Doer):
@@ -626,6 +638,9 @@ class Querier(doing.DoDoer):
         """ Processes query reqests submitting any on the cue"""
         if self.queries:
             msg = self.queries.popleft()
+            if "pre" not in msg:
+                return False
+
             pre = msg["pre"]
 
             if "sn" in msg:
@@ -1012,7 +1027,8 @@ class OobiResourceEnd:
         if role in (kering.Roles.witness,):  # Fetch URL OOBIs for all witnesses
             oobis = []
             for wit in hab.kever.wits:
-                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit,
+                                                                                           scheme=kering.Schemes.https)
                 if not urls:
                     raise falcon.HTTPNotFound(description=f"unable to query witness {wit}, no http endpoint")
 
@@ -1022,7 +1038,8 @@ class OobiResourceEnd:
             res["oobis"] = oobis
         elif role in (kering.Roles.controller,):  # Fetch any controller URL OOBIs
             oobis = []
-            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http) or hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.https)
+            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http) or hab.fetchUrls(eid=hab.pre,
+                                                                                           scheme=kering.Schemes.https)
             if not urls:
                 raise falcon.HTTPNotFound(description=f"unable to query controller {hab.pre}, no http endpoint")
 
@@ -1032,7 +1049,10 @@ class OobiResourceEnd:
             res["oobis"] = oobis
         elif role in (kering.Roles.agent,):
             oobis = []
-            roleUrls = hab.fetchRoleUrls(hab.pre, scheme=kering.Schemes.http, role=kering.Roles.agent) or hab.fetchRoleurls(hab.pre, scheme=kering.Schemes.https, role=kering.Roles.agent)
+            roleUrls = hab.fetchRoleUrls(hab.pre, scheme=kering.Schemes.http,
+                                         role=kering.Roles.agent) or hab.fetchRoleurls(hab.pre,
+                                                                                       scheme=kering.Schemes.https,
+                                                                                       role=kering.Roles.agent)
             if not roleUrls:
                 raise falcon.HTTPNotFound(description=f"unable to query controller {hab.pre}, no http endpoint")
 

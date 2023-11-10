@@ -10,12 +10,14 @@ import falcon
 from keri.app import habbing
 from keri.core import coring, eventing
 
-from keria.core import httping
+from keria.core import httping, longrunning
 
 
 def loadEnds(app):
     msrCol = MultisigRequestCollectionEnd()
     app.add_route("/identifiers/{name}/multisig/request", msrCol)
+    joinCol = MultisigJoinCollectionEnd()
+    app.add_route("/identifiers/{name}/multisig/join", joinCol)
     msrRes = MultisigRequestResourceEnd()
     app.add_route("/multisig/request/{said}", msrRes)
 
@@ -80,6 +82,75 @@ class MultisigRequestCollectionEnd:
         rep.data = json.dumps(serder.ked).encode("utf-8")
 
 
+class MultisigJoinCollectionEnd:
+    """ Collection endpoint class for creating mulisig exn requests from """
+
+    @staticmethod
+    def on_post(req, rep, name):
+        """ POST method for multisig request collection
+
+        Parameters:
+            req (falcon.Request): HTTP request object
+            rep (falcon.Response): HTTP response object
+            name (str): AID of Hab to load credentials for
+
+        """
+        agent = req.context.agent
+
+        # Get the hab
+        hab = agent.hby.habByName(name)
+        if hab is not None:
+            raise falcon.HTTPBadRequest(description=f"attempt to create identifier with an already used alias={name}")
+
+        agent = req.context.agent
+        body = req.get_media()
+
+        # Get the rot, sigs and recipients  from the request
+        rot = httping.getRequiredParam(body, "rot")
+        sigs = httping.getRequiredParam(body, "sigs")
+
+        # Get group specific values
+        gid = httping.getRequiredParam(body, "gid")
+        smids = httping.getRequiredParam(body, "smids")
+        rmids = httping.getRequiredParam(body, "rmids")
+
+        both = list(set(smids + (rmids or [])))
+        for recp in both:  # Have to verify we already know all the recipients.
+            if recp not in agent.hby.kevers:
+                agent.hby.deleteHab(name=name)
+                raise falcon.HTTPBadRequest(description=f"attempt to merge with unknown AID={recp}")
+
+        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+        verfers = [coring.Verfer(qb64=k) for k in rot['k']]
+        digers = [coring.Diger(qb64=n) for n in rot['n']]
+
+        mhab = None
+        for mid in both:
+            if mid in agent.hby.habs:
+                mhab = agent.hby.habs[mid]
+                break
+
+        if mhab is None:
+            raise falcon.HTTPBadRequest(description="Invalid multisig group rotation request,"
+                                                    " signing member list must contain a local identifier'")
+
+        hab = agent.hby.joinSignifyGroupHab(gid, name=name, mhab=mhab, smids=smids, rmids=rmids)
+        try:
+            hab.make(serder=coring.Serder(ked=rot), sigers=sigers)
+            agent.inceptGroup(pre=gid, mpre=mhab.pre, verfers=verfers, digers=digers)
+        except ValueError as e:
+            agent.hby.deleteHab(name=name)
+            raise falcon.HTTPBadRequest(description=f"{e.args[0]}")
+
+        serder = coring.Serder(ked=rot)
+        agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
+        op = agent.monitor.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=0))
+
+        rep.content_type = "application/json"
+        rep.status = falcon.HTTP_202
+        rep.data = op.to_json().encode("utf-8")
+
+
 class MultisigRequestResourceEnd:
     """ Resource endpoint class for getting full data for a mulisig exn request from a notification """
 
@@ -106,6 +177,8 @@ class MultisigRequestResourceEnd:
         match route.split("/"):
             case ["", "multisig", "icp"]:
                 pass
+            case ["", "multisig", "rot"]:
+                pass
             case ["", "multisig", *_]:
                 gid = payload["gid"]
                 if gid not in agent.hby.habs:
@@ -123,6 +196,13 @@ class MultisigRequestResourceEnd:
             match route.split("/"):
                 case ["", "multisig", "icp"]:
                     pass
+                case ["", "multisig", "rot"]:
+                    gid = payload["gid"]
+                    if gid in agent.hby.habs:
+                        ghab = agent.hby.habs[gid]
+                        d['groupName'] = ghab.name
+                        d['memberName'] = ghab.mhab.name
+
                 case ["", "multisig", "vcp"]:
                     gid = payload["gid"]
                     ghab = agent.hby.habs[gid]
