@@ -118,8 +118,7 @@ class MultisigJoinCollectionEnd:
         for recp in both:  # Have to verify we already know all the recipients.
             if recp not in agent.hby.kevers:
                 agent.hby.deleteHab(name=name)
-                raise falcon.HTTPBadRequest(f"attempt to merge with unknown AID={recp}")
-
+                raise falcon.HTTPBadRequest(description=f"attempt to merge with unknown AID={recp}")
 
         sigers = [coring.Siger(qb64=sig) for sig in sigs]
         verfers = [coring.Verfer(qb64=k) for k in rot['k']]

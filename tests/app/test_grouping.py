@@ -115,7 +115,7 @@ def test_multisig_request_ends(helpers):
         embeds = dict(
             exn=cha
         )
-        exn, end = exchanging.exchange(route="/multisig/exn", payload=dict(gid=pre2), embeds=embeds ,
+        exn, end = exchanging.exchange(route="/multisig/exn", payload=dict(gid=pre2), embeds=embeds,
                                        sender=pre0)
         sig = signer0.sign(exn.raw, index=0).qb64
         body = dict(
@@ -151,7 +151,37 @@ def test_multisig_request_ends(helpers):
 
         assert req['exn'] == exn.ked
         path = req['paths']['exn']
-        assert '-LA35AACAA-e-exn'+path == end.decode("utf-8")
+        assert '-LA35AACAA-e-exn' + path == end.decode("utf-8")
 
         # We've send this one exn to our other participants
         assert len(agent.postman.evts) == 1
+
+
+def test_join(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        grouping.loadEnds(app)
+
+        body = dict(
+            rot={},
+            sigs=[],
+            gid="EDWg3-rB5FTpcckaYdBcexGmbLIO6AvAwjaJTBlXUn_I",
+            smids=[
+                "EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4",
+                "EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1",
+                "EBFg-5SGDCv5YfwpkArWRBdTxNRUXU8uVcDKNzizOQZc",
+                "EBmW2bXbgsP3HITwW3FmITzAb3wVmHlxCusZ46vgGgP5",
+                "EL4RpdS2Atb2Syu5xLdpz9CcNNYoFUUDlLHxHD09vcgh",
+                "EAiBVuuhCZrgckeHc9KzROVGJpmGbk2-e1B25GaeRrJs"
+            ],
+            rmids=[
+                "EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4",
+                "EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1",
+                "EBFg-5SGDCv5YfwpkArWRBdTxNRUXU8uVcDKNzizOQZc",
+                "EBmW2bXbgsP3HITwW3FmITzAb3wVmHlxCusZ46vgGgP5",
+                "EL4RpdS2Atb2Syu5xLdpz9CcNNYoFUUDlLHxHD09vcgh",
+                "EAiBVuuhCZrgckeHc9KzROVGJpmGbk2-e1B25GaeRrJs"
+            ]
+        )
+
+        res = client.simulate_post("/identifiers/{test}/multisig/join", json=body)
+        assert res.status_code == 400
