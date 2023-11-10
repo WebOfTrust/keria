@@ -100,7 +100,7 @@ class MultisigJoinCollectionEnd:
         # Get the hab
         hab = agent.hby.habByName(name)
         if hab is not None:
-            raise falcon.HTTPNotFound(description=f"attempt to create identifier with an already used alias={name}")
+            raise falcon.HTTPBadRequest(description=f"attempt to create identifier with an already used alias={name}")
 
         agent = req.context.agent
         body = req.get_media()
@@ -140,7 +140,7 @@ class MultisigJoinCollectionEnd:
             agent.inceptGroup(pre=gid, mpre=mhab.pre, verfers=verfers, digers=digers)
         except ValueError as e:
             agent.hby.deleteHab(name=name)
-            raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
+            raise falcon.HTTPBadRequest(description=f"{e.args[0]}")
 
         serder = coring.Serder(ked=rot)
         agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))

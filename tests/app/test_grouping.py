@@ -7,8 +7,8 @@ Testing the Mark II Agent Grouping endpoints
 
 """
 import json
-from pprint import pprint
 
+from keri.app.habbing import SignifyGroupHab
 from keri.core import eventing, coring
 from keri.peer import exchanging
 
@@ -157,12 +157,40 @@ def test_multisig_request_ends(helpers):
         assert len(agent.postman.evts) == 1
 
 
-def test_join(helpers):
+def test_join(helpers, monkeypatch):
     with helpers.openKeria() as (agency, agent, app, client):
         grouping.loadEnds(app)
 
+        end = aiding.IdentifierCollectionEnd()
+        resend = aiding.IdentifierResourceEnd()
+        app.add_route("/identifiers", end)
+        app.add_route("/identifiers/{name}", resend)
+
+        salt = b'0123456789abcdef'
+        op = helpers.createAid(client, "recipient", salt)
+        aid = op["response"]
+
+        assert aid["i"] == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+
         body = dict(
-            rot={},
+            rot=dict(
+                k=[
+                    "DNp1NUbUEgei6KOlIfT5evXueOi3TDFZkUXgJQWNvegf",
+                    "DLsXs0-dxqrM4hugX7NkfZUzET13ngfRhWC9GgXvX9my",
+                    "DE2W_yGSF-m44vXPuQ5_wHJ9EK59N-OIT3hABgdAcCKs",
+                    "DKFKNK7s0xLhazlmL3xH9YEl9sc3fVoqUSsQxK6DZ3oC",
+                    "DEyEcy5NzjqA3KQ1DTE0BJs-XMIdWIvPWligyq6y1TxS",
+                    "DGhflVckn2wVLJH6wq94gGQxmpvsFdsZvd61Owj3Qhjl",
+                ],
+                n=[
+                    "EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4",
+                    "EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1",
+                    "EBFg-5SGDCv5YfwpkArWRBdTxNRUXU8uVcDKNzizOQZc",
+                    "EBmW2bXbgsP3HITwW3FmITzAb3wVmHlxCusZ46vgGgP5",
+                    "EL4RpdS2Atb2Syu5xLdpz9CcNNYoFUUDlLHxHD09vcgh",
+                    "EAiBVuuhCZrgckeHc9KzROVGJpmGbk2-e1B25GaeRrJs"
+                ]
+            ),
             sigs=[],
             gid="EDWg3-rB5FTpcckaYdBcexGmbLIO6AvAwjaJTBlXUn_I",
             smids=[
@@ -183,5 +211,95 @@ def test_join(helpers):
             ]
         )
 
-        res = client.simulate_post("/identifiers/{test}/multisig/join", json=body)
+        res = client.simulate_post("/identifiers/mms/multisig/join", json=body)
         assert res.status_code == 400
+
+        for smid in body['smids']:
+            agent.hby.kevers[smid] = {}
+
+        for rmid in body['rmids']:
+            agent.hby.kevers[rmid] = {}
+
+        res = client.simulate_post("/identifiers/mms/multisig/join", json=body)
+        assert res.status_code == 400
+        assert res.json == {'description': 'Invalid multisig group rotation request, signing member list '
+                                           "must contain a local identifier'",
+                            'title': '400 Bad Request'}
+
+        body['smids'][0] = aid["i"]
+
+        res = client.simulate_post("/identifiers/mms/multisig/join", json=body)
+        assert res.status_code == 400
+        assert res.json == {'description': "Missing or empty version string in key event dict = {'k': "
+                                           "['DNp1NUbUEgei6KOlIfT5evXueOi3TDFZkUXgJQWNvegf', "
+                                           "'DLsXs0-dxqrM4hugX7NkfZUzET13ngfRhWC9GgXvX9my', "
+                                           "'DE2W_yGSF-m44vXPuQ5_wHJ9EK59N-OIT3hABgdAcCKs', "
+                                           "'DKFKNK7s0xLhazlmL3xH9YEl9sc3fVoqUSsQxK6DZ3oC', "
+                                           "'DEyEcy5NzjqA3KQ1DTE0BJs-XMIdWIvPWligyq6y1TxS', "
+                                           "'DGhflVckn2wVLJH6wq94gGQxmpvsFdsZvd61Owj3Qhjl'], 'n': "
+                                           "['EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4', "
+                                           "'EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1', "
+                                           "'EBFg-5SGDCv5YfwpkArWRBdTxNRUXU8uVcDKNzizOQZc', "
+                                           "'EBmW2bXbgsP3HITwW3FmITzAb3wVmHlxCusZ46vgGgP5', "
+                                           "'EL4RpdS2Atb2Syu5xLdpz9CcNNYoFUUDlLHxHD09vcgh', "
+                                           "'EAiBVuuhCZrgckeHc9KzROVGJpmGbk2-e1B25GaeRrJs']}",
+                            'title': '400 Bad Request'}
+
+        body['rot'] = {
+            "v": "KERI10JSON00030c_",
+            "t": "rot",
+            "d": "EPKCBT0rSgFKTDRjynYzOTsYWo7fDNElTxFbRZZW9f6R",
+            "i": "EDWg3-rB5FTpcckaYdBcexGmbLIO6AvAwjaJTBlXUn_I",
+            "s": "3",
+            "p": "EM2OaIZuLWyGGyxf4Tzs6yeoENvjP47i1Dn88GGxw3_Z",
+            "kt": [
+                "0",
+                "0",
+                "1/2",
+                "1/2",
+                "1/2",
+                "1/2"
+            ],
+            "k": [
+                "DNp1NUbUEgei6KOlIfT5evXueOi3TDFZkUXgJQWNvegf",
+                "DLsXs0-dxqrM4hugX7NkfZUzET13ngfRhWC9GgXvX9my",
+                "DE2W_yGSF-m44vXPuQ5_wHJ9EK59N-OIT3hABgdAcCKs",
+                "DKFKNK7s0xLhazlmL3xH9YEl9sc3fVoqUSsQxK6DZ3oC",
+                "DEyEcy5NzjqA3KQ1DTE0BJs-XMIdWIvPWligyq6y1TxS",
+                "DGhflVckn2wVLJH6wq94gGQxmpvsFdsZvd61Owj3Qhjl"
+            ],
+            "nt": [
+                "1/2",
+                "1/2",
+                "1/2",
+                "1/2"
+            ],
+            "n": [
+                "EDr0gf60BDB9cZyVoz_Os55Ma49muyCNTZoWG-VWAe6g",
+                "EIM3hKH1VBG_ofS7hD-XMfTG-dP1ziJwloFhrNx34G7o",
+                "EOi609MGQlByLPdaUgqGQn_IOEE4cf6u7zCW-J3E82Qz",
+                "ECQF1Tdpcqew6dqN6nHNpz4jhYTZtojl7EpqVJhXRBav"
+            ],
+            "bt": "3",
+            "br": [],
+            "ba": [],
+            "a": []
+        }
+
+        def make(self, serder, sigers):
+            return True
+
+        monkeypatch.setattr(SignifyGroupHab, "make", make)
+
+        res = client.simulate_post("/identifiers/mms/multisig/join", json=body)
+        assert res.status_code == 202
+        assert res.json == {'done': False,
+                            'error': None,
+                            'metadata': {'sn': 0},
+                            'name': 'group.EDWg3-rB5FTpcckaYdBcexGmbLIO6AvAwjaJTBlXUn_I',
+                            'response': None}
+
+        res = client.simulate_post("/identifiers/mms/multisig/join", json=body)
+        assert res.status_code == 400
+        assert res.json == {'description': 'attempt to create identifier with an already used alias=mms',
+                            'title': '400 Bad Request'}
