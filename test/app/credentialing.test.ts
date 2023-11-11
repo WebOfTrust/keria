@@ -184,10 +184,10 @@ describe('Credentialing', () => {
             limit: 25,
             skip: 5,
         };
-        await credentials.list('aid1', kargs);
+        await credentials.list(kargs);
         let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
         let lastBody = JSON.parse(lastCall[1]!.body!.toString());
-        assert.equal(lastCall[0]!, url + '/identifiers/aid1/credentials/query');
+        assert.equal(lastCall[0]!, url + '/credentials/query');
         assert.equal(lastCall[1]!.method, 'POST');
         assert.deepEqual(lastBody, kargs);
 

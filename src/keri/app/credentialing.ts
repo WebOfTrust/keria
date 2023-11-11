@@ -109,12 +109,11 @@ export class Credentials {
     /**
      * List credentials
      * @async
-     * @param {string} name Name or alias of the identifier
      * @param {CredentialFilter} [kargs] Optional parameters to filter the credentials
      * @returns {Promise<any>} A promise to the list of credentials
      */
-    async list(name: string, kargs: CredentialFilter = {}): Promise<any> {
-        let path = `/identifiers/${name}/credentials/query`;
+    async list(kargs: CredentialFilter = {}): Promise<any> {
+        let path = `/credentials/query`;
         let filtr = kargs.filter === undefined ? {} : kargs.filter;
         let sort = kargs.sort === undefined ? [] : kargs.sort;
         let limit = kargs.limit === undefined ? 25 : kargs.limit;
