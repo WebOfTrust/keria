@@ -247,23 +247,23 @@ async function run() {
     console.log('Grant message sent');
 
     // Recipient check issued credential
-    let grantNotification = null;
-    while (grantNotification == null) {
+    let grantNotification1 = null;
+    while (grantNotification1 == null) {
         let notifications = await client2.notifications().list();
         for (let notif of notifications.notes) {
             if (notif.a.r == '/exn/ipex/grant') {
-                grantNotification = notif;
+                grantNotification1 = notif;
             }
         }
         await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
     dt = new Date().toISOString().replace('Z', '000+00:00');
-    const [admit, sigs, aend] = await client2.ipex().admit('recipient', '', grantNotification.a.d!, dt);
+    const [admit, sigs, aend] = await client2.ipex().admit('recipient', '', grantNotification1.a.d!, dt);
     await client2.ipex().submitAdmit('recipient', admit, sigs, aend, [aid1.prefix]);
     console.log('Admit sent');
 
-    await client2.notifications().mark(grantNotification.i);
+    await client2.notifications().mark(grantNotification1.i);
     console.log('Notification marked');
 
     let creds2 = await client2.credentials().list('recipient');
@@ -279,40 +279,83 @@ async function run() {
     console.log('Credential received by recipient');
 
     // Present credential
-    // await client1
-    //     .credentials()
-    //     .present('issuer', creds1[0].sad.d, 'verifier', true);
-    // await new Promise((resolve) => setTimeout(resolve, 5000));
-    // let creds3 = await client3.credentials().list('verifier');
-    // assert.equal(creds3.length, 1);
-    // assert.equal(creds3[0].sad.s, schemaSAID);
-    // assert.equal(creds3[0].sad.i, aid1.prefix);
-    // assert.equal(creds3[0].status.s, '0'); // 0 = issued
-    // console.log('Credential presented and received by verifier');
+    dt = new Date().toISOString().replace('Z', '000+00:00');
+    const [grant2, gsigs2, gend2] = await client2
+        .ipex()
+        .grant(
+            'recipient',
+            aid3.prefix,
+            '',
+            acdc,
+            issResult.acdcSaider,
+            iss,
+            issResult.issExnSaider,
+            issResult.anc,
+            atc,
+            undefined,
+            dt
+        );
+    await client2
+        .exchanges()
+        .sendFromEvents('recipient', 'presentation', grant2, gsigs2, gend2, [
+            aid3.prefix,
+        ]);
+    console.log('Grant message sent for presentation');
+
+    // Verifier check issued credential
+    let grantNotification2 = null;
+    while (grantNotification2 == null) {
+        let notifications = await client3.notifications().list();
+        for (let notif of notifications.notes) {
+            if (notif.a.r == '/exn/ipex/grant') {
+                grantNotification2 = notif;
+            }
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+
+    dt = new Date().toISOString().replace('Z', '000+00:00');
+    const [admit3, sigs3, aend3] = await client3.ipex().admit('verifier', '', grantNotification2.a.d!, dt);
+    await client3.ipex().submitAdmit('verifier', admit3, sigs3, aend3, [aid2.prefix]);
+    console.log('Admit sent for presentation');
+
+    await client3.notifications().mark(grantNotification2.i);
+    console.log('Notification marked for presentation');
+
+    let creds3 = await client3.credentials().list('verifier');
+    while (creds3.length < 1) {
+        console.log('No credentials yet...');
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        creds3 = await client3.credentials().list('verifier');
+    }
+    assert.equal(creds3.length, 1)
+    assert.equal(creds3[0].sad.s, schemaSAID)
+    assert.equal(creds3[0].sad.i, aid1.prefix)
+    assert.equal(creds3[0].status.s, "0") // 0 = issued
+    console.log('Credential presented and received by verifier');
 
     // Revoke credential
-    // op1 = await client1.credentials().revoke('issuer', creds1[0].sad.d);
-    // while (!op1['done']) {
-    //     op1 = await client1.operations().get(op1.name);
-    //     await new Promise((resolve) => setTimeout(resolve, 1000));
-    // }
-    // creds1 = await client1.credentials().list('issuer');
-    // assert.equal(creds1.length, 1);
-    // assert.equal(creds1[0].sad.s, schemaSAID);
-    // assert.equal(creds1[0].sad.i, aid1.prefix);
-    // assert.equal(creds1[0].status.s, '1'); // 1 = revoked
-    // console.log('Credential revoked');
+    op1 = await client1.credentials().revoke('issuer', creds1[0].sad.d);
+    while (!op1['done']) {
+        op1 = await client1.operations().get(op1.name);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    creds1 = await client1.credentials().list('issuer');
+    assert.equal(creds1.length, 1);
+    assert.equal(creds1[0].sad.s, schemaSAID);
+    assert.equal(creds1[0].sad.i, aid1.prefix);
+    assert.equal(creds1[0].status.s, '1'); // 1 = revoked
+    console.log('Credential revoked');
 
     // Recipient check revoked credential
-    // credentialReceived = false
     // let revoked = false
     // while (!revoked) {
     //     let cred2 = await client2.credentials().get('recipient', creds1[0].sad.d)
     //     if (cred2.status.s == "1") {
     //         revoked = true
     //     }
+    //     await new Promise((resolve) => setTimeout(resolve, 1000));
     // }
-    // let creds2 = await client2.credentials().list('recipient')
     // assert.equal(creds2.length, 1)
     // assert.equal(creds2[0].sad.s, schemaSAID)
     // assert.equal(creds2[0].sad.i, aid1.prefix)
