@@ -7,7 +7,7 @@ describe('THolder', () => {
         let tholder = new Tholder({ sith: 'b' });
         assert.equal(tholder.thold, 11);
         assert.equal(tholder.size, 11);
-        assert.deepEqual(tholder.limen, new Uint8Array([77, 65, 115, 65]));
+        assert.deepEqual(tholder.limen, new Uint8Array([77, 65, 65, 76])); // b(MAAL)
         assert.equal(tholder.sith, 'b');
         assert.equal(tholder.json, '"b"');
         assert.equal(tholder.num, 11);
@@ -20,7 +20,7 @@ describe('THolder', () => {
         tholder = new Tholder({ sith: 11 });
         assert.equal(tholder.thold, 11);
         assert.equal(tholder.size, 11);
-        assert.deepEqual(tholder.limen, new Uint8Array([77, 65, 115, 65]));
+        assert.deepEqual(tholder.limen, new Uint8Array([77, 65, 65, 76])); // b(MAAL)
         assert.equal(tholder.sith, 'b');
         assert.equal(tholder.json, '"b"');
         assert.equal(tholder.num, 11);
@@ -33,7 +33,7 @@ describe('THolder', () => {
         tholder = new Tholder({ thold: 2 });
         assert.equal(tholder.thold, 2);
         assert.equal(tholder.size, 2);
-        assert.deepEqual(tholder.limen, new Uint8Array([77, 65, 73, 65]));
+        assert.deepEqual(tholder.limen, new Uint8Array([77, 65, 65, 67])); // b(MAAI)
         assert.equal(tholder.sith, '2');
         assert.equal(tholder.json, '"2"');
         assert.equal(tholder.num, 2);
