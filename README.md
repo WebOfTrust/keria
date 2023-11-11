@@ -39,6 +39,13 @@ The code is built using Typescript and running code locally requires a Mac or Li
     npm install
     ```
 
+Typescript source files needs to be transpiled before running scripts
+
+-   Build:
+    ```bash
+    npm run build
+    ```
+
 
 Account Creation Workflow
 

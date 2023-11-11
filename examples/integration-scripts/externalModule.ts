@@ -1,6 +1,6 @@
 import { strict as assert } from 'assert';
 import signify from 'signify-ts';
-import { BIP39Shim } from './bip39_shim/src/bip39_shim.ts';
+import { BIP39Shim } from './modules/bip39_shim';
 
 const url = 'http://127.0.0.1:3901';
 const boot_url = 'http://127.0.0.1:3903';
