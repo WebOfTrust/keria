@@ -427,9 +427,7 @@ async function run() {
 
     // Check for completion
     op1 = await waitForOp(client1, op1);
-
     op2 = await waitForOp(client2, op2);
-
     op3 = await waitForOp(client3, op3);
     console.log(`End role authorization for agent ${eid1}completed!`);
 
@@ -555,172 +553,172 @@ async function run() {
     op3 = await waitForOp(client3, op3);
     console.log('Multisig interaction completed!');
 
-    // // Members agree out of band to rotate keys
-    // console.log('Members agree out of band to rotate keys');
-    // icpResult1 = await client1.identifiers().rotate('member1');
-    // op1 = await icpResult1.op();
-    // op1 = await waitForOp(client1, op1);
-    // aid1 = await client1.identifiers().get('member1');
+    // Members agree out of band to rotate keys
+    console.log('Members agree out of band to rotate keys');
+    icpResult1 = await client1.identifiers().rotate('member1');
+    op1 = await icpResult1.op();
+    op1 = await waitForOp(client1, op1);
+    aid1 = await client1.identifiers().get('member1');
 
-    // console.log('Member1 rotated keys');
-    // icpResult2 = await client2.identifiers().rotate('member2');
-    // op2 = await icpResult2.op();
-    // op2 = await waitForOp(client2, op2);
-    // aid2 = await client2.identifiers().get('member2');
-    // console.log('Member2 rotated keys');
-    // icpResult3 = await client3.identifiers().rotate('member3');
-    // op3 = await icpResult3.op();
-    // op3 = await waitForOp(client3, op3);
-    // aid3 = await client3.identifiers().get('member3');
-    // console.log('Member3 rotated keys');
+    console.log('Member1 rotated keys');
+    icpResult2 = await client2.identifiers().rotate('member2');
+    op2 = await icpResult2.op();
+    op2 = await waitForOp(client2, op2);
+    aid2 = await client2.identifiers().get('member2');
+    console.log('Member2 rotated keys');
+    icpResult3 = await client3.identifiers().rotate('member3');
+    op3 = await icpResult3.op();
+    op3 = await waitForOp(client3, op3);
+    aid3 = await client3.identifiers().get('member3');
+    console.log('Member3 rotated keys');
 
-    // // Update new key states
-    // op1 = await client1.keyStates().query(aid2.prefix, 1);
-    // op1 = await waitForOp(client1, op1);
-    // let aid2State = op1['response'];
-    // op1 = await client1.keyStates().query(aid3.prefix, 1);
-    // op1 = await waitForOp(client1, op1);
-    // let aid3State = op1['response'];
+    // Update new key states
+    op1 = await client1.keyStates().query(aid2.prefix, 1);
+    op1 = await waitForOp(client1, op1);
+    let aid2State = op1['response'];
+    op1 = await client1.keyStates().query(aid3.prefix, 1);
+    op1 = await waitForOp(client1, op1);
+    let aid3State = op1['response'];
 
-    // op2 = await client2.keyStates().query(aid3.prefix, 1);
-    // op2 = await waitForOp(client2, op2);
-    // op2 = await client2.keyStates().query(aid1.prefix, 1);
-    // op2 = await waitForOp(client2, op2);
-    // let aid1State = op2['response'];
+    op2 = await client2.keyStates().query(aid3.prefix, 1);
+    op2 = await waitForOp(client2, op2);
+    op2 = await client2.keyStates().query(aid1.prefix, 1);
+    op2 = await waitForOp(client2, op2);
+    let aid1State = op2['response'];
 
-    // op3 = await client3.keyStates().query(aid1.prefix, 1);
-    // op3 = await waitForOp(client3, op3);
-    // op3 = await client3.keyStates().query(aid2.prefix, 1);
-    // op3 = await waitForOp(client3, op3);
+    op3 = await client3.keyStates().query(aid1.prefix, 1);
+    op3 = await waitForOp(client3, op3);
+    op3 = await client3.keyStates().query(aid2.prefix, 1);
+    op3 = await waitForOp(client3, op3);
 
-    // op4 = await client4.keyStates().query(aid1.prefix, 1);
-    // op4 = await waitForOp(client4, op4);
-    // op4 = await client4.keyStates().query(aid2.prefix, 1);
-    // op4 = await waitForOp(client4, op4);
-    // op4 = await client4.keyStates().query(aid3.prefix, 1);
-    // op4 = await waitForOp(client4, op4);
+    op4 = await client4.keyStates().query(aid1.prefix, 1);
+    op4 = await waitForOp(client4, op4);
+    op4 = await client4.keyStates().query(aid2.prefix, 1);
+    op4 = await waitForOp(client4, op4);
+    op4 = await client4.keyStates().query(aid3.prefix, 1);
+    op4 = await waitForOp(client4, op4);
     
-    // rstates = [aid1State, aid2State, aid3State];
-    // states = rstates;
+    rstates = [aid1State, aid2State, aid3State];
+    states = rstates;
 
-    // // Multisig Rotation
+    // Multisig Rotation
 
-    // // Member1 initiates a rotation event
-    // eventResponse1 = await client1
-    //     .identifiers()
-    //     .rotate('multisig', { states: states, rstates: rstates });
-    // op1 = await eventResponse1.op();
-    // serder = eventResponse1.serder;
-    // sigs = eventResponse1.sigs;
-    // sigers = sigs.map((sig: any) => new signify.Siger({ qb64: sig }));
+    // Member1 initiates a rotation event
+    eventResponse1 = await client1
+        .identifiers()
+        .rotate('multisig', { states: states, rstates: rstates });
+    op1 = await eventResponse1.op();
+    serder = eventResponse1.serder;
+    sigs = eventResponse1.sigs;
+    sigers = sigs.map((sig: any) => new signify.Siger({ qb64: sig }));
 
-    // ims = signify.d(signify.messagize(serder, sigers));
-    // atc = ims.substring(serder.size);
-    // let rembeds = {
-    //     rot: [serder, atc],
-    // };
+    ims = signify.d(signify.messagize(serder, sigers));
+    atc = ims.substring(serder.size);
+    let rembeds = {
+        rot: [serder, atc],
+    };
 
-    // smids = states.map((state) => state['i']);
-    // recp = [aid2State, aid3State].map((state) => state['i']);
+    smids = states.map((state) => state['i']);
+    recp = [aid2State, aid3State].map((state) => state['i']);
 
-    // await client1
-    //     .exchanges()
-    //     .send(
-    //         'member1',
-    //         'multisig',
-    //         aid1,
-    //         '/multisig/rot',
-    //         { gid: serder.pre, smids: smids, rmids: smids },
-    //         rembeds,
-    //         recp
-    //     );
-    // console.log(
-    //     'Member1 initiates rotation event, waiting for others to join...'
-    // );
+    await client1
+        .exchanges()
+        .send(
+            'member1',
+            'multisig',
+            aid1,
+            '/multisig/rot',
+            { gid: serder.pre, smids: smids, rmids: smids },
+            rembeds,
+            recp
+        );
+    console.log(
+        'Member1 initiates rotation event, waiting for others to join...'
+    );
 
-    // // Member2 check for notifications and join the rotation event
-    // msgSaid = await waitForMessage(client2, '/multisig/rot');
-    // console.log('Member2 received exchange message to join the rotation event');
+    // Member2 check for notifications and join the rotation event
+    msgSaid = await waitForMessage(client2, '/multisig/rot');
+    console.log('Member2 received exchange message to join the rotation event');
 
-    // await new Promise((resolve) => setTimeout(resolve, 5000));
-    // res = await client2.groups().getRequest(msgSaid);
-    // exn = res[0].exn;
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    res = await client2.groups().getRequest(msgSaid);
+    exn = res[0].exn;
 
-    // icpResult2 = await client2
-    //     .identifiers()
-    //     .rotate('multisig', { states: states, rstates: rstates });
-    // op2 = await icpResult2.op();
-    // serder = icpResult2.serder;
-    // sigs = icpResult2.sigs;
-    // sigers = sigs.map((sig: any) => new signify.Siger({ qb64: sig }));
+    icpResult2 = await client2
+        .identifiers()
+        .rotate('multisig', { states: states, rstates: rstates });
+    op2 = await icpResult2.op();
+    serder = icpResult2.serder;
+    sigs = icpResult2.sigs;
+    sigers = sigs.map((sig: any) => new signify.Siger({ qb64: sig }));
 
-    // ims = signify.d(signify.messagize(serder, sigers));
-    // atc = ims.substring(serder.size);
-    // rembeds = {
-    //     rot: [serder, atc],
-    // };
+    ims = signify.d(signify.messagize(serder, sigers));
+    atc = ims.substring(serder.size);
+    rembeds = {
+        rot: [serder, atc],
+    };
 
-    // smids = exn.a.smids;
-    // recp = [aid1State, aid3State].map((state) => state['i']);
+    smids = exn.a.smids;
+    recp = [aid1State, aid3State].map((state) => state['i']);
 
-    // await client2
-    //     .exchanges()
-    //     .send(
-    //         'member2',
-    //         'multisig',
-    //         aid2,
-    //         '/multisig/ixn',
-    //         { gid: serder.pre, smids: smids, rmids: smids },
-    //         rembeds,
-    //         recp
-    //     );
-    // console.log('Member2 joins rotation event, waiting for others...');
+    await client2
+        .exchanges()
+        .send(
+            'member2',
+            'multisig',
+            aid2,
+            '/multisig/ixn',
+            { gid: serder.pre, smids: smids, rmids: smids },
+            rembeds,
+            recp
+        );
+    console.log('Member2 joins rotation event, waiting for others...');
 
-    // // Member3 check for notifications and join the rotation event
-    // msgSaid = await waitForMessage(client3, '/multisig/rot');
-    // console.log('Member3 received exchange message to join the rotation event');
-    // res = await client3.groups().getRequest(msgSaid);
-    // exn = res[0].exn;
+    // Member3 check for notifications and join the rotation event
+    msgSaid = await waitForMessage(client3, '/multisig/rot');
+    console.log('Member3 received exchange message to join the rotation event');
+    res = await client3.groups().getRequest(msgSaid);
+    exn = res[0].exn;
 
-    // icpResult3 = await client3
-    //     .identifiers()
-    //     .rotate('multisig', { states: states, rstates: rstates });
-    // op3 = await icpResult3.op();
-    // serder = icpResult3.serder;
-    // sigs = icpResult3.sigs;
-    // sigers = sigs.map((sig: any) => new signify.Siger({ qb64: sig }));
+    icpResult3 = await client3
+        .identifiers()
+        .rotate('multisig', { states: states, rstates: rstates });
+    op3 = await icpResult3.op();
+    serder = icpResult3.serder;
+    sigs = icpResult3.sigs;
+    sigers = sigs.map((sig: any) => new signify.Siger({ qb64: sig }));
 
-    // ims = signify.d(signify.messagize(serder, sigers));
-    // atc = ims.substring(serder.size);
-    // rembeds = {
-    //     rot: [serder, atc],
-    // };
+    ims = signify.d(signify.messagize(serder, sigers));
+    atc = ims.substring(serder.size);
+    rembeds = {
+        rot: [serder, atc],
+    };
 
-    // smids = exn.a.smids;
-    // recp = [aid1State, aid2State].map((state) => state['i']);
+    smids = exn.a.smids;
+    recp = [aid1State, aid2State].map((state) => state['i']);
 
-    // await client3
-    //     .exchanges()
-    //     .send(
-    //         'member3',
-    //         'multisig',
-    //         aid3,
-    //         '/multisig/ixn',
-    //         { gid: serder.pre, smids: smids, rmids: smids },
-    //         rembeds,
-    //         recp
-    //     );
-    // console.log('Member3 joins rotation event, waiting for others...');
+    await client3
+        .exchanges()
+        .send(
+            'member3',
+            'multisig',
+            aid3,
+            '/multisig/ixn',
+            { gid: serder.pre, smids: smids, rmids: smids },
+            rembeds,
+            recp
+        );
+    console.log('Member3 joins rotation event, waiting for others...');
 
-    // // Check for completion
-    // op1 = await waitForOp(client1, op1);
-    // op2 = await waitForOp(client2, op2);
-    // op3 = await waitForOp(client3, op3);
-    // console.log('Multisig rotation completed!');
+    // Check for completion
+    op1 = await waitForOp(client1, op1);
+    op2 = await waitForOp(client2, op2);
+    op3 = await waitForOp(client3, op3);
+    console.log('Multisig rotation completed!');
 
-    // hab = await client1.identifiers().get('multisig');
-    // aid = hab['prefix'];
-
+    hab = await client1.identifiers().get('multisig');
+    aid = hab['prefix'];
+    
     // Multisig Registry creation
     aid1 = await client1.identifiers().get('member1');
     aid2 = await client2.identifiers().get('member2');
@@ -1010,6 +1008,16 @@ async function run() {
 
     let m = await client1.identifiers().get('multisig');
 
+    // Update states
+    op1 = await client1.keyStates().query(m.prefix, 4);
+    op1 = await waitForOp(client1, op1);
+    op2 = await client2.keyStates().query(m.prefix, 4);
+    op2 = await waitForOp(client2, op2);
+    op3 = await client3.keyStates().query(m.prefix, 4);
+    op3 = await waitForOp(client3, op3);
+    op4 = await client4.keyStates().query(m.prefix, 4);
+    op4 = await waitForOp(client4, op4);
+
     // IPEX grant message
     console.log('Starting grant message');
     stamp = new Date().toISOString().replace('Z', '000+00:00');
@@ -1041,7 +1049,6 @@ async function run() {
     );
     atc = gims.substring(grant.size);
     atc += end;
-
     let gembeds: any = {
         exn: [grant, atc],
     };
@@ -1151,13 +1158,6 @@ async function run() {
         );
 
     console.log('Member3 joined grant message, waiting for others to join...');
-
-
-    // // Update latest key states from multisig
-
-
-    // op4 = await client4.keyStates().query(m.prefix, 4);
-    // op4 = await waitForOp(client4, op4);
 
     msgSaid = await waitForMessage(client4, '/exn/ipex/grant');
     console.log('Holder received exchange message with the grant message');
