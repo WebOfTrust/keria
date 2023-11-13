@@ -3,232 +3,283 @@ import signify from 'signify-ts';
 
 const url = 'http://127.0.0.1:3901';
 const boot_url = 'http://127.0.0.1:3903';
+const WAN_WITNESS_AID = 'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha';
+const WIL_WITNESS_AID = 'BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM';
+const WES_WITNESS_AID = 'BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX';
+const KLI_WITNESS_DEMO_PREFIXES = [
+    WAN_WITNESS_AID,
+    WIL_WITNESS_AID,
+    WES_WITNESS_AID,
+];
+
+// Boots an agent and connects to it, returning the connected SignifyClient
+async function bootAndConnect(
+  bran: string = signify.randomPasscode(),
+  agentUrl: string = url,
+  bootUrl: string = boot_url,
+  tier: signify.Tier = signify.Tier.low
+) {
+    const client = new signify.SignifyClient(agentUrl, bran, tier, bootUrl);
+    await client.boot();
+    await client.connect();
+    return client;
+}
+
+// utility function for making a correctly formatted timestamp
+function createTimestamp() {
+    return new Date().toISOString().replace('Z', '000+00:00');
+}
+
+// typed interface for Notification
+interface Notification {
+    i: string;
+    dt: string;
+    r: boolean;
+    a: { r: string; d?: string; m?: string };
+}
+
+// checks for notifications on a route and returns them as an array
+async function waitForNotifications(
+  client: signify.SignifyClient,
+  route: string
+): Promise<Notification[]> {
+    const awaitedNotifications = [];
+    while (true) {
+        let notifications = await client.notifications().list();
+        for (let note of notifications.notes) {
+            if (note.a.r === route) {
+                awaitedNotifications.push(note);
+            }
+        }
+        if (awaitedNotifications.length > 0) break;
+
+        await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    return awaitedNotifications;
+}
 
 await run();
 
+// main test function
 async function run() {
     await signify.ready();
-    // Boot three clients
-    const bran1 = signify.randomPasscode();
-    const bran2 = signify.randomPasscode();
-    const bran3 = signify.randomPasscode();
-    const client1 = new signify.SignifyClient(
-        url,
-        bran1,
-        signify.Tier.low,
-        boot_url
-    );
-    const client2 = new signify.SignifyClient(
-        url,
-        bran2,
-        signify.Tier.low,
-        boot_url
-    );
-    const client3 = new signify.SignifyClient(
-        url,
-        bran3,
-        signify.Tier.low,
-        boot_url
-    );
-    await client1.boot();
-    await client2.boot();
-    await client3.boot();
-    await client1.connect();
-    await client2.connect();
-    await client3.connect();
-    const state1 = await client1.state();
-    const state2 = await client2.state();
-    const state3 = await client3.state();
+    // Boot three clients one each for issuer, holder, and verifier
+    const issuerClient = await bootAndConnect(signify.randomPasscode());
+    const holderClient = await bootAndConnect(signify.randomPasscode());
+    const verifierClient = await bootAndConnect(signify.randomPasscode());
+
+    const state1 = await issuerClient.state();
+    const state2 = await holderClient.state();
+    const state3 = await verifierClient.state();
     console.log(
-        'Client 1 connected. Client AID:',
-        state1.controller.state.i,
-        'Agent AID: ',
-        state1.agent.i
+      'Issuer connected.\n\tHolder Controller AID:',
+      state1.controller.state.i,
+      '\n\tIssuer Agent AID: ',
+      state1.agent.i
     );
     console.log(
-        'Client 2 connected. Client AID:',
-        state2.controller.state.i,
-        'Agent AID: ',
-        state2.agent.i
+      'Holder connected.\n\tHolder Controller AID:',
+      state2.controller.state.i,
+      '\n\tHolder Agent AID: ',
+      state2.agent.i
     );
     console.log(
-        'Client 3 connected. Client AID:',
-        state3.controller.state.i,
-        'Agent AID: ',
-        state3.agent.i
+      'Verifier connected.\n\tVerifier Controller AID:',
+      state3.controller.state.i,
+      '\n\tVerifier Agent AID: ',
+      state3.agent.i
     );
+
+    const issuerAidName = 'issuer';
+    const holderAidName = 'holder';
+    const verifierAidName = 'verifier';
 
     // Create two identifiers, one for each client
-    let icpResult1 = await client1.identifiers().create('issuer', {
+    let issuerIcpRes = await issuerClient.identifiers().create(issuerAidName, {
         toad: 3,
-        wits: [
-            'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
-            'BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM',
-            'BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX',
-        ],
+        wits: [...KLI_WITNESS_DEMO_PREFIXES],
     });
-    let op1 = await icpResult1.op();
-    while (!op1['done']) {
-        op1 = await client1.operations().get(op1.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+    let issOp = await issuerIcpRes.op();
+    while (!issOp['done']) {
+        issOp = await issuerClient.operations().get(issOp.name);
+        await new Promise((resolve) => setTimeout(resolve, 250));
     }
-    const aid1 = await client1.identifiers().get('issuer');
-    await client1
+    const issAidResp = await issuerClient.identifiers().get(issuerAidName);
+    const issuerAID = issAidResp.prefix
+    await issuerClient
         .identifiers()
-        .addEndRole('issuer', 'agent', client1!.agent!.pre);
-    console.log("Issuer's AID:", aid1.prefix);
+        .addEndRole(issuerAidName, 'agent', issuerClient!.agent!.pre);
+    console.log("Issuer's AID:", issuerAID);
 
-    let icpResult2 = await client2.identifiers().create('recipient', {
+    let holderIcpRes = await holderClient.identifiers().create(holderAidName, {
         toad: 3,
-        wits: [
-            'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
-            'BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM',
-            'BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX',
-        ],
+        wits: [...KLI_WITNESS_DEMO_PREFIXES],
     });
-    let op2 = await icpResult2.op();
-    while (!op2['done']) {
-        op2 = await client2.operations().get(op2.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+    let hldOp = await holderIcpRes.op();
+    while (!hldOp['done']) {
+        hldOp = await holderClient.operations().get(hldOp.name);
+        await new Promise((resolve) => setTimeout(resolve, 250));
     }
-    const aid2 = await client2.identifiers().get('recipient');
-    await client2
+    const hldAidResp = await holderClient.identifiers().get(holderAidName);
+    const holderAID = hldAidResp.prefix
+    await holderClient
         .identifiers()
-        .addEndRole('recipient', 'agent', client2!.agent!.pre);
-    console.log("Recipient's AID:", aid2.prefix);
+        .addEndRole(holderAidName, 'agent', holderClient!.agent!.pre);
+    console.log("Recipient's AID:", holderAID);
 
-    let icpResult3 = await client3.identifiers().create('verifier', {
+    let verifierIcpRes = await verifierClient.identifiers().create(verifierAidName, {
         toad: 3,
-        wits: [
-            'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
-            'BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM',
-            'BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX',
-        ],
+        wits: [...KLI_WITNESS_DEMO_PREFIXES],
     });
-    let op3 = await icpResult3.op();
-    while (!op3['done']) {
-        op3 = await client3.operations().get(op3.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+    let vfyOp = await verifierIcpRes.op();
+    while (!vfyOp['done']) {
+        vfyOp = await verifierClient.operations().get(vfyOp.name);
+        await new Promise((resolve) => setTimeout(resolve, 250));
     }
-    const aid3 = await client3.identifiers().get('verifier');
-    await client3
+    const vfyAidResp = await verifierClient.identifiers().get(verifierAidName);
+    const verifierAID = vfyAidResp.prefix
+    await verifierClient
         .identifiers()
-        .addEndRole('verifier', 'agent', client3!.agent!.pre);
-    console.log("Verifier's AID:", aid3.prefix);
+        .addEndRole(verifierAidName, 'agent', verifierClient!.agent!.pre);
+    console.log("Verifier's AID:", verifierAID);
 
     const schemaSAID = 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao';
 
-    // Exchenge OOBIs
-    console.log('Resolving OOBIs...');
-    let oobi1 = await client1.oobis().get('issuer', 'agent');
-    let oobi2 = await client2.oobis().get('recipient', 'agent');
-    let oobi3 = await client3.oobis().get('verifier', 'agent');
-    let schemaOobi = 'http://127.0.0.1:7723/oobi/' + schemaSAID;
+    // OOBIs for credential schema and agent discovery
+    console.log('Resolving Schema and Agent OOBIs...');
 
-    op1 = await client1.oobis().resolve(oobi2.oobis[0], 'recipient');
-    while (!op1['done']) {
-        op1 = await client1.operations().get(op1.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-    op1 = await client1.oobis().resolve(oobi3.oobis[0], 'verifier');
-    while (!op1['done']) {
-        op1 = await client1.operations().get(op1.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-    op1 = await client1.oobis().resolve(schemaOobi, 'schema');
-    while (!op1['done']) {
-        op1 = await client1.operations().get(op1.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-    console.log('Issuer resolved 3 OOBIs');
+    // Credential Schema discovery through credential schema OOBI resolution
+    const qviSchemaSAID = 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao';
+    const vLEIServerHostUrl = 'http://127.0.0.1:7723/oobi';
+    let schemaOobiUrl = `${vLEIServerHostUrl}/${qviSchemaSAID}`;
 
-    op2 = await client2.oobis().resolve(oobi1.oobis[0], 'issuer');
-    while (!op2['done']) {
-        op2 = await client2.operations().get(op2.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+    console.log(`Resolving schema OOBIs with ${schemaOobiUrl}`);
+    issOp = await issuerClient.oobis().resolve(schemaOobiUrl, 'schema');
+    while (!issOp['done']) {
+        issOp = await issuerClient.operations().get(issOp.name);
+        await new Promise((resolve) => setTimeout(resolve, 250));
     }
-    op2 = await client2.oobis().resolve(oobi3.oobis[0], 'verifier');
-    while (!op2['done']) {
-        op2 = await client2.operations().get(op2.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+    hldOp = await holderClient.oobis().resolve(schemaOobiUrl, 'schema');
+    while (!hldOp['done']) {
+        hldOp = await holderClient.operations().get(hldOp.name);
+        await new Promise((resolve) => setTimeout(resolve, 250));
     }
-    op2 = await client2.oobis().resolve(schemaOobi, 'schema');
-    while (!op2['done']) {
-        op2 = await client2.operations().get(op2.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+    vfyOp = await verifierClient.oobis().resolve(schemaOobiUrl, 'schema');
+    while (!vfyOp['done']) {
+        vfyOp = await verifierClient.operations().get(vfyOp.name);
+        await new Promise((resolve) => setTimeout(resolve, 250));
     }
-    console.log('Recipient resolved 3 OOBIs');
 
-    op3 = await client3.oobis().resolve(oobi1.oobis[0], 'issuer');
-    while (!op3['done']) {
-        op3 = await client3.operations().get(op3.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+    let issSchema = await issuerClient.schemas().get(schemaSAID);
+    assert.equal(issSchema.$id, schemaSAID);
+    let hldSchemas = await holderClient.schemas().list();
+    assert.equal(hldSchemas.length, 1);
+    assert.equal(hldSchemas[0].$id, schemaSAID);
+    console.log('Resolved QVI Schema OOBI for issuer, holder, and verifier');
+
+    // Agent discovery through OOBI exchange between issuer, holder, and verifier
+    console.log('Getting Agent OOBIs for issuer, holder, and verifier');
+    let issAgentOOBI = await issuerClient.oobis().get(issuerAidName, 'agent');
+    let hldAgentOOBI = await holderClient.oobis().get(holderAidName, 'agent');
+    let vfyAgentOOBI = await verifierClient.oobis().get(verifierAidName, 'agent');
+
+    // issuer -> holder, verifier
+    issOp = await issuerClient.oobis().resolve(hldAgentOOBI.oobis[0], holderAidName);
+    while (!issOp['done']) {
+        issOp = await issuerClient.operations().get(issOp.name);
+        await new Promise((resolve) => setTimeout(resolve, 250));
     }
-    op3 = await client3.oobis().resolve(oobi2.oobis[0], 'recipient');
-    while (!op3['done']) {
-        op3 = await client3.operations().get(op3.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+    issOp = await issuerClient.oobis().resolve(vfyAgentOOBI.oobis[0], verifierAidName);
+    while (!issOp['done']) {
+        issOp = await issuerClient.operations().get(issOp.name);
+        await new Promise((resolve) => setTimeout(resolve, 250));
     }
-    op3 = await client3.oobis().resolve(schemaOobi, 'schema');
-    while (!op3['done']) {
-        op3 = await client3.operations().get(op3.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+    console.log('Issuer resolved 2 OOBIs: [holder, verifier]');
+
+    // holder -> issuer, verifier
+    hldOp = await holderClient.oobis().resolve(issAgentOOBI.oobis[0], issuerAidName);
+    while (!hldOp['done']) {
+        hldOp = await holderClient.operations().get(hldOp.name);
+        await new Promise((resolve) => setTimeout(resolve, 250));
     }
-    console.log('Verifier resolved 3 OOBIs');
+    hldOp = await holderClient.oobis().resolve(vfyAgentOOBI.oobis[0], verifierAidName);
+    while (!hldOp['done']) {
+        hldOp = await holderClient.operations().get(hldOp.name);
+        await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    console.log('Holder resolved 2 OOBIs: [issuer, verifier]');
+
+    // verifier -> issuer, holder
+    vfyOp = await verifierClient.oobis().resolve(issAgentOOBI.oobis[0], issuerAidName);
+    while (!vfyOp['done']) {
+        vfyOp = await verifierClient.operations().get(vfyOp.name);
+        await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    vfyOp = await verifierClient.oobis().resolve(hldAgentOOBI.oobis[0], holderAidName);
+    while (!vfyOp['done']) {
+        vfyOp = await verifierClient.operations().get(vfyOp.name);
+        await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    console.log('Verifier resolved 2 OOBIs: [issuer, holder]');
 
     // Create registry for issuer
-    const regResult = await client1
+    const registryName = 'vLEI-test-registry';
+    const regResult = await issuerClient
         .registries()
-        .create({ name: 'issuer', registryName: 'vLEI' });
-    op1 = await regResult.op();
-    while (!op1['done']) {
-        op1 = await client1.operations().get(op1.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        .create({ name: issuerAidName, registryName: registryName });
+    issOp = await regResult.op();
+    while (!issOp['done']) {
+        issOp = await issuerClient.operations().get(issOp.name);
+        await new Promise((resolve) => setTimeout(resolve, 250));
     }
-    let registries = await client1.registries().list('issuer');
+    let registries = await issuerClient.registries().list(issuerAidName);
+    const registry = registries[0];
     assert.equal(registries.length, 1);
-    assert.equal(registries[0].name, 'vLEI');
-    let schema = await client1.schemas().get(schemaSAID);
-    assert.equal(schema.$id, schemaSAID);
-    let schemas = await client2.schemas().list();
-    assert.equal(schemas.length, 1);
-    assert.equal(schemas[0].$id, schemaSAID);
-    console.log('Registry created');
+    assert.equal(registry.name, registryName);
+    console.log(`Registry created: ${registry.name}`);
 
-    // Issue credential
+    //
+    // IPEX
+    //
+
+    // Issue credential from the issuer's perspective - create credential,
+    // then perform IPEX grant as EXN message
     const vcdata = {
         LEI: '5493001KJTIIGC8Y1R17',
     };
-    const issResult = await client1
+    const issResult = await issuerClient
         .credentials()
-        .issue('issuer', registries[0].regk, schemaSAID, aid2.prefix, vcdata);
-    op1 = await issResult.op();
-    while (!op1['done']) {
-        op1 = await client1.operations().get(op1.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        .issue(issuerAidName, registry.regk, schemaSAID, holderAID, vcdata);
+    issOp = await issResult.op();
+    while (!issOp['done']) {
+        issOp = await issuerClient.operations().get(issOp.name);
+        await new Promise((resolve) => setTimeout(resolve, 250));
     }
-    let creds1 = await client1.credentials().list('issuer');
-    assert.equal(creds1.length, 1);
-    assert.equal(creds1[0].sad.s, schemaSAID);
-    assert.equal(creds1[0].sad.i, aid1.prefix);
-    assert.equal(creds1[0].status.s, '0'); // 0 = issued
-    console.log('Credential issued');
+    let issCreds = await issuerClient.credentials().list();
+    assert.equal(issCreds.length, 1);
+    assert.equal(issCreds[0].sad.s, schemaSAID);
+    assert.equal(issCreds[0].sad.i, issuerAID);
+    assert.equal(issCreds[0].status.s, '0'); // 0 = issued
+    console.log(`Issuer: credential created with data: ${JSON.stringify(vcdata)}`);
 
+    // prepare IPEX GRANT message
     const acdc = new signify.Serder(issResult.acdc);
     const iss = issResult.iserder;
     const ianc = issResult.anc;
 
-    const sigers = issResult.sigs.map((sig: string) => new signify.Siger({ qb64: sig }));
+    const sigers = issResult.sigs.map(
+      (sig: string) => new signify.Siger({ qb64: sig })
+    );
     const ims = signify.d(signify.messagize(ianc, sigers));
 
-    const atc = ims.substring(issResult.anc.size);
-    let dt = new Date().toISOString().replace('Z', '000+00:00');
-    
-    const [grant, gsigs, gend] = await client1
+    const atc = ims.substring(ianc.size); // attachment
+    let dt = createTimestamp(); // grant datetime
+
+    const [grant, gsigs, gend] = await issuerClient
         .ipex()
         .grant(
-            'issuer',
-            aid2.prefix,
+            issuerAidName,
+            holderAID,
             '',
             acdc,
             issResult.acdcSaider,
@@ -239,52 +290,57 @@ async function run() {
             undefined,
             dt
         );
-    await client1
+    await issuerClient
         .exchanges()
-        .sendFromEvents('issuer', 'credential', grant, gsigs, gend, [
-            aid2.prefix,
+        .sendFromEvents(issuerAidName, 'credential', grant, gsigs, gend, [
+            holderAID,
         ]);
-    console.log('Grant message sent');
+    console.log('Issuer: IPEX GRANT sent to holder');
 
-    // Recipient check issued credential
-    let grantNotification1 = null;
-    while (grantNotification1 == null) {
-        let notifications = await client2.notifications().list();
-        for (let notif of notifications.notes) {
-            if (notif.a.r == '/exn/ipex/grant') {
-                grantNotification1 = notif;
-            }
-        }
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+    // from the holder's perspective - wait for GRANT notification,
+    // perform admit, then mark GRANT notification as read
+    const holderNotifications = await waitForNotifications(
+      holderClient,
+      '/exn/ipex/grant'
+    );
+    const grantNotification = holderNotifications[0]; // should only have one notification right now
+
+    // Note: Credentials are no longer automatically accepted into a wallet.
+    //       Pending an implementation in KERIA there will be the ability to
+    //       auto-add credentials by automatically admitting credentials.
+    const [admit, sigs, aend] = await holderClient.ipex()
+      .admit(
+        holderAidName,
+        '',
+        grantNotification.a.d!,
+        createTimestamp());
+    await holderClient.ipex()
+      .submitAdmit(holderAidName, admit, sigs, aend, [issuerAID]);
+    console.log('Holder: IPEX ADMIT sent');
+
+    await holderClient.notifications().mark(grantNotification.i);
+    console.log('Holder: IPEX GRANT notification marked');
+
+    // list credentials to show new credential received through IPEX GRANT+ADMIT
+    let holderCreds = await holderClient.credentials().list();
+    while (holderCreds.length < 1) {
+        console.log('Holder: No credentials yet...');
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        holderCreds = await holderClient.credentials().list();
     }
-
-    dt = new Date().toISOString().replace('Z', '000+00:00');
-    const [admit, sigs, aend] = await client2.ipex().admit('recipient', '', grantNotification1.a.d!, dt);
-    await client2.ipex().submitAdmit('recipient', admit, sigs, aend, [aid1.prefix]);
-    console.log('Admit sent');
-
-    await client2.notifications().mark(grantNotification1.i);
-    console.log('Notification marked');
-
-    let creds2 = await client2.credentials().list('recipient');
-    while (creds2.length < 1) {
-        console.log('No credentials yet...');
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        creds2 = await client2.credentials().list('recipient');
-    }
-    assert.equal(creds2.length, 1)
-    assert.equal(creds2[0].sad.s, schemaSAID)
-    assert.equal(creds2[0].sad.i, aid1.prefix)
-    assert.equal(creds2[0].status.s, "0") // 0 = issued
+    const hldVleiAcdc: any = holderCreds[0];
+    assert.equal(holderCreds.length, 1)
+    assert.equal(hldVleiAcdc.sad.s, schemaSAID)
+    assert.equal(hldVleiAcdc.sad.i, issuerAID)
+    assert.equal(hldVleiAcdc.status.s, "0") // 0 = issued
     console.log('Credential received by recipient');
 
     // Present credential
-    dt = new Date().toISOString().replace('Z', '000+00:00');
-    const [grant2, gsigs2, gend2] = await client2
+    const [grant2, gsigs2, gend2] = await holderClient
         .ipex()
         .grant(
-            'recipient',
-            aid3.prefix,
+            holderAidName,
+            verifierAID,
             '',
             acdc,
             issResult.acdcSaider,
@@ -293,68 +349,66 @@ async function run() {
             issResult.anc,
             atc,
             undefined,
-            dt
+            createTimestamp()
         );
-    await client2
+    await holderClient
         .exchanges()
-        .sendFromEvents('recipient', 'presentation', grant2, gsigs2, gend2, [
-            aid3.prefix,
+        .sendFromEvents(holderAidName, 'presentation', grant2, gsigs2, gend2, [
+            verifierAID,
         ]);
-    console.log('Grant message sent for presentation');
+    console.log('Holder: Grant message sent for presentation');
 
     // Verifier check issued credential
-    let grantNotification2 = null;
-    while (grantNotification2 == null) {
-        let notifications = await client3.notifications().list();
-        for (let notif of notifications.notes) {
-            if (notif.a.r == '/exn/ipex/grant') {
-                grantNotification2 = notif;
-            }
-        }
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
+    const verifierNotifications = await waitForNotifications(
+      verifierClient,
+      '/exn/ipex/grant'
+    );
+    let verifierGrantNote = verifierNotifications[0];
 
-    dt = new Date().toISOString().replace('Z', '000+00:00');
-    const [admit3, sigs3, aend3] = await client3.ipex().admit('verifier', '', grantNotification2.a.d!, dt);
-    await client3.ipex().submitAdmit('verifier', admit3, sigs3, aend3, [aid2.prefix]);
-    console.log('Admit sent for presentation');
+    const [admit3, sigs3, aend3] = await verifierClient.ipex()
+      .admit(verifierAidName, '', verifierGrantNote.a.d!, createTimestamp());
+    await verifierClient.ipex()
+      .submitAdmit(verifierAidName, admit3, sigs3, aend3, [holderAID]);
+    console.log('Verifier: Admit sent for presentation');
 
-    await client3.notifications().mark(grantNotification2.i);
-    console.log('Notification marked for presentation');
+    await verifierClient.notifications().mark(verifierGrantNote.i);
+    console.log('Verifier: Notification marked for presentation');
 
-    let creds3 = await client3.credentials().list('verifier');
-    while (creds3.length < 1) {
+    // list credentials for verifier
+    let verifierCreds = await verifierClient.credentials().list();
+    while (verifierCreds.length < 1) {
         console.log('No credentials yet...');
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        creds3 = await client3.credentials().list('verifier');
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        verifierCreds = await verifierClient.credentials().list();
     }
-    assert.equal(creds3.length, 1)
-    assert.equal(creds3[0].sad.s, schemaSAID)
-    assert.equal(creds3[0].sad.i, aid1.prefix)
-    assert.equal(creds3[0].status.s, "0") // 0 = issued
+    assert.equal(verifierCreds.length, 1)
+    assert.equal(verifierCreds[0].sad.s, schemaSAID)
+    assert.equal(verifierCreds[0].sad.i, issuerAID)
+    assert.equal(verifierCreds[0].status.s, "0") // 0 = issued
     console.log('Credential presented and received by verifier');
 
     // Revoke credential
-    op1 = await client1.credentials().revoke('issuer', creds1[0].sad.d);
-    while (!op1['done']) {
-        op1 = await client1.operations().get(op1.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+    issOp = await issuerClient.credentials().revoke(issuerAidName, issCreds[0].sad.d);
+    while (!issOp['done']) {
+        issOp = await issuerClient.operations().get(issOp.name);
+        await new Promise((resolve) => setTimeout(resolve, 250));
     }
-    creds1 = await client1.credentials().list('issuer');
-    assert.equal(creds1.length, 1);
-    assert.equal(creds1[0].sad.s, schemaSAID);
-    assert.equal(creds1[0].sad.i, aid1.prefix);
-    assert.equal(creds1[0].status.s, '1'); // 1 = revoked
-    console.log('Credential revoked');
+    issCreds = await issuerClient.credentials().list();
+    const issVleiAcdc = issCreds[0]
+    assert.equal(issCreds.length, 1);
+    assert.equal(issVleiAcdc.sad.s, schemaSAID);
+    assert.equal(issVleiAcdc.sad.i, issuerAID);
+    assert.equal(issVleiAcdc.status.s, '1'); // 1 = revoked
+    console.log('Issuer Credential revoked');
 
     // Recipient check revoked credential
     // let revoked = false
     // while (!revoked) {
-    //     let cred2 = await client2.credentials().get('recipient', creds1[0].sad.d)
+    //     let cred2 = await client2.credentials().get(holderAidName, creds1[0].sad.d)
     //     if (cred2.status.s == "1") {
     //         revoked = true
     //     }
-    //     await new Promise((resolve) => setTimeout(resolve, 1000));
+    //     await new Promise((resolve) => setTimeout(resolve, 250));
     // }
     // assert.equal(creds2.length, 1)
     // assert.equal(creds2[0].sad.s, schemaSAID)
@@ -365,9 +419,9 @@ async function run() {
     // Present revoked credential
     // await client1
     //     .credentials()
-    //     .present('issuer', creds1[0].sad.d, 'verifier', true);
+    //     .present(issuerAidName, creds1[0].sad.d, verifierAidName, true);
     // await new Promise((resolve) => setTimeout(resolve, 5000));
-    // creds3 = await client3.credentials().list('verifier');
+    // creds3 = await client3.credentials().list(verifierAidName);
     // assert.equal(creds3.length, 1);
     // assert.equal(creds3[0].sad.s, schemaSAID);
     // assert.equal(creds3[0].sad.i, aid1.prefix);
