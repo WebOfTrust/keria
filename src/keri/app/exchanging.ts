@@ -126,6 +126,22 @@ export class Exchanges {
         let res = await this.client.fetch(path, method, data);
         return await res.json();
     }
+
+
+    /**
+     * Get exn messages
+     * @async
+     * @returns {Promise<any>} A promise to the exn message
+     * @param name
+     * @param said
+     */
+    async get(name:string, said:string) {
+        let path = `/identifiers/${name}/exchanges/${said}`;
+        let method = 'GET';
+        let res = await this.client.fetch(path, method, null);
+        return await res.json();
+
+    }
 }
 
 export function exchange(

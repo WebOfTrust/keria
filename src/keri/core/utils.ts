@@ -99,21 +99,19 @@ export function range(start: number, stop: number, step: number) {
 export function intToBytes(value: number, length: number): Uint8Array {
     const byteArray = new Uint8Array(length); // Assuming a 4-byte integer (32 bits)
 
-    for (let index = 0; index < byteArray.length; index++) {
+    for (let index = byteArray.length-1; index >= 0; index--) {
         let byte = value & 0xff;
         byteArray[index] = byte;
         value = (value - byte) / 256;
     }
-
     return byteArray;
 }
 
 export function bytesToInt(ar: Uint8Array): number {
     let value = 0;
-    for (let i = ar.length - 1; i >= 0; i--) {
+    for (let i = 0; i <ar.length; i++) {
         value = value * 256 + ar[i];
     }
-
     return value;
 }
 

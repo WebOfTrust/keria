@@ -433,7 +433,7 @@ export function messagize(
                         .qb64b
                 );
                 atc = concat(atc, new TextEncoder().encode(seal[1].i));
-                atc = concat(atc, new Seqner(seal[1].s).qb64b);
+                atc = concat(atc, new Seqner({sn: parseInt(seal[1].s)}).qb64b);
                 atc = concat(atc, new TextEncoder().encode(seal[1].d));
             } else if (seal[0] == 'SealLast') {
                 atc = concat(

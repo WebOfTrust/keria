@@ -26,6 +26,7 @@ describe('Seqner', () => {
         seqner = new Seqner({ snh: '1' });
         assert.equal(seqner.sn, 1);
         assert.equal(seqner.snh, '1');
+        assert.equal(seqner.qb64, '0AAAAAAAAAAAAAAAAAAAAAAB');
 
         seqner = new Seqner({ sn: 1 });
         assert.equal(seqner.sn, 1);
@@ -34,10 +35,12 @@ describe('Seqner', () => {
         seqner = new Seqner({ sn: 16 });
         assert.equal(seqner.sn, 16);
         assert.equal(seqner.snh, '10');
+        assert.equal(seqner.qb64, '0AAAAAAAAAAAAAAAAAAAAAAQ');
 
         seqner = new Seqner({ sn: 15 });
         assert.equal(seqner.sn, 15);
         assert.equal(seqner.snh, 'f');
+        assert.equal(seqner.qb64, '0AAAAAAAAAAAAAAAAAAAAAAP');
 
         seqner = new Seqner({ snh: 'f' });
         assert.equal(seqner.sn, 15);
