@@ -1,13 +1,11 @@
 {
-    "name": "signify-scripts-ts",
-    "type": "module",
-    "private": true,
-    "dependencies": {
-        "prompt-sync": "^4.2.0",
-        "signify-ts": "file:../../"
-    },
-    "devDependencies": {
-        "@types/prompt-sync": "^4.2.2",
-        "typescript": "^5.2.2"
-    }
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "prompt-sync": "^4.2.0",
+    "signify-ts": "*"
+  },
+  "devDependencies": {
+    "@types/prompt-sync": "^4.2.2"
+  }
 }
