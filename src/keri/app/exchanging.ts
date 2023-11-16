@@ -127,20 +127,17 @@ export class Exchanges {
         return await res.json();
     }
 
-
     /**
-     * Get exn messages
+     * Get exn message by said
      * @async
-     * @returns {Promise<any>} A promise to the exn message
-     * @param name
-     * @param said
+     * @returns A promise to the exn message
+     * @param said The said of the exn message
      */
-    async get(name:string, said:string) {
-        let path = `/identifiers/${name}/exchanges/${said}`;
-        let method = 'GET';
-        let res = await this.client.fetch(path, method, null);
+    async get(said: string): Promise<any> {
+        const path = `/exchanges/${said}`;
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, null);
         return await res.json();
-
     }
 }
 
