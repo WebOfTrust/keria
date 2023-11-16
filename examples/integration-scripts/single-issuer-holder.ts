@@ -112,7 +112,7 @@ async function issueCredential(
         await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
-    const creds = await client.credentials().list(name);
+    const creds = await client.credentials().list();
     assert.equal(creds.length, 1);
     assert.equal(creds[0].sad.s, SCHEMA_SAID);
     assert.equal(creds[0].status.s, '0');
@@ -261,11 +261,11 @@ async function run() {
     console.log('Notification marked!');
 
     console.log('Listing credentials...');
-    let credentials = await holderClient.credentials().list('holder');
+    let credentials = await holderClient.credentials().list();
     while (credentials.length < 1) {
         console.log('No credentials yet...');
         await new Promise((resolve) => setTimeout(resolve, 1000));
-        credentials = await holderClient.credentials().list('holder');
+        credentials = await holderClient.credentials().list();
     }
 
     console.log('Succeeded');
