@@ -53,4 +53,39 @@ export class Groups {
         let res = await this.client.fetch(path, method, data);
         return await res.json();
     }
+
+    /**
+     * Join multisig group using rotation event.
+     * This can be used by participants being asked to contribute keys to a rotation event to join an existing group.
+     * @async
+     * @param {string} [name] human readable name of group AID
+     * @param {any} [rot] rotation event
+     * @param {any} [sigs] signatures
+     * @param {string} [gid] prefix
+     * @param {string[]} [smids] array of particpants
+     * @param {string[]} [rmids] array of particpants
+     * @returns {Promise<any>} A promise to the list of replay messages
+     */
+    async join(
+        name: string,
+        rot: any,
+        sigs: any, //string[],
+        gid: string,
+        smids: string[],
+        rmids: string[]
+    ): Promise<any> {
+        let path = `/identifiers/${name}/multisig/join`;
+        let method = 'POST';
+        let data = {
+            tpc: 'multisig',
+            rot: rot.ked,
+            sigs: sigs,
+            gid: gid,
+            smids: smids,
+            rmids: rmids
+        };
+        let res = await this.client.fetch(path, method, data);
+        return await res.json();
+    }
+
 }
