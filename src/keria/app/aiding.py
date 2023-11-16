@@ -933,8 +933,13 @@ class ChallengeResourceEnd:
         sig = body["sig"]
         recpt = body["recipient"]
         serder = coring.Serder(ked=exn)
-        atc = bytearray(sig.encode("utf-8"))
-        agent.postman.send(hab=agent.agentHab, dest=recpt, topic="challenge", serder=serder, attachment=atc)
+
+        ims = bytearray(serder.raw)
+        ims.extend(sig.encode("utf-8"))
+
+        agent.hby.psr.parseOne(ims=bytearray(ims))
+
+        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=recpt, topic='challenge'))
 
         rep.status = falcon.HTTP_202
 
