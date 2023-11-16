@@ -181,5 +181,10 @@ describe('Grouping', () => {
                 '/multisig/request/ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose00'
         );
         assert.equal(lastCall[1]!.method, 'GET');
+
+        await groups.join('aid1', { 'ked': {} }, ['sig'], 'ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose00', ['1', '2', '3'], ['a', 'b', 'c']);
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
+        assert.equal(lastCall[0]!, url + '/identifiers/aid1/multisig/join');
+        assert.equal(lastCall[1]!.method, 'POST');
     });
 });
