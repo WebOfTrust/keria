@@ -142,7 +142,6 @@ class HttpEnd:
 
         agent.parser.ims.extend(req.bounded_stream.read())
 
-        rep.set_header('Content-Type', "application/json")
         rep.status = falcon.HTTP_204
 
 
