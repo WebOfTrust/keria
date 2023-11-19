@@ -36,7 +36,7 @@ from keri.vdr.credentialing import Regery
 from keri.vdr.eventing import Tevery
 from keri.app import challenging
 
-from . import aiding, notifying, indirecting, credentialing, presenting, ipexing
+from . import aiding, notifying, indirecting, credentialing, ipexing
 from . import grouping as keriagrouping
 from ..peer import exchanging as keriaexchanging
 from .specing import AgentSpecResource
@@ -83,7 +83,6 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
     loadEnds(app=app)
     aidEnd = aiding.loadEnds(app=app, agency=agency, authn=authn)
     credentialing.loadEnds(app=app, identifierResource=aidEnd)
-    presenting.loadEnds(app=app)
     notifying.loadEnds(app=app)
     keriagrouping.loadEnds(app=app)
     keriaexchanging.loadEnds(app=app)
@@ -298,14 +297,13 @@ class Agent(doing.DoDoer):
         self.admits = decking.Deck()
 
         receiptor = agenting.Receiptor(hby=hby)
-        self.postman = forwarding.Poster(hby=hby)
         self.witq = agenting.WitnessInquisitor(hby=self.hby)
         self.witPub = agenting.WitnessPublisher(hby=self.hby)
         self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
 
         self.rep = storing.Respondant(hby=hby, cues=self.cues, mbx=Mailboxer(name=self.hby.name, temp=self.hby.temp))
 
-        doers = [habbing.HaberyDoer(habery=hby), receiptor, self.postman, self.witq, self.witPub, self.rep, self.swain,
+        doers = [habbing.HaberyDoer(habery=hby), receiptor, self.witq, self.witPub, self.rep, self.swain,
                  self.counselor, self.witDoer, *oobiery.doers]
 
         signaler = signaling.Signaler()
@@ -315,11 +313,10 @@ class Agent(doing.DoDoer):
         # Initialize all the credential processors
         self.verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
         self.registrar = credentialing.Registrar(agentHab=agentHab, hby=hby, rgy=rgy, counselor=self.counselor,
-                                                 witPub=self.witPub, witDoer=self.witDoer, postman=self.postman,
-                                                 verifier=self.verifier)
+                                                 witPub=self.witPub, witDoer=self.witDoer, verifier=self.verifier)
         self.credentialer = credentialing.Credentialer(agentHab=agentHab, hby=self.hby, rgy=self.rgy,
-                                                       postman=self.postman, registrar=self.registrar,
-                                                       verifier=self.verifier, notifier=self.notifier)
+                                                       registrar=self.registrar, verifier=self.verifier,
+                                                       notifier=self.notifier)
 
         self.monitor = longrunning.Monitor(hby=hby, swain=self.swain, counselor=self.counselor, temp=hby.temp,
                                            registrar=self.registrar, credentialer=self.credentialer)
@@ -331,7 +328,7 @@ class Agent(doing.DoDoer):
         handlers = [challengeHandler]
         self.exc = exchanging.Exchanger(hby=hby, handlers=handlers)
         grouping.loadHandlers(exc=self.exc, mux=self.mux)
-        protocoling.loadHandlers(hby=self.hby, exc=self.exc, rgy=self.rgy, notifier=self.notifier)
+        protocoling.loadHandlers(hby=self.hby, exc=self.exc, notifier=self.notifier)
 
         self.rvy = routing.Revery(db=hby.db, cues=self.cues)
         self.kvy = eventing.Kevery(db=hby.db,
@@ -362,7 +359,7 @@ class Agent(doing.DoDoer):
             ParserDoer(kvy=self.kvy, parser=self.parser),
             Witnesser(receiptor=receiptor, witners=self.witners),
             Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
-            ExchangeSender(hby=hby, agentHab=agentHab, exc=self.exc, postman=self.postman, exchanges=self.exchanges),
+            ExchangeSender(hby=hby, agentHab=agentHab, exc=self.exc, exchanges=self.exchanges),
             Admitter(hby=hby, witq=self.witq, psr=self.parser, agentHab=agentHab, exc=self.exc, admits=self.admits),
             GroupRequester(hby=hby, agentHab=agentHab, counselor=self.counselor, groups=self.groups),
             SeekerDoer(seeker=self.seeker, cues=self.verifier.cues),
@@ -455,23 +452,22 @@ class Delegator(doing.Doer):
         return False
 
 
-class ExchangeSender(doing.Doer):
+class ExchangeSender(doing.DoDoer):
 
-    def __init__(self, hby, agentHab, postman, exc, exchanges):
+    def __init__(self, hby, agentHab, exc, exchanges):
         self.hby = hby
         self.agentHab = agentHab
-        self.postman = postman
         self.exc = exc
         self.exchanges = exchanges
-        super(ExchangeSender, self).__init__()
+        super(ExchangeSender, self).__init__(always=True)
 
-    def recur(self, tyme):
+    def recur(self, tyme, deeds=None):
         if self.exchanges:
             msg = self.exchanges.popleft()
             said = msg['said']
             if not self.exc.complete(said=said):
                 self.exchanges.append(msg)
-                return False
+                return super(ExchangeSender, self).recur(tyme, deeds)
 
             serder, pathed = exchanging.cloneMessage(self.hby, said)
 
@@ -483,11 +479,17 @@ class ExchangeSender(doing.Doer):
                 atc = exchanging.serializeMessage(self.hby, said)
                 del atc[:serder.size]
                 for recp in rec:
-                    self.postman.send(hab=self.agentHab,
-                                      dest=recp,
-                                      topic=topic,
-                                      serder=serder,
-                                      attachment=atc)
+                    postman = forwarding.StreamPoster(hby=self.hby, hab=self.agentHab, recp=recp, topic=topic)
+                    try:
+                        postman.send(serder=serder,
+                                     attachment=atc)
+                    except kering.ValidationError:
+                        logger.info(f"unable to send to recipient={recp}")
+                    else:
+                        doer = doing.DoDoer(doers=postman.deliver())
+                        self.extend([doer])
+
+        return super(ExchangeSender, self).recur(tyme, deeds)
 
 
 class Admitter(doing.Doer):
@@ -510,7 +512,11 @@ class Admitter(doing.Doer):
                 return False
 
             admit, _ = exchanging.cloneMessage(self.hby, said)
-            hab = self.hby.habs[msg['pre']]
+
+            if 'p' not in admit.ked or not admit.ked['p']:
+                print(f"Invalid admit message={admit.ked}, no grant listed")
+                return False
+
             grant, pathed = exchanging.cloneMessage(self.hby, admit.ked['p'])
 
             embeds = grant.ked['e']

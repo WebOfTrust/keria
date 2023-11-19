@@ -118,6 +118,35 @@ def test_indirecting(helpers):
         res = client.post("/", body=regser.raw, headers=dict(headers))
         assert res.status_code == 204
 
+        # Test PUT method
+        res = client.put("/", body=serder.raw)
+        assert res.status_code == 400
+        assert res.json == {'title': 'CESR request destination header missing'}
+
+        badaid = "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
+        headers = Hict([
+            ("Content-Type", httping.CESR_CONTENT_TYPE),
+            ("Content-Length", f"{serder.size}"),
+            ("connection", "close"),
+            (httping.CESR_DESTINATION_HEADER, badaid)
+        ])
+
+        body = serder.raw + atc
+        res = client.put("/", body=body, headers=dict(headers))
+        assert res.status_code == 404
+        assert res.json == {'title': 'unknown destination AID EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'}
+
+        headers = Hict([
+            ("Content-Type", httping.CESR_CONTENT_TYPE),
+            ("Content-Length", f"{serder.size}"),
+            ("connection", "close"),
+            (httping.CESR_ATTACHMENT_HEADER, bytearray(atc).decode("utf-8")),
+            (httping.CESR_DESTINATION_HEADER, aid["i"])
+        ])
+
+        res = client.put("/", body=serder.raw, headers=dict(headers))
+        assert res.status_code == 204
+
         # Test ending
         oobiEnd = ending.OOBIEnd(agency)
         app.add_route("/oobi", oobiEnd)

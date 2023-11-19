@@ -71,12 +71,7 @@ class MultisigRequestCollectionEnd:
         smids = hab.db.signingMembers(pre=hab.pre)
         smids.remove(hab.mhab.pre)
 
-        for recp in smids:  # this goes to other participants
-            agent.postman.send(hab=agent.agentHab,
-                               dest=recp,
-                               topic="multisig",
-                               serder=serder,
-                               attachment=ims)
+        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=smids, topic='multisig'))
 
         rep.status = falcon.HTTP_200
         rep.data = json.dumps(serder.ked).encode("utf-8")

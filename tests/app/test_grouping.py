@@ -154,7 +154,7 @@ def test_multisig_request_ends(helpers):
         assert '-LA35AACAA-e-exn' + path == end.decode("utf-8")
 
         # We've send this one exn to our other participants
-        assert len(agent.postman.evts) == 1
+        assert len(agent.exchanges) == 1
 
 
 def test_join(helpers, monkeypatch):

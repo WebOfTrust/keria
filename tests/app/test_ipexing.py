@@ -154,7 +154,6 @@ def test_ipex_admit(helpers, mockHelpingNowIso8601):
         data = json.dumps(body).encode("utf-8")
         res = client.simulate_post(path="/identifiers/test/ipex/admit", body=data)
 
-        print(res.json)
         assert res.status_code == 202
         assert len(agent.exchanges) == 2
         assert len(agent.admits) == 1

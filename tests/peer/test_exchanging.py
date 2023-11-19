@@ -7,7 +7,6 @@ Testing the Mark II Agent Grouping endpoints
 
 """
 import json
-from pprint import pprint
 
 from hio.base import doing
 from keri.core import coring, eventing
@@ -81,7 +80,6 @@ def test_exchange_end(helpers):
 
         doist.recur(deeds=deeds)
 
-        assert len(agent.postman.evts) == 1
         assert len(agent.exchanges) == 0
         agent.exnseeker.index(cexn.said)
 
@@ -113,7 +111,6 @@ def test_exchange_end(helpers):
 
         doist.recur(deeds=deeds)
 
-        assert len(agent.postman.evts) == 1
         assert len(agent.exchanges) == 0
         agent.exnseeker.index(exn.said)
 

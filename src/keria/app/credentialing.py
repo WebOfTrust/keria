@@ -704,14 +704,13 @@ def signPaths(hab, pather, sigers):
 
 class Registrar:
 
-    def __init__(self, agentHab, hby, rgy, counselor, witDoer, witPub, postman, verifier):
+    def __init__(self, agentHab, hby, rgy, counselor, witDoer, witPub, verifier):
         self.hby = hby
         self.agentHab = agentHab
         self.rgy = rgy
         self.counselor = counselor
         self.witDoer = witDoer
         self.witPub = witPub
-        self.postman = postman
         self.verifier = verifier
 
     def incept(self, hab, registry, prefixer=None, seqner=None, saider=None):
@@ -915,13 +914,12 @@ class Registrar:
 
 class Credentialer:
 
-    def __init__(self, agentHab, hby, rgy, postman, registrar, verifier, notifier):
+    def __init__(self, agentHab, hby, rgy, registrar, verifier, notifier):
         self.agentHab = agentHab
         self.hby = hby
         self.rgy = rgy
         self.registrar = registrar
         self.verifier = verifier
-        self.postman = postman
         self.notifier = notifier
 
     def validate(self, creder):
@@ -980,12 +978,11 @@ class Credentialer:
             self.rgy.reger.cmse.rem(keys=(said, snq))
 
             hab = self.hby.habs[creder.issuer]
-            kever = hab.kever
             # place in escrow to diseminate to other if witnesser and if there is an issuee
             self.rgy.reger.ccrd.put(keys=(creder.said,), val=creder)
 
     def complete(self, said):
-        return self.rgy.reger.ccrd.get(keys=(said,)) is not None and len(self.postman.evts) == 0
+        return self.rgy.reger.ccrd.get(keys=(said,)) is not None
 
     def processEscrows(self):
         """

@@ -99,6 +99,51 @@ class HttpEnd:
                 else:
                     rep.status = falcon.HTTP_204
 
+    def on_put(self, req, rep):
+        """
+        Handles PUT for KERI mbx event messages.
+
+        Parameters:
+              req (Request) Falcon HTTP request
+              rep (Response) Falcon HTTP response
+
+        ---
+        summary:  Accept KERI events with attachment headers and parse
+        description:  Accept KERI events with attachment headers and parse.
+        tags:
+           - Events
+        requestBody:
+           required: true
+           content:
+             application/json:
+               schema:
+                 type: object
+                 description: KERI event message
+        responses:
+           200:
+              description: Mailbox query response for server sent events
+           204:
+              description: KEL or EXN event accepted.
+        """
+        if req.method == "OPTIONS":
+            rep.status = falcon.HTTP_200
+            return
+
+        if CESR_DESTINATION_HEADER not in req.headers:
+            raise falcon.HTTPBadRequest(title="CESR request destination header missing")
+
+        aid = req.headers[CESR_DESTINATION_HEADER]
+        agent = self.agency.lookup(aid)
+        if agent is None:
+            raise falcon.HTTPNotFound(title=f"unknown destination AID {aid}")
+
+        rep.set_header('Cache-Control', "no-cache")
+        rep.set_header('connection', "close")
+
+        agent.parser.ims.extend(req.bounded_stream.read())
+
+        rep.status = falcon.HTTP_204
+
 
 def loadEnds(app, agency):
     """ Add Falcon HTTP server endpoints for the HTTP endpoint class HttpEnd """
