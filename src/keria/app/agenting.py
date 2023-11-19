@@ -479,7 +479,7 @@ class ExchangeSender(doing.DoDoer):
                 atc = exchanging.serializeMessage(self.hby, said)
                 del atc[:serder.size]
                 for recp in rec:
-                    postman = forwarding.StreamPoster(hby=self.hby, hab=hab, recp=recp, topic=topic)
+                    postman = forwarding.StreamPoster(hby=self.hby, hab=self.agentHab, recp=recp, topic=topic)
                     try:
                         postman.send(serder=serder,
                                      attachment=atc)
@@ -512,7 +512,11 @@ class Admitter(doing.Doer):
                 return False
 
             admit, _ = exchanging.cloneMessage(self.hby, said)
-            hab = self.hby.habs[msg['pre']]
+
+            if 'p' not in admit.ked or not admit.ked['p']:
+                print(f"Invalid admit message={admit.ked}, no grant listed")
+                return False
+
             grant, pathed = exchanging.cloneMessage(self.hby, admit.ked['p'])
 
             embeds = grant.ked['e']
