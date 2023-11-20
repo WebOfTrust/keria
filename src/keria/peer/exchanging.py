@@ -18,10 +18,10 @@ def loadEnds(app):
     app.add_route("/identifiers/{name}/exchanges", exnColEnd)
 
     exnColEnd = ExchangeQueryCollectionEnd()
-    app.add_route("/identifiers/{name}/exchanges/query", exnColEnd)
+    app.add_route("/exchanges/query", exnColEnd)
 
     exnResEnd = ExchangeResourceEnd()
-    app.add_route("/identifiers/{name}/exchanges/{said}", exnResEnd)
+    app.add_route("/exchanges/{said}", exnResEnd)
 
 
 class ExchangeCollectionEnd:
@@ -83,19 +83,15 @@ class ExchangeCollectionEnd:
 class ExchangeQueryCollectionEnd:
 
     @staticmethod
-    def on_post(req, rep, name):
+    def on_post(req, rep):
         """  POST endpoint for exchange message collection
 
         Args:
             req (Request): falcon HTTP request object
             rep (Response): falcon HTTP response object
-            name (str): human readable alias for AID context
 
         """
         agent = req.context.agent
-        hab = agent.hby.habByName(name)
-        if hab is None:
-            raise falcon.HTTPNotFound(description="name is not a valid reference to an identifier")
 
         try:
             body = req.get_media()
@@ -141,23 +137,16 @@ class ExchangeResourceEnd:
     """ Exchange message resource endpoint class """
 
     @staticmethod
-    def on_get(req, rep, name, said):
+    def on_get(req, rep, said):
         """GET endpoint for exchange message collection
 
         Args:
             req (Request): falcon HTTP request object
             rep (Response): falcon HTTP response object
-            name (str): human readable alias for AID context
             said (str): qb64 SAID of exchange message to retrieve
 
         """
         agent = req.context.agent
-
-        # Get the hab
-        hab = agent.hby.habByName(name)
-        if hab is None:
-            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
-
         serder, pathed = exchanging.cloneMessage(agent.hby, said)
 
         if serder is None:
