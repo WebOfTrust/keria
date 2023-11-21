@@ -1161,7 +1161,7 @@ async function run() {
 
     msgSaid = await waitForMessage(client4, '/exn/ipex/grant');
     console.log('Holder received exchange message with the grant message');
-    res = await client4.exchanges().get('holder',msgSaid);
+    res = await client4.exchanges().get(msgSaid);
 
     let [admit, asigs, aend] = await client4
         .ipex()
