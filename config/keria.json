@@ -1,0 +1,11 @@
+{
+    "iurls": [
+        "http://witness-demo:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller?name=Wan&tag=witness",
+        "http://witness-demo:5643/oobi/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM/controller?name=Wes&tag=witness",
+        "http://witness-demo:5644/oobi/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX/controller?name=Wil&tag=witness"
+    ],
+    "keria": {
+        "dt": "2022-01-20T12:57:59.823350+00:00",
+        "curls": ["http://keria:3902"]
+    }
+}
