@@ -1,18 +1,21 @@
 import { strict as assert } from 'assert';
-import signify, { SignifyClient, Serder } from 'signify-ts';
+import signify, {
+    SignifyClient,
+    Serder,
+    IssueCredentialResult,
+} from 'signify-ts';
+import { resolveEnvironment } from './utils/resolve-env';
 
-const URL = 'http://127.0.0.1:3901';
-const BOOT_URL = 'http://127.0.0.1:3903';
-const WITNESS_HOST = process.env.WITHESS_HOST ?? "witness-demo";
-const WITNESS_OOBIS = [
-    `http://${WITNESS_HOST}:5642/oobi`,
-    `http://${WITNESS_HOST}:5643/oobi`,
-    `http://${WITNESS_HOST}:5644/oobi`,
+const { url, bootUrl, witnessUrls, vleiServerUrl } = resolveEnvironment();
+const WITNESS_AIDS = [
+    'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
+    'BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM',
+    'BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX',
 ];
 
-const SCHEMA_HOST = process.env.SCHEMA_HOST ?? 'vlei-server';
+const WITNESS_OOBIS = witnessUrls.map((url) => `${url}/oobi`);
 const SCHEMA_SAID = 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao';
-const SCHEMA_OOBI = `http://${SCHEMA_HOST}:7723/oobi/${SCHEMA_SAID}`;
+const SCHEMA_OOBI = `${vleiServerUrl}/oobi/${SCHEMA_SAID}`;
 
 test('multisig', async function run() {
     await signify.ready();
@@ -26,10 +29,10 @@ test('multisig', async function run() {
 
     // Create four identifiers, one for each client
     let [aid1, aid2, aid3, aid4] = await Promise.all([
-        createAID(client1, 'member1', WITNESS_OOBIS),
-        createAID(client2, 'member2', WITNESS_OOBIS),
-        createAID(client3, 'member3', WITNESS_OOBIS),
-        createAID(client4, 'holder', WITNESS_OOBIS),
+        createAID(client1, 'member1', WITNESS_AIDS),
+        createAID(client2, 'member2', WITNESS_AIDS),
+        createAID(client3, 'member3', WITNESS_AIDS),
+        createAID(client4, 'holder', WITNESS_AIDS),
     ]);
 
     // Exchange OOBIs
@@ -875,48 +878,16 @@ test('multisig', async function run() {
     let holder = aid4.prefix;
 
     let TIME = new Date().toISOString().replace('Z', '000+00:00');
-    let credRes = await client1
-        .credentials()
-        .issue(
-            'multisig',
-            regk,
-            SCHEMA_SAID,
-            holder,
-            vcdata,
-            undefined,
-            undefined,
-            TIME
-        );
-    op1 = await credRes.op();
-
-    let acdc = new signify.Serder(credRes.acdc);
-    let iss = credRes.iserder;
-    let ianc = credRes.anc;
-    let isigs = credRes.sigs;
-    let acdcSaider = credRes.acdcSaider;
-    let issExnSaider = credRes.issExnSaider;
-
-    sigers = isigs.map((sig: any) => new signify.Siger({ qb64: sig }));
-    ims = signify.d(signify.messagize(ianc, sigers));
-    let atc1 = ims.substring(ianc.size);
-
-    let vcembeds = {
-        acdc: [acdc, ''],
-        iss: [iss, ''],
-        anc: [ianc, atc1],
-    };
-    recp = [aid2['state'], aid3['state']].map((state) => state['i']);
-    await client1
-        .exchanges()
-        .send(
-            'member1',
-            'multisig',
-            aid1,
-            '/multisig/iss',
-            { gid: aid },
-            vcembeds,
-            recp
-        );
+    let credRes = await client1.credentials().issue({
+        issuerName: 'multisig',
+        registryId: regk,
+        schemaId: SCHEMA_SAID,
+        data: vcdata,
+        recipient: holder,
+        datetime: TIME,
+    });
+    op1 = credRes.op;
+    await multisigIssue(client1, 'member1', 'multisig', credRes);
 
     console.log(
         'Member1 initiated credential creation, waiting for others to join...'
@@ -930,48 +901,17 @@ test('multisig', async function run() {
     res = await client2.groups().getRequest(msgSaid);
     exn = res[0].exn;
 
-    let credRes2 = await client2
-        .credentials()
-        .issue(
-            'multisig',
-            regk2,
-            SCHEMA_SAID,
-            holder,
-            vcdata,
-            undefined,
-            undefined,
-            exn.e.acdc.a.dt
-        );
+    const credRes2 = await client2.credentials().issue({
+        issuerName: 'multisig',
+        registryId: regk2,
+        schemaId: SCHEMA_SAID,
+        data: vcdata,
+        datetime: exn.e.acdc.a.dt,
+        recipient: holder,
+    });
 
-    op2 = await credRes2.op();
-
-    acdc = new signify.Serder(credRes2.acdc);
-    iss = credRes2.iserder;
-    ianc = credRes2.anc;
-    isigs = credRes2.sigs;
-
-    sigers = isigs.map((sig: any) => new signify.Siger({ qb64: sig }));
-    ims = signify.d(signify.messagize(ianc, sigers));
-    let atc2 = ims.substring(ianc.size);
-
-    vcembeds = {
-        acdc: [acdc, ''],
-        iss: [iss, ''],
-        anc: [ianc, atc2],
-    };
-
-    recp = [aid1['state'], aid3['state']].map((state) => state['i']);
-    await client2
-        .exchanges()
-        .send(
-            'member2',
-            'multisig',
-            aid2,
-            '/multisig/iss',
-            { gid: aid },
-            vcembeds,
-            recp
-        );
+    op2 = credRes2.op;
+    await multisigIssue(client2, 'member2', 'multisig', credRes2);
     console.log('Member2 joins credential create event, waiting for others...');
 
     // Member3 check for notifications and join the create registry event
@@ -982,47 +922,17 @@ test('multisig', async function run() {
     res = await client3.groups().getRequest(msgSaid);
     exn = res[0].exn;
 
-    let credRes3 = await client3
-        .credentials()
-        .issue(
-            'multisig',
-            regk3,
-            SCHEMA_SAID,
-            holder,
-            vcdata,
-            undefined,
-            undefined,
-            exn.e.acdc.a.dt
-        );
+    let credRes3 = await client3.credentials().issue({
+        issuerName: 'multisig',
+        registryId: regk3,
+        schemaId: SCHEMA_SAID,
+        recipient: holder,
+        data: vcdata,
+        datetime: exn.e.acdc.a.dt,
+    });
 
-    op3 = await credRes3.op();
-    acdc = new signify.Serder(credRes3.acdc);
-    iss = credRes3.iserder;
-    ianc = credRes3.anc;
-    isigs = credRes3.sigs;
-
-    sigers = isigs.map((sig: any) => new signify.Siger({ qb64: sig }));
-    ims = signify.d(signify.messagize(ianc, sigers));
-    let atc3 = ims.substring(ianc.size);
-
-    vcembeds = {
-        acdc: [acdc, ''],
-        iss: [iss, ''],
-        anc: [ianc, atc3],
-    };
-
-    recp = [aid1['state'], aid2['state']].map((state) => state['i']);
-    await client3
-        .exchanges()
-        .send(
-            'member3',
-            'multisig',
-            aid3,
-            '/multisig/iss',
-            { gid: aid },
-            vcembeds,
-            recp
-        );
+    op3 = credRes3.op;
+    await multisigIssue(client3, 'member3', 'multisig', credRes3);
     console.log('Member3 joins credential create event, waiting for others...');
 
     // Check completion
@@ -1047,21 +957,14 @@ test('multisig', async function run() {
     console.log('Starting grant message');
     stamp = new Date().toISOString().replace('Z', '000+00:00');
 
-    let [grant, gsigs, end] = await client1
-        .ipex()
-        .grant(
-            'multisig',
-            holder,
-            '',
-            acdc,
-            acdcSaider,
-            iss,
-            issExnSaider,
-            ianc,
-            atc1,
-            undefined,
-            stamp
-        );
+    let [grant, gsigs, end] = await client1.ipex().grant({
+        senderName: 'multisig',
+        acdc: credRes.acdc,
+        anc: credRes.anc,
+        iss: credRes.iss,
+        recipient: holder,
+        datetime: stamp,
+    });
 
     await client1
         .exchanges()
@@ -1102,21 +1005,14 @@ test('multisig', async function run() {
     res = await client2.groups().getRequest(msgSaid);
     exn = res[0].exn;
 
-    let [grant2, gsigs2, end2] = await client2
-        .ipex()
-        .grant(
-            'multisig',
-            holder,
-            '',
-            acdc,
-            acdcSaider,
-            iss,
-            issExnSaider,
-            ianc,
-            atc2,
-            undefined,
-            stamp
-        );
+    let [grant2, gsigs2, end2] = await client2.ipex().grant({
+        senderName: 'multisig',
+        recipient: holder,
+        acdc: credRes2.acdc,
+        anc: credRes2.anc,
+        iss: credRes3.iss,
+        datetime: stamp,
+    });
 
     await client2
         .exchanges()
@@ -1153,21 +1049,14 @@ test('multisig', async function run() {
     res = await client3.groups().getRequest(msgSaid);
     exn = res[0].exn;
 
-    let [grant3, gsigs3, end3] = await client3
-        .ipex()
-        .grant(
-            'multisig',
-            holder,
-            '',
-            acdc,
-            acdcSaider,
-            iss,
-            issExnSaider,
-            ianc,
-            atc3,
-            undefined,
-            stamp
-        );
+    let [grant3, gsigs3, end3] = await client3.ipex().grant({
+        senderName: 'multisig',
+        recipient: holder,
+        acdc: credRes3.acdc,
+        anc: credRes3.anc,
+        iss: credRes3.iss,
+        datetime: stamp,
+    });
 
     await client3
         .exchanges()
@@ -1244,7 +1133,7 @@ async function waitForMessage(client: SignifyClient, route: string) {
 
 async function bootClient(): Promise<SignifyClient> {
     let bran = signify.randomPasscode();
-    let client = new SignifyClient(URL, bran, signify.Tier.low, BOOT_URL);
+    let client = new SignifyClient(url, bran, signify.Tier.low, bootUrl);
     await client.boot();
     await client.connect();
     let state = await client.state();
@@ -1254,15 +1143,12 @@ async function bootClient(): Promise<SignifyClient> {
         'Agent AID: ',
         state.agent.i
     );
+
+    await resolveWitnesses(client);
     return client;
 }
 
-async function createAID(
-    client: SignifyClient,
-    name: string,
-    witnesses: string[]
-) {
-    const wits = await resolveWitnessAids(client, witnesses);
+async function createAID(client: SignifyClient, name: string, wits: string[]) {
     let icpResult1 = await client.identifiers().create(name, {
         toad: wits.length,
         wits: wits,
@@ -1275,14 +1161,47 @@ async function createAID(
     return aid;
 }
 
-async function resolveWitnessAids(client: SignifyClient, oobis: string[]) {
-    return await Promise.all(
-        oobis.map(async (oobi) => {
-            const op = await waitForOp(
-                client,
-                await client.oobis().resolve(oobi)
-            );
-            return op.response.i;
-        })
+async function resolveWitnesses(client: SignifyClient) {
+    await Promise.all(
+        WITNESS_OOBIS.map((oobi) => client.oobis().resolve(oobi))
     );
+}
+
+async function multisigIssue(
+    client: SignifyClient,
+    memberName: string,
+    groupName: string,
+    result: IssueCredentialResult
+) {
+    const leaderHab = await client.identifiers().get(memberName);
+    const groupHab = await client.identifiers().get(groupName);
+    const members = await client.identifiers().members(groupName);
+
+    const keeper = client.manager!.get(groupHab);
+    const sigs = await keeper.sign(signify.b(result.anc.raw));
+    const sigers = sigs.map((sig: string) => new signify.Siger({ qb64: sig }));
+    const ims = signify.d(signify.messagize(result.anc, sigers));
+    const atc = ims.substring(result.anc.size);
+
+    const embeds = {
+        acdc: [result.acdc, ''],
+        iss: [result.iss, ''],
+        anc: [result.anc, atc],
+    };
+
+    const recipients = members.signing
+        .map((m: { aid: string }) => m.aid)
+        .filter((aid: string) => aid !== leaderHab.prefix);
+
+    await client
+        .exchanges()
+        .send(
+            memberName,
+            'multisig',
+            leaderHab,
+            '/multisig/iss',
+            { gid: groupHab.prefix },
+            embeds,
+            recipients
+        );
 }

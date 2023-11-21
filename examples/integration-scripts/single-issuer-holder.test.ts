@@ -1,10 +1,8 @@
 import assert from 'node:assert';
 import signify, {
     SignifyClient,
-    CredentialResult,
-    messagize,
-    d,
-    Siger,
+    IssueCredentialArgs,
+    Operation,
 } from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
 
@@ -40,7 +38,7 @@ async function createIdentifier(
         wits: witnesses,
     });
     const op = await icpResult1.op();
-    await waitOperation(client, op.name, 5000);
+    await waitOperation(client, op, 5000);
     const aid = await client.identifiers().get(name);
 
     if (!client.agent) {
@@ -63,7 +61,7 @@ async function getAgentOobi(
 async function resolveOobi(client: SignifyClient, oobi: string, alias: string) {
     console.log(`Resolve ${alias} -> ${oobi}`);
     const op = await client.oobis().resolve(oobi, alias);
-    const result = await waitOperation(client, op.name, 5000);
+    const result = await waitOperation<{ i: string }>(client, op, 5000);
     return result.response;
 }
 
@@ -74,7 +72,7 @@ async function createRegistry(
 ) {
     const result = await client.registries().create({ name, registryName });
     const op = await result.op();
-    await waitOperation(client, op.name, 5000);
+    await waitOperation(client, op, 5000);
 
     const registries = await client.registries().list(name);
     assert.equal(registries.length, 1);
@@ -85,51 +83,35 @@ async function createRegistry(
 
 async function issueCredential(
     client: SignifyClient,
-    name: string,
-    args: { registry: string; schema: string; recipient: string; data: unknown }
+    args: IssueCredentialArgs
 ) {
-    const result: CredentialResult = await client
-        .credentials()
-        .issue(name, args.registry, args.schema, args.recipient, args.data);
+    const result = await client.credentials().issue(args);
 
-    const op = await result.op();
-    await waitOperation(client, op.name, 5000);
+    await waitOperation(client, result.op, 5000);
 
     const creds = await client.credentials().list();
     assert.equal(creds.length, 1);
-    assert.equal(creds[0].sad.s, args.schema);
+    assert.equal(creds[0].sad.s, args.schemaId);
     assert.equal(creds[0].status.s, '0');
 
-    const acdc = new signify.Serder(result.acdc);
-    const iss = result.iserder;
-    const ianc = result.anc;
-
-    const sigers = result.sigs.map((sig: string) => new Siger({ qb64: sig }));
-    const ims = d(messagize(ianc, sigers));
-
-    const atc = ims.substring(result.anc.size);
     const dt = createTimestamp();
 
-    const [grant, gsigs, end] = await client
-        .ipex()
-        .grant(
-            name,
-            args.recipient,
-            '',
-            acdc,
-            result.acdcSaider,
-            iss,
-            result.issExnSaider,
-            result.anc,
-            atc,
-            undefined,
-            dt
-        );
-    await client
-        .exchanges()
-        .sendFromEvents(name, 'credential', grant, gsigs, end, [
-            args.recipient,
-        ]);
+    if (args.recipient) {
+        const [grant, gsigs, end] = await client.ipex().grant({
+            senderName: args.issuerName,
+            recipient: args.recipient,
+            datetime: dt,
+            acdc: result.acdc,
+            anc: result.anc,
+            iss: result.iss,
+        });
+
+        await client
+            .exchanges()
+            .sendFromEvents(args.issuerName, 'credential', grant, gsigs, end, [
+                args.recipient,
+            ]);
+    }
 
     console.log('Grant message sent');
 
@@ -189,29 +171,25 @@ async function wait<T>(fn: () => Promise<T>, timeout: number = 10000) {
     throw new RetryError(`Retry failed after ${Date.now() - start} ms`, errors);
 }
 
-async function waitOperation(
+async function waitOperation<T>(
     client: SignifyClient,
-    name: string,
-    timeout?: number
-): Promise<any> {
-    const now = Date.now();
-    let op = await client.operations().get(name);
+    op: Operation<T>,
+    timeout: number = 30000
+): Promise<Operation<T>> {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+        const current = (await client
+            .operations()
+            .get(op.name)) as Operation<T>;
 
-    while (!op['done']) {
-        op = await client.operations().get(name);
-        if (op['done']) {
-            return op;
-        }
-
-        const elapsed = Date.now() - now;
-        if (timeout !== undefined && elapsed > timeout) {
-            throw new Error(
-                `Operation '${op.name}' time out after ${elapsed} ms`
-            );
+        if (current.done) {
+            return current;
         }
 
         await new Promise((resolve) => setTimeout(resolve, 1000));
     }
+
+    throw new Error(`Operation timed out after ${Date.now() - start}ms`);
 }
 
 class RetryError extends Error {
@@ -286,9 +264,10 @@ test(
         await createRegistry(issuerClient, 'issuer', 'vLEI');
 
         const registires = await issuerClient.registries().list('issuer');
-        await issueCredential(issuerClient, 'issuer', {
-            registry: registires[0].regk,
-            schema: SCHEMA_SAID,
+        await issueCredential(issuerClient, {
+            issuerName: 'issuer',
+            registryId: registires[0].regk,
+            schemaId: SCHEMA_SAID,
             recipient: holderPrefix,
             data: {
                 LEI: '5493001KJTIIGC8Y1R17',

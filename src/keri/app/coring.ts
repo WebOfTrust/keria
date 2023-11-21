@@ -60,6 +60,12 @@ export class Oobis {
     }
 }
 
+export interface Operation<T = unknown> {
+    done: boolean;
+    name: string;
+    response: T;
+}
+
 /**
  * Operations
  * @remarks
@@ -79,9 +85,9 @@ export class Operations {
      * Get operation status
      * @async
      * @param {string} name Name of the operation
-     * @returns {Promise<any>} A promise to the status of the operation
+     * @returns {Promise<Operation>} A promise to the status of the operation
      */
-    async get(name: string): Promise<any> {
+    async get<T = unknown>(name: string): Promise<Operation<T>> {
         let path = `/operations/${name}`;
         let data = null;
         let method = 'GET';

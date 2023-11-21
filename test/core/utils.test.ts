@@ -6,12 +6,12 @@ import {
 
 describe(serializeIssExnAttachment, () => {
     it('serializes iss data', () => {
-        const [saider, data] = Saider.saidify({
+        const [, data] = Saider.saidify({
             d: '',
             v: versify(Ident.KERI, undefined, Serials.JSON, 0),
         });
 
-        const result = serializeIssExnAttachment(new Serder(data), saider);
+        const result = serializeIssExnAttachment(new Serder(data));
 
         expect(d(result)).toEqual(
             '-VAS-GAB0AAAAAAAAAAAAAAAAAAAAAAAEKZPmzJqhx76bcC2ftPQgeRirmOd8ZBOtGVqHJrSm7F1'
@@ -21,7 +21,7 @@ describe(serializeIssExnAttachment, () => {
 
 describe(serializeACDCAttachment, () => {
     it('serializes acdc data', () => {
-        const [saider, data] = Saider.saidify({
+        const [, data] = Saider.saidify({
             d: '',
             v: versify(Ident.ACDC, undefined, Serials.JSON, 0),
             a: {
@@ -29,7 +29,7 @@ describe(serializeACDCAttachment, () => {
             },
         });
 
-        const result = serializeACDCAttachment(new Serder(data), saider);
+        const result = serializeACDCAttachment(new Serder(data));
 
         expect(d(result)).toEqual(
             '-IABBHsiZCI6IkVORTZzbWw4X1NMZVIzdk9NajRJRExLX2Nn0AAAAAAAAAAAAAAAAAAAAAAAENE6sml8_SLeR3vOMj4IDLK_cgd-A-vtg0Jnu7ozdBjW'
