@@ -28,11 +28,12 @@ from keria.app import agenting, aiding
 from keria.core import longrunning
 
 
-def test_setup():
+def test_setup_no_http():
     doers = agenting.setup(name="test", bran=None, adminPort=1234, bootPort=5678)
     assert len(doers) == 3
     assert isinstance(doers[0], agenting.Agency) is True
 
+def test_setup():
     doers = agenting.setup("test", bran=None, adminPort=1234, bootPort=5678, httpPort=9999)
     assert len(doers) == 4
 
