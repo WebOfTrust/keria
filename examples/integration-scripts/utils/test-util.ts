@@ -31,3 +31,37 @@ export async function resolveOobi(
     const op = await client.oobis().resolve(oobi, alias);
     await waitOperation(client, op);
 }
+
+export interface WaitOptions {
+    timeout?: number;
+}
+
+/**
+ * Retry fn until timeout, throws the last caught excetion after timeout passed
+ */
+export async function wait<T>(
+    fn: () => Promise<T>,
+    options: WaitOptions = {}
+): Promise<T> {
+    const start = Date.now();
+    const timeout = options.timeout ?? 10000;
+    let error: Error | null = null;
+
+    while (Date.now() - start < timeout) {
+        try {
+            const result = await fn();
+            return result;
+        } catch (err) {
+            error = err as Error;
+            if (Date.now() - start < timeout) {
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+        }
+    }
+
+    if (error) {
+        throw error;
+    } else {
+        throw new Error(`Timeout after ${Date.now() - start}ms`);
+    }
+}
