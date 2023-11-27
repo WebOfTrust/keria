@@ -4,9 +4,7 @@ import signify from 'signify-ts';
 const url = 'http://127.0.0.1:3901';
 const boot_url = 'http://127.0.0.1:3903';
 
-await run();
-
-async function run() {
+test('salty', async () => {
     await signify.ready();
     // Boot client
     const bran1 = signify.randomPasscode();
@@ -145,7 +143,7 @@ async function run() {
     let ixn = new signify.Serder(ked);
     assert.equal(ixn.ked['d'], 'ENsmRAg_oM7Hl1S-GTRMA7s4y760lQMjzl0aqOQ2iTce');
     assert.equal(ixn.ked['s'], '2');
-    assert.deepEqual(ixn.ked['a'], [icp.pre]);
+    assert.deepEqual([...ixn.ked['a']], [icp.pre]);
 
     aid = await client1.identifiers().get('aid1');
     const state = aid['state'];
@@ -169,4 +167,4 @@ async function run() {
     assert.equal(serder.pre, ixn.pre);
     assert.equal(serder.ked['d'], ixn.ked['d']);
     console.log('Salty test passed');
-}
+}, 30000);

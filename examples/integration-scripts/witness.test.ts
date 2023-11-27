@@ -2,11 +2,12 @@
 import { strict as assert } from 'assert';
 import signify from 'signify-ts';
 
+const WITNESS_HOST = process.env.WITNESS_HOST ?? 'witness-demo';
+const WITNESS_AID = 'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha';
 const url = 'http://127.0.0.1:3901';
 const boot_url = 'http://127.0.0.1:3903';
 
-await run();
-async function run() {
+test('test witness', async () => {
     await signify.ready();
     // Boot client
     const bran1 = signify.randomPasscode();
@@ -26,12 +27,10 @@ async function run() {
         state1.agent.i
     );
 
-    const witness = 'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha';
-
     // Client 1 resolves witness OOBI
     let op1 = await client1
         .oobis()
-        .resolve('http://127.0.0.1:5642/oobi/' + witness, 'wit');
+        .resolve(`http://${WITNESS_HOST}:5642/oobi/` + WITNESS_AID, 'wit');
     while (!op1['done']) {
         op1 = await client1.operations().get(op1.name);
         await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -41,7 +40,7 @@ async function run() {
     // Client 1 creates AID with 1 witness
     let icpResult1 = await client1.identifiers().create('aid1', {
         toad: 1,
-        wits: ['BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha'],
+        wits: [WITNESS_AID],
     });
     op1 = await icpResult1.op();
     while (!op1['done']) {
@@ -51,7 +50,7 @@ async function run() {
     let aid1 = await client1.identifiers().get('aid1');
     console.log('AID:', aid1.prefix);
     assert.equal(aid1.state.b.length, 1);
-    assert.equal(aid1.state.b[0], witness);
+    assert.equal(aid1.state.b[0], WITNESS_AID);
 
     icpResult1 = await client1.identifiers().rotate('aid1');
     op1 = await icpResult1.op();
@@ -61,12 +60,12 @@ async function run() {
     }
     aid1 = await client1.identifiers().get('aid1');
     assert.equal(aid1.state.b.length, 1);
-    assert.equal(aid1.state.b[0], witness);
+    assert.equal(aid1.state.b[0], WITNESS_AID);
 
     // Remove witness
     icpResult1 = await client1
         .identifiers()
-        .rotate('aid1', { cuts: [witness] });
+        .rotate('aid1', { cuts: [WITNESS_AID] });
 
     op1 = await icpResult1.op();
     while (!op1['done']) {
@@ -80,7 +79,7 @@ async function run() {
 
     icpResult1 = await client1
         .identifiers()
-        .rotate('aid1', { adds: [witness] });
+        .rotate('aid1', { adds: [WITNESS_AID] });
 
     op1 = await icpResult1.op();
     while (!op1['done']) {
@@ -90,5 +89,5 @@ async function run() {
     aid1 = await client1.identifiers().get('aid1');
     assert.equal(aid1.state.b.length, 1);
     assert.equal(aid1.state.b.length, 1);
-    assert.equal(aid1.state.b[0], witness);
-}
+    assert.equal(aid1.state.b[0], WITNESS_AID);
+}, 30000);
