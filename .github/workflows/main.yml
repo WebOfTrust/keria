@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ macOS-latest, ubuntu-latest]
+        os: [macOS-latest, ubuntu-latest]
 
     steps:
       - name: Checkout repo
@@ -39,3 +39,23 @@ jobs:
         uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  test:
+    name: Run integration test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '18.12.1'
+          cache: 'npm'
+      - name: install deps
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Start dependencies
+        run: docker compose up deps
+      - name: Run integration test
+        run: npm run test:integration
