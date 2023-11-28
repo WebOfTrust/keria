@@ -1,4 +1,4 @@
-import bip39 from 'bip39';
+import { mnemonicToSeedSync, generateMnemonic } from 'bip39';
 import { Diger, Signer, MtrDex } from 'signify-ts';
 
 export class BIP39Shim {
@@ -36,7 +36,7 @@ export class BIP39Shim {
         let keys = [];
         for (let idx = 0; idx < count; idx++) {
             let keyId = `${this.stem}-${this.pidx}-${kidx + idx}`;
-            let seed = bip39.mnemonicToSeedSync(this.mnemonics, keyId);
+            let seed = mnemonicToSeedSync(this.mnemonics, keyId);
             let signer = new Signer({
                 raw: new Uint8Array(seed),
                 code: MtrDex.Ed25519_Seed,
@@ -141,6 +141,6 @@ export class BIP39Shim {
     }
 
     generateMnemonic(strength: number) {
-        return bip39.generateMnemonic(strength);
+        return generateMnemonic(strength);
     }
 }

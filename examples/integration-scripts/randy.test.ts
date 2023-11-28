@@ -4,9 +4,7 @@ import signify from 'signify-ts';
 const url = 'http://127.0.0.1:3901';
 const boot_url = 'http://127.0.0.1:3903';
 
-await run();
-
-async function run() {
+test('randy', async () => {
     await signify.ready();
     // Boot client
     const bran1 = signify.randomPasscode();
@@ -18,13 +16,7 @@ async function run() {
     );
     await client1.boot();
     await client1.connect();
-    const state1 = await client1.state();
-    console.log(
-        'Client 1 connected. Client AID:',
-        state1.controller.state.i,
-        'Agent AID: ',
-        state1.agent.i
-    );
+    await client1.state();
 
     let icpResult = await client1
         .identifiers()
@@ -50,7 +42,7 @@ async function run() {
     let ked = op['response'];
     let ixn = new signify.Serder(ked);
     assert.equal(ixn.ked['s'], '1');
-    assert.deepEqual(ixn.ked['a'], [icp.pre]);
+    assert.deepEqual([...ixn.ked['a']], [icp.pre]);
 
     aids = await client1.identifiers().list();
     assert.equal(aids.aids.length, 1);
@@ -77,5 +69,4 @@ async function run() {
     assert.equal(dig.qb64, icp.digers[0].qb64);
     log = await events.get(aid['prefix']);
     assert.equal(log.length, 3);
-    console.log('Randy test passed');
-}
+}, 30000);
