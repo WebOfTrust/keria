@@ -24,14 +24,14 @@ def test_load_ends(helpers):
         assert res is None
 
         (end, *_) = app._router.find("/identifiers/NAME/ipex/admit")
-        assert isinstance(end, ipexing.IpexAdmitCollectonEnd)
+        assert isinstance(end, ipexing.IpexAdmitCollectionEnd)
 
 
 def test_ipex_admit(helpers, mockHelpingNowIso8601):
     with helpers.openKeria() as (agency, agent, app, client):
         client = testing.TestClient(app)
 
-        admitEnd = ipexing.IpexAdmitCollectonEnd()
+        admitEnd = ipexing.IpexAdmitCollectionEnd()
         app.add_route("/identifiers/{name}/ipex/admit", admitEnd)
 
         end = aiding.IdentifierCollectionEnd()

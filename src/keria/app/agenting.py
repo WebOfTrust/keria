@@ -32,7 +32,7 @@ from keria.end import ending
 from keri.help import helping, ogler
 from keri.peer import exchanging
 from keri.vdr import verifying
-from keri.vdr.credentialing import Regery
+from keri.vdr.credentialing import Regery, sendArtifacts
 from keri.vdr.eventing import Tevery
 from keri.app import challenging
 
@@ -294,6 +294,7 @@ class Agent(doing.DoDoer):
         self.witners = decking.Deck()
         self.queries = decking.Deck()
         self.exchanges = decking.Deck()
+        self.grants = decking.Deck()
         self.admits = decking.Deck()
 
         receiptor = agenting.Receiptor(hby=hby)
@@ -360,6 +361,7 @@ class Agent(doing.DoDoer):
             Witnesser(receiptor=receiptor, witners=self.witners),
             Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
             ExchangeSender(hby=hby, agentHab=agentHab, exc=self.exc, exchanges=self.exchanges),
+            Granter(hby=hby, rgy=rgy,  agentHab=agentHab, exc=self.exc, grants=self.grants),
             Admitter(hby=hby, witq=self.witq, psr=self.parser, agentHab=agentHab, exc=self.exc, admits=self.admits),
             GroupRequester(hby=hby, agentHab=agentHab, counselor=self.counselor, groups=self.groups),
             SeekerDoer(seeker=self.seeker, cues=self.verifier.cues),
@@ -490,6 +492,52 @@ class ExchangeSender(doing.DoDoer):
                         self.extend([doer])
 
         return super(ExchangeSender, self).recur(tyme, deeds)
+
+
+class Granter(doing.DoDoer):
+
+    def __init__(self, hby, rgy, agentHab, exc, grants):
+        self.hby = hby
+        self.rgy = rgy
+        self.agentHab = agentHab
+        self.exc = exc
+        self.grants = grants
+        super(Granter, self).__init__(always=True)
+
+    def recur(self, tyme, deeds=None):
+        if self.grants:
+            msg = self.grants.popleft()
+            said = msg['said']
+            if not self.exc.complete(said=said):
+                self.grants.append(msg)
+                return super(Granter, self).recur(tyme, deeds)
+
+            serder, pathed = exchanging.cloneMessage(self.hby, said)
+
+            pre = msg["pre"]
+            rec = msg["rec"]
+            hab = self.hby.habs[pre]
+            if self.exc.lead(hab, said=said):
+                for recp in rec:
+                    postman = forwarding.StreamPoster(hby=self.hby, hab=self.agentHab, recp=recp, topic="credential")
+                    try:
+                        credSaid = serder.ked['e']['acdc']['d']
+                        creder = self.rgy.creds.get(keys=(credSaid,))
+                        sendArtifacts(self.hby, self.rgy.reger, postman, creder, recp)
+                        sources = self.rgy.reger.sources(self.hby.db, creder)
+                        for source, atc in sources:
+                            sendArtifacts(self.hby, self.rgy.reger, postman, source, recp)
+                            postman.send(serder=source, attachment=atc)
+
+                    except kering.ValidationError:
+                        logger.info(f"unable to send to recipient={recp}")
+                    except KeyError:
+                        logger.info(f"invalid grant message={serder.ked}")
+                    else:
+                        doer = doing.DoDoer(doers=postman.deliver())
+                        self.extend([doer])
+
+        return super(Granter, self).recur(tyme, deeds)
 
 
 class Admitter(doing.Doer):
@@ -811,6 +859,7 @@ class BootEnd:
             raise falcon.HTTPBadRequest(description="multisig groups not supported as agent controller")
 
         rep.status = falcon.HTTP_202
+        rep.data = json.dumps(asdict(ctrlHab.kever.state())).encode("utf-8")
 
 
 class KeyStateCollectionEnd:
