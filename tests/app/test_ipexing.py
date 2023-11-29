@@ -291,3 +291,56 @@ def test_ipex_grant(helpers, mockHelpingNowIso8601, seeder):
         res = client.simulate_post(path="/identifiers/legal-entity/ipex/grant", body=data)
         assert res.status_code == 202
         assert res.json == exn.ked
+        assert len(agent.exchanges) == 1
+        assert len(agent.grants) == 1
+
+        ims = eventing.messagize(serder=exn, sigers=[coring.Siger(qb64=sigs[0])])
+        # Test sending embedded admit in multisig/exn message
+        exn, end = exchanging.exchange(route="/multisig/exn",
+                                       payload=dict(),
+                                       sender=le['i'],
+                                       embeds=dict(exn=ims),
+                                       date=helping.nowIso8601())
+
+        # Bad recipient
+        body = dict(
+            exn=exn.ked,
+            sigs=sigs,
+            atc=dict(exn=end.decode("utf-8")),
+            rec=["EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"]
+        )
+
+        data = json.dumps(body).encode("utf-8")
+        res = client.simulate_post(path="/identifiers/legal-entity/ipex/grant", body=data)
+        assert res.status_code == 400
+        assert res.json == {'description': 'attempt to send to unknown '
+                                           'AID=EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM',
+                            'title': '400 Bad Request'}
+
+        # Bad attachments
+        body = dict(
+            exn=exn.ked,
+            sigs=sigs,
+            atc=dict(bad=end.decode("utf-8")),
+            rec=[pre1]
+        )
+
+        data = json.dumps(body).encode("utf-8")
+        res = client.simulate_post(path="/identifiers/legal-entity/ipex/grant", body=data)
+        assert res.status_code == 400
+        assert res.json == {'description': 'attachment missing for ACDC, unable to process request.',
+                            'title': '400 Bad Request'}
+
+        body = dict(
+            exn=exn.ked,
+            sigs=sigs,
+            atc=dict(exn=end.decode("utf-8")),
+            rec=[pre1]
+        )
+
+        data = json.dumps(body).encode("utf-8")
+        res = client.simulate_post(path="/identifiers/legal-entity/ipex/grant", body=data)
+
+        assert res.status_code == 202
+        assert len(agent.exchanges) == 3
+        assert len(agent.grants) == 2

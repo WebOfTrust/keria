@@ -169,7 +169,7 @@ class IpexGrantCollectionEnd:
             case "/ipex/grant":
                 IpexGrantCollectionEnd.sendGrant(agent, hab, ked, sigs, rec)
             case "/multisig/exn":
-                IpexGrantCollectionEnd.sendMultisigExn(agent, hab, ked, atc, rec)
+                IpexGrantCollectionEnd.sendMultisigExn(agent, hab, ked, sigs, atc, rec)
 
         rep.status = falcon.HTTP_202
         rep.data = json.dumps(ked).encode("utf-8")
