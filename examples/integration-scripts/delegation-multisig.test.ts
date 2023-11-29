@@ -1,0 +1,227 @@
+import { strict as assert } from 'assert';
+import signify from 'signify-ts';
+import { resolveEnvironment } from './utils/resolve-env';
+
+const { url, bootUrl } = resolveEnvironment();
+
+test('delegation-multisig', async () => {
+    await signify.ready();
+    // Boot three clients
+    const client0 = await bootClient();
+    const client1 = await bootClient();
+    const client2 = await bootClient();
+
+    // Create four identifiers, one for each client
+    let aid0 = await createAID(client0, 'delegator');
+    let aid1 = await createAID(client1, 'member1');
+    let aid2 = await createAID(client2, 'member2');
+
+    // Exchange OOBIs
+    console.log('Resolving OOBIs');
+    let oobi0 = await client0.oobis().get('delegator', 'agent');
+    let oobi1 = await client1.oobis().get('member1', 'agent');
+    let oobi2 = await client2.oobis().get('member2', 'agent');
+
+    let op1 = await client1.oobis().resolve(oobi0.oobis[0], 'delegator');
+    op1 = await waitForOp(client1, op1);
+    op1 = await client1.oobis().resolve(oobi2.oobis[0], 'member2');
+    op1 = await waitForOp(client1, op1);
+    console.log('Member1 resolved 2 OOBIs');
+
+    let op2 = await client2.oobis().resolve(oobi0.oobis[0], 'delegator');
+    op1 = await waitForOp(client2, op1);
+    op1 = await client2.oobis().resolve(oobi1.oobis[0], 'member1');
+    op1 = await waitForOp(client2, op1);
+    console.log('Member2 resolved 2 OOBIs');
+
+    // First member challenge the other members with a random list of words
+    // List of words should be passed to the other members out of band
+    // The other members should do the same challenge/response flow, not shown here for brevity
+    const words = (await client1.challenges().generate(128)).words;
+    console.log('Member1 generated challenge words:', words);
+
+    await client2.challenges().respond('member2', aid1.prefix, words);
+    console.log('Member2 responded challenge with signed words');
+
+    op1 = await client1.challenges().verify('member1', aid2.prefix, words);
+    op1 = await waitForOp(client1, op1);
+    console.log('Member1 verified challenge response from member2');
+    let exnwords = new signify.Serder(op1.response.exn);
+    op1 = await client1
+        .challenges()
+        .responded('member1', aid2.prefix, exnwords.ked.d);
+    console.log('Member1 marked challenge response as accepted');
+
+    // First member start the creation of a multisig identifier
+    let rstates = [aid1['state'], aid2['state']];
+    let states = rstates;
+    let icpResult1 = await client1.identifiers().create('multisig', {
+        algo: signify.Algos.group,
+        mhab: aid1,
+        isith: 2,
+        nsith: 2,
+        // toad: 3,
+        // wits: [
+        //     'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
+        //     'BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM',
+        //     'BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX',
+        // ],
+        states: states,
+        rstates: rstates,
+        delpre: aid0.prefix,
+    });
+    op1 = await icpResult1.op();
+    let serder = icpResult1.serder;
+
+    let sigs = icpResult1.sigs;
+    let sigers = sigs.map((sig: any) => new signify.Siger({ qb64: sig }));
+    let ims = signify.d(signify.messagize(serder, sigers));
+    let atc = ims.substring(serder.size);
+    let embeds = {
+        icp: [serder, atc],
+    };
+
+    let smids = states.map((state) => state['i']);
+    let recp = [aid2['state']].map((state) => state['i']);
+
+    await client1
+        .exchanges()
+        .send(
+            'member1',
+            'multisig',
+            aid1,
+            '/multisig/icp',
+            { gid: serder.pre, smids: smids, rmids: smids },
+            embeds,
+            recp
+        );
+    console.log('Member1 initiated multisig, waiting for others to join...');
+
+    // Second member check notifications and join the multisig
+    let msgSaid = await waitForMessage(client2, '/multisig/icp');
+    console.log('Member2 received exchange message to join multisig');
+
+    let res = await client2.groups().getRequest(msgSaid);
+    let exn = res[0].exn;
+    let icp = exn.e.icp;
+
+    let icpResult2 = await client2.identifiers().create('multisig', {
+        algo: signify.Algos.group,
+        mhab: aid2,
+        isith: icp.kt,
+        nsith: icp.nt,
+        toad: parseInt(icp.bt),
+        wits: icp.b,
+        states: states,
+        rstates: rstates,
+        delpre: aid0.prefix,
+    });
+    op2 = await icpResult2.op();
+    serder = icpResult2.serder;
+    sigs = icpResult2.sigs;
+    sigers = sigs.map((sig: any) => new signify.Siger({ qb64: sig }));
+
+    ims = signify.d(signify.messagize(serder, sigers));
+    atc = ims.substring(serder.size);
+    embeds = {
+        icp: [serder, atc],
+    };
+
+    smids = exn.a.smids;
+    recp = [aid1['state']].map((state) => state['i']);
+
+    await client2
+        .exchanges()
+        .send(
+            'member2',
+            'multisig',
+            aid2,
+            '/multisig/icp',
+            { gid: serder.pre, smids: smids, rmids: smids },
+            embeds,
+            recp
+        );
+    console.log('Member2 joined multisig, waiting for others...');
+
+    let delegatePrefix = op1.name.split('.')[1];
+    assert.equal(op2.name.split('.')[1], delegatePrefix);
+    console.log("Delegate's prefix:", delegatePrefix);
+    console.log('Delegate waiting for approval...');
+
+    // Client 0 approves delegation
+    const anchor = {
+        i: delegatePrefix,
+        s: 0,
+        d: delegatePrefix,
+    };
+    await client0.identifiers().interact('delegator', anchor);
+    console.log('Delegator approved delegation');
+
+    // Check for completion
+    op1 = await waitForOp(client1, op1);
+    op2 = await waitForOp(client2, op2);
+    console.log('Delegated multisig created!');
+
+    const aid_delegate = await client1.identifiers().get('multisig');
+    assert.equal(aid_delegate.prefix, delegatePrefix);
+}, 30000);
+
+async function waitForOp(client: signify.SignifyClient, op: any) {
+    while (!op['done']) {
+        op = await client.operations().get(op.name);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    return op;
+}
+
+async function waitForMessage(client: signify.SignifyClient, route: string) {
+    let msgSaid = '';
+    while (msgSaid == '') {
+        let notifications = await client.notifications().list();
+        for (let notif of notifications.notes) {
+            if (notif.a.r == route) {
+                msgSaid = notif.a.d;
+                await client.notifications().mark(notif.i);
+            }
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    return msgSaid;
+}
+
+async function bootClient(): Promise<signify.SignifyClient> {
+    let bran = signify.randomPasscode();
+    let client = new signify.SignifyClient(
+        url,
+        bran,
+        signify.Tier.low,
+        bootUrl
+    );
+    await client.boot();
+    await client.connect();
+    let state = await client.state();
+    console.log(
+        'Client AID:',
+        state.controller.state.i,
+        'Agent AID: ',
+        state.agent.i
+    );
+    return client;
+}
+
+async function createAID(client: signify.SignifyClient, name: string) {
+    let icpResult1 = await client.identifiers().create(name, {
+        toad: 3,
+        wits: [
+            'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
+            'BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM',
+            'BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX',
+        ],
+    });
+    let op = await icpResult1.op();
+    op = await waitForOp(client, op);
+    let aid = await client.identifiers().get(name);
+    await client.identifiers().addEndRole(name, 'agent', client!.agent!.pre);
+    console.log(name, 'AID:', aid.prefix);
+    return aid;
+}
