@@ -9,13 +9,14 @@ import json
 
 from falcon import testing
 from hio.base import doing
+from hio.help import decking
 from keri.app import habbing, signing
 from keri.core import eventing, coring
 from keri.help import helping
 from keri.peer import exchanging
 from keri.vc import proving
 
-from keria.app import ipexing, aiding
+from keria.app import ipexing, aiding, agenting
 from keria.app.credentialing import CredentialResourceEnd
 
 
@@ -344,3 +345,24 @@ def test_ipex_grant(helpers, mockHelpingNowIso8601, seeder):
         assert res.status_code == 202
         assert len(agent.exchanges) == 3
         assert len(agent.grants) == 2
+
+
+def test_granter(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        grants = decking.Deck()
+        granter = agenting.Granter(hby=agent.hby, rgy=agent.rgy, agentHab=agent.agentHab, exc=agent.exc, grants=grants)
+
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+
+        deeds = doist.enter(doers=[granter])
+
+        said = "EHwjDEsub6XT19ISLft1m1xMNvVXnSfH0IsDGllox4Y8"
+        msg = dict(said=said)
+
+        grants.append(msg)
+
+        doist.recur(deeds=deeds)
+
+        assert len(grants) == 1
