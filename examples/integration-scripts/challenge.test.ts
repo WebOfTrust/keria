@@ -92,8 +92,9 @@ test('challenge', async () => {
 
     // List Client 1 contacts
     let contacts1 = await client1.contacts().list();
-    expect(contacts1[0].alias).toEqual('bob');
-    expect(contacts1[0].challenges).toHaveLength(0);
+    let bobContact = findContact(contacts1, 'bob');
+    expect(bobContact.alias).toEqual('bob');
+    expect(bobContact.challenges).toHaveLength(0);
 
     // Bob responds to Alice challenge
     await client2.challenges().respond('bob', aid1.i, challenge1_small.words);
@@ -119,5 +120,16 @@ test('challenge', async () => {
 
     // Check Bob's challenge in conctats
     contacts1 = await client1.contacts().list();
-    expect(contacts1[0].challenges[0].authenticated).toEqual(true);
+    bobContact = findContact(contacts1, 'bob');
+    expect(bobContact.challenges[0].authenticated).toEqual(true);
 }, 30000);
+
+function findContact(contactsList: any, name: any) {
+    let contact: any;
+    for (const index in contactsList) {
+        if (contactsList[index].alias == name) {
+            contact = contactsList[index];
+        }
+    }
+    return contact;
+}
