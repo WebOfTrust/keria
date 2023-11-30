@@ -6,15 +6,10 @@ import signify, {
     d,
     Siger,
 } from 'signify-ts';
+import { resolveEnvironment } from './utils/resolve-env';
 
-const URL = 'http://127.0.0.1:3901';
-const BOOT_URL = 'http://127.0.0.1:3903';
-const WITNESS_HOST = process.env.WITNESS_HOST ?? 'witness-demo';
-const WITNESSES = [`http://${WITNESS_HOST}:5642/oobi`];
-
-const SCHEMA_HOST = process.env.SCHEMA_HOST ?? 'vlei-server';
 const SCHEMA_SAID = 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao';
-const SCHEMA_OOBI = `http://${SCHEMA_HOST}:7723/oobi/${SCHEMA_SAID}`;
+const { bootUrl, url, vleiServerUrl, witnessUrls } = resolveEnvironment();
 
 function createTimestamp() {
     const dt = new Date().toISOString().replace('Z', '000+00:00');
@@ -232,17 +227,17 @@ test(
     'Single issuer holder',
     async () => {
         await signify.ready();
-        const issuerClient = await connect(URL, BOOT_URL);
-        const holderClient = await connect(URL, BOOT_URL);
+        const issuerClient = await connect(url, bootUrl);
+        const holderClient = await connect(url, bootUrl);
 
         await issuerClient.state();
         await holderClient.state();
 
         const issuerWits = await Promise.all(
-            WITNESSES.map(async (oobi, i) => {
+            witnessUrls.map(async (url, i) => {
                 const result = await resolveOobi(
                     issuerClient,
-                    oobi,
+                    url + '/oobi',
                     `witness-${i}`
                 );
                 return result.i;
@@ -250,10 +245,10 @@ test(
         );
 
         const holderWits = await Promise.all(
-            WITNESSES.map(async (oobi, i) => {
+            witnessUrls.map(async (url, i) => {
                 const result = await resolveOobi(
                     holderClient,
-                    oobi,
+                    url + '/oobi',
                     `witness-${i}`
                 );
                 return result.i;
@@ -276,9 +271,17 @@ test(
         const issuerOobi = await getAgentOobi(issuerClient, 'issuer');
         const holderOobi = await getAgentOobi(holderClient, 'holder');
         await resolveOobi(issuerClient, holderOobi, 'holder');
-        await resolveOobi(issuerClient, SCHEMA_OOBI, 'schema');
+        await resolveOobi(
+            issuerClient,
+            vleiServerUrl + '/oobi/' + SCHEMA_SAID,
+            'schema'
+        );
         await resolveOobi(holderClient, issuerOobi, 'issuer');
-        await resolveOobi(holderClient, SCHEMA_OOBI, 'schema');
+        await resolveOobi(
+            holderClient,
+            vleiServerUrl + '/oobi/' + SCHEMA_SAID,
+            'schema'
+        );
 
         await createRegistry(issuerClient, 'issuer', 'vLEI');
 
