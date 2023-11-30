@@ -1,8 +1,8 @@
 import { strict as assert } from 'assert';
 import signify from 'signify-ts';
+import { resolveEnvironment } from './utils/resolve-env';
 
-const url = 'http://127.0.0.1:3901';
-const boot_url = 'http://127.0.0.1:3903';
+const { url, bootUrl } = resolveEnvironment();
 
 test('salty', async () => {
     await signify.ready();
@@ -12,7 +12,7 @@ test('salty', async () => {
         url,
         bran1,
         signify.Tier.low,
-        boot_url
+        bootUrl
     );
     await client1.boot();
     await client1.connect();

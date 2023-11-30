@@ -1,11 +1,10 @@
 // This scrip also work if you start keria with no config file with witness urls
 import { strict as assert } from 'assert';
 import signify from 'signify-ts';
+import { resolveEnvironment } from './utils/resolve-env';
 
-const WITNESS_HOST = process.env.WITNESS_HOST ?? 'witness-demo';
 const WITNESS_AID = 'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha';
-const url = 'http://127.0.0.1:3901';
-const boot_url = 'http://127.0.0.1:3903';
+const { url, bootUrl, witnessUrls } = resolveEnvironment();
 
 test('test witness', async () => {
     await signify.ready();
@@ -15,7 +14,7 @@ test('test witness', async () => {
         url,
         bran1,
         signify.Tier.low,
-        boot_url
+        bootUrl
     );
     await client1.boot();
     await client1.connect();
@@ -30,7 +29,7 @@ test('test witness', async () => {
     // Client 1 resolves witness OOBI
     let op1 = await client1
         .oobis()
-        .resolve(`http://${WITNESS_HOST}:5642/oobi/` + WITNESS_AID, 'wit');
+        .resolve(witnessUrls[0] + `/oobi/${WITNESS_AID}`, 'wit');
     while (!op1['done']) {
         op1 = await client1.operations().get(op1.name);
         await new Promise((resolve) => setTimeout(resolve, 1000));

@@ -95,6 +95,14 @@ Or, use execute `jest` directly to run a specific integration test, for example:
 npx jest examples/integration-scripts/credentials.test.ts
 ```
 
+It is also possible to run the tests using local instances of vLEI, Keria, and witness network. Set the environment variable `TEST_ENVIRONMENT` to `local`, e.g:
+
+```
+TEST_ENVIRONMENT=local npx jest examples/integration-scripts/credentials.test.ts
+```
+
+This changes the discovery urls to use `localhost` instead of the hostnames inside the docker network.
+
 ### Old integration scripts
 
 To run any of the old integration scripts that has not yet been converted to an integration test. Use `ts-node-esm`

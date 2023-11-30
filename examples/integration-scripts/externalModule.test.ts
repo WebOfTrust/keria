@@ -1,9 +1,9 @@
 import { strict as assert } from 'assert';
 import signify from 'signify-ts';
 import { BIP39Shim } from './modules/bip39_shim';
+import { resolveEnvironment } from './utils/resolve-env';
 
-const url = 'http://127.0.0.1:3901';
-const boot_url = 'http://127.0.0.1:3903';
+const { url, bootUrl } = resolveEnvironment();
 
 test('bip39_shim', async () => {
     await signify.ready();
@@ -17,7 +17,7 @@ test('bip39_shim', async () => {
         url,
         bran1,
         signify.Tier.low,
-        boot_url,
+        bootUrl,
         [externalModule]
     );
     await client1.boot();
