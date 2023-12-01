@@ -21,7 +21,7 @@ import { Counter, CtrDex } from './counter';
 import { Seqner } from './seqner';
 import { TextEncoder } from 'util';
 
-let MaxIntThold = 2 ** 32 - 1;
+const MaxIntThold = 2 ** 32 - 1;
 
 export interface RotateArgs {
     pre?: string;
@@ -62,13 +62,13 @@ export function rotate({
     kind = undefined,
     intive = true,
 }: RotateArgs) {
-    let vs = versify(Ident.KERI, version, kind, 0);
-    let _ilk = ilk;
+    const vs = versify(Ident.KERI, version, kind, 0);
+    const _ilk = ilk;
     if (_ilk != Ilks.rot && _ilk != Ilks.drt) {
         throw new Error(`Invalid ilk = ${ilk} for rot or drt.`);
     }
 
-    let sner = Number(sn);
+    const sner = Number(sn);
     if (sner < 1) {
         throw new Error(`Invalid sn = 0x${sner.toString()} for rot or drt.`);
     }
@@ -80,7 +80,7 @@ export function rotate({
         _isit = isith as number;
     }
 
-    let tholder = new Tholder({ sith: _isit });
+    const tholder = new Tholder({ sith: _isit });
     if (tholder.num != undefined && tholder.num < 1) {
         throw new Error(`Invalid sith = ${tholder.num} less than 1.`);
     }
@@ -103,7 +103,7 @@ export function rotate({
         _nsith = nsith;
     }
 
-    let ntholder = new Tholder({ sith: _nsith });
+    const ntholder = new Tholder({ sith: _nsith });
     if (ntholder.num != undefined && ntholder.num < 1) {
         throw new Error(`Invalid sith = ${ntholder.num} less than 1.`);
     }
@@ -117,7 +117,7 @@ export function rotate({
     } else {
         _wits = wits;
     }
-    let witset = new Set(_wits);
+    const witset = new Set(_wits);
     if (witset.size != _wits.length) {
         throw new Error(`Invalid wits = ${wits}, has duplicates.`);
     }
@@ -128,7 +128,7 @@ export function rotate({
     } else {
         _cuts = cuts;
     }
-    let cutset = new Set(_cuts);
+    const cutset = new Set(_cuts);
     if (cutset.size != _cuts.length) {
         throw new Error(`Invalid cuts = ${cuts}, has duplicates.`);
     }
@@ -139,10 +139,10 @@ export function rotate({
     } else {
         _adds = adds;
     }
-    let addset = new Set(_adds);
+    const addset = new Set(_adds);
 
     //non empty intersection of witset and addset
-    let witaddset = new Set([...witset].filter((x) => addset.has(x)));
+    const witaddset = new Set([...witset].filter((x) => addset.has(x)));
     if (witaddset.size > 0) {
         throw new Error(
             `Invalid member combination among wits = ${wits}, and adds = ${adds}.`
@@ -150,18 +150,18 @@ export function rotate({
     }
 
     // non empty intersection of cutset and addset
-    let cutaddset = new Set([...cutset].filter((x) => addset.has(x)));
+    const cutaddset = new Set([...cutset].filter((x) => addset.has(x)));
     if (cutaddset.size > 0) {
         throw new Error(
             `Invalid member combination among cuts = ${cuts}, and adds = ${adds}.`
         );
     }
 
-    let newitsetdiff = new Set(_wits);
+    const newitsetdiff = new Set(_wits);
     _cuts.forEach(function (v) {
         newitsetdiff.delete(v);
     });
-    let newitset = new Set(
+    const newitset = new Set(
         (function* () {
             yield* newitsetdiff;
             yield* addset;
@@ -195,7 +195,7 @@ export function rotate({
             throw new Error(`Invalid toad = ${_toad} for wit = ${wits}`);
         }
     }
-    let _ked = {
+    const _ked = {
         v: vs,
         t: _ilk,
         d: '',
@@ -226,7 +226,7 @@ export function rotate({
         ba: adds,
         a: data != undefined ? data : [],
     };
-    let [, ked] = Saider.saidify(_ked);
+    const [, ked] = Saider.saidify(_ked);
     return new Serder(ked);
 }
 
@@ -236,7 +236,7 @@ export function ample(n: number, f?: number, weak = true) {
     if (f == undefined) {
         f1 = Math.max(1, Math.floor(Math.max(0, n - 1) / 3)); // least floor f subject to n >= 3*f+1
 
-        let f2 = Math.max(1, Math.ceil(Math.max(0, n - 1) / 3)); // most Math.ceil f subject to n >= 3*f+1
+        const f2 = Math.max(1, Math.ceil(Math.max(0, n - 1) / 3)); // most Math.ceil f subject to n >= 3*f+1
         if (weak) {
             // try both fs to see which one has lowest m
             return Math.min(
@@ -252,8 +252,8 @@ export function ample(n: number, f?: number, weak = true) {
         }
     } else {
         f = Math.max(0, f);
-        let m1 = Math.ceil((n + f + 1) / 2);
-        let m2 = Math.max(0, n - f);
+        const m1 = Math.ceil((n + f + 1) / 2);
+        const m2 = Math.max(0, n - f);
         if (m2 < m1 && n > 0) {
             throw new Error(`Invalid f=${f} is too big for n=${n}.`);
         }
@@ -296,15 +296,15 @@ export function incept({
     intive = false,
     delpre,
 }: InceptArgs) {
-    let vs = versify(Ident.KERI, version, kind, 0);
-    let ilk = delpre == undefined ? Ilks.icp : Ilks.dip;
-    let sner = new CesrNumber({}, 0);
+    const vs = versify(Ident.KERI, version, kind, 0);
+    const ilk = delpre == undefined ? Ilks.icp : Ilks.dip;
+    const sner = new CesrNumber({}, 0);
 
     if (isith == undefined) {
         isith = Math.max(1, Math.ceil(keys.length / 2));
     }
 
-    let tholder = new Tholder({ sith: isith });
+    const tholder = new Tholder({ sith: isith });
     if (tholder.num != undefined && tholder.num < 1) {
         throw new Error(`Invalid sith = ${tholder.num} less than 1.`);
     }
@@ -320,7 +320,7 @@ export function incept({
         nsith = Math.max(0, Math.ceil(ndigs.length / 2));
     }
 
-    let ntholder = new Tholder({ sith: nsith });
+    const ntholder = new Tholder({ sith: nsith });
     if (ntholder.num != undefined && ntholder.num < 0) {
         throw new Error(`Invalid nsith = ${ntholder.num} less than 0.`);
     }
@@ -341,7 +341,7 @@ export function incept({
         }
     }
 
-    let toader = new CesrNumber({}, toad);
+    const toader = new CesrNumber({}, toad);
     if (wits.length > 0) {
         if (toader.num < 1 || toader.num > wits.length) {
             throw new Error(`Invalid toad = ${toader.num} for wits = ${wits}`);
@@ -516,8 +516,8 @@ export function messagize(
 }
 
 interface InteractArgs {
-    pre: String;
-    dig: String;
+    pre: string;
+    dig: string;
     sn: number;
     data: Array<any>;
     version: Version | undefined;
@@ -526,9 +526,9 @@ interface InteractArgs {
 
 export function interact(args: InteractArgs): Serder {
     let { pre, dig, sn, data, version, kind } = args;
-    let vs = versify(Ident.KERI, version, kind, 0);
-    let ilk = Ilks.ixn;
-    let sner = new CesrNumber({}, sn);
+    const vs = versify(Ident.KERI, version, kind, 0);
+    const ilk = Ilks.ixn;
+    const sner = new CesrNumber({}, sn);
 
     if (sner.num < 1) {
         throw new Error(`Invalid sn = 0x${sner.numh} for ixn.`);

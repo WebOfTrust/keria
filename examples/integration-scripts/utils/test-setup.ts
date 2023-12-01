@@ -15,12 +15,12 @@ import { waitOperation } from "./test-util";
  * $ SIGNIFY_SECRETS="0ACqshJKkJ7DDXcaDuwnmI8s,0ABqicvyicXGvIVg6Ih-dngE" npx jest ./tests
  */
 export async function getOrCreateClients(count: number, brans: string[] | undefined = undefined): Promise<SignifyClient[]> {
-    let tasks: Promise<SignifyClient>[] = [];
-    let secrets = process.env["SIGNIFY_SECRETS"]?.split(",");
+    const tasks: Promise<SignifyClient>[] = [];
+    const secrets = process.env["SIGNIFY_SECRETS"]?.split(",");
     for (let i = 0; i < count; i++) {
         tasks.push(getOrCreateClient(brans?.at(i) ?? secrets?.at(i) ?? undefined));
     }
-    let clients: SignifyClient[] = await Promise.all(tasks);
+    const clients: SignifyClient[] = await Promise.all(tasks);
     console.log(`SIGNIFY_SECRETS="${clients.map(i => i.bran).join(",")}"`);
     return clients;
 }
@@ -29,15 +29,15 @@ export async function getOrCreateClients(count: number, brans: string[] | undefi
  * Connect or boot a SignifyClient instance
  */
 export async function getOrCreateClient(bran: string | undefined = undefined): Promise<SignifyClient> {
-    let env = resolveEnvironment();
+    const env = resolveEnvironment();
     await ready();
     bran ??= randomPasscode();
     bran = bran.padEnd(21, "_");
-    let client = new SignifyClient(env.url, bran, Tier.low, env.bootUrl);
+    const client = new SignifyClient(env.url, bran, Tier.low, env.bootUrl);
     try {
         await client.connect();
     } catch {
-        let res = await client.boot();
+        const res = await client.boot();
         if (!res.ok) throw new Error();
         await client.connect();
     }
@@ -58,30 +58,30 @@ export async function getOrCreateClient(bran: string | undefined = undefined): P
 export async function getOrCreateIdentifier(client: SignifyClient, name: string, kargs: CreateIdentiferArgs | undefined = undefined): Promise<[string, string]> {
     let id: any = undefined;
     try {
-        let identfier = await client.identifiers().get(name);
+        const identfier = await client.identifiers().get(name);
         // console.log("identifiers.get", identfier);
         id = identfier.prefix;
     } catch {
-        let env = resolveEnvironment();
+        const env = resolveEnvironment();
         kargs ??= {
             toad: env.witnessIds.length,
             wits: env.witnessIds
         };
-        let result: EventResult = await client.identifiers().create(name, kargs);
+        const result: EventResult = await client.identifiers().create(name, kargs);
         let op = await result.op();
         op = await waitOperation(client, op);
         // console.log("identifiers.create", op);
         id = op.response.i;
     }
-    let eid = client.agent?.pre!;
+    const eid = client.agent?.pre!;
     if (!await hasEndRole(client, name, "agent", eid)) {
-        let result: EventResult = await client.identifiers().addEndRole(name, "agent", eid);
+        const result: EventResult = await client.identifiers().addEndRole(name, "agent", eid);
         let op = await result.op();
         op = await waitOperation(client, op);
         // console.log("identifiers.addEndRole", op);
     }
-    let oobi = await client.oobis().get(name, "agent");
-    let result: [string, string] = [id, oobi.oobis[0]];
+    const oobi = await client.oobis().get(name, "agent");
+    const result: [string, string] = [id, oobi.oobis[0]];
     console.log(name, result);
     return result;
 }
@@ -90,10 +90,10 @@ export async function getOrCreateIdentifier(client: SignifyClient, name: string,
  * Get list of end role authorizations for a Keri idenfitier
  */
 export async function getEndRoles(client: SignifyClient, alias: string, role?: string): Promise<any> {
-    let path = (role !== undefined) ? `/identifiers/${alias}/endroles/${role}` : `/identifiers/${alias}/endroles`;
-    let response: Response = await client.fetch(path, "GET", null);
+    const path = (role !== undefined) ? `/identifiers/${alias}/endroles/${role}` : `/identifiers/${alias}/endroles`;
+    const response: Response = await client.fetch(path, "GET", null);
     if (!response.ok) throw new Error(await response.text());
-    let result = await response.json();
+    const result = await response.json();
     // console.log("getEndRoles", result);
     return result;
 }
@@ -102,8 +102,8 @@ export async function getEndRoles(client: SignifyClient, alias: string, role?: s
  * Test if end role is authorized for a Keri identifier
  */
 export async function hasEndRole(client: SignifyClient, alias: string, role: string, eid: string): Promise<boolean> {
-    let list = await getEndRoles(client, alias, role);
-    for (let i of list) {
+    const list = await getEndRoles(client, alias, role);
+    for (const i of list) {
         if (i.role === role && i.eid === eid) {
             return true;
         }
@@ -121,10 +121,10 @@ export async function hasEndRole(client: SignifyClient, alias: string, role: str
  * });
  */
 export async function getOrCreateContact(client: SignifyClient, name: string, oobi: string): Promise<string> {
-    let list = await client.contacts().list(undefined, "alias", `^${name}$`);
+    const list = await client.contacts().list(undefined, "alias", `^${name}$`);
     // console.log("contacts.list", list);
     if (list.length > 0) {
-        let contact = list[0];
+        const contact = list[0];
         if (contact.oobi === oobi) {
             // console.log("contacts.id", contact.id);
             return contact.id;

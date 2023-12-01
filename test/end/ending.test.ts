@@ -11,43 +11,43 @@ describe('ending_signature_designature', () => {
     it('should create and parse signature headers', async () => {
         await libsodium.ready;
 
-        let name = 'Hilga';
-        let temp = true;
+        const name = 'Hilga';
+        const temp = true;
 
-        let salter = new Salter({ raw: b('0123456789abcdef') });
-        let signer0 = salter.signer(
+        const salter = new Salter({ raw: b('0123456789abcdef') });
+        const signer0 = salter.signer(
             MtrDex.Ed25519_Seed,
             true,
             `${name}00`,
             Tier.low,
             temp
         );
-        let signer1 = salter.signer(
+        const signer1 = salter.signer(
             MtrDex.Ed25519_Seed,
             true,
             `${name}01`,
             Tier.low,
             temp
         );
-        let signer2 = salter.signer(
+        const signer2 = salter.signer(
             MtrDex.Ed25519_Seed,
             true,
             `${name}02`,
             Tier.low,
             temp
         );
-        let signers = [signer0, signer1, signer2];
+        const signers = [signer0, signer1, signer2];
 
-        let text = b(
+        const text = b(
             '{"seid":"BA89hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","name":"wit0","dts":"2021-01-01T00' +
                 ':00:00.000000+00:00","scheme":"http","host":"localhost","port":8080,"path":"/witness"}'
         );
 
-        let sigers = Array.from(signers, (signer, idx) =>
+        const sigers = Array.from(signers, (signer, idx) =>
             signer.sign(text, idx)
         );
-        let pre = 'EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-'; // Hab.pre from KERIpy test
-        let digest = pre;
+        const pre = 'EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-'; // Hab.pre from KERIpy test
+        const digest = pre;
 
         let signage = new Signage(sigers);
         let header = signature([signage]);
@@ -62,9 +62,9 @@ describe('ending_signature_designature', () => {
         signage = signages[0];
         assert.equal(signage.markers.size, 3);
         signage.markers.forEach((item: string | Siger | Cigar, tag: string) => {
-            let marker = item as Siger;
-            let idx = parseInt(tag);
-            let siger = sigers[idx] as Siger;
+            const marker = item as Siger;
+            const idx = parseInt(tag);
+            const siger = sigers[idx] as Siger;
             assert.equal(marker.qb64, siger.qb64);
             assert.equal(parseInt(tag), siger.index);
         });
@@ -87,14 +87,14 @@ describe('ending_signature_designature', () => {
 
         assert.equal(signage.markers.size, 3);
         signage.markers.forEach((item: string | Siger | Cigar, tag: string) => {
-            let marker = item as Siger;
-            let idx = parseInt(tag);
-            let siger = sigers[idx] as Siger;
+            const marker = item as Siger;
+            const idx = parseInt(tag);
+            const siger = sigers[idx] as Siger;
             assert.equal(marker.qb64, siger.qb64);
             assert.equal(parseInt(tag), siger.index);
         });
 
-        let cigars = Array.from(signers, (signer) => signer.sign(text));
+        const cigars = Array.from(signers, (signer) => signer.sign(text));
         signage = new Signage(cigars);
         header = signature([signage]);
         assert.equal(header.has('Signature'), true);
@@ -108,7 +108,7 @@ describe('ending_signature_designature', () => {
         assert.equal(signage.indexed, false);
         assert.equal(signage.markers.size, 3);
         signage.markers.forEach((marker: Cigar, tag: string) => {
-            let cigar = cigars.find((cigar) => cigar.verfer!.qb64 == tag);
+            const cigar = cigars.find((cigar) => cigar.verfer!.qb64 == tag);
             assert.notEqual(cigar, undefined);
             assert.equal(marker.qb64, cigar!.qb64);
             assert.equal(tag, cigar!.verfer!.qb64);
@@ -138,9 +138,9 @@ describe('ending_signature_designature', () => {
         assert.equal(signage.kind, 'CESR');
         assert.equal(signage.markers.size, 3);
         signage.markers.forEach((item: string | Siger | Cigar, tag: string) => {
-            let marker = item as Siger;
-            let idx = parseInt(tag);
-            let siger = sigers[idx] as Siger;
+            const marker = item as Siger;
+            const idx = parseInt(tag);
+            const siger = sigers[idx] as Siger;
             assert.equal(marker.qb64, siger.qb64);
             assert.equal(parseInt(tag), siger.index);
         });
@@ -151,7 +151,7 @@ describe('ending_signature_designature', () => {
         assert.equal(signage.kind, 'CESR');
         assert.equal(signage.markers.size, 3);
         signage.markers.forEach((marker: Cigar, tag: string) => {
-            let cigar = cigars.find((cigar) => cigar.verfer!.qb64 == tag);
+            const cigar = cigars.find((cigar) => cigar.verfer!.qb64 == tag);
             assert.notEqual(cigar, undefined);
             assert.equal(marker.qb64, cigar!.qb64);
             assert.equal(tag, cigar!.verfer!.qb64);

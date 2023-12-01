@@ -43,7 +43,7 @@ export class IndexedSigCodex {
     Ed448_Big_Crt_Sig: string = '3B'; // Ed448 signature appears in current list only.
 
     has(prop: string): boolean {
-        let m = new Map(Array.from(Object.entries(this), (v) => [v[1], v[0]]));
+        const m = new Map(Array.from(Object.entries(this), (v) => [v[1], v[0]]));
         return m.has(prop);
     }
 }
@@ -61,7 +61,7 @@ export class IndexedCurrentSigCodex {
     Ed448_Big_Crt_Sig: string = '3B'; // Ed448 signature appears in current list only.
 
     has(prop: string): boolean {
-        let m = new Map(Array.from(Object.entries(this), (v) => [v[1], v[0]]));
+        const m = new Map(Array.from(Object.entries(this), (v) => [v[1], v[0]]));
         return m.has(prop);
     }
 }
@@ -77,7 +77,7 @@ export class IndexedBothSigCodex {
     Ed448_Big_Sig: string = '3A'; // Ed448 signature appears in both lists.
 
     has(prop: string): boolean {
-        let m = new Map(Array.from(Object.entries(this), (v) => [v[1], v[0]]));
+        const m = new Map(Array.from(Object.entries(this), (v) => [v[1], v[0]]));
         return m.has(prop);
     }
 }
@@ -225,11 +225,11 @@ export class Indexer {
                 throw new Error(`Unsupported code=${code}.`);
             }
 
-            let xizage = Indexer.Sizes.get(code)!;
-            let os = xizage.os;
-            let fs = xizage.fs;
-            let cs = xizage.hs + xizage.ss;
-            let ms = xizage.ss - xizage.os;
+            const xizage = Indexer.Sizes.get(code)!;
+            const os = xizage.os;
+            const fs = xizage.fs;
+            const cs = xizage.hs + xizage.ss;
+            const ms = xizage.ss - xizage.os;
 
             if (!Number.isInteger(index) || index < 0 || index > 64 ** ms - 1) {
                 throw new Error(`Invalid index=${index} for code=${code}.`);
@@ -271,7 +271,7 @@ export class Indexer {
             //           raise InvalidCodeSizeError(f"Non-zero other index size for "
             //                                      f"variable length material. os={os}.")
             //       fs = (index * 4) + cs
-            let rawsize = Math.floor(((fs - cs) * 3) / 4);
+            const rawsize = Math.floor(((fs - cs) * 3) / 4);
             raw = raw.slice(0, rawsize);
 
             if (raw.length != rawsize) {
@@ -285,7 +285,7 @@ export class Indexer {
             this._ondex = ondex;
             this._raw = raw;
         } else if (qb64b != undefined) {
-            let qb64 = d(qb64b);
+            const qb64 = d(qb64b);
             this._exfil(qb64);
         } else if (qb64 != undefined) {
             this._exfil(qb64);
@@ -303,7 +303,7 @@ export class Indexer {
     }
 
     public static _rawSize(code: string) {
-        let xizage = Indexer.Sizes.get(code)!;
+        const xizage = Indexer.Sizes.get(code)!;
         return Math.floor(xizage.fs! - ((xizage.hs + xizage.ss) * 3) / 4);
     }
 
@@ -332,15 +332,15 @@ export class Indexer {
     }
 
     private _infil(): string {
-        let code = this.code;
-        let index = this.index;
-        let ondex = this.ondex;
-        let raw = this.raw;
+        const code = this.code;
+        const index = this.index;
+        const ondex = this.ondex;
+        const raw = this.raw;
 
-        let ps = (3 - (raw.length % 3)) % 3;
-        let xizage = Indexer.Sizes.get(code)!;
-        let cs = xizage.hs + xizage.ss;
-        let ms = xizage.ss - xizage.os;
+        const ps = (3 - (raw.length % 3)) % 3;
+        const xizage = Indexer.Sizes.get(code)!;
+        const cs = xizage.hs + xizage.ss;
+        const ms = xizage.ss - xizage.os;
 
         // TODO: don't support this code
         //  if not fs:  # compute fs from index
@@ -366,7 +366,7 @@ export class Indexer {
             );
         }
 
-        let both = `${code}${intToB64(index, ms)}${intToB64(
+        const both = `${code}${intToB64(index, ms)}${intToB64(
             ondex == undefined ? 0 : ondex,
             xizage.os
         )}`;
@@ -383,16 +383,16 @@ export class Indexer {
             );
         }
 
-        let bytes = new Uint8Array(ps + raw.length);
+        const bytes = new Uint8Array(ps + raw.length);
         for (let i = 0; i < ps; i++) {
             bytes[i] = 0;
         }
         for (let i = 0; i < raw.length; i++) {
-            let odx = i + ps;
+            const odx = i + ps;
             bytes[odx] = raw[i];
         }
 
-        let full =
+        const full =
             both + Base64.encode(Buffer.from(bytes)).slice(ps - xizage.ls);
         if (full.length != xizage.fs) {
             throw new Error(`Invalid code=${both} for raw size=${raw.length}.`);
@@ -406,33 +406,33 @@ export class Indexer {
             throw new Error('Empty Material');
         }
 
-        let first = qb64[0];
+        const first = qb64[0];
         if (!Array.from(Indexer.Hards.keys()).includes(first)) {
             throw new Error(`Unexpected code ${first}`);
         }
 
-        let hs = Indexer.Hards.get(first)!;
+        const hs = Indexer.Hards.get(first)!;
         if (qb64.length < hs) {
             throw new Error(`Need ${hs - qb64.length} more characters.`);
         }
 
-        let hard = qb64.slice(0, hs);
+        const hard = qb64.slice(0, hs);
         if (!Array.from(Indexer.Sizes.keys()).includes(hard)) {
             throw new Error(`Unsupported code ${hard}`);
         }
 
-        let xizage = Indexer.Sizes.get(hard)!;
-        let cs = xizage.hs + xizage.ss; // both hard + soft code size
-        let ms = xizage.ss - xizage.os;
+        const xizage = Indexer.Sizes.get(hard)!;
+        const cs = xizage.hs + xizage.ss; // both hard + soft code size
+        const ms = xizage.ss - xizage.os;
 
         if (qb64.length < cs) {
             throw new Error(`Need ${cs - qb64.length} more characters.`);
         }
 
-        let sindex = qb64.slice(hs, hs + ms);
-        let index = b64ToInt(sindex);
+        const sindex = qb64.slice(hs, hs + ms);
+        const index = b64ToInt(sindex);
 
-        let sondex = qb64.slice(hs + ms, hs + ms + xizage.os);
+        const sondex = qb64.slice(hs + ms, hs + ms + xizage.os);
         let ondex;
         if (IdxCrtSigDex.has(hard)) {
             ondex = xizage.os != 0 ? b64ToInt(sondex) : undefined;
@@ -463,13 +463,13 @@ export class Indexer {
         }
 
         qb64 = qb64.slice(0, xizage.fs);
-        let ps = cs % 4;
-        let pbs = 2 * ps != 0 ? ps : xizage.ls;
+        const ps = cs % 4;
+        const pbs = 2 * ps != 0 ? ps : xizage.ls;
         let raw;
         if (ps != 0) {
-            let base = new Array(ps + 1).join('A') + qb64.slice(cs);
-            let paw = Base64.decode(base); // decode base to leave prepadded raw
-            let pi = readInt(paw.slice(0, ps)); // prepad as int
+            const base = new Array(ps + 1).join('A') + qb64.slice(cs);
+            const paw = Base64.decode(base); // decode base to leave prepadded raw
+            const pi = readInt(paw.slice(0, ps)); // prepad as int
             if (pi & (2 ** pbs - 1)) {
                 // masked pad bits non-zero
                 throw new Error(
@@ -478,9 +478,9 @@ export class Indexer {
             }
             raw = paw.slice(ps); // strip off ps prepad paw bytes
         } else {
-            let base = qb64.slice(cs);
-            let paw = Base64.decode(base);
-            let li = readInt(paw.slice(0, xizage!.ls));
+            const base = qb64.slice(cs);
+            const paw = Base64.decode(base);
+            const li = readInt(paw.slice(0, xizage!.ls));
             if (li != 0) {
                 if (li == 1) {
                     throw new Error(`Non zeroed lead byte = 0x{li:02x}.`);

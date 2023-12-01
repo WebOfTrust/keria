@@ -26,10 +26,10 @@ describe("singlesig-ixn", () => {
     test("step1", async () => {
         expect(name1_id).toEqual(contact1_id);
 
-        let keystate1 = await client1.keyStates().get(name1_id);
+        const keystate1 = await client1.keyStates().get(name1_id);
         expect(keystate1).toHaveLength(1);
 
-        let keystate2 = await client2.keyStates().get(contact1_id);
+        const keystate2 = await client2.keyStates().get(contact1_id);
         expect(keystate2).toHaveLength(1);
 
         // local and remote keystate sequence match
@@ -37,28 +37,28 @@ describe("singlesig-ixn", () => {
     });
     test("ixn1", async () => {
         // local keystate before ixn
-        let keystate0: KeyState = (await client1.keyStates().get(name1_id)).at(0);
+        const keystate0: KeyState = (await client1.keyStates().get(name1_id)).at(0);
         expect(keystate0).not.toBeNull();
 
         // ixn
-        let result: EventResult = await client1.identifiers().interact("name1", {});
+        const result: EventResult = await client1.identifiers().interact("name1", {});
         await waitOperation(client1, await result.op());
 
         // local keystate after ixn
-        let keystate1: KeyState = (await client1.keyStates().get(name1_id)).at(0);
+        const keystate1: KeyState = (await client1.keyStates().get(name1_id)).at(0);
         expect(parseInt(keystate1.s)).toBeGreaterThan(0);
         // sequence has incremented
         expect(parseInt(keystate1.s)).toEqual(parseInt(keystate0.s) + 1);
 
         // remote keystate after ixn
-        let keystate2: KeyState = (await client2.keyStates().get(contact1_id)).at(0);
+        const keystate2: KeyState = (await client2.keyStates().get(contact1_id)).at(0);
         // remote keystate is one behind
         expect(parseInt(keystate2.s)).toEqual(parseInt(keystate1.s) - 1);
 
         // refresh remote keystate
         let op = await client2.keyStates().query(contact1_id, parseInt(keystate1.s), undefined);
         op = await waitOperation(client2, op);
-        let keystate3: KeyState = op.response;
+        const keystate3: KeyState = op.response;
         // local and remote keystate match
         expect(keystate3.s).toEqual(keystate1.s);
     });

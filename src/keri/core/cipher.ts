@@ -28,7 +28,7 @@ export class Cipher extends Matter {
         prikey: Uint8Array | undefined = undefined,
         seed: Uint8Array | undefined = undefined
     ) {
-        let decrypter = new Decrypter({ qb64b: prikey }, seed);
+        const decrypter = new Decrypter({ qb64b: prikey }, seed);
         return decrypter.decrypt(this.qb64b);
     }
 }

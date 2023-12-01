@@ -94,12 +94,12 @@ export class Saider extends Matter {
             [, , kind, sad] = sizeify(sad, kind);
         }
 
-        let ser = { ...sad };
+        const ser = { ...sad };
 
-        let digestage = Saider.Digests.get(code);
+        const digestage = Saider.Digests.get(code);
 
-        let cpa = Saider._serialze(ser, kind);
-        let args: any[] = [];
+        const cpa = Saider._serialze(ser, kind);
+        const args: any[] = [];
         if (digestage!.size != undefined) {
             args.push(digestage!.size);
         }
@@ -129,8 +129,8 @@ export class Saider extends Matter {
         label: string = Ids.d
     ): boolean {
         try {
-            let [raw, dsad] = Saider._derive(sad, this.code, kind, label);
-            let saider = new Saider({ raw: raw, code: this.code });
+            const [raw, dsad] = Saider._derive(sad, this.code, kind, label);
+            const saider = new Saider({ raw: raw, code: this.code });
             if (this.qb64 != saider.qb64) {
                 return false;
             }
@@ -175,7 +175,7 @@ export class Saider extends Matter {
         }
         let raw;
         [raw, sad] = Saider._derive(sad, code, kind, label);
-        let saider = new Saider(
+        const saider = new Saider(
             { raw: raw, code: code },
             undefined,
             kind,

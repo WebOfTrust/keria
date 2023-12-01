@@ -65,8 +65,8 @@ export class Habery {
                 throw new Error('Bran (passcode seed material) too short.');
             }
 
-            let bran = MtrDex.Salt_128 + 'A' + passcode.substring(0, 21); // qb64 salt for seed
-            let signer = new Salter({ qb64: bran }).signer(
+            const bran = MtrDex.Salt_128 + 'A' + passcode.substring(0, 21); // qb64 salt for seed
+            const signer = new Salter({ qb64: bran }).signer(
                 MtrDex.Ed25519_Seed,
                 false
             );
@@ -76,7 +76,7 @@ export class Habery {
             }
         }
         let algo;
-        let salter = salt != undefined ? new Salter({ qb64: salt }) : undefined;
+        const salter = salt != undefined ? new Salter({ qb64: salt }) : undefined;
         if (salt != undefined) {
             algo = Algos.salty;
         } else {
@@ -133,7 +133,7 @@ export class Habery {
             code = MtrDex.Ed25519N;
         }
 
-        let [verfers, digers] = this._mgr.incept({
+        const [verfers, digers] = this._mgr.incept({
             icount: icount,
             ncount: ncount,
             stem: this.name,
@@ -150,7 +150,7 @@ export class Habery {
             nsith = `${Math.max(1, Math.ceil(ncount / 2)).toString(16)}`;
         }
 
-        let cnfg = new Array<string>();
+        const cnfg = new Array<string>();
         if (estOnly) {
             cnfg.push(TraitDex.EstOnly);
         }
@@ -158,8 +158,8 @@ export class Habery {
             cnfg.push(TraitDex.DoNotDelegate);
         }
 
-        let keys = Array.from(verfers, (verfer: Verfer) => verfer.qb64);
-        let ndigs = Array.from(digers, (diger: Diger) => diger.qb64);
+        const keys = Array.from(verfers, (verfer: Verfer) => verfer.qb64);
+        const ndigs = Array.from(digers, (diger: Diger) => diger.qb64);
 
         const icp = incept({
             keys,

@@ -41,8 +41,8 @@ export class Exchanges {
         datetime?: string,
         dig?: string
     ): Promise<[Serder, string[], string]> {
-        let keeper = this.client.manager!.get(sender);
-        let [exn, end] = exchange(
+        const keeper = this.client.manager!.get(sender);
+        const [exn, end] = exchange(
             route,
             payload,
             sender['prefix'],
@@ -53,7 +53,7 @@ export class Exchanges {
             embeds
         );
 
-        let sigs = await keeper.sign(b(exn.raw));
+        const sigs = await keeper.sign(b(exn.raw));
         return [exn, sigs, d(end)];
     }
 
@@ -78,7 +78,7 @@ export class Exchanges {
         embeds: Dict<any>,
         recipients: string[]
     ): Promise<any> {
-        let [exn, sigs, atc] = await this.createExchangeMessage(
+        const [exn, sigs, atc] = await this.createExchangeMessage(
             sender,
             route,
             payload,
@@ -113,9 +113,9 @@ export class Exchanges {
         atc: string,
         recipients: string[]
     ): Promise<any> {
-        let path = `/identifiers/${name}/exchanges`;
-        let method = 'POST';
-        let data: any = {
+        const path = `/identifiers/${name}/exchanges`;
+        const method = 'POST';
+        const data: any = {
             tpc: topic,
             exn: exn.ked,
             sigs: sigs,
@@ -123,7 +123,7 @@ export class Exchanges {
             rec: recipients,
         };
 
-        let res = await this.client.fetch(path, method, data);
+        const res = await this.client.fetch(path, method, data);
         return await res.json();
     }
 
@@ -164,19 +164,19 @@ export function exchange(
     let e = {} as Dict<any>;
     let end = '';
     Object.entries(ems).forEach(([key, value]) => {
-        let serder = value[0];
-        let atc = value[1];
+        const serder = value[0];
+        const atc = value[1];
         e[key] = serder.ked;
 
         if (atc == undefined) {
             return;
         }
         let pathed = '';
-        let pather = new Pather({}, undefined, ['e', key]);
+        const pather = new Pather({}, undefined, ['e', key]);
         pathed += pather.qb64;
         pathed += atc;
 
-        let counter = new Counter({
+        const counter = new Counter({
             code: CtrDex.PathedMaterialQuadlets,
             count: Math.floor(pathed.length / 4),
         });
@@ -195,12 +195,12 @@ export function exchange(
         attrs['i'] = recipient;
     }
 
-    let a = {
+    const a = {
         ...attrs,
         ...payload,
     };
 
-    let _ked = {
+    const _ked = {
         v: vs,
         t: ilk,
         d: '',
@@ -212,9 +212,9 @@ export function exchange(
         a: a,
         e: e,
     };
-    let [, ked] = Saider.saidify(_ked);
+    const [, ked] = Saider.saidify(_ked);
 
-    let exn = new Serder(ked);
+    const exn = new Serder(ked);
 
     return [exn, b(end)];
 }

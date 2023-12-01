@@ -21,14 +21,14 @@ export class Escrows {
      * @returns {Promise<any>} A promise to the list of replay messages
      */
     async listReply(route?: string): Promise<any> {
-        let params = new URLSearchParams();
+        const params = new URLSearchParams();
         if (route !== undefined) {
             params.append('route', route);
         }
 
-        let path = `/escrows/rpy` + '?' + params.toString();
-        let method = 'GET';
-        let res = await this.client.fetch(path, method, null);
+        const path = `/escrows/rpy` + '?' + params.toString();
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, null);
         return await res.json();
     }
 }

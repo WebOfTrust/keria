@@ -11,7 +11,7 @@ describe('int to b64 and back', () => {
 
         // verify first hs Sizes matches hs in Codes for same first char
         Counter.Sizes.forEach((_, ckey) => {
-            let key = ckey.slice(0, 2);
+            const key = ckey.slice(0, 2);
             assert.equal(Counter.Hards.get(key), Counter.Sizes.get(ckey)!.hs);
         });
 
@@ -59,11 +59,11 @@ describe('int to b64 and back', () => {
         assert.deepStrictEqual(counter.qb64b, qscb);
         assert.equal(counter.qb64, qsc);
 
-        let longqs64 = `${qsc}ABCD`;
+        const longqs64 = `${qsc}ABCD`;
         counter = new Counter({ qb64: longqs64 });
         assert.equal(counter.qb64.length, Counter.Sizes.get(counter.code)!.fs);
 
-        let shortqcs = qsc.slice(0, -1);
+        const shortqcs = qsc.slice(0, -1);
         assert.throws(() => {
             new Counter({ qb64: shortqcs });
         });
@@ -118,8 +118,8 @@ describe('int to b64 and back', () => {
         assert.deepStrictEqual(counter.qb64b, qscb);
         assert.equal(counter.qb64, qsc);
 
-        let verint = 0;
-        let version = intToB64(verint, 3);
+        const verint = 0;
+        const version = intToB64(verint, 3);
         assert.equal(version, 'AAA');
         assert.equal(verint, b64ToInt(version));
         qsc = CtrDex.KERIProtocolStack + version;

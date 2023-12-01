@@ -3,8 +3,8 @@ import signify from 'signify-ts';
 await connect();
 
 async function connect() {
-    let url = 'http://127.0.0.1:3901';
-    let bran = '0123456789abcdefghijk';
+    const url = 'http://127.0.0.1:3901';
+    const bran = '0123456789abcdefghijk';
 
     await signify.ready();
     const client = new signify.SignifyClient(url, bran);
@@ -27,17 +27,17 @@ async function connect() {
     });
 
     await client.connect();
-    let d = await client.state();
+    const d = await client.state();
     console.log('Connected: ');
     console.log(' Agent: ', d.agent.i, '   Controller: ', d.controller.state.i);
 
-    let identifiers = client.identifiers();
+    const identifiers = client.identifiers();
     const oobis = client.oobis();
     const operations = client.operations();
     const exchanges = client.exchanges();
 
-    let salt = 'abcdefghijk0123456789';
-    let res = await identifiers.create('multisig-ts', { bran: salt });
+    const salt = 'abcdefghijk0123456789';
+    const res = await identifiers.create('multisig-ts', { bran: salt });
     let op = await res.op();
     let aid = op['response'];
 
@@ -68,7 +68,7 @@ async function connect() {
         await new Promise((resolve) => setTimeout(resolve, 1000)); // sleep for 1 second
     }
     console.log('done.');
-    let kli = op['response'];
+    const kli = op['response'];
 
     console.log('Resolving multisig-sigpy...');
     op = await oobis.resolve(
@@ -80,13 +80,13 @@ async function connect() {
         await new Promise((resolve) => setTimeout(resolve, 1000)); // sleep for 1 second
     }
     console.log('done.');
-    let sigPy = op['response'];
+    const sigPy = op['response'];
 
     aid = await identifiers.get('multisig-ts');
-    let sigTs = aid['state'];
+    const sigTs = aid['state'];
 
-    let states = [sigPy, kli, sigTs];
-    let ires = await identifiers.create('multisig', {
+    const states = [sigPy, kli, sigTs];
+    const ires = await identifiers.create('multisig', {
         algo: signify.Algos.group,
         mhab: aid,
         delpre: 'EHpD0-CDWOdu5RJ8jHBSUkOqBZ3cXeDVHWNb_Ul89VI7',
@@ -102,18 +102,18 @@ async function connect() {
         rstates: states,
     });
 
-    let serder = ires.serder;
-    let sigs = ires.sigs;
-    let sigers = sigs.map((sig: any) => new signify.Siger({ qb64: sig }));
+    const serder = ires.serder;
+    const sigs = ires.sigs;
+    const sigers = sigs.map((sig: any) => new signify.Siger({ qb64: sig }));
 
-    let ims = signify.d(signify.messagize(serder, sigers));
-    let atc = ims.substring(serder.size);
-    let embeds = {
+    const ims = signify.d(signify.messagize(serder, sigers));
+    const atc = ims.substring(serder.size);
+    const embeds = {
         icp: [serder, atc],
     };
 
-    let smids = states.map((state) => state['i']);
-    let recp = [sigPy, kli].map((state) => state['i']);
+    const smids = states.map((state) => state['i']);
+    const recp = [sigPy, kli].map((state) => state['i']);
 
     await exchanges.send(
         'multisig-ts',

@@ -171,9 +171,9 @@ export function deversify(
             throw new Error(`Invalid serialization kind = ${kind}`);
         }
 
-        let ta = kind as keyof typeof Serials;
+        const ta = kind as keyof typeof Serials;
         kind = Serials[ta];
-        let pa = proto as keyof typeof Ident;
+        const pa = proto as keyof typeof Ident;
         proto = Ident[pa];
 
         return [proto, kind, version, size];
@@ -275,7 +275,7 @@ export function intToB64(i: number, l = 1): string {
         }
     }
 
-    let x = l - out.length;
+    const x = l - out.length;
     for (let i = 0; i < x; i++) {
         out = 'A' + out;
     }
@@ -284,7 +284,7 @@ export function intToB64(i: number, l = 1): string {
 }
 
 export function intToB64b(n: number, l: number = 1): Uint8Array {
-    let s = intToB64(n, l);
+    const s = intToB64(n, l);
     return b(s);
 }
 
@@ -294,7 +294,7 @@ export function b64ToInt(s: string): number {
     }
 
     let i = 0;
-    let rev = s.split('').reverse();
+    const rev = s.split('').reverse();
     rev.forEach((c: string, e: number) => {
         i |= B64IdxByChr.get(c)! << (e * 6);
     });
@@ -311,7 +311,7 @@ export function d(u?: Uint8Array): string {
 }
 
 export function concat(one: Uint8Array, two: Uint8Array): Uint8Array {
-    let out = new Uint8Array(one.length + two.length);
+    const out = new Uint8Array(one.length + two.length);
     out.set(one);
     out.set(two, one.length);
     return out;

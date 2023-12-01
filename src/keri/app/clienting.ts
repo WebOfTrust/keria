@@ -107,13 +107,13 @@ export class SignifyClient {
     async state(): Promise<State> {
         const caid = this.controller?.pre;
 
-        let res = await fetch(this.url + `/agent/${caid}`);
+        const res = await fetch(this.url + `/agent/${caid}`);
         if (res.status == 404) {
             throw new Error(`agent does not exist for controller ${caid}`);
         }
 
         const data = await res.json();
-        let state = new State();
+        const state = new State();
         state.agent = data.agent ?? {};
         state.controller = data.controller ?? {};
         state.ridx = data.ridx ?? 0;
@@ -170,9 +170,9 @@ export class SignifyClient {
         data: any,
         extraHeaders?: Headers
     ): Promise<Response> {
-        let headers = new Headers();
+        const headers = new Headers();
         let signed_headers = new Headers();
-        let final_headers = new Headers();
+        const final_headers = new Headers();
 
         headers.set('Signify-Resource', this.controller.pre);
         headers.set(
@@ -181,7 +181,7 @@ export class SignifyClient {
         );
         headers.set('Content-Type', 'application/json');
 
-        let _body = method == 'GET' ? null : JSON.stringify(data);
+        const _body = method == 'GET' ? null : JSON.stringify(data);
         if (_body !== null) {
             headers.set('Content-Length', String(_body.length));
         }
@@ -203,7 +203,7 @@ export class SignifyClient {
                 final_headers.append(key, value);
             });
         }
-        let res = await fetch(this.url + path, {
+        const res = await fetch(this.url + path, {
             method: method,
             body: _body,
             headers: final_headers,
@@ -255,7 +255,7 @@ export class SignifyClient {
             keeper.signers[0].verfer
         );
 
-        let headers = new Headers();
+        const headers = new Headers();
         headers.set('Signify-Resource', hab.prefix);
         headers.set(
             'Signify-Timestamp',
@@ -267,7 +267,7 @@ export class SignifyClient {
         } else {
             headers.set('Content-Length', '0');
         }
-        let signed_headers = authenticator.sign(
+        const signed_headers = authenticator.sign(
             headers,
             method,
             path.split('?')[0]
@@ -299,9 +299,9 @@ export class SignifyClient {
      * @returns {Promise<Response>} A promise to the result of the approval
      */
     async approveDelegation(): Promise<Response> {
-        let sigs = this.controller.approveDelegation(this.agent!);
+        const sigs = this.controller.approveDelegation(this.agent!);
 
-        let data = {
+        const data = {
             ixn: this.controller.serder.ked,
             sigs: sigs,
         };
@@ -359,7 +359,7 @@ export class SignifyClient {
      * @returns {Promise<Response>} A promise to the result of the rotation
      */
     async rotate(nbran: string, aids: string[]): Promise<Response> {
-        let data = this.controller.rotate(nbran, aids);
+        const data = this.controller.rotate(nbran, aids);
         return await fetch(this.url + '/agent/' + this.controller.pre, {
             method: 'PUT',
             body: JSON.stringify(data),

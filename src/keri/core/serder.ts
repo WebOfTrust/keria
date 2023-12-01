@@ -32,8 +32,8 @@ export class Serder {
     }
 
     set ked(ked: Dict<any>) {
-        let [raw, ident, kind, kd, version] = this._exhale(ked, this._kind);
-        let size = raw.length;
+        const [raw, ident, kind, kd, version] = this._exhale(ked, this._kind);
+        const size = raw.length;
         this._raw = raw;
         this._ident = ident;
         this._ked = kd;
@@ -98,8 +98,8 @@ export class Serder {
             keys = [];
         }
         // create a new Verfer for each key
-        let verfers = [];
-        for (let key of keys) {
+        const verfers = [];
+        for (const key of keys) {
             verfers.push(new Verfer({ qb64: key }));
         }
         return verfers;
@@ -115,8 +115,8 @@ export class Serder {
             keys = [];
         }
         // create a new Verfer for each key
-        let digers = [];
-        for (let key of keys) {
+        const digers = [];
+        for (const key of keys) {
             digers.push(new Diger({ qb64: key }));
         }
         return digers;
@@ -143,7 +143,7 @@ export function sizeify(
         throw new Error('Missing or empty version string');
     }
 
-    let [ident, knd, version] = deversify(ked['v'] as string);
+    const [ident, knd, version] = deversify(ked['v'] as string);
     if (version != Versionage) {
         throw new Error(`unsupported version ${version.toString()}`);
     }
@@ -153,7 +153,7 @@ export function sizeify(
     }
 
     let raw = dumps(ked, kind);
-    let size = raw.length;
+    const size = raw.length;
 
     ked['v'] = versify(ident, version, kind, size);
 

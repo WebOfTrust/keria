@@ -19,8 +19,8 @@ describe("test-setup-single-client", () => {
         expect(client.controller?.pre).toEqual("EB3UGWwIMq7ppzcQ697ImQIuXlBG5jzh-baSx-YG3-tY");
     });
     test("step2", async () => {
-        let env = resolveEnvironment();
-        let oobi = await client.oobis().get("name1", "witness");
+        const env = resolveEnvironment();
+        const oobi = await client.oobis().get("name1", "witness");
         expect(oobi.oobis).toHaveLength(3);
         switch (env.preset) {
             case "local":

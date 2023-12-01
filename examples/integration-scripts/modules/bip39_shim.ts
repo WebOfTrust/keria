@@ -33,11 +33,11 @@ export class BIP39Shim {
     }
 
     keys(count: number, kidx: number, transferable: boolean) {
-        let keys = [];
+        const keys = [];
         for (let idx = 0; idx < count; idx++) {
-            let keyId = `${this.stem}-${this.pidx}-${kidx + idx}`;
-            let seed = mnemonicToSeedSync(this.mnemonics, keyId);
-            let signer = new Signer({
+            const keyId = `${this.stem}-${this.pidx}-${kidx + idx}`;
+            const seed = mnemonicToSeedSync(this.mnemonics, keyId);
+            const signer = new Signer({
                 raw: new Uint8Array(seed),
                 code: MtrDex.Ed25519_Seed,
                 transferable: transferable,
@@ -48,15 +48,15 @@ export class BIP39Shim {
     }
 
     incept(transferable: boolean) {
-        let signers = this.keys(this.icount, this.kidx, transferable);
-        let verfers = signers.map((signer) => signer.verfer.qb64);
+        const signers = this.keys(this.icount, this.kidx, transferable);
+        const verfers = signers.map((signer) => signer.verfer.qb64);
 
-        let nsigners = this.keys(
+        const nsigners = this.keys(
             this.ncount,
             this.kidx + this.icount,
             transferable
         );
-        let digers = nsigners.map(
+        const digers = nsigners.map(
             (nsigner) =>
                 new Diger({ code: this.dcode }, nsigner.verfer.qb64b).qb64
         );
@@ -64,23 +64,23 @@ export class BIP39Shim {
     }
 
     rotate(ncount: number, transferable: boolean) {
-        let signers = this.keys(
+        const signers = this.keys(
             this.ncount,
             this.kidx + this.icount,
             transferable
         );
-        let verfers = signers.map((signer) => signer.verfer.qb64);
+        const verfers = signers.map((signer) => signer.verfer.qb64);
 
         this.kidx = this.kidx + this.icount;
         this.icount = this.ncount;
         this.ncount = ncount;
 
-        let nsigners = this.keys(
+        const nsigners = this.keys(
             this.ncount,
             this.kidx + this.icount,
             this.transferable
         );
-        let digers = nsigners.map(
+        const digers = nsigners.map(
             (nsigner) =>
                 new Diger({ code: this.dcode }, nsigner.verfer.qb64b).qb64
         );
@@ -94,10 +94,10 @@ export class BIP39Shim {
         indices: number[] | undefined = undefined,
         ondices: number[] | undefined = undefined
     ) {
-        let signers = this.keys(this.icount, this.kidx, this.transferable);
+        const signers = this.keys(this.icount, this.kidx, this.transferable);
 
         if (indexed) {
-            let sigers = [];
+            const sigers = [];
             let i = 0;
             for (const [j, signer] of signers.entries()) {
                 if (indices != undefined) {
@@ -132,7 +132,7 @@ export class BIP39Shim {
             }
             return sigers.map((siger) => siger.qb64);
         } else {
-            let cigars = [];
+            const cigars = [];
             for (const [_, signer] of signers.entries()) {
                 cigars.push(signer.sign(ser));
             }

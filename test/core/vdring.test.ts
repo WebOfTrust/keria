@@ -30,7 +30,7 @@ describe('vdr', () => {
 
     it('should fail on NB config with backers', async () => {
         await libsodium.ready;
-        let cnfg = ['NB'];
+        const cnfg = ['NB'];
         assert.throws(
             () => {
                 vdr.incept({
@@ -103,7 +103,7 @@ describe('vdr', () => {
 
     it('should allow optional toad and no backers', async () => {
         await libsodium.ready;
-        let actual = vdr.incept({
+        const actual = vdr.incept({
             pre: 'ECJIoBpEcCWMzvquk861dXP8JJZ-vbmJczlDR-NYcE3g',
             nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
         });
@@ -122,7 +122,7 @@ describe('vdr', () => {
 
     it('should allow optional toad and backers', async () => {
         await libsodium.ready;
-        let actual = vdr.incept({
+        const actual = vdr.incept({
             pre: 'ECJIoBpEcCWMzvquk861dXP8JJZ-vbmJczlDR-NYcE3g',
             nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
             baks: ['a backer'],

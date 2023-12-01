@@ -34,7 +34,7 @@ export class Salter extends Matter {
         } catch (e) {
             if (e instanceof EmptyMaterialError) {
                 if (code == MtrDex.Salt_128) {
-                    let salt = libsodium.randombytes_buf(
+                    const salt = libsodium.randombytes_buf(
                         libsodium.crypto_pwhash_SALTBYTES
                     );
                     super({ raw: salt, code: code });
@@ -105,7 +105,7 @@ export class Salter extends Matter {
         tier: Tier | null = null,
         temp: boolean = false
     ): Signer {
-        let seed = this.stretch(Matter._rawSize(code), path, tier, temp);
+        const seed = this.stretch(Matter._rawSize(code), path, tier, temp);
 
         return new Signer({
             raw: seed,

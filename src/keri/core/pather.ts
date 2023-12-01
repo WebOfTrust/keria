@@ -68,7 +68,7 @@ export class Pather extends Bexter {
             path = path.substring(1);
         }
 
-        let apath = path.split('-');
+        const apath = path.split('-');
         if (apath[0] !== '') {
             return apath;
         } else {
@@ -77,7 +77,7 @@ export class Pather extends Bexter {
     }
 
     static _bextify(path: any[]): string {
-        let vath = [];
+        const vath = [];
         for (const p of path) {
             let sp = '';
             if (typeof p === 'number') {
@@ -86,7 +86,7 @@ export class Pather extends Bexter {
                 sp = p;
             }
 
-            let match = Reb64.exec(sp);
+            const match = Reb64.exec(sp);
             if (!match) {
                 throw new Error(`"Non Base64 path component = ${p}.`);
             }

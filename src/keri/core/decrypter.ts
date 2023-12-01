@@ -17,13 +17,13 @@ export class Decrypter extends Matter {
         } catch (e) {
             if (e instanceof EmptyMaterialError) {
                 if (seed != undefined) {
-                    let signer = new Signer({ qb64b: seed });
+                    const signer = new Signer({ qb64b: seed });
                     if (signer.code != MtrDex.Ed25519_Seed) {
                         throw new Error(
                             `Unsupported signing seed derivation code ${signer.code}`
                         );
                     }
-                    let sigkey = new Uint8Array(
+                    const sigkey = new Uint8Array(
                         signer.raw.length + signer.verfer.raw.length
                     );
                     sigkey.set(signer.raw);
@@ -63,8 +63,8 @@ export class Decrypter extends Matter {
     }
 
     _x25519(cipher: Cipher, prikey: Uint8Array, transferable: boolean = false) {
-        let pubkey = libsodium.crypto_scalarmult_base(prikey);
-        let plain = libsodium.crypto_box_seal_open(cipher.raw, pubkey, prikey);
+        const pubkey = libsodium.crypto_scalarmult_base(prikey);
+        const plain = libsodium.crypto_box_seal_open(cipher.raw, pubkey, prikey);
         if (cipher.code == MtrDex.X25519_Cipher_Salt) {
             return new Salter({ qb64b: plain });
         } else if (cipher.code == MtrDex.X25519_Cipher_Seed) {

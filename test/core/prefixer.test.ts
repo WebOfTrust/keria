@@ -16,7 +16,7 @@ describe('Prefixer', () => {
         await libsodium.ready;
 
         // (b'\xacr\xda\xc83~\x99r\xaf\xeb`\xc0\x8cR\xd7\xd7\xf69\xc8E\x1e\xd2\xf0=`\xf7\xbf\x8a\x18\x8a`q') // from keripy
-        let verkey = new Uint8Array([
+        const verkey = new Uint8Array([
             172, 114, 218, 200, 51, 126, 153, 114, 175, 235, 96, 192, 140, 82,
             215, 215, 246, 57, 200, 69, 30, 210, 240, 61, 96, 247, 191, 138, 24,
             138, 96, 113,
@@ -29,17 +29,17 @@ describe('Prefixer', () => {
         );
 
         // Test digest derivation from inception ked
-        let vs = versify(Ident.KERI, Versionage, Serials.JSON, 0);
-        let sn = 0;
-        let ilk = Ilks.icp;
-        let sith = '1';
-        let keys = [new Prefixer({ raw: verkey, code: MtrDex.Ed25519 }).qb64];
-        let nxt = '';
-        let toad = 0;
-        let wits = new Array<string>();
-        let cnfg = new Array<string>();
+        const vs = versify(Ident.KERI, Versionage, Serials.JSON, 0);
+        const sn = 0;
+        const ilk = Ilks.icp;
+        const sith = '1';
+        const keys = [new Prefixer({ raw: verkey, code: MtrDex.Ed25519 }).qb64];
+        const nxt = '';
+        const toad = 0;
+        const wits = new Array<string>();
+        const cnfg = new Array<string>();
 
-        let ked = {
+        const ked = {
             v: vs, // version string
             i: '', // qb64 prefix
             s: sn.toString(16), // hex string no leading zeros lowercase

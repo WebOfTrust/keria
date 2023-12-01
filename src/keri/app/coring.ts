@@ -4,15 +4,15 @@ import { Salter } from '../core/salter';
 import { Matter, MtrDex } from '../core/matter';
 
 export function randomPasscode(): string {
-    let raw = libsodium.randombytes_buf(16);
-    let salter = new Salter({ raw: raw });
+    const raw = libsodium.randombytes_buf(16);
+    const salter = new Salter({ raw: raw });
 
     return salter.qb64.substring(2);
 }
 
 export function randomNonce(): string {
-    let seed = libsodium.randombytes_buf(libsodium.crypto_sign_SEEDBYTES);
-    let seedqb64 = new Matter({ raw: seed, code: MtrDex.Ed25519_Seed });
+    const seed = libsodium.randombytes_buf(libsodium.crypto_sign_SEEDBYTES);
+    const seedqb64 = new Matter({ raw: seed, code: MtrDex.Ed25519_Seed });
     return seedqb64.qb64;
 }
 
@@ -33,9 +33,9 @@ export class Oobis {
      * @returns {Promise<any>} A promise to the OOBI(s)
      */
     async get(name: string, role: string = 'agent'): Promise<any> {
-        let path = `/identifiers/${name}/oobis?role=${role}`;
-        let method = 'GET';
-        let res = await this.client.fetch(path, method, null);
+        const path = `/identifiers/${name}/oobis?role=${role}`;
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, null);
         return await res.json();
     }
 
@@ -47,15 +47,15 @@ export class Oobis {
      * @returns {Promise<any>} A promise to the long-running operation
      */
     async resolve(oobi: string, alias?: string): Promise<any> {
-        let path = `/oobis`;
-        let data: any = {
+        const path = `/oobis`;
+        const data: any = {
             url: oobi,
         };
         if (alias !== undefined) {
             data.oobialias = alias;
         }
-        let method = 'POST';
-        let res = await this.client.fetch(path, method, data);
+        const method = 'POST';
+        const res = await this.client.fetch(path, method, data);
         return await res.json();
     }
 }
@@ -88,10 +88,10 @@ export class Operations {
      * @returns {Promise<Operation>} A promise to the status of the operation
      */
     async get<T = unknown>(name: string): Promise<Operation<T>> {
-        let path = `/operations/${name}`;
-        let data = null;
-        let method = 'GET';
-        let res = await this.client.fetch(path, method, data);
+        const path = `/operations/${name}`;
+        const data = null;
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, data);
         return await res.json();
     }
 }
@@ -116,10 +116,10 @@ export class KeyEvents {
      * @returns {Promise<any>} A promise to the key events
      */
     async get(pre: string): Promise<any> {
-        let path = `/events?pre=${pre}`;
-        let data = null;
-        let method = 'GET';
-        let res = await this.client.fetch(path, method, data);
+        const path = `/events?pre=${pre}`;
+        const data = null;
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, data);
         return await res.json();
     }
 }
@@ -144,10 +144,10 @@ export class KeyStates {
      * @returns {Promise<any>} A promise to the key states
      */
     async get(pre: string): Promise<any> {
-        let path = `/states?pre=${pre}`;
-        let data = null;
-        let method = 'GET';
-        let res = await this.client.fetch(path, method, data);
+        const path = `/states?pre=${pre}`;
+        const data = null;
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, data);
         return await res.json();
     }
 
@@ -158,10 +158,10 @@ export class KeyStates {
      * @returns {Promise<any>} A promise to the key states
      */
     async list(pres: string[]): Promise<any> {
-        let path = `/states?${pres.map((pre) => `pre=${pre}`).join('&')}`;
-        let data = null;
-        let method = 'GET';
-        let res = await this.client.fetch(path, method, data);
+        const path = `/states?${pres.map((pre) => `pre=${pre}`).join('&')}`;
+        const data = null;
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, data);
         return await res.json();
     }
 
@@ -174,8 +174,8 @@ export class KeyStates {
      * @returns {Promise<any>} A promise to the long-running operation
      */
     async query(pre: string, sn?: number, anchor?: string): Promise<any> {
-        let path = `/queries`;
-        let data: any = {
+        const path = `/queries`;
+        const data: any = {
             pre: pre,
         };
         if (sn !== undefined) {
@@ -185,8 +185,8 @@ export class KeyStates {
             data.anchor = anchor;
         }
 
-        let method = 'POST';
-        let res = await this.client.fetch(path, method, data);
+        const method = 'POST';
+        const res = await this.client.fetch(path, method, data);
         return await res.json();
     }
 }

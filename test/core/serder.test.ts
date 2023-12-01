@@ -15,7 +15,7 @@ import { Prefixer } from '../../src/keri/core/prefixer';
 
 describe('deversify', () => {
     it('should parse a KERI event version string', async () => {
-        let [, kind, version, size] = deversify('KERI10JSON00011c_');
+        const [, kind, version, size] = deversify('KERI10JSON00011c_');
         assert.equal(kind, Serials.JSON);
         assert.deepStrictEqual(version, new Version(1, 0));
         assert.equal(size, '00011c');
@@ -26,39 +26,39 @@ describe('Serder', () => {
     it('should create KERI events from dicts', async () => {
         await libsodium.ready;
 
-        let sith = 1;
-        let nsith = 1;
-        let sn = 0;
-        let toad = 0;
+        const sith = 1;
+        const nsith = 1;
+        const sn = 0;
+        const toad = 0;
 
-        let raw = new Uint8Array([
+        const raw = new Uint8Array([
             5, 170, 143, 45, 83, 154, 233, 250, 85, 156, 2, 156, 155, 8, 72,
             117,
         ]);
-        let salter = new Salter({ raw: raw });
-        let skp0 = salter.signer(
+        const salter = new Salter({ raw: raw });
+        const skp0 = salter.signer(
             MtrDex.Ed25519_Seed,
             true,
             'A',
             Tier.low,
             true
         );
-        let keys = [skp0.verfer.qb64];
+        const keys = [skp0.verfer.qb64];
 
-        let skp1 = salter.signer(
+        const skp1 = salter.signer(
             MtrDex.Ed25519_Seed,
             true,
             'N',
             Tier.low,
             true
         );
-        let ndiger = new Diger({}, skp1.verfer.qb64b);
-        let nxt = [ndiger.qb64];
+        const ndiger = new Diger({}, skp1.verfer.qb64b);
+        const nxt = [ndiger.qb64];
         assert.deepStrictEqual(nxt, [
             'EAKUR-LmLHWMwXTLWQ1QjxHrihBmwwrV2tYaSG7hOrWj',
         ]);
 
-        let ked0 = {
+        const ked0 = {
             v: 'KERI10JSON000000_',
             t: Ilks.icp,
             d: '',
@@ -74,7 +74,7 @@ describe('Serder', () => {
             a: [],
         } as Dict<any>;
 
-        let serder = new Serder(ked0);
+        const serder = new Serder(ked0);
         assert.equal(
             serder.raw,
             '{"v":"KERI10JSON0000d3_","t":"icp","d":"","i":"","s":"0","kt":"1","k":' +

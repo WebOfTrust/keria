@@ -5,9 +5,9 @@ import { Verfer } from '../../src/keri/core/verfer';
 import secp256r1 from 'ecdsa-secp256r1';
 
 function base64ToUint8Array(base64: string) {
-    var binaryString = atob(base64);
-    var bytes = new Uint8Array(binaryString.length);
-    for (var i = 0; i < binaryString.length; i++) {
+    const binaryString = atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
     }
     return new Uint8Array(bytes.buffer);
@@ -16,11 +16,11 @@ function base64ToUint8Array(base64: string) {
 describe('Verfer', () => {
     it('should verify digests', async () => {
         await libsodium.ready;
-        let seed = libsodium.randombytes_buf(libsodium.crypto_sign_SEEDBYTES);
+        const seed = libsodium.randombytes_buf(libsodium.crypto_sign_SEEDBYTES);
         const keypair = libsodium.crypto_sign_seed_keypair(seed);
 
-        let verkey = keypair.publicKey;
-        let sigkey = keypair.privateKey;
+        const verkey = keypair.publicKey;
+        const sigkey = keypair.privateKey;
 
         let verfer = new Verfer({ raw: verkey, code: MtrDex.Ed25519N });
         assert.notEqual(verfer, null);
@@ -28,9 +28,9 @@ describe('Verfer', () => {
         assert.deepStrictEqual(verfer.raw, verkey);
         assert.deepStrictEqual(verfer.code, MtrDex.Ed25519N);
 
-        let ser = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        const ser = 'abcdefghijklmnopqrstuvwxyz0123456789';
 
-        let sig = libsodium.crypto_sign_detached(ser, sigkey);
+        const sig = libsodium.crypto_sign_detached(ser, sigkey);
 
         assert.equal(verfer.verify(sig, ser), true);
 
@@ -57,9 +57,9 @@ describe('Verfer', () => {
         assert.deepStrictEqual(verfer.raw, publicKey);
         assert.deepStrictEqual(verfer.code, MtrDex.ECDSA_256r1);
 
-        let ser = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        const ser = 'abcdefghijklmnopqrstuvwxyz0123456789';
 
-        let sig = privateKey.sign(ser);
+        const sig = privateKey.sign(ser);
 
         assert.equal(verfer.verify(sig, ser), true);
 
@@ -76,7 +76,7 @@ describe('Verfer', () => {
         );
     });
     it('should not verify secp256k1', async () => {
-        let publicKey = new Uint8Array([
+        const publicKey = new Uint8Array([
             2, 79, 93, 30, 107, 249, 254, 237, 205, 87, 8, 149, 203, 214, 36,
             187, 162, 251, 58, 206, 241, 203, 27, 76, 236, 37, 189, 148, 240,
             178, 204, 133, 31,

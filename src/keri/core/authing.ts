@@ -20,11 +20,11 @@ export class Authenticater {
     }
 
     verify(headers: Headers, method: string, path: string): boolean {
-        let siginput = headers.get('Signature-Input');
+        const siginput = headers.get('Signature-Input');
         if (siginput == null) {
             return false;
         }
-        let signature = headers.get('Signature');
+        const signature = headers.get('Signature');
         if (signature == null) {
             return false;
         }
@@ -34,7 +34,7 @@ export class Authenticater {
             return false;
         }
         inputs.forEach((input) => {
-            let items = new Array<string>();
+            const items = new Array<string>();
             input.fields!.forEach((field: string) => {
                 if (field.startsWith('@')) {
                     if (field == '@method') {
@@ -44,12 +44,12 @@ export class Authenticater {
                     }
                 } else {
                     if (headers.has(field)) {
-                        let value = normalize(headers.get(field) as string);
+                        const value = normalize(headers.get(field) as string);
                         items.push(`"${field}": ${value}`);
                     }
                 }
             });
-            let values = new Array<string>();
+            const values = new Array<string>();
             values.push(`(${input.fields!.join(' ')})`);
             values.push(`created=${input.created}`);
             if (input.expires != undefined) {
@@ -67,11 +67,11 @@ export class Authenticater {
             if (input.alg != undefined) {
                 values.push(`alg=${input.alg}`);
             }
-            let params = values.join(';');
+            const params = values.join(';');
             items.push(`"@signature-params: ${params}"`);
-            let ser = items.join('\n');
-            let signage = designature(signature!);
-            let cig = signage[0].markers.get(input.name);
+            const ser = items.join('\n');
+            const signage = designature(signature!);
+            const cig = signage[0].markers.get(input.name);
             if (!this._verfer.verify(cig.raw, ser)) {
                 throw new Error(`Signature for ${input.keyid} invalid.`);
             }
@@ -90,7 +90,7 @@ export class Authenticater {
             fields = Authenticater.DefaultFields;
         }
 
-        let [header, sig] = siginput(this._csig, {
+        const [header, sig] = siginput(this._csig, {
             name: 'signify',
             method,
             path,
@@ -104,10 +104,10 @@ export class Authenticater {
             headers.append(key, value);
         });
 
-        let markers = new Map<string, Siger | Cigar>();
+        const markers = new Map<string, Siger | Cigar>();
         markers.set('signify', sig);
-        let signage = new Signage(markers, false);
-        let signed = signature([signage]);
+        const signage = new Signage(markers, false);
+        const signed = signature([signage]);
         signed.forEach((value, key) => {
             headers.append(key, value);
         });

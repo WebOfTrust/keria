@@ -22,9 +22,9 @@ export class Groups {
      * @returns {Promise<any>} A promise to the list of replay messages
      */
     async getRequest(said: string): Promise<any> {
-        let path = `/multisig/request/` + said;
-        let method = 'GET';
-        let res = await this.client.fetch(path, method, null);
+        const path = `/multisig/request/` + said;
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, null);
         return await res.json();
     }
 
@@ -43,14 +43,14 @@ export class Groups {
         sigs: string[],
         atc: string
     ): Promise<any> {
-        let path = `/identifiers/${name}/multisig/request`;
-        let method = 'POST';
-        let data = {
+        const path = `/identifiers/${name}/multisig/request`;
+        const method = 'POST';
+        const data = {
             exn: exn,
             sigs: sigs,
             atc: atc,
         };
-        let res = await this.client.fetch(path, method, data);
+        const res = await this.client.fetch(path, method, data);
         return await res.json();
     }
 
@@ -74,9 +74,9 @@ export class Groups {
         smids: string[],
         rmids: string[]
     ): Promise<any> {
-        let path = `/identifiers/${name}/multisig/join`;
-        let method = 'POST';
-        let data = {
+        const path = `/identifiers/${name}/multisig/join`;
+        const method = 'POST';
+        const data = {
             tpc: 'multisig',
             rot: rot.ked,
             sigs: sigs,
@@ -84,7 +84,7 @@ export class Groups {
             smids: smids,
             rmids: rmids
         };
-        let res = await this.client.fetch(path, method, data);
+        const res = await this.client.fetch(path, method, data);
         return await res.json();
     }
 

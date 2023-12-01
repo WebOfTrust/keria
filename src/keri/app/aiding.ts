@@ -70,17 +70,17 @@ export class Identifier {
      * @returns {Promise<any>} A promise to the list of managed identifiers
      */
     async list(start: number = 0, end: number = 24): Promise<any> {
-        let extraHeaders = new Headers();
+        const extraHeaders = new Headers();
         extraHeaders.append('Range', `aids=${start}-${end}`);
 
-        let path = `/identifiers`;
-        let data = null;
-        let method = 'GET';
-        let res = await this.client.fetch(path, method, data, extraHeaders);
+        const path = `/identifiers`;
+        const data = null;
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, data, extraHeaders);
 
-        let cr = res.headers.get('content-range');
-        let range = parseRangeHeaders(cr, 'aids');
-        let aids = await res.json();
+        const cr = res.headers.get('content-range');
+        const range = parseRangeHeaders(cr, 'aids');
+        const aids = await res.json();
 
         return {
             start: range.start,
@@ -97,10 +97,10 @@ export class Identifier {
      * @returns {Promise<any>} A promise to the identifier information
      */
     async get(name: string): Promise<any> {
-        let path = `/identifiers/${name}`;
-        let data = null;
-        let method = 'GET';
-        let res = await this.client.fetch(path, method, data);
+        const path = `/identifiers/${name}`;
+        const data = null;
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, data);
         return await res.json();
     }
 
@@ -117,31 +117,31 @@ export class Identifier {
     ): Promise<EventResult> {
         const algo = kargs.algo == undefined ? Algos.salty : kargs.algo;
 
-        let transferable = kargs.transferable ?? true;
-        let isith = kargs.isith ?? '1';
-        let nsith = kargs.nsith ?? '1';
+        const transferable = kargs.transferable ?? true;
+        const isith = kargs.isith ?? '1';
+        const nsith = kargs.nsith ?? '1';
         let wits = kargs.wits ?? [];
-        let toad = kargs.toad ?? 0;
-        let dcode = kargs.dcode ?? MtrDex.Blake3_256;
-        let proxy = kargs.proxy;
-        let delpre = kargs.delpre;
-        let data = kargs.data != undefined ? [kargs.data] : [];
-        let pre = kargs.pre;
-        let states = kargs.states;
-        let rstates = kargs.rstates;
-        let prxs = kargs.prxs;
-        let nxts = kargs.nxts;
-        let mhab = kargs.mhab;
-        let _keys = kargs.keys;
-        let _ndigs = kargs.ndigs;
-        let bran = kargs.bran;
-        let count = kargs.count;
-        let ncount = kargs.ncount;
-        let tier = kargs.tier;
-        let extern_type = kargs.extern_type;
-        let extern = kargs.extern;
+        const toad = kargs.toad ?? 0;
+        const dcode = kargs.dcode ?? MtrDex.Blake3_256;
+        const proxy = kargs.proxy;
+        const delpre = kargs.delpre;
+        const data = kargs.data != undefined ? [kargs.data] : [];
+        const pre = kargs.pre;
+        const states = kargs.states;
+        const rstates = kargs.rstates;
+        const prxs = kargs.prxs;
+        const nxts = kargs.nxts;
+        const mhab = kargs.mhab;
+        const _keys = kargs.keys;
+        const _ndigs = kargs.ndigs;
+        const bran = kargs.bran;
+        const count = kargs.count;
+        const ncount = kargs.ncount;
+        const tier = kargs.tier;
+        const extern_type = kargs.extern_type;
+        const extern = kargs.extern;
 
-        let xargs = {
+        const xargs = {
             transferable: transferable,
             isith: isith,
             nsith: nsith,
@@ -168,8 +168,8 @@ export class Identifier {
             extern: extern,
         };
 
-        let keeper = this.client.manager!.new(algo, this.client.pidx, xargs);
-        let [keys, ndigs] = await keeper!.incept(transferable);
+        const keeper = this.client.manager!.new(algo, this.client.pidx, xargs);
+        const [keys, ndigs] = await keeper!.incept(transferable);
         wits = wits !== undefined ? wits : [];
         let serder: Serder | undefined = undefined;
         if (delpre == undefined) {
@@ -205,8 +205,8 @@ export class Identifier {
             });
         }
 
-        let sigs = await keeper!.sign(b(serder.raw));
-        var jsondata: any = {
+        const sigs = await keeper!.sign(b(serder.raw));
+        const jsondata: any = {
             name: name,
             icp: serder.ked,
             sigs: sigs,
@@ -223,7 +223,7 @@ export class Identifier {
         jsondata[algo] = keeper.params();
 
         this.client.pidx = this.client.pidx + 1;
-        let res = this.client.fetch('/identifiers', 'POST', jsondata);
+        const res = this.client.fetch('/identifiers', 'POST', jsondata);
         return new EventResult(serder, sigs, res);
     }
 
@@ -235,18 +235,18 @@ export class Identifier {
      * @returns {Promise<EventResult>} A promise to the interaction event result
      */
     async interact(name: string, data?: any): Promise<EventResult> {
-        let hab = await this.get(name);
-        let pre: string = hab.prefix;
+        const hab = await this.get(name);
+        const pre: string = hab.prefix;
 
-        let state = hab.state;
-        let sn = Number(state.s);
-        let dig = state.d;
-
-        data = Array.isArray(data) ? data : [data];
+        const state = hab.state;
+        const sn = Number(state.s);
+        const dig = state.d;
 
         data = Array.isArray(data) ? data : [data];
 
-        let serder = interact({
+        data = Array.isArray(data) ? data : [data];
+
+        const serder = interact({
             pre: pre,
             sn: sn + 1,
             data: data,
@@ -254,16 +254,16 @@ export class Identifier {
             version: undefined,
             kind: undefined,
         });
-        let keeper = this.client!.manager!.get(hab);
-        let sigs = await keeper.sign(b(serder.raw));
+        const keeper = this.client!.manager!.get(hab);
+        const sigs = await keeper.sign(b(serder.raw));
 
-        let jsondata: any = {
+        const jsondata: any = {
             ixn: serder.ked,
             sigs: sigs,
         };
         jsondata[keeper.algo] = keeper.params();
 
-        let res = this.client.fetch(
+        const res = this.client.fetch(
             '/identifiers/' + name + '?type=ixn',
             'PUT',
             jsondata
@@ -281,18 +281,18 @@ export class Identifier {
         name: string,
         kargs: RotateIdentifierArgs = {}
     ): Promise<EventResult> {
-        let transferable = kargs.transferable ?? true;
-        let ncode = kargs.ncode ?? MtrDex.Ed25519_Seed;
-        let ncount = kargs.ncount ?? 1;
+        const transferable = kargs.transferable ?? true;
+        const ncode = kargs.ncode ?? MtrDex.Ed25519_Seed;
+        const ncount = kargs.ncount ?? 1;
 
-        let hab = await this.get(name);
-        let pre = hab.prefix;
+        const hab = await this.get(name);
+        const pre = hab.prefix;
 
-        let state = hab.state;
-        let count = state.k.length;
-        let dig = state.d;
-        let ridx = Number(state.s) + 1;
-        let wits = state.b;
+        const state = hab.state;
+        const count = state.k.length;
+        const dig = state.d;
+        const ridx = Number(state.s) + 1;
+        const wits = state.b;
         let isith = state.kt;
 
         let nsith = kargs.nsith ?? isith;
@@ -305,28 +305,28 @@ export class Identifier {
         if (nsith == undefined)
             nsith = `${Math.max(1, Math.ceil(ncount / 2)).toString(16)}`;
 
-        let cst = new Tholder({ sith: isith }).sith; // current signing threshold
-        let nst = new Tholder({ sith: nsith }).sith; // next signing threshold
+        const cst = new Tholder({ sith: isith }).sith; // current signing threshold
+        const nst = new Tholder({ sith: nsith }).sith; // next signing threshold
 
         // Regenerate next keys to sign rotation event
-        let keeper = this.client.manager!.get(hab);
+        const keeper = this.client.manager!.get(hab);
         // Create new keys for next digests
-        let ncodes = kargs.ncodes ?? new Array(ncount).fill(ncode);
+        const ncodes = kargs.ncodes ?? new Array(ncount).fill(ncode);
 
-        let states = kargs.states == undefined ? [] : kargs.states;
-        let rstates = kargs.rstates == undefined ? [] : kargs.rstates;
-        let [keys, ndigs] = await keeper!.rotate(
+        const states = kargs.states == undefined ? [] : kargs.states;
+        const rstates = kargs.rstates == undefined ? [] : kargs.rstates;
+        const [keys, ndigs] = await keeper!.rotate(
             ncodes,
             transferable,
             states,
             rstates
         );
 
-        let cuts = kargs.cuts ?? [];
-        let adds = kargs.adds ?? [];
-        let data = kargs.data != undefined ? [kargs.data] : [];
-        let toad = kargs.toad;
-        let serder = rotate({
+        const cuts = kargs.cuts ?? [];
+        const adds = kargs.adds ?? [];
+        const data = kargs.data != undefined ? [kargs.data] : [];
+        const toad = kargs.toad;
+        const serder = rotate({
             pre: pre,
             keys: keys,
             dig: dig,
@@ -341,9 +341,9 @@ export class Identifier {
             data: data,
         });
 
-        let sigs = await keeper.sign(b(serder.raw));
+        const sigs = await keeper.sign(b(serder.raw));
 
-        var jsondata: any = {
+        const jsondata: any = {
             rot: serder.ked,
             sigs: sigs,
             smids:
@@ -357,7 +357,7 @@ export class Identifier {
         };
         jsondata[keeper.algo] = keeper.params();
 
-        let res = this.client.fetch('/identifiers/' + name, 'PUT', jsondata);
+        const res = this.client.fetch('/identifiers/' + name, 'PUT', jsondata);
         return new EventResult(serder, sigs, res);
     }
 
@@ -390,7 +390,7 @@ export class Identifier {
             sigs: sigs,
         };
 
-        let res = this.client.fetch(
+        const res = this.client.fetch(
             '/identifiers/' + name + '/endroles',
             'POST',
             jsondata
@@ -430,7 +430,7 @@ export class Identifier {
      * @returns {Promise<any>} - A promise to the list of members
      */
     async members(name: string): Promise<any> {
-        let res = await this.client.fetch(
+        const res = await this.client.fetch(
             '/identifiers/' + name + '/members',
             'GET',
             undefined
@@ -460,7 +460,7 @@ export class EventResult {
     }
 
     async op(): Promise<any> {
-        let res = await this.promise;
+        const res = await this.promise;
         return await res.json();
     }
 }

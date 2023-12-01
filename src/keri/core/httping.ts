@@ -45,8 +45,8 @@ export function siginput(
         context,
     }: SiginputArgs
 ): [Map<string, string>, Siger | Cigar] {
-    let items = new Array<string>();
-    let ifields = new Array<[string, Map<string, string>]>();
+    const items = new Array<string>();
+    const ifields = new Array<[string, Map<string, string>]>();
 
     fields.forEach((field) => {
         if (field.startsWith('@')) {
@@ -64,16 +64,16 @@ export function siginput(
             if (!headers.has(field)) return;
 
             ifields.push([field, new Map()]);
-            let value = normalize(headers.get(field)!);
+            const value = normalize(headers.get(field)!);
             items.push(`"${field}": ${value}`);
         }
     });
 
-    let nameParams = new Map<string, string | number>();
-    let now = Math.floor(nowUTC().getTime() / 1000);
+    const nameParams = new Map<string, string | number>();
+    const now = Math.floor(nowUTC().getTime() / 1000);
     nameParams.set('created', now);
 
-    let values = [
+    const values = [
         `(${ifields.map((field) => field[0]).join(' ')})`,
         `created=${now}`,
     ];
@@ -97,13 +97,13 @@ export function siginput(
         values.push(`alg=${alg}`);
         nameParams.set('alg', alg);
     }
-    let sid = new Map([[name, [ifields, nameParams]]]);
+    const sid = new Map([[name, [ifields, nameParams]]]);
 
-    let params = values.join(';');
+    const params = values.join(';');
     items.push(`"@signature-params: ${params}"`);
 
-    let ser = items.join('\n');
-    let sig = signer.sign(b(ser));
+    const ser = items.join('\n');
+    const sig = signer.sign(b(ser));
 
     return [
         new Map<string, string>([
@@ -141,11 +141,11 @@ export class Inputage {
 }
 
 export function desiginput(value: string): Array<Inputage> {
-    let sid = parseDictionary(value);
-    let siginputs = new Array<Inputage>();
+    const sid = parseDictionary(value);
+    const siginputs = new Array<Inputage>();
 
     sid.forEach((value, key) => {
-        let siginput = new Inputage();
+        const siginput = new Inputage();
         siginput.name = key;
         let list: Item[];
         let params;
@@ -194,9 +194,9 @@ export function parseRangeHeaders(
     typ: string
 ): { start: number; end: number; total: number } {
     if (header !== null) {
-        let data = header.replace(`${typ} `, '');
-        let values = data.split('/');
-        let rng = values[0].split('-');
+        const data = header.replace(`${typ} `, '');
+        const values = data.split('/');
+        const rng = values[0].split('-');
 
         return {
             start: parseInt(rng[0]),

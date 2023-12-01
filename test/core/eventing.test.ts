@@ -12,7 +12,7 @@ describe('key event function', () => {
     it('incept should create inception events', async () => {
         await libsodium.ready;
 
-        let seed = new Uint8Array([
+        const seed = new Uint8Array([
             159, 123, 168, 167, 168, 67, 57, 150, 38, 250, 177, 153, 235, 170,
             32, 196, 27, 71, 17, 196, 174, 83, 65, 82, 201, 189, 4, 157, 133,
             41, 126, 147,
@@ -158,13 +158,13 @@ describe('key event function', () => {
                 'M52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":0,"b":[],"c":[],"a":[]}'
         );
 
-        let siger = signer0.sign(b(serder0.raw), 0) as Siger;
+        const siger = signer0.sign(b(serder0.raw), 0) as Siger;
         assert.equal(
             siger.qb64,
             'AABB3MJGmBXxSEryNHw3YwZZLRl_6Ws4Me2WFq8PrQ6WlluSOpPqbwXuiG9RvNWZkqeW8A_0VRjokGMVRZ3m-c0I'
         );
 
-        let msg = messagize(serder0, [siger]);
+        const msg = messagize(serder0, [siger]);
         assert.equal(
             d(msg),
             '{"v":"KERI10JSON000125_","t":"icp","d":"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","i"' +
@@ -172,7 +172,7 @@ describe('key event function', () => {
                 '"nt":1,"n":["EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":0,"b":[],"c":[],"a":[]}' +
                 '-AABAABB3MJGmBXxSEryNHw3YwZZLRl_6Ws4Me2WFq8PrQ6WlluSOpPqbwXuiG9RvNWZkqeW8A_0VRjokGMVRZ3m-c0I'
         );
-        let seal = [
+        const seal = [
             'SealEvent',
             {
                 i: 'EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL',
@@ -180,7 +180,7 @@ describe('key event function', () => {
                 d: 'EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL',
             },
         ];
-        let msgseal = messagize(serder0, [siger], seal);
+        const msgseal = messagize(serder0, [siger], seal);
         assert.equal(
             d(msgseal),
             '{"v":"KERI10JSON000125_","t":"icp","d":"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","i"' +

@@ -75,7 +75,7 @@ export class Diger extends Matter {
 
     blake3_256(ser: Uint8Array, dig: any) {
         const hasher = createHash();
-        let digest = hasher.update(ser).digest('');
+        const digest = hasher.update(ser).digest('');
         return digest.toString() === dig.toString();
     }
 }

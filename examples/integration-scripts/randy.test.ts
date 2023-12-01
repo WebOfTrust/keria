@@ -40,7 +40,7 @@ test('randy', async () => {
     op = await icpResult.op();
     assert.equal(op['done'], true);
     let ked = op['response'];
-    let ixn = new signify.Serder(ked);
+    const ixn = new signify.Serder(ked);
     assert.equal(ixn.ked['s'], '1');
     assert.deepEqual([...ixn.ked['a']], [icp.pre]);
 
@@ -56,13 +56,13 @@ test('randy', async () => {
     op = await icpResult.op();
     assert.equal(op['done'], true);
     ked = op['response'];
-    let rot = new signify.Serder(ked);
+    const rot = new signify.Serder(ked);
     assert.equal(rot.ked['s'], '2');
     assert.equal(rot.verfers.length, 1);
     assert.equal(rot.digers.length, 1);
     assert.notEqual(rot.verfers[0].qb64, icp.verfers[0].qb64);
     assert.notEqual(rot.digers[0].qb64, icp.digers[0].qb64);
-    let dig = new signify.Diger(
+    const dig = new signify.Diger(
         { code: signify.MtrDex.Blake3_256 },
         rot.verfers[0].qb64b
     );

@@ -14,12 +14,12 @@ describe('Saider', () => {
     it('should create Saidified dicts', async () => {
         await libsodium.ready;
 
-        let kind = Serials.JSON;
-        let code = MtrDex.Blake3_256;
+        const kind = Serials.JSON;
+        const code = MtrDex.Blake3_256;
 
-        let vs = versify(Ident.KERI, Versionage, kind, 0); // vaccuous size == 0
+        const vs = versify(Ident.KERI, Versionage, kind, 0); // vaccuous size == 0
         assert.equal(vs, 'KERI10JSON000000_');
-        let sad4 = {
+        const sad4 = {
             v: vs,
             t: 'rep',
             d: '', // vacuous said
@@ -32,7 +32,7 @@ describe('Saider', () => {
                 role: 'Founder',
             } as Dict<any>,
         } as Dict<any>;
-        let saider = new Saider({}, sad4); // default version string code, kind, and label
+        const saider = new Saider({}, sad4); // default version string code, kind, and label
         assert.equal(saider.code, code);
         assert.equal(
             saider.qb64,

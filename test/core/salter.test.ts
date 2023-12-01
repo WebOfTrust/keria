@@ -11,7 +11,7 @@ describe('Salter', () => {
         assert.notEqual(salter, null);
         assert.equal(salter.qb64.length, 24);
 
-        let salt = new Uint8Array([
+        const salt = new Uint8Array([
             146, 78, 142, 186, 189, 77, 130, 3, 232, 248, 186, 197, 8, 0, 73,
             182,
         ]);
@@ -37,8 +37,8 @@ describe('Salter', () => {
 
 describe('Salter.signer', () => {
     it('should return a signer', async () => {
-        let salter = new Salter({ qb64: '0ACSTo66vU2CA-j4usUIAEm2' });
-        let signer = salter.signer();
+        const salter = new Salter({ qb64: '0ACSTo66vU2CA-j4usUIAEm2' });
+        const signer = salter.signer();
         assert.notEqual(signer, null);
         assert.equal(
             signer.verfer.qb64,

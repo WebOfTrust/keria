@@ -43,7 +43,7 @@ async function run() {
     );
 
     // Client 1 create delegator AID
-    let icpResult1 = await client1.identifiers().create('delegator', {
+    const icpResult1 = await client1.identifiers().create('delegator', {
         toad: 3,
         wits: [
             'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
@@ -64,7 +64,7 @@ async function run() {
 
     // Client 2 resolves delegator OOBI
     console.log('Client 2 resolving delegator OOBI');
-    let oobi1 = await client1.oobis().get('delegator', 'agent');
+    const oobi1 = await client1.oobis().get('delegator', 'agent');
     let op2 = await client2.oobis().resolve(oobi1.oobis[0], 'delegator');
     while (!op2['done']) {
         op2 = await client2.operations().get(op2.name);
@@ -73,11 +73,11 @@ async function run() {
     console.log('OOBI resolved');
 
     // Client 2 creates delegate AID
-    let icpResult2 = await client2
+    const icpResult2 = await client2
         .identifiers()
         .create('delegate', { delpre: aid1.prefix });
     op2 = await icpResult2.op();
-    let delegatePrefix = op2.name.split('.')[1];
+    const delegatePrefix = op2.name.split('.')[1];
     console.log("Delegate's prefix:", delegatePrefix);
     console.log('Delegate waiting for approval...');
 
