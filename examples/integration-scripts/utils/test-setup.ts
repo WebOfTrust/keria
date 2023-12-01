@@ -55,7 +55,7 @@ export async function getOrCreateClient(bran: string | undefined = undefined): P
  * });
  * @see resolveEnvironment
  */
-export async function getOrCreateIdentifier(client: SignifyClient, name: string): Promise<[string, string]> {
+export async function getOrCreateIdentifier(client: SignifyClient, name: string, kargs: CreateIdentiferArgs | undefined = undefined): Promise<[string, string]> {
     let id: any = undefined;
     try {
         let identfier = await client.identifiers().get(name);
@@ -63,11 +63,11 @@ export async function getOrCreateIdentifier(client: SignifyClient, name: string)
         id = identfier.prefix;
     } catch {
         let env = resolveEnvironment();
-        let args: CreateIdentiferArgs = {
+        kargs ??= {
             toad: env.witnessIds.length,
             wits: env.witnessIds
         };
-        let result: EventResult = await client.identifiers().create(name, args);
+        let result: EventResult = await client.identifiers().create(name, kargs);
         let op = await result.op();
         op = await waitOperation(client, op);
         // console.log("identifiers.create", op);
