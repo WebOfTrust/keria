@@ -9,12 +9,12 @@ import { strict as assert } from 'assert';
 describe('registry', () => {
     it('should create a registry', async () => {
         await libsodium.ready;
-        let mockedClient = mock(SignifyClient);
-        let mockedIdentifiers = mock(Identifier);
-        let mockedKeyManager = mock(KeyManager);
-        let mockedKeeper = mock(SaltyKeeper);
+        const mockedClient = mock(SignifyClient);
+        const mockedIdentifiers = mock(Identifier);
+        const mockedKeyManager = mock(KeyManager);
+        const mockedKeeper = mock(SaltyKeeper);
 
-        let hab = { prefix: 'hab prefix', state: { s: 0, d: 'a digest' } };
+        const hab = { prefix: 'hab prefix', state: { s: 0, d: 'a digest' } };
 
         when(mockedClient.manager).thenReturn(instance(mockedKeyManager));
         when(mockedKeyManager.get(hab)).thenReturn(instance(mockedKeeper));
@@ -28,7 +28,7 @@ describe('registry', () => {
             instance(mockedIdentifiers)
         );
 
-        let mockedResponse = mock(Response);
+        const mockedResponse = mock(Response);
         when(
             mockedClient.fetch(
                 '/identifiers/a name/registries',
@@ -37,9 +37,9 @@ describe('registry', () => {
             )
         ).thenResolve(instance(mockedResponse));
 
-        let registries = new Registries(instance(mockedClient));
+        const registries = new Registries(instance(mockedClient));
 
-        let actual = await registries.create({
+        const actual = await registries.create({
             name: 'a name',
             registryName: 'a registry name',
             nonce: '',
@@ -57,10 +57,10 @@ describe('registry', () => {
 
     it('should fail on estanblishmnet only for now', async () => {
         await libsodium.ready;
-        let mockedClient = mock(SignifyClient);
-        let mockedIdentifiers = mock(Identifier);
+        const mockedClient = mock(SignifyClient);
+        const mockedIdentifiers = mock(Identifier);
 
-        let hab = {
+        const hab = {
             prefix: 'hab prefix',
             state: { s: 0, d: 'a digest', c: ['EO'] },
         };
@@ -70,7 +70,7 @@ describe('registry', () => {
             instance(mockedIdentifiers)
         );
 
-        let registries = new Registries(instance(mockedClient));
+        const registries = new Registries(instance(mockedClient));
 
         assert.rejects(
             async () => {

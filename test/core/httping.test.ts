@@ -12,11 +12,11 @@ import * as utilApi from '../../src/keri/core/utils';
 describe('siginput', () => {
     it('create valid Signature-Input header with signature', async () => {
         await libsodium.ready;
-        let salt = '0123456789abcdef';
-        let salter = new Salter({ raw: b(salt) });
-        let signer = salter.signer();
+        const salt = '0123456789abcdef';
+        const salter = new Salter({ raw: b(salt) });
+        const signer = salter.signer();
 
-        let headers: Headers = new Headers([
+        const headers: Headers = new Headers([
             ['Content-Type', 'application/json'],
             ['Content-Length', '256'],
             ['Connection', 'close'],
@@ -30,7 +30,7 @@ describe('siginput', () => {
             new Date('2021-01-01T00:00:00.000000+00:00')
         );
 
-        let [header, sig] = siginput(signer, {
+        const [header, sig] = siginput(signer, {
             name: 'sig0',
             method: 'POST',
             path: '/signify',
@@ -47,7 +47,7 @@ describe('siginput', () => {
 
         assert.equal(header.size, 1);
         assert.equal(header.has('Signature-Input'), true);
-        let sigipt = header.get('Signature-Input');
+        const sigipt = header.get('Signature-Input');
         assert.equal(
             sigipt,
             'sig0=("Signify-Resource" "@method" "@path" "Signify-Timestamp");created=1609459200;keyid="DN54yRad_BTqgZYUSi_NthRBQrxSnqQdJXWI5UHcGOQt";alg="ed25519"'
@@ -62,12 +62,12 @@ describe('siginput', () => {
 describe('desiginput', () => {
     it('create valid Signature-Input header with signature', async () => {
         await libsodium.ready;
-        let siginput =
+        const siginput =
             'sig0=("signify-resource" "@method" "@path" "signify-timestamp");created=1609459200;keyid="EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3";alg="ed25519"';
 
-        let inputs = desiginput(siginput);
+        const inputs = desiginput(siginput);
         assert.equal(inputs.length, 1);
-        let input = inputs[0];
+        const input = inputs[0];
         assert.deepStrictEqual(input.fields, [
             'signify-resource',
             '@method',

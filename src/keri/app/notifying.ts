@@ -23,16 +23,16 @@ export class Notifications {
      * @returns {Promise<any>} A promise to the list of notifications
      */
     async list(start: number = 0, end: number = 24): Promise<any> {
-        let extraHeaders = new Headers();
+        const extraHeaders = new Headers();
         extraHeaders.append('Range', `notes=${start}-${end}`);
 
-        let path = `/notifications`;
-        let method = 'GET';
-        let res = await this.client.fetch(path, method, null, extraHeaders);
+        const path = `/notifications`;
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, null, extraHeaders);
 
-        let cr = res.headers.get('content-range');
-        let range = parseRangeHeaders(cr, 'notes');
-        let notes = await res.json();
+        const cr = res.headers.get('content-range');
+        const range = parseRangeHeaders(cr, 'notes');
+        const notes = await res.json();
 
         return {
             start: range.start,
@@ -49,9 +49,9 @@ export class Notifications {
      * @returns {Promise<string>} A promise to the result of the marking
      */
     async mark(said: string): Promise<string> {
-        let path = `/notifications/` + said;
-        let method = 'PUT';
-        let res = await this.client.fetch(path, method, null);
+        const path = `/notifications/` + said;
+        const method = 'PUT';
+        const res = await this.client.fetch(path, method, null);
         return await res.text();
     }
 
@@ -62,9 +62,9 @@ export class Notifications {
      * @returns {Promise<any>} A promise to the result of the deletion
      */
     async delete(said: string): Promise<any> {
-        let path = `/notifications/` + said;
-        let method = 'DELETE';
-        let res = await this.client.fetch(path, method, null);
+        const path = `/notifications/` + said;
+        const method = 'DELETE';
+        const res = await this.client.fetch(path, method, null);
         return await res.json();
     }
 }

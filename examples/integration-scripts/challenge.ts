@@ -49,7 +49,7 @@ async function run() {
     assert.equal(challenge1_big.words.length, 24);
 
     // Create two identifiers, one for each client
-    let icpResult1 = await client1.identifiers().create('alice', {
+    const icpResult1 = await client1.identifiers().create('alice', {
         toad: 3,
         wits: [
             'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
@@ -68,7 +68,7 @@ async function run() {
         .addEndRole('alice', 'agent', client1!.agent!.pre);
     console.log("Alice's AID:", aid1.i);
 
-    let icpResult2 = await client2.identifiers().create('bob', {
+    const icpResult2 = await client2.identifiers().create('bob', {
         toad: 3,
         wits: [
             'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
@@ -86,8 +86,8 @@ async function run() {
     console.log("Bob's AID:", aid2.i);
 
     // Exchenge OOBIs
-    let oobi1 = await client1.oobis().get('alice', 'agent');
-    let oobi2 = await client2.oobis().get('bob', 'agent');
+    const oobi1 = await client1.oobis().get('alice', 'agent');
+    const oobi2 = await client2.oobis().get('bob', 'agent');
 
     op1 = await client1.oobis().resolve(oobi2.oobis[0], 'bob');
     while (!op1['done']) {
@@ -121,7 +121,7 @@ async function run() {
     console.log('Alice verified challenge response');
 
     //Alice mark response as accepted
-    let exn = new Serder(op1.response.exn);
+    const exn = new Serder(op1.response.exn);
     op1 = await client1.challenges().responded('alice', aid2.i, exn.ked.d);
     console.log('Alice marked challenge response as accepted');
 

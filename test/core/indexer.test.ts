@@ -51,7 +51,7 @@ describe('Indexer', () => {
         // sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
         //            b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
         //            b'\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
-        let sig = new Uint8Array([
+        const sig = new Uint8Array([
             153, 210, 60, 57, 36, 36, 48, 159, 107, 251, 24, 160, 140, 64, 114,
             18, 50, 46, 107, 178, 199, 31, 112, 14, 39, 109, 143, 64, 170, 165,
             140, 200, 110, 133, 200, 33, 246, 113, 145, 112, 169, 236, 207, 146,
@@ -59,23 +59,23 @@ describe('Indexer', () => {
             60, 111, 34, 129, 38, 9,
         ]);
         assert.equal(sig.length, 64);
-        let ps = (3 - (sig.length % 3)) % 3;
-        let bytes = new Uint8Array(ps + sig.length);
+        const ps = (3 - (sig.length % 3)) % 3;
+        const bytes = new Uint8Array(ps + sig.length);
         for (let i = 0; i < ps; i++) {
             bytes[i] = 0;
         }
         for (let i = 0; i < sig.length; i++) {
-            let odx = i + ps;
+            const odx = i + ps;
             bytes[odx] = sig[i];
         }
-        let sig64 = Base64.encode(Buffer.from(bytes));
+        const sig64 = Base64.encode(Buffer.from(bytes));
         assert.equal(sig64.length, 88);
         assert.equal(
             sig64,
             'AACZ0jw5JCQwn2v7GKCMQHISMi5rsscfcA4nbY9AqqWMyG6FyCH2cZFwqezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ'
         );
 
-        let qsc = IdrDex.Ed25519_Sig + intToB64(0, 1);
+        const qsc = IdrDex.Ed25519_Sig + intToB64(0, 1);
         assert.equal(qsc, 'AA');
         let qsig64 = qsc + sig64.slice(ps); // replace prepad chars with clause
         assert.equal(
@@ -118,7 +118,7 @@ describe('Indexer', () => {
         assert.equal(indexer.ondex, 0);
         assert.deepStrictEqual(indexer.qb64b, qsig64b);
 
-        let longsig = new Uint8Array(sig.length + 3);
+        const longsig = new Uint8Array(sig.length + 3);
         longsig.set(sig);
         longsig.set(new Uint8Array([10, 11, 12]), sig.length);
         indexer = new Indexer({ raw: longsig });
@@ -127,7 +127,7 @@ describe('Indexer', () => {
         assert.equal(indexer.index, 0);
         assert.equal(indexer.ondex, 0);
 
-        let shortsig = sig.slice(0, sig.length - 3);
+        const shortsig = sig.slice(0, sig.length - 3);
         assert.throws(() => {
             new Indexer({ raw: shortsig });
         });
@@ -148,17 +148,17 @@ describe('Indexer', () => {
         assert.deepStrictEqual(indexer.qb64b, qsig64b);
         assert.deepStrictEqual(indexer.qb64, qsig64);
 
-        let badq64sig2 =
+        const badq64sig2 =
             'AA_Z0jw5JCQwn2v7GKCMQHISMi5rsscfcA4nbY9AqqWMyG6FyCH2cZFwqezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ';
         assert.throws(() => {
             new Indexer({ qb64: badq64sig2 });
         });
 
-        let longqsig64 = qsig64 + 'ABCD';
+        const longqsig64 = qsig64 + 'ABCD';
         indexer = new Indexer({ qb64: longqsig64 });
         assert.equal(indexer.qb64.length, Indexer.Sizes.get(indexer.code)!.fs);
 
-        let shortqsig64 = qsig64.slice(0, -4);
+        const shortqsig64 = qsig64.slice(0, -4);
         assert.throws(() => {
             new Indexer({ qb64: shortqsig64 });
         });
@@ -283,7 +283,7 @@ describe('Indexer', () => {
         assert.deepStrictEqual(indexer.qb64b, qb64b);
 
         index = 90;
-        let ondex = 65;
+        const ondex = 65;
         qb64 =
             '2ABaBBCZ0jw5JCQwn2v7GKCMQHISMi5rsscfcA4nbY9AqqWMyG6FyCH2cZFwqezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ';
         qb64b = b(qb64);

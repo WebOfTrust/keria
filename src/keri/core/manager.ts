@@ -96,7 +96,7 @@ export class RandyCreator implements Creator {
         code: string = MtrDex.Ed25519_Seed,
         transferable: boolean = true
     ): Keys {
-        let signers = new Array<Signer>();
+        const signers = new Array<Signer>();
         if (codes == undefined) {
             codes = new Array(count).fill(code);
         }
@@ -157,8 +157,8 @@ export class SaltyCreator implements Creator {
         kidx: number = 0,
         temp: boolean = false
     ): Keys {
-        let signers = new Array<Signer>();
-        let paths = new Array<string>();
+        const signers = new Array<Signer>();
+        const paths = new Array<string>();
 
         if (codes == undefined) {
             codes = new Array<string>(count).fill(code);
@@ -167,7 +167,7 @@ export class SaltyCreator implements Creator {
         codes.forEach((code, idx) => {
             // Previuos definition of path
             // let path = this.stem + pidx.toString(16) + ridx.toString(16) + (kidx+idx).toString(16)
-            let path =
+            const path =
                 this.stem == ''
                     ? pidx.toString(16)
                     : this.stem + ridx.toString(16) + (kidx + idx).toString(16);
@@ -215,14 +215,14 @@ export function openManager(passcode: string, salt?: string) {
         throw new Error('Bran (passcode seed material) too short.');
     }
 
-    let bran = MtrDex.Salt_128 + 'A' + passcode.substring(0, 21); // qb64 salt for seed
-    let signer = new Salter({ qb64: bran }).signer(MtrDex.Ed25519_Seed, false);
-    let seed = signer.qb64;
-    let aeid = signer.verfer.qb64; // lest it remove encryption
+    const bran = MtrDex.Salt_128 + 'A' + passcode.substring(0, 21); // qb64 salt for seed
+    const signer = new Salter({ qb64: bran }).signer(MtrDex.Ed25519_Seed, false);
+    const seed = signer.qb64;
+    const aeid = signer.verfer.qb64; // lest it remove encryption
 
     let algo;
 
-    let salter = salt != undefined ? new Salter({ qb64: salt }) : undefined;
+    const salter = salt != undefined ? new Salter({ qb64: salt }) : undefined;
     if (salt != undefined) {
         algo = Algos.salty;
     } else {
@@ -296,7 +296,7 @@ export class Manager {
         pidx = pidx == undefined ? 0 : pidx;
         algo = algo == undefined ? Algos.salty : algo;
 
-        let salt = salter?.qb64;
+        const salt = salter?.qb64;
 
         tier = tier == undefined ? Tier.low : tier;
 
@@ -342,7 +342,7 @@ export class Manager {
     }
 
     get pidx(): number | undefined {
-        let pidx = this.ks.getGbls('pidx');
+        const pidx = this.ks.getGbls('pidx');
         if (pidx != undefined) {
             return parseInt(pidx, 16);
         }
@@ -357,7 +357,7 @@ export class Manager {
         if (this._decrypter == undefined) {
             return this._salt;
         } else {
-            let salt = this.ks.getGbls('salt');
+            const salt = this.ks.getGbls('salt');
             return this._decrypter.decrypt(b(salt)).qb64;
         }
     }
@@ -380,8 +380,8 @@ export class Manager {
     }
 
     get algo(): Algos | undefined {
-        let a = this.ks.getGbls('algo');
-        let ta = a as keyof typeof Algos;
+        const a = this.ks.getGbls('algo');
+        const ta = a as keyof typeof Algos;
         return Algos[ta];
     }
 
@@ -391,7 +391,7 @@ export class Manager {
 
     private updateAeid(aeid: string | undefined, seed?: string) {
         if (this.aeid != undefined) {
-            let seed = b(this._seed);
+            const seed = b(this._seed);
             if (this._seed == undefined || !this._encrypter?.verifySeed(seed)) {
                 throw new Error(`Last seed missing or provided last seed "
                                        "not associated with last aeid=${this.aeid}.`);
@@ -415,7 +415,7 @@ export class Manager {
             this._encrypter = undefined;
         }
 
-        let salt = this.salt;
+        const salt = this.salt;
         if (salt != undefined) {
             this.salt = salt;
         }
@@ -423,7 +423,7 @@ export class Manager {
         if (this._decrypter != undefined) {
             for (const [keys, data] of this.ks.prmsElements()) {
                 if (data.salt != undefined) {
-                    let salter = this._decrypter.decrypt(b(data.salt));
+                    const salter = this._decrypter.decrypt(b(data.salt));
                     data.salt =
                         this._encrypter == undefined
                             ? salter.qb64
@@ -473,11 +473,11 @@ export class Manager {
             tier = this.tier;
         }
 
-        let pidx = this.pidx!;
-        let ridx = 0;
-        let kidx = 0;
+        const pidx = this.pidx!;
+        const ridx = 0;
+        const kidx = 0;
 
-        let creator = new Creatory(algo).make(salt, tier, stem);
+        const creator = new Creatory(algo).make(salt, tier, stem);
 
         if (icodes == undefined) {
             if (icount < 0) {
@@ -487,7 +487,7 @@ export class Manager {
             icodes = new Array<string>(icount).fill(icode);
         }
 
-        let ikeys = creator.create(
+        const ikeys = creator.create(
             icodes,
             0,
             MtrDex.Ed25519_Seed,
@@ -497,7 +497,7 @@ export class Manager {
             kidx,
             temp
         );
-        let verfers = Array.from(
+        const verfers = Array.from(
             ikeys.signers,
             (signer: Signer) => signer.verfer
         );
@@ -510,7 +510,7 @@ export class Manager {
             ncodes = new Array<string>(ncount).fill(ncode);
         }
 
-        let nkeys = creator.create(
+        const nkeys = creator.create(
             ncodes,
             0,
             MtrDex.Ed25519_Seed,
@@ -521,12 +521,12 @@ export class Manager {
             temp
         );
 
-        let digers = Array.from(
+        const digers = Array.from(
             nkeys.signers,
             (signer: Signer) => new Diger({ code: dcode }, signer.verfer.qb64b)
         );
 
-        let pp = new PrePrm();
+        const pp = new PrePrm();
         pp.pidx = pidx!;
         pp.algo = algo!;
         pp.salt =
@@ -536,14 +536,14 @@ export class Manager {
         pp.stem = creator.stem;
         pp.tier = creator.tier;
 
-        let dt = new Date().toString();
-        let nw = new PubLot();
+        const dt = new Date().toString();
+        const nw = new PubLot();
         nw.pubs = Array.from(verfers, (verfer: Verfer) => verfer.qb64);
         nw.ridx = ridx;
         nw.kidx = kidx;
         nw.dt = dt;
 
-        let nt = new PubLot();
+        const nt = new PubLot();
         nt.pubs = Array.from(
             nkeys.signers,
             (signer: Signer) => signer.verfer.qb64
@@ -552,11 +552,11 @@ export class Manager {
         nt.kidx = kidx + icodes.length;
         nt.dt = dt;
 
-        let ps = new PreSit();
+        const ps = new PreSit();
         ps.new = nw;
         ps.nxt = nt;
 
-        let pre = verfers[0].qb64;
+        const pre = verfers[0].qb64;
         if (!this.ks.putPres(pre, verfers[0].qb64b)) {
             throw new Error(`Already incepted pre=${pre}.`);
         }
@@ -586,8 +586,8 @@ export class Manager {
             nkeys.paths != undefined
         ) {
             ikeys.paths.forEach((path: string, idx: number) => {
-                let signer = ikeys.signers[idx];
-                let ppt = new PubPath();
+                const signer = ikeys.signers[idx];
+                const ppt = new PubPath();
                 ppt.path = path;
                 ppt.code = icodes[idx];
                 ppt.tier = pp.tier;
@@ -595,8 +595,8 @@ export class Manager {
                 this.ks.putPths(signer.verfer.qb64, ppt);
             });
             nkeys.paths.forEach((path: string, idx: number) => {
-                let signer = nkeys.signers[idx];
-                let ppt = new PubPath();
+                const signer = nkeys.signers[idx];
+                const ppt = new PubPath();
                 ppt.path = path;
                 ppt.code = ncodes[idx];
                 ppt.tier = pp.tier;
@@ -609,11 +609,11 @@ export class Manager {
             );
         }
 
-        let pubSet = new PubSet();
+        const pubSet = new PubSet();
         pubSet.pubs = ps.new.pubs;
         this.ks.putPubs(riKey(pre, ridx), pubSet);
 
-        let nxtPubSet = new PubSet();
+        const nxtPubSet = new PubSet();
         nxtPubSet.pubs = ps.nxt.pubs;
         this.ks.putPubs(riKey(pre, ridx + 1), nxtPubSet);
 
@@ -633,7 +633,7 @@ export class Manager {
             throw new Error(`Preexistent new pre=${gnu} may not clobber.`);
         }
 
-        let oldprm = this.ks.getPrms(old);
+        const oldprm = this.ks.getPrms(old);
         if (oldprm == undefined) {
             throw new Error(
                 `Nonexistent old prm for pre=${old}, nothing to move.`
@@ -646,7 +646,7 @@ export class Manager {
             );
         }
 
-        let oldsit = this.ks.getSits(old);
+        const oldsit = this.ks.getSits(old);
         if (oldsit == undefined) {
             throw new Error(
                 `Nonexistent old sit for pre=${old}, nothing to move.`
@@ -677,7 +677,7 @@ export class Manager {
 
         let i = 0;
         while (true) {
-            let pl = this.ks.getPubs(riKey(old, i));
+            const pl = this.ks.getPubs(riKey(old, i));
             if (pl == undefined) {
                 break;
             }
@@ -711,12 +711,12 @@ export class Manager {
         temp = false,
         erase = true,
     }: RotateArgs): [Array<Verfer>, Array<Diger>] {
-        let pp = this.ks.getPrms(pre);
+        const pp = this.ks.getPrms(pre);
         if (pp == undefined) {
             throw new Error(`Attempt to rotate nonexistent pre=${pre}.`);
         }
 
-        let ps = this.ks.getSits(pre);
+        const ps = this.ks.getSits(pre);
         if (ps == undefined) {
             throw new Error(`Attempt to rotate nonexistent pre=${pre}.`);
         }
@@ -725,7 +725,7 @@ export class Manager {
             throw new Error(`Attempt to rotate nontransferable pre=${pre}.`);
         }
 
-        let old = ps.old;
+        const old = ps.old;
         ps.old = ps.new;
         ps.new = ps.nxt;
 
@@ -735,10 +735,10 @@ export class Manager {
             );
         }
 
-        let verfers = new Array<Verfer>();
+        const verfers = new Array<Verfer>();
         ps.new.pubs.forEach((pub) => {
             if (this.decrypter != undefined) {
-                let signer = this.ks.getPris(pub, this.decrypter);
+                const signer = this.ks.getPris(pub, this.decrypter);
                 if (signer == undefined) {
                     throw new Error(`Missing prikey in db for pubkey=${pub}`);
                 }
@@ -762,7 +762,7 @@ export class Manager {
             salt = this.salt!;
         }
 
-        let creator = new Creatory(pp.algo).make(salt, pp.tier, pp.stem);
+        const creator = new Creatory(pp.algo).make(salt, pp.tier, pp.stem);
 
         if (ncodes == undefined) {
             if (ncount < 0) {
@@ -771,11 +771,11 @@ export class Manager {
             ncodes = new Array<string>(ncount).fill(ncode);
         }
 
-        let pidx = pp.pidx;
-        let ridx = ps.new.ridx + 1;
-        let kidx = ps.nxt.kidx + ps.new.pubs.length;
+        const pidx = pp.pidx;
+        const ridx = ps.new.ridx + 1;
+        const kidx = ps.nxt.kidx + ps.new.pubs.length;
 
-        let keys = creator.create(
+        const keys = creator.create(
             ncodes,
             0,
             '',
@@ -785,12 +785,12 @@ export class Manager {
             kidx,
             temp
         );
-        let digers = Array.from(
+        const digers = Array.from(
             keys.signers,
             (signer: Signer) => new Diger({ code: dcode }, signer.verfer.qb64b)
         );
 
-        let dt = new Date().toString();
+        const dt = new Date().toString();
         ps.nxt = new PubLot();
         ps.nxt.pubs = Array.from(
             keys.signers,
@@ -811,8 +811,8 @@ export class Manager {
             });
         } else if (this._encrypter == undefined && keys.paths != undefined) {
             keys.paths.forEach((path: string, idx: number) => {
-                let signer = keys.signers[idx];
-                let ppt = new PubPath();
+                const signer = keys.signers[idx];
+                const ppt = new PubPath();
                 ppt.path = path;
                 ppt.tier = pp!.tier;
                 ppt.temp = temp;
@@ -824,7 +824,7 @@ export class Manager {
             );
         }
 
-        let newPs = new PubSet();
+        const newPs = new PubSet();
         newPs.pubs = ps.nxt.pubs;
         this.ks.putPubs(riKey(pre, ps.nxt.ridx), newPs);
 
@@ -845,7 +845,7 @@ export class Manager {
         indices = undefined,
         ondices = undefined,
     }: SignArgs) {
-        let signers = new Array<Signer>();
+        const signers = new Array<Signer>();
 
         if (pubs == undefined && verfers == undefined) {
             throw new Error('pubs or verfers required');
@@ -861,7 +861,7 @@ export class Manager {
             pubs.forEach((pub) => {
                 //If no decrypter then get SaltyState and regenerate prikey
                 if (this.decrypter != undefined) {
-                    let signer = this.ks.getPris(pub, this.decrypter);
+                    const signer = this.ks.getPris(pub, this.decrypter);
                     if (signer == undefined) {
                         throw new Error(
                             `Missing prikey in db for pubkey=${pub}`
@@ -869,14 +869,14 @@ export class Manager {
                     }
                     signers.push(signer);
                 } else {
-                    let verfer = new Verfer({ qb64: pub });
-                    let ppt = this.ks.getPths(pub);
+                    const verfer = new Verfer({ qb64: pub });
+                    const ppt = this.ks.getPths(pub);
                     if (ppt == undefined) {
                         throw new Error(
                             `Missing prikey in db for pubkey=${pub}`
                         );
                     }
-                    let salter = new Salter({ qb64: this.salt });
+                    const salter = new Salter({ qb64: this.salt });
                     signers.push(
                         salter.signer(
                             ppt.code,
@@ -891,7 +891,7 @@ export class Manager {
         } else {
             verfers!.forEach((verfer: Verfer) => {
                 if (this.decrypter != undefined) {
-                    let signer = this.ks.getPris(verfer.qb64, this.decrypter);
+                    const signer = this.ks.getPris(verfer.qb64, this.decrypter);
                     if (signer == undefined) {
                         throw new Error(
                             `Missing prikey in db for pubkey=${verfer.qb64}`
@@ -899,13 +899,13 @@ export class Manager {
                     }
                     signers.push(signer);
                 } else {
-                    let ppt = this.ks.getPths(verfer.qb64);
+                    const ppt = this.ks.getPths(verfer.qb64);
                     if (ppt == undefined) {
                         throw new Error(
                             `Missing prikey in db for pubkey=${verfer.qb64}`
                         );
                     }
-                    let salter = new Salter({ qb64: this.salt });
+                    const salter = new Salter({ qb64: this.salt });
                     signers.push(
                         salter.signer(
                             ppt.code,
@@ -932,7 +932,7 @@ export class Manager {
         }
 
         if (indexed) {
-            let sigers = new Array<Siger>();
+            const sigers = new Array<Siger>();
             signers.forEach((signer, idx) => {
                 let i;
                 if (indices != undefined) {
@@ -958,12 +958,12 @@ export class Manager {
                     o = i;
                 }
 
-                let only = o == undefined;
+                const only = o == undefined;
                 sigers.push(signer.sign(ser, i, only, o) as Siger);
             });
             return sigers;
         } else {
-            let cigars = new Array<Cigar>();
+            const cigars = new Array<Cigar>();
             signers.forEach((signer: Signer) => {
                 cigars.push(signer.sign(ser) as Cigar);
             });
@@ -1042,7 +1042,7 @@ class Keeper implements KeyStore {
     }
 
     prmsElements(): Array<[string, PrePrm]> {
-        let out = new Array<[string, PrePrm]>();
+        const out = new Array<[string, PrePrm]>();
         this._prms.forEach((value, key) => {
             out.push([key, value]);
         });
@@ -1071,17 +1071,17 @@ class Keeper implements KeyStore {
     }
 
     prisElements(decrypter: Decrypter): Array<[string, Signer]> {
-        let out = new Array<[string, Signer]>();
+        const out = new Array<[string, Signer]>();
         this._pris.forEach(function (val, pubKey) {
-            let verfer = new Verfer({ qb64: pubKey });
-            let signer = decrypter.decrypt(val, null, verfer.transferable);
+            const verfer = new Verfer({ qb64: pubKey });
+            const signer = decrypter.decrypt(val, null, verfer.transferable);
             out.push([pubKey, signer]);
         });
         return out;
     }
 
     pinPris(pubKey: string, signer: Signer, encrypter: Encrypter): void {
-        let cipher = encrypter.encrypt(null, signer);
+        const cipher = encrypter.encrypt(null, signer);
         this._pris.set(pubKey, cipher.qb64b);
     }
 
@@ -1089,17 +1089,17 @@ class Keeper implements KeyStore {
         if (this._pris.has(pubKey)) {
             return false;
         }
-        let cipher = encrypter.encrypt(null, signer);
+        const cipher = encrypter.encrypt(null, signer);
         this._pris.set(pubKey, cipher.qb64b);
         return true;
     }
 
     getPris(pubKey: string, decrypter: Decrypter): Signer | undefined {
-        let val = this._pris.get(pubKey);
+        const val = this._pris.get(pubKey);
         if (val == undefined) {
             return undefined;
         }
-        let verfer = new Verfer({ qb64: pubKey });
+        const verfer = new Verfer({ qb64: pubKey });
 
         return decrypter.decrypt(val, null, verfer.transferable);
     }

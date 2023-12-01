@@ -117,10 +117,10 @@ async function run() {
 
     // Exchenge OOBIs
     console.log('Resolving OOBIs...');
-    let oobi1 = await client1.oobis().get('issuer', 'agent');
-    let oobi2 = await client2.oobis().get('recipient', 'agent');
-    let oobi3 = await client3.oobis().get('verifier', 'agent');
-    let schemaOobi = 'http://127.0.0.1:7723/oobi/' + schemaSAID;
+    const oobi1 = await client1.oobis().get('issuer', 'agent');
+    const oobi2 = await client2.oobis().get('recipient', 'agent');
+    const oobi3 = await client3.oobis().get('verifier', 'agent');
+    const schemaOobi = 'http://127.0.0.1:7723/oobi/' + schemaSAID;
 
     op1 = await client1.oobis().resolve(oobi2.oobis[0], 'recipient');
     while (!op1['done']) {
@@ -179,12 +179,12 @@ async function run() {
         op1 = await client1.operations().get(op1.name);
         await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    let registries = await client1.registries().list('issuer');
+    const registries = await client1.registries().list('issuer');
     assert.equal(registries.length, 1);
     assert.equal(registries[0].name, 'vLEI');
-    let schema = await client1.schemas().get(schemaSAID);
+    const schema = await client1.schemas().get(schemaSAID);
     assert.equal(schema.$id, schemaSAID);
-    let schemas = await client2.schemas().list();
+    const schemas = await client2.schemas().list();
     assert.equal(schemas.length, 1);
     assert.equal(schemas[0].$id, schemaSAID);
     console.log('Registry created');
@@ -200,7 +200,7 @@ async function run() {
         op1 = await client1.operations().get(op1.name);
         await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    let creds1 = await client1.credentials().list('issuer');
+    const creds1 = await client1.credentials().list('issuer');
     assert.equal(creds1.length, 1);
     assert.equal(creds1[0].sad.s, schemaSAID);
     assert.equal(creds1[0].sad.i, aid1.prefix);
@@ -208,7 +208,7 @@ async function run() {
     console.log('Credential issued');
 
     // Recipient check issued credential
-    let creds2 = await client2.credentials().list('recipient');
+    const creds2 = await client2.credentials().list('recipient');
     assert.equal(creds2.length, 1);
     assert.equal(creds2[0].sad.s, schemaSAID);
     assert.equal(creds2[0].sad.i, aid1.prefix);
@@ -221,8 +221,8 @@ async function run() {
     // Recipient checks for a presentation request notification
     let requestReceived = false;
     while (!requestReceived) {
-        let notifications = await client2.notifications().list();
-        for (let notif of notifications) {
+        const notifications = await client2.notifications().list();
+        for (const notif of notifications) {
             if (notif.a.r == '/presentation/request') {
                 assert.equal(notif.a.schema.n, schemaSAID);
                 requestReceived = true;
@@ -240,8 +240,8 @@ async function run() {
     // Verifier checks for a presentation notification
     requestReceived = false;
     while (!requestReceived) {
-        let notifications = await client3.notifications().list();
-        for (let notif of notifications) {
+        const notifications = await client3.notifications().list();
+        for (const notif of notifications) {
             if (notif.a.r == '/presentation') {
                 assert.equal(notif.a.schema.n, schemaSAID);
                 requestReceived = true;
@@ -251,7 +251,7 @@ async function run() {
         await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
-    let creds3 = await client3
+    const creds3 = await client3
         .credentials()
         .list('verifier', { filter: { '-i': { $eq: aid1.prefix } } }); // filter by issuer
     assert.equal(creds3.length, 1);

@@ -115,7 +115,7 @@ fetchMock.mockResponse((req) => {
     } else if (req.url == boot_url + '/boot') {
         return Promise.resolve({ body: '', init: { status: 202 } });
     } else {
-        let headers = new Headers();
+        const headers = new Headers();
         let signed_headers = new Headers();
 
         headers.set(
@@ -129,21 +129,21 @@ fetchMock.mockResponse((req) => {
         headers.set('Content-Type', 'application/json');
 
         const requrl = new URL(req.url);
-        let salter = new Salter({ qb64: '0AAwMTIzNDU2Nzg5YWJjZGVm' });
-        let signer = salter.signer(
+        const salter = new Salter({ qb64: '0AAwMTIzNDU2Nzg5YWJjZGVm' });
+        const signer = salter.signer(
             'A',
             true,
             'agentagent-ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose00',
             Tier.low
         );
 
-        let authn = new Authenticater(signer!, signer!.verfer);
+        const authn = new Authenticater(signer!, signer!.verfer);
         signed_headers = authn.sign(
             headers,
             req.method,
             requrl.pathname.split('?')[0]
         );
-        let body = req.url.startsWith(url + '/identifiers/aid1/credentials')
+        const body = req.url.startsWith(url + '/identifiers/aid1/credentials')
             ? mockCredential
             : mockGetAID;
 
@@ -159,18 +159,18 @@ describe('SignifyClient', () => {
         await libsodium.ready;
         const bran = '0123456789abcdefghijk';
 
-        let client = new SignifyClient(url, bran, Tier.low, boot_url);
+        const client = new SignifyClient(url, bran, Tier.low, boot_url);
 
         await client.boot();
         await client.connect();
 
-        let notifications = client.notifications();
+        const notifications = client.notifications();
 
         await notifications.list(20, 40);
         let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
         assert.equal(lastCall[0]!, url + '/notifications');
         assert.equal(lastCall[1]!.method, 'GET');
-        let lastHeaders = new Headers(lastCall[1]!.headers!);
+        const lastHeaders = new Headers(lastCall[1]!.headers!);
         assert.equal(lastHeaders.get('Range'), 'notes=20-40');
 
         await notifications.mark('notificationSAID');

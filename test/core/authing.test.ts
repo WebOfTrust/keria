@@ -9,13 +9,13 @@ import { Verfer } from '../../src/keri/core/verfer';
 describe('Authenticater.verify', () => {
     it('verify signature on Response', async () => {
         await libsodium.ready;
-        let salt = '0123456789abcdef';
-        let salter = new Salter({ raw: b(salt) });
-        let signer = salter.signer();
-        let aaid = 'DMZh_y-H5C3cSbZZST-fqnsmdNTReZxIh0t2xSTOJQ8a';
-        let verfer = new Verfer({ qb64: aaid });
+        const salt = '0123456789abcdef';
+        const salter = new Salter({ raw: b(salt) });
+        const signer = salter.signer();
+        const aaid = 'DMZh_y-H5C3cSbZZST-fqnsmdNTReZxIh0t2xSTOJQ8a';
+        const verfer = new Verfer({ qb64: aaid });
 
-        let headers = new Headers([
+        const headers = new Headers([
             ['Content-Length', '898'],
             ['Content-Type', 'application/json'],
             [
@@ -33,7 +33,7 @@ describe('Authenticater.verify', () => {
             ['Signify-Timestamp', '2023-05-22T00:37:00.248708+00:00'],
         ]);
 
-        let authn = new Authenticater(signer, verfer);
+        const authn = new Authenticater(signer, verfer);
         assert.notEqual(authn, undefined);
 
         assert.equal(
@@ -46,11 +46,11 @@ describe('Authenticater.verify', () => {
 describe('Authenticater.sign', () => {
     it('Create signed headers for a request', async () => {
         await libsodium.ready;
-        let salt = '0123456789abcdef';
-        let salter = new Salter({ raw: b(salt) });
-        let signer = salter.signer();
-        let aaid = 'DDK2N5_fVCWIEO9d8JLhk7hKrkft6MbtkUhaHQsmABHY';
-        let verfer = new Verfer({ qb64: aaid });
+        const salt = '0123456789abcdef';
+        const salter = new Salter({ raw: b(salt) });
+        const signer = salter.signer();
+        const aaid = 'DDK2N5_fVCWIEO9d8JLhk7hKrkft6MbtkUhaHQsmABHY';
+        const verfer = new Verfer({ qb64: aaid });
 
         let headers = new Headers([
             ['Content-Type', 'application/json'],
@@ -66,7 +66,7 @@ describe('Authenticater.sign', () => {
             new Date('2021-01-01T00:00:00.000000+00:00')
         );
 
-        let authn = new Authenticater(signer, verfer);
+        const authn = new Authenticater(signer, verfer);
         headers = authn.sign(headers, 'POST', '/boot');
 
         assert.equal(headers.has('Signature-Input'), true);

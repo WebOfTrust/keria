@@ -77,9 +77,9 @@ export class KeyManager {
                     kargs['ndigs']
                 );
             case Algos.extern:
-                let typ = kargs.extern_type;
+                const typ = kargs.extern_type;
                 if (typ in this.modules) {
-                    let mod = new this.modules[typ](pidx, kargs);
+                    const mod = new this.modules[typ](pidx, kargs);
                     return mod;
                 } else {
                     throw new Error(`unsupported external module type ${typ}`);
@@ -90,9 +90,9 @@ export class KeyManager {
     }
 
     get(aid: any) {
-        let pre = new Prefixer({ qb64: aid['prefix'] });
+        const pre = new Prefixer({ qb64: aid['prefix'] });
         if (Algos.salty in aid) {
-            let kargs = aid[Algos.salty];
+            const kargs = aid[Algos.salty];
             return new SaltyKeeper(
                 this.salter!,
                 kargs['pidx'],
@@ -111,7 +111,7 @@ export class KeyManager {
                 kargs['sxlt']
             );
         } else if (Algos.randy in aid) {
-            let kargs = aid[Algos.randy];
+            const kargs = aid[Algos.randy];
             return new RandyKeeper(
                 this.salter!,
                 kargs['code'],
@@ -126,7 +126,7 @@ export class KeyManager {
                 kargs['nxts']
             );
         } else if (Algos.group in aid) {
-            let kargs = aid[Algos.group];
+            const kargs = aid[Algos.group];
             return new GroupKeeper(
                 this,
                 kargs['mhab'],
@@ -136,10 +136,10 @@ export class KeyManager {
                 kargs['ndigs']
             );
         } else if (Algos.extern in aid) {
-            let kargs = aid[Algos.randy];
-            let typ = kargs.extern_type;
+            const kargs = aid[Algos.randy];
+            const typ = kargs.extern_type;
             if (typ in this.modules) {
-                let mod = new this.modules[typ](kargs['pidx'], kargs);
+                const mod = new this.modules[typ](kargs['pidx'], kargs);
                 return mod;
             } else {
                 throw new Error(`unsupported external module type ${typ}`);
@@ -192,7 +192,7 @@ export class SaltyKeeper {
     ) {
         // # Salter is the entered passcode and used for enc/dec of salts for each AID
         this.salter = salter;
-        let signer = this.salter.signer(undefined, (transferable = false));
+        const signer = this.salter.signer(undefined, (transferable = false));
 
         this.aeid = signer.verfer.qb64;
 
@@ -225,7 +225,7 @@ export class SaltyKeeper {
             this.sxlt = this.encrypter.encrypt(b(this.creator.salt)).qb64;
         } else {
             this.sxlt = sxlt;
-            let ciph = new Cipher({ qb64: this.sxlt });
+            const ciph = new Cipher({ qb64: this.sxlt });
             this.creator = new SaltyCreator(
                 this.decrypter.decrypt(null, ciph).qb64,
                 (tier = tier),
@@ -274,7 +274,7 @@ export class SaltyKeeper {
         this.transferable = transferable;
         this.kidx = 0;
 
-        let signers = this.creator.create(
+        const signers = this.creator.create(
             this.icodes,
             this.count,
             this.code,
@@ -284,9 +284,9 @@ export class SaltyKeeper {
             this.kidx,
             false
         );
-        let verfers = signers.signers.map((signer) => signer.verfer.qb64);
+        const verfers = signers.signers.map((signer) => signer.verfer.qb64);
 
-        let nsigners = this.creator.create(
+        const nsigners = this.creator.create(
             this.ncodes,
             this.ncount,
             this.ncode,
@@ -296,7 +296,7 @@ export class SaltyKeeper {
             this.icodes?.length,
             false
         );
-        let digers = nsigners.signers.map(
+        const digers = nsigners.signers.map(
             (nsigner) =>
                 new Diger({ code: this.dcode }, nsigner.verfer.qb64b).qb64
         );
@@ -317,7 +317,7 @@ export class SaltyKeeper {
 
         this.ncodes = ncodes;
         this.transferable = transferable;
-        let signers = this.creator.create(
+        const signers = this.creator.create(
             this.ncodes,
             this.ncount,
             this.ncode,
@@ -327,10 +327,10 @@ export class SaltyKeeper {
             this.kidx + this.icodes!.length,
             false
         );
-        let verfers = signers.signers.map((signer) => signer.verfer.qb64);
+        const verfers = signers.signers.map((signer) => signer.verfer.qb64);
 
         this.kidx = this.kidx! + this.icodes!.length;
-        let nsigners = this.creator.create(
+        const nsigners = this.creator.create(
             this.ncodes,
             this.ncount,
             this.ncode,
@@ -340,7 +340,7 @@ export class SaltyKeeper {
             this.kidx + this.icodes!.length,
             false
         );
-        let digers = nsigners.signers.map(
+        const digers = nsigners.signers.map(
             (nsigner) =>
                 new Diger({ code: this.dcode }, nsigner.verfer.qb64b).qb64
         );
@@ -354,7 +354,7 @@ export class SaltyKeeper {
         indices: number[] | undefined = undefined,
         ondices: number[] | undefined = undefined
     ) {
-        let signers = this.creator.create(
+        const signers = this.creator.create(
             this.icodes,
             this.ncount,
             this.ncode,
@@ -366,7 +366,7 @@ export class SaltyKeeper {
         );
 
         if (indexed) {
-            let sigers = [];
+            const sigers = [];
             let i = 0;
             for (const [j, signer] of signers.signers.entries()) {
                 if (indices != undefined) {
@@ -401,7 +401,7 @@ export class SaltyKeeper {
             }
             return sigers.map((siger) => siger.qb64);
         } else {
-            let cigars = [];
+            const cigars = [];
             for (const [_, signer] of signers.signers.entries()) {
                 cigars.push(signer.sign(ser));
             }
@@ -455,7 +455,7 @@ export class RandyKeeper {
         this.count = count;
         this.ncount = ncount;
 
-        let signer = this.salter.signer(undefined, (transferable = false));
+        const signer = this.salter.signer(undefined, (transferable = false));
         this.aeid = signer.verfer.qb64;
 
         this.encrypter = new Encrypter({}, b(this.aeid));
@@ -491,7 +491,7 @@ export class RandyKeeper {
     incept(transferable: boolean) {
         this.transferable = transferable;
 
-        let signers = this.creator.create(
+        const signers = this.creator.create(
             this.icodes,
             this.count,
             this.code,
@@ -501,9 +501,9 @@ export class RandyKeeper {
             (signer) => this.encrypter.encrypt(undefined, signer).qb64
         );
 
-        let verfers = signers.signers.map((signer) => signer.verfer.qb64);
+        const verfers = signers.signers.map((signer) => signer.verfer.qb64);
 
-        let nsigners = this.creator.create(
+        const nsigners = this.creator.create(
             this.ncodes,
             this.ncount,
             this.ncode,
@@ -514,7 +514,7 @@ export class RandyKeeper {
             (signer) => this.encrypter.encrypt(undefined, signer).qb64
         );
 
-        let digers = nsigners.signers.map(
+        const digers = nsigners.signers.map(
             (nsigner) =>
                 new Diger({ code: this.dcode }, nsigner.verfer.qb64b).qb64
         );
@@ -527,15 +527,15 @@ export class RandyKeeper {
         this.transferable = transferable;
         this.prxs = this.nxts;
 
-        let signers = this.nxts!.map((nxt) =>
+        const signers = this.nxts!.map((nxt) =>
             this.decrypter.decrypt(
                 undefined,
                 new Cipher({ qb64: nxt }),
                 this.transferable
             )
         );
-        let verfers = signers.map((signer) => signer.verfer.qb64);
-        let nsigners = this.creator.create(
+        const verfers = signers.map((signer) => signer.verfer.qb64);
+        const nsigners = this.creator.create(
             this.ncodes,
             this.ncount,
             this.ncode,
@@ -546,7 +546,7 @@ export class RandyKeeper {
             (signer) => this.encrypter.encrypt(undefined, signer).qb64
         );
 
-        let digers = nsigners.signers.map(
+        const digers = nsigners.signers.map(
             (nsigner) =>
                 new Diger({ code: this.dcode }, nsigner.verfer.qb64b).qb64
         );
@@ -560,7 +560,7 @@ export class RandyKeeper {
         indices: number[] | undefined = undefined,
         ondices: number[] | undefined = undefined
     ) {
-        let signers = this.prxs!.map((prx) =>
+        const signers = this.prxs!.map((prx) =>
             this.decrypter.decrypt(
                 new Cipher({ qb64: prx }).qb64b,
                 undefined,
@@ -569,7 +569,7 @@ export class RandyKeeper {
         );
 
         if (indexed) {
-            let sigers = [];
+            const sigers = [];
             let i = 0;
             for (const [j, signer] of signers.entries()) {
                 if (indices != undefined) {
@@ -604,7 +604,7 @@ export class RandyKeeper {
             }
             return sigers.map((siger) => siger.qb64);
         } else {
-            let cigars = [];
+            const cigars = [];
             for (const [_, signer] of signers.entries()) {
                 cigars.push(signer.sign(ser));
             }
@@ -664,12 +664,12 @@ export class GroupKeeper {
         _indices: number[] | undefined = undefined,
         _ondices: number[] | undefined = undefined
     ): Promise<Siger[] | Cigar[]> {
-        let key = this.mhab['state']['k'][0];
-        let ndig = this.mhab['state']['n'][0];
+        const key = this.mhab['state']['k'][0];
+        const ndig = this.mhab['state']['n'][0];
 
-        let csi = this.gkeys!.indexOf(key);
-        let pni = this.gdigs!.indexOf(ndig);
-        let mkeeper = this.manager.get(this.mhab);
+        const csi = this.gkeys!.indexOf(key);
+        const pni = this.gdigs!.indexOf(ndig);
+        const mkeeper = this.manager.get(this.mhab);
 
         return await mkeeper.sign(ser, indexed, [csi], [pni]);
     }

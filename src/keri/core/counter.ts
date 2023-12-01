@@ -118,8 +118,8 @@ export class Counter {
                 throw new Error(`"Unsupported code=${code}.`);
             }
 
-            let sizage = Counter.Sizes.get(code)!;
-            let cs = sizage.hs + sizage.ss;
+            const sizage = Counter.Sizes.get(code)!;
+            const cs = sizage.hs + sizage.ss;
             if (sizage.fs != cs || cs % 4 != 0) {
                 throw new Error(
                     `Whole code size not full size or not multiple of 4. cs=${cs} fs=${sizage.fs}.`
@@ -137,7 +137,7 @@ export class Counter {
             this._code = code;
             this._count = count;
         } else if (qb64b != undefined) {
-            let qb64 = d(qb64b);
+            const qb64 = d(qb64b);
             this._exfil(qb64);
         } else if (qb64 != undefined) {
             this._exfil(qb64);
@@ -167,7 +167,7 @@ export class Counter {
 
     countToB64(l?: number): string {
         if (l == undefined) {
-            let sizage = Counter.Sizes.get(this.code)!;
+            const sizage = Counter.Sizes.get(this.code)!;
             l = sizage.ss;
         }
         return intToB64(this.count, l);
@@ -181,14 +181,14 @@ export class Counter {
     ): string {
         let parts = [major, minor, patch];
         if (version != '') {
-            let ssplits = version.split('.');
-            let splits = ssplits.map((x) => {
+            const ssplits = version.split('.');
+            const splits = ssplits.map((x) => {
                 if (x == '') return 0;
                 return parseInt(x);
             });
 
-            let off = splits.length;
-            let x = 3 - off;
+            const off = splits.length;
+            const x = 3 - off;
             for (let i = 0; i < x; i++) {
                 splits.push(parts[i + off]);
             }
@@ -211,11 +211,11 @@ export class Counter {
     }
 
     private _infil(): string {
-        let code = this.code;
-        let count = this.count;
+        const code = this.code;
+        const count = this.count;
 
-        let sizage = Counter.Sizes.get(code)!;
-        let cs = sizage.hs + sizage.ss;
+        const sizage = Counter.Sizes.get(code)!;
+        const cs = sizage.hs + sizage.ss;
         if (sizage.fs != cs || cs % 4 != 0) {
             throw new Error(
                 `Whole code size not full size or not multiple of 4. cs=${cs} fs=${sizage.fs}.`
@@ -226,7 +226,7 @@ export class Counter {
             throw new Error(`Invalid count=${count} for code=${code}.`);
         }
 
-        let both = `${code}${intToB64(count, sizage.ss)}`;
+        const both = `${code}${intToB64(count, sizage.ss)}`;
 
         if (both.length % 4) {
             throw new Error(
@@ -242,30 +242,30 @@ export class Counter {
             throw new Error('Empty Material');
         }
 
-        let first = qb64.slice(0, 2);
+        const first = qb64.slice(0, 2);
         if (!Counter.Hards.has(first)) {
             throw new Error(`Unexpected code ${first}`);
         }
 
-        let hs = Counter.Hards.get(first)!;
+        const hs = Counter.Hards.get(first)!;
         if (qb64.length < hs) {
             throw new Error(`Need ${hs - qb64.length} more characters.`);
         }
 
-        let hard = qb64.slice(0, hs);
+        const hard = qb64.slice(0, hs);
         if (!Counter.Sizes.has(hard)) {
             throw new Error(`Unsupported code ${hard}`);
         }
 
-        let sizage = Counter.Sizes.get(hard)!;
-        let cs = sizage!.hs + sizage!.ss;
+        const sizage = Counter.Sizes.get(hard)!;
+        const cs = sizage!.hs + sizage!.ss;
 
         if (qb64.length < cs) {
             throw new Error(`Need ${cs - qb64.length} more chars.`);
         }
 
-        let scount = qb64.slice(sizage.hs, sizage.hs + sizage.ss);
-        let count = b64ToInt(scount);
+        const scount = qb64.slice(sizage.hs, sizage.hs + sizage.ss);
+        const count = b64ToInt(scount);
 
         this._code = hard;
         this._count = count;

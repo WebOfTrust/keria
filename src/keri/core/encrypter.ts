@@ -13,7 +13,7 @@ export class Encrypter extends Matter {
         verkey: Uint8Array | null = null
     ) {
         if (raw == undefined && verkey != null) {
-            let verfer = new Verfer({ qb64b: verkey });
+            const verfer = new Verfer({ qb64b: verkey });
             if (
                 !Array.from([MtrDex.Ed25519N, MtrDex.Ed25519]).includes(
                     verfer.code
@@ -36,9 +36,9 @@ export class Encrypter extends Matter {
     }
 
     verifySeed(seed: Uint8Array) {
-        let signer = new Signer({ qb64b: seed });
-        let keypair = libsodium.crypto_sign_seed_keypair(signer.raw);
-        let pubkey = libsodium.crypto_sign_ed25519_pk_to_curve25519(
+        const signer = new Signer({ qb64b: seed });
+        const keypair = libsodium.crypto_sign_seed_keypair(signer.raw);
+        const pubkey = libsodium.crypto_sign_ed25519_pk_to_curve25519(
             keypair.publicKey
         );
         return arrayEquals(pubkey, this.raw);
@@ -64,7 +64,7 @@ export class Encrypter extends Matter {
     }
 
     _x25519(ser: Uint8Array, pubkey: Uint8Array, code: string) {
-        let raw = libsodium.crypto_box_seal(ser, pubkey);
+        const raw = libsodium.crypto_box_seal(ser, pubkey);
         return new Cipher({ raw: raw, code: code });
     }
 }

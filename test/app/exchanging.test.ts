@@ -126,7 +126,7 @@ fetchMock.mockResponse((req) => {
     } else if (req.url == boot_url + '/boot') {
         return Promise.resolve({ body: '', init: { status: 202 } });
     } else {
-        let headers = new Headers();
+        const headers = new Headers();
         let signed_headers = new Headers();
 
         headers.set(
@@ -140,21 +140,21 @@ fetchMock.mockResponse((req) => {
         headers.set('Content-Type', 'application/json');
 
         const requrl = new URL(req.url);
-        let salter = new Salter({ qb64: '0AAwMTIzNDU2Nzg5YWJjZGVm' });
-        let signer = salter.signer(
+        const salter = new Salter({ qb64: '0AAwMTIzNDU2Nzg5YWJjZGVm' });
+        const signer = salter.signer(
             'A',
             true,
             'agentagent-ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose00',
             Tier.low
         );
 
-        let authn = new Authenticater(signer!, signer!.verfer);
+        const authn = new Authenticater(signer!, signer!.verfer);
         signed_headers = authn.sign(
             headers,
             req.method,
             requrl.pathname.split('?')[0]
         );
-        let body = req.url.startsWith(url + '/identifiers/aid1/credentials')
+        const body = req.url.startsWith(url + '/identifiers/aid1/credentials')
             ? mockCredential
             : mockGetAID;
 
@@ -168,7 +168,7 @@ fetchMock.mockResponse((req) => {
 describe('exchange', () => {
     it('should create an exchange message with no transposed attachments', async () => {
         await libsodium.ready;
-        let dt = '2023-08-30T17:22:54.183Z';
+        const dt = '2023-08-30T17:22:54.183Z';
 
         let [exn, end] = exchange('/multisig/vcp', {}, 'test', undefined, dt);
         assert.deepStrictEqual(exn.ked, {
@@ -185,39 +185,39 @@ describe('exchange', () => {
         });
         assert.deepStrictEqual(end, new Uint8Array());
 
-        let sith = 1;
-        let nsith = 1;
-        let sn = 0;
-        let toad = 0;
+        const sith = 1;
+        const nsith = 1;
+        const sn = 0;
+        const toad = 0;
 
-        let raw = new Uint8Array([
+        const raw = new Uint8Array([
             5, 170, 143, 45, 83, 154, 233, 250, 85, 156, 2, 156, 155, 8, 72,
             117,
         ]);
-        let salter = new Salter({ raw: raw });
-        let skp0 = salter.signer(
+        const salter = new Salter({ raw: raw });
+        const skp0 = salter.signer(
             MtrDex.Ed25519_Seed,
             true,
             'A',
             Tier.low,
             true
         );
-        let keys = [skp0.verfer.qb64];
+        const keys = [skp0.verfer.qb64];
 
-        let skp1 = salter.signer(
+        const skp1 = salter.signer(
             MtrDex.Ed25519_Seed,
             true,
             'N',
             Tier.low,
             true
         );
-        let ndiger = new Diger({}, skp1.verfer.qb64b);
-        let nxt = [ndiger.qb64];
+        const ndiger = new Diger({}, skp1.verfer.qb64b);
+        const nxt = [ndiger.qb64];
         assert.deepStrictEqual(nxt, [
             'EAKUR-LmLHWMwXTLWQ1QjxHrihBmwwrV2tYaSG7hOrWj',
         ]);
 
-        let ked0 = {
+        const ked0 = {
             v: 'KERI10JSON000000_',
             t: Ilks.icp,
             d: '',
@@ -233,14 +233,14 @@ describe('exchange', () => {
             a: [],
         } as Dict<any>;
 
-        let serder = new Serder(ked0);
-        let siger = skp0.sign(b(serder.raw), 0);
+        const serder = new Serder(ked0);
+        const siger = skp0.sign(b(serder.raw), 0);
         assert.equal(
             siger.qb64,
             'AAAPkMTS3LrrhVuQB0k4UndDN0xIfEiKYaN7rTlQ_q9ImnBcugwNO8VWTALXzWoaldJEC1IOpEGkEnjZfxxIleoI'
         );
 
-        let ked1 = {
+        const ked1 = {
             v: 'KERI10JSON000000_',
             t: Ilks.vcp,
             d: '',
@@ -249,9 +249,9 @@ describe('exchange', () => {
             bt: toad.toString(16),
             b: [],
         } as Dict<any>;
-        let vcp = new Serder(ked1);
+        const vcp = new Serder(ked1);
 
-        let embeds = {
+        const embeds = {
             icp: [serder, siger.qb64],
             vcp: [vcp, undefined],
         } as Dict<any>;
@@ -315,45 +315,45 @@ describe('exchange', () => {
         await libsodium.ready;
         const bran = '0123456789abcdefghijk';
 
-        let client = new SignifyClient(url, bran, Tier.low, boot_url);
+        const client = new SignifyClient(url, bran, Tier.low, boot_url);
 
         await client.boot();
         await client.connect();
 
-        let exchange = client.exchanges();
-        let sith = 1;
-        let nsith = 1;
-        let sn = 0;
-        let toad = 0;
+        const exchange = client.exchanges();
+        const sith = 1;
+        const nsith = 1;
+        const sn = 0;
+        const toad = 0;
 
-        let raw = new Uint8Array([
+        const raw = new Uint8Array([
             5, 170, 143, 45, 83, 154, 233, 250, 85, 156, 2, 156, 155, 8, 72,
             117,
         ]);
-        let salter = new Salter({ raw: raw });
-        let skp0 = salter.signer(
+        const salter = new Salter({ raw: raw });
+        const skp0 = salter.signer(
             MtrDex.Ed25519_Seed,
             true,
             'A',
             Tier.low,
             true
         );
-        let keys = [skp0.verfer.qb64];
+        const keys = [skp0.verfer.qb64];
 
-        let skp1 = salter.signer(
+        const skp1 = salter.signer(
             MtrDex.Ed25519_Seed,
             true,
             'N',
             Tier.low,
             true
         );
-        let ndiger = new Diger({}, skp1.verfer.qb64b);
-        let nxt = [ndiger.qb64];
+        const ndiger = new Diger({}, skp1.verfer.qb64b);
+        const nxt = [ndiger.qb64];
         assert.deepStrictEqual(nxt, [
             'EAKUR-LmLHWMwXTLWQ1QjxHrihBmwwrV2tYaSG7hOrWj',
         ]);
 
-        let ked0 = {
+        const ked0 = {
             v: 'KERI10JSON000000_',
             t: Ilks.icp,
             d: '',
@@ -369,7 +369,7 @@ describe('exchange', () => {
             a: [],
         } as Dict<any>;
 
-        let serder = new Serder(ked0);
+        const serder = new Serder(ked0);
 
         let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
         await exchange.sendFromEvents('aid1', '', serder, [''], '', []);

@@ -120,7 +120,7 @@ fetchMock.mockResponse((req) => {
     } else if (req.url == boot_url + '/boot') {
         return Promise.resolve({ body: '', init: { status: 202 } });
     } else {
-        let headers = new Headers();
+        const headers = new Headers();
         let signed_headers = new Headers();
 
         headers.set(
@@ -134,21 +134,21 @@ fetchMock.mockResponse((req) => {
         headers.set('Content-Type', 'application/json');
 
         const requrl = new URL(req.url);
-        let salter = new Salter({ qb64: '0AAwMTIzNDU2Nzg5YWJjZGVm' });
-        let signer = salter.signer(
+        const salter = new Salter({ qb64: '0AAwMTIzNDU2Nzg5YWJjZGVm' });
+        const signer = salter.signer(
             'A',
             true,
             'agentagent-ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose00',
             Tier.low
         );
 
-        let authn = new Authenticater(signer!, signer!.verfer);
+        const authn = new Authenticater(signer!, signer!.verfer);
         signed_headers = authn.sign(
             headers,
             req.method,
             requrl.pathname.split('?')[0]
         );
-        let body = req.url.startsWith(url + '/identifiers/aid1/credentials')
+        const body = req.url.startsWith(url + '/identifiers/aid1/credentials')
             ? mockCredential
             : mockGetAID;
 
@@ -164,12 +164,12 @@ describe('Aiding', () => {
         await libsodium.ready;
         const bran = '0123456789abcdefghijk';
 
-        let client = new SignifyClient(url, bran, Tier.low, boot_url);
+        const client = new SignifyClient(url, bran, Tier.low, boot_url);
 
         await client.boot();
         await client.connect();
 
-        let identifiers = client.identifiers();
+        const identifiers = client.identifiers();
 
         await identifiers.list();
         let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
@@ -293,7 +293,7 @@ describe('Aiding', () => {
         assert.deepEqual(lastBody.salty.dcode, 'E');
         assert.deepEqual(lastBody.salty.transferable, true);
 
-        let data = [
+        const data = [
             {
                 i: 'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK',
                 s: 0,
@@ -346,12 +346,12 @@ describe('Aiding', () => {
         await libsodium.ready;
         const bran = '0123456789abcdefghijk';
 
-        let client = new SignifyClient(url, bran, Tier.low, boot_url);
+        const client = new SignifyClient(url, bran, Tier.low, boot_url);
 
         await client.boot();
         await client.connect();
 
-        let identifiers = client.identifiers();
+        const identifiers = client.identifiers();
 
         await identifiers.list();
         let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
@@ -363,7 +363,7 @@ describe('Aiding', () => {
             algo: Algos.randy,
         });
         lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
-        let lastBody = JSON.parse(lastCall[1]!.body!.toString());
+        const lastBody = JSON.parse(lastCall[1]!.body!.toString());
         assert.equal(lastCall[0]!, url + '/identifiers');
         assert.equal(lastCall[1]!.method, 'POST');
         assert.equal(lastBody.name, 'aid1');

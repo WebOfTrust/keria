@@ -122,7 +122,7 @@ test('salty', async () => {
     op = await icpResult.op();
     assert.equal(op['done'], true);
     let ked = op['response'];
-    let rot = new signify.Serder(ked);
+    const rot = new signify.Serder(ked);
     assert.equal(rot.ked['d'], 'EBQABdRgaxJONrSLcgrdtbASflkvLxJkiDO0H-XmuhGg');
     assert.equal(rot.ked['s'], '1');
     assert.equal(rot.verfers.length, 1);
@@ -140,7 +140,7 @@ test('salty', async () => {
     op = await icpResult.op();
     assert.equal(op['done'], true);
     ked = op['response'];
-    let ixn = new signify.Serder(ked);
+    const ixn = new signify.Serder(ked);
     assert.equal(ixn.ked['d'], 'ENsmRAg_oM7Hl1S-GTRMA7s4y760lQMjzl0aqOQ2iTce');
     assert.equal(ixn.ked['s'], '2');
     assert.deepEqual([...ixn.ked['a']], [icp.pre]);

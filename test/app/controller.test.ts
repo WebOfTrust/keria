@@ -10,15 +10,15 @@ describe('Controller', () => {
     it('manage account AID signing and agent verification', async () => {
         await libsodium.ready;
         let passcode = '0123456789abcdefghijk';
-        let mgr = openManager(passcode);
+        const mgr = openManager(passcode);
         assert.equal(mgr.aeid, 'BMbZTXzB7LmWPT2TXLGV88PQz5vDEM2L2flUs2yxn3U9');
 
-        let raw = new Uint8Array([
+        const raw = new Uint8Array([
             187, 140, 234, 145, 219, 254, 20, 194, 16, 18, 97, 194, 140, 192,
             61, 145, 222, 110, 59, 160, 152, 2, 72, 122, 87, 143, 109, 39, 98,
             153, 192, 148,
         ]);
-        let agentSigner = new Signer({
+        const agentSigner = new Signer({
             raw: raw,
             code: MtrDex.Ed25519_Seed,
             transferable: false,

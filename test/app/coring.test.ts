@@ -118,7 +118,7 @@ fetchMock.mockResponse((req) => {
     } else if (req.url == boot_url + '/boot') {
         return Promise.resolve({ body: '', init: { status: 202 } });
     } else {
-        let headers = new Headers();
+        const headers = new Headers();
         let signed_headers = new Headers();
 
         headers.set(
@@ -132,21 +132,21 @@ fetchMock.mockResponse((req) => {
         headers.set('Content-Type', 'application/json');
 
         const requrl = new URL(req.url);
-        let salter = new Salter({ qb64: '0AAwMTIzNDU2Nzg5YWJjZGVm' });
-        let signer = salter.signer(
+        const salter = new Salter({ qb64: '0AAwMTIzNDU2Nzg5YWJjZGVm' });
+        const signer = salter.signer(
             'A',
             true,
             'agentagent-ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose00',
             Tier.low
         );
 
-        let authn = new Authenticater(signer!, signer!.verfer);
+        const authn = new Authenticater(signer!, signer!.verfer);
         signed_headers = authn.sign(
             headers,
             req.method,
             requrl.pathname.split('?')[0]
         );
-        let body = req.url.startsWith(url + '/identifiers/aid1/credentials')
+        const body = req.url.startsWith(url + '/identifiers/aid1/credentials')
             ? mockCredential
             : mockGetAID;
 
@@ -160,13 +160,13 @@ fetchMock.mockResponse((req) => {
 describe('Coring', () => {
     it('Random passcode', async () => {
         await libsodium.ready;
-        let passcode = randomPasscode();
+        const passcode = randomPasscode();
         assert.equal(passcode.length, 22);
     });
 
     it('Random nonce', async () => {
         await libsodium.ready;
-        let nonce = randomNonce();
+        const nonce = randomNonce();
         assert.equal(nonce.length, 44);
     });
 
@@ -174,12 +174,12 @@ describe('Coring', () => {
         await libsodium.ready;
         const bran = '0123456789abcdefghijk';
 
-        let client = new SignifyClient(url, bran, Tier.low, boot_url);
+        const client = new SignifyClient(url, bran, Tier.low, boot_url);
 
         await client.boot();
         await client.connect();
 
-        let oobis = client.oobis();
+        const oobis = client.oobis();
 
         await oobis.get('aid', 'agent');
         let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
@@ -206,15 +206,15 @@ describe('Coring', () => {
         await libsodium.ready;
         const bran = '0123456789abcdefghijk';
 
-        let client = new SignifyClient(url, bran, Tier.low, boot_url);
+        const client = new SignifyClient(url, bran, Tier.low, boot_url);
 
         await client.boot();
         await client.connect();
 
-        let ops = client.operations();
+        const ops = client.operations();
 
         await ops.get('operationName');
-        let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
+        const lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
         assert.equal(lastCall[0]!, url + '/operations/operationName');
         assert.equal(lastCall[1]!.method, 'GET');
     });
@@ -223,13 +223,13 @@ describe('Coring', () => {
         await libsodium.ready;
         const bran = '0123456789abcdefghijk';
 
-        let client = new SignifyClient(url, bran, Tier.low, boot_url);
+        const client = new SignifyClient(url, bran, Tier.low, boot_url);
 
         await client.boot();
         await client.connect();
 
-        let keyEvents = client.keyEvents();
-        let keyStates = client.keyStates();
+        const keyEvents = client.keyEvents();
+        const keyStates = client.keyStates();
 
         await keyEvents.get('EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX');
         let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
@@ -265,7 +265,7 @@ describe('Coring', () => {
             'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao'
         );
         lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
-        let lastBody = JSON.parse(lastCall[1]!.body!.toString());
+        const lastBody = JSON.parse(lastCall[1]!.body!.toString());
         assert.equal(lastCall[0]!, url + '/queries');
         assert.equal(lastCall[1]!.method, 'POST');
         assert.equal(

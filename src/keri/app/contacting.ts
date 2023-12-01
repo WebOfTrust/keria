@@ -26,7 +26,7 @@ export class Contacts {
         filterField?: string,
         filterValue?: string
     ): Promise<any> {
-        let params = new URLSearchParams();
+        const params = new URLSearchParams();
         if (group !== undefined) {
             params.append('group', group);
         }
@@ -35,9 +35,9 @@ export class Contacts {
             params.append('filter_value', filterValue);
         }
 
-        let path = `/contacts` + '?' + params.toString();
-        let method = 'GET';
-        let res = await this.client.fetch(path, method, null);
+        const path = `/contacts` + '?' + params.toString();
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, null);
         return await res.json();
     }
 
@@ -48,9 +48,9 @@ export class Contacts {
      * @returns {Promise<any>} A promise to the contact
      */
     async get(pre: string): Promise<any> {
-        let path = `/contacts/` + pre;
-        let method = 'GET';
-        let res = await this.client.fetch(path, method, null);
+        const path = `/contacts/` + pre;
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, null);
         return await res.json();
     }
 
@@ -62,10 +62,10 @@ export class Contacts {
      * @returns {Promise<any>} A promise to the result of the addition
      */
     async add(pre: string, info: any): Promise<any> {
-        let path = `/contacts/` + pre;
-        let method = 'POST';
+        const path = `/contacts/` + pre;
+        const method = 'POST';
 
-        let res = await this.client.fetch(path, method, info);
+        const res = await this.client.fetch(path, method, info);
         return await res.json();
     }
 
@@ -76,10 +76,10 @@ export class Contacts {
      * @returns {Promise<any>} A promise to the result of the deletion
      */
     async delete(pre: string): Promise<any> {
-        let path = `/contacts/` + pre;
-        let method = 'DELETE';
+        const path = `/contacts/` + pre;
+        const method = 'DELETE';
 
-        let res = await this.client.fetch(path, method, null);
+        const res = await this.client.fetch(path, method, null);
         return await res.json();
     }
 
@@ -91,10 +91,10 @@ export class Contacts {
      * @returns {Promise<any>} A promise to the result of the update
      */
     async update(pre: string, info: any): Promise<any> {
-        let path = `/contacts/` + pre;
-        let method = 'PUT';
+        const path = `/contacts/` + pre;
+        const method = 'PUT';
 
-        let res = await this.client.fetch(path, method, info);
+        const res = await this.client.fetch(path, method, info);
         return await res.json();
     }
 }
@@ -119,9 +119,9 @@ export class Challenges {
      * @returns {Promise<any>} A promise to the list of random words
      */
     async generate(strength: number = 128): Promise<any> {
-        let path = `/challenges?strength=${strength.toString()}`;
-        let method = 'GET';
-        let res = await this.client.fetch(path, method, null);
+        const path = `/challenges?strength=${strength.toString()}`;
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, null);
         return await res.json();
     }
 
@@ -138,9 +138,9 @@ export class Challenges {
         recipient: string,
         words: string[]
     ): Promise<Response> {
-        let hab = await this.client.identifiers().get(name);
-        let exchanges = this.client.exchanges();
-        let resp = await exchanges.send(
+        const hab = await this.client.identifiers().get(name);
+        const exchanges = this.client.exchanges();
+        const resp = await exchanges.send(
             name,
             'challenge',
             hab,
@@ -164,12 +164,12 @@ export class Challenges {
         source: string,
         words: string[]
     ): Promise<Response> {
-        let path = `/challenges/${name}/verify/${source}`;
-        let method = 'POST';
-        let data = {
+        const path = `/challenges/${name}/verify/${source}`;
+        const method = 'POST';
+        const data = {
             words: words,
         };
-        let res = await this.client.fetch(path, method, data);
+        const res = await this.client.fetch(path, method, data);
 
         return await res.json();
     }
@@ -186,12 +186,12 @@ export class Challenges {
         source: string,
         said: string
     ): Promise<Response> {
-        let path = `/challenges/${name}/verify/${source}`;
-        let method = 'PUT';
-        let data = {
+        const path = `/challenges/${name}/verify/${source}`;
+        const method = 'PUT';
+        const data = {
             said: said,
         };
-        let res = await this.client.fetch(path, method, data);
+        const res = await this.client.fetch(path, method, data);
         return res;
     }
 }

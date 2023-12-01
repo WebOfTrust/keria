@@ -44,7 +44,7 @@ export class Signer extends Matter {
         } catch (e) {
             if (e instanceof EmptyMaterialError) {
                 if (code == MtrDex.Ed25519_Seed) {
-                    let raw = libsodium.randombytes_buf(
+                    const raw = libsodium.randombytes_buf(
                         libsodium.crypto_sign_SEEDBYTES
                     );
                     super({ raw, code, qb64, qb64b, qb2 });
@@ -96,7 +96,7 @@ export class Signer extends Matter {
         only: boolean = false,
         ondex: number | undefined
     ) {
-        let sig = libsodium.crypto_sign_detached(
+        const sig = libsodium.crypto_sign_detached(
             ser,
             Buffer.concat([seed, verfer.raw])
         );

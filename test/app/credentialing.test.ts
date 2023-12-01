@@ -126,7 +126,7 @@ fetchMock.mockResponse((req) => {
     } else if (req.url == boot_url + '/boot') {
         return Promise.resolve({ body: '', init: { status: 202 } });
     } else {
-        let headers = new Headers();
+        const headers = new Headers();
         let signed_headers = new Headers();
 
         headers.set(
@@ -140,21 +140,21 @@ fetchMock.mockResponse((req) => {
         headers.set('Content-Type', 'application/json');
 
         const requrl = new URL(req.url);
-        let salter = new Salter({ qb64: '0AAwMTIzNDU2Nzg5YWJjZGVm' });
-        let signer = salter.signer(
+        const salter = new Salter({ qb64: '0AAwMTIzNDU2Nzg5YWJjZGVm' });
+        const signer = salter.signer(
             'A',
             true,
             'agentagent-ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose00',
             Tier.low
         );
 
-        let authn = new Authenticater(signer!, signer!.verfer);
+        const authn = new Authenticater(signer!, signer!.verfer);
         signed_headers = authn.sign(
             headers,
             req.method,
             requrl.pathname.split('?')[0]
         );
-        let body = req.url.startsWith(url + '/identifiers/aid1/credentials')
+        const body = req.url.startsWith(url + '/identifiers/aid1/credentials')
             ? mockCredential
             : mockGetAID;
 
@@ -170,14 +170,14 @@ describe('Credentialing', () => {
         await libsodium.ready;
         const bran = '0123456789abcdefghijk';
 
-        let client = new SignifyClient(url, bran, Tier.low, boot_url);
+        const client = new SignifyClient(url, bran, Tier.low, boot_url);
 
         await client.boot();
         await client.connect();
 
-        let credentials = client.credentials();
+        const credentials = client.credentials();
 
-        let kargs = {
+        const kargs = {
             filter: {
                 '-i': { $eq: 'EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX' },
             },
@@ -326,19 +326,19 @@ describe('Ipex', () => {
     it('Ipex', async () => {
         await libsodium.ready;
         const bran = '0123456789abcdefghijk';
-        let client = new SignifyClient(url, bran, Tier.low, boot_url);
+        const client = new SignifyClient(url, bran, Tier.low, boot_url);
 
         await client.boot();
         await client.connect();
 
-        let ipex = client.ipex();
+        const ipex = client.ipex();
 
-        let holder = 'ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k';
-        let [acdcSaider, acdc] = Saider.saidify(mockCredential.sad);
+        const holder = 'ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k';
+        const [acdcSaider, acdc] = Saider.saidify(mockCredential.sad);
 
         // Create iss
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0);
-        let _iss = {
+        const _iss = {
             v: vs,
             t: Ilks.iss,
             d: '',
@@ -348,9 +348,9 @@ describe('Ipex', () => {
             dt: mockCredential.sad.a.dt,
         };
 
-        let [issSaider, iss] = Saider.saidify(_iss);
-        let iserder = new Serder(iss);
-        let anc = interact({
+        const [issSaider, iss] = Saider.saidify(_iss);
+        const iserder = new Serder(iss);
+        const anc = interact({
             pre: mockCredential.sad.i,
             sn: 1,
             data: [{}],
@@ -359,7 +359,7 @@ describe('Ipex', () => {
             kind: undefined,
         });
 
-        let [grant, gsigs, end] = await ipex.grant({
+        const [grant, gsigs, end] = await ipex.grant({
             senderName: 'multisig',
             recipient: holder,
             message: '',
@@ -426,7 +426,7 @@ describe('Ipex', () => {
                 '-e-anc-AABAADMtDfNihvCSXJNp1VronVojcPGo--0YZ4Kh6CAnowRnn4Or4FgZQqaqCEv6XVS413qfZoVp8j2uxTTPkItO7ED'
         );
 
-        let [admit, asigs, aend] = await ipex.admit(
+        const [admit, asigs, aend] = await ipex.admit(
             'holder',
             '',
             grant.ked.d,

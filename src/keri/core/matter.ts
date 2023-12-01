@@ -7,7 +7,7 @@ import { Buffer } from 'buffer';
 
 export class Codex {
     has(prop: string): boolean {
-        let m = new Map(Array.from(Object.entries(this), (v) => [v[1], v[0]]));
+        const m = new Map(Array.from(Object.entries(this), (v) => [v[1], v[0]]));
         return m.has(prop);
     }
 }
@@ -276,16 +276,16 @@ export class Matter {
                     rize = raw.length;
                 }
 
-                let ls = (3 - (rize % 3)) % 3; // calc actual lead (pad) size
+                const ls = (3 - (rize % 3)) % 3; // calc actual lead (pad) size
                 size = Math.floor((rize + ls) / 3); // calculate value of size in triplets
                 if (SmallVrzDex.has(code[0])) {
                     if (size <= 64 ** 2 - 1) {
-                        let hs = 2;
-                        let s = Object.values(SmallVrzDex)[ls];
+                        const hs = 2;
+                        const s = Object.values(SmallVrzDex)[ls];
                         code = `${s}${code.substring(1, hs)}`;
                     } else if (size <= 64 ** 4 - 1) {
-                        let hs = 4;
-                        let s = Object.values(LargeVrzDex)[ls];
+                        const hs = 4;
+                        const s = Object.values(LargeVrzDex)[ls];
                         code = `${s}${'AAAA'.substring(0, hs - 2)}${code[1]}`;
                     } else {
                         throw new Error(
@@ -294,8 +294,8 @@ export class Matter {
                     }
                 } else {
                     if (size <= 64 ** 4 - 1) {
-                        let hs = 4;
-                        let s = Object.values(LargeVrzDex)[ls];
+                        const hs = 4;
+                        const s = Object.values(LargeVrzDex)[ls];
                         code = `${s}${code.substring(1, hs)}`;
                     } else {
                         throw new Error(
@@ -304,7 +304,7 @@ export class Matter {
                     }
                 }
             } else {
-                let sizage = Matter.Sizes.get(code);
+                const sizage = Matter.Sizes.get(code);
                 if (sizage!.fs == -1) {
                     // invalid
                     throw new Error(`Unsupported variable size code=${code}`);
@@ -326,7 +326,7 @@ export class Matter {
         } else if (qb64 !== undefined) {
             this._exfil(qb64);
         } else if (qb64b !== undefined) {
-            let qb64 = d(qb64b);
+            const qb64 = d(qb64b);
             this._exfil(qb64);
         } else if (qb2 !== undefined) {
             this._bexfil(qb2);
@@ -364,8 +364,8 @@ export class Matter {
     }
 
     static _rawSize(code: string) {
-        let sizage = this.Sizes.get(code); // get sizes
-        let cs = sizage!.hs + sizage!.ss; // both hard + soft code size
+        const sizage = this.Sizes.get(code); // get sizes
+        const cs = sizage!.hs + sizage!.ss; // both hard + soft code size
         if (sizage!.fs === -1) {
             throw Error(`Non-fixed raw size code ${code}.`);
         }
@@ -374,26 +374,26 @@ export class Matter {
     }
 
     static _leadSize(code: string) {
-        let sizage = this.Sizes.get(code);
+        const sizage = this.Sizes.get(code);
         return sizage!.ls;
     }
 
     get both() {
-        let sizage = Matter.Sizes.get(this.code);
+        const sizage = Matter.Sizes.get(this.code);
         return `${this.code}${intToB64(this.size, sizage!.ss)}`;
     }
 
     private _infil() {
-        let code = this.code;
-        let size = this.size;
-        let raw = this.raw;
+        const code = this.code;
+        const size = this.size;
+        const raw = this.raw;
 
-        let ps = (3 - (raw.length % 3)) % 3; // pad size chars or lead size bytes
-        let sizage = Matter.Sizes.get(code);
+        const ps = (3 - (raw.length % 3)) % 3; // pad size chars or lead size bytes
+        const sizage = Matter.Sizes.get(code);
 
         if (sizage!.fs === undefined) {
             // Variable size code, NOT SUPPORTED
-            let cs = sizage!.hs + sizage!.ss;
+            const cs = sizage!.hs + sizage!.ss;
             if (cs % 4) {
                 throw new Error(
                     `Whole code size not multiple of 4 for variable length material. cs=${cs}`
@@ -403,26 +403,26 @@ export class Matter {
                 throw new Error(`Invalid size=${size} for code=${code}.`);
             }
 
-            let both = `${code}${intToB64(size, sizage!.ss)}`;
+            const both = `${code}${intToB64(size, sizage!.ss)}`;
             if (both.length % 4 !== ps - sizage!.ls!) {
                 throw new Error(
                     `Invalid code=${both} for converted raw pad size=${ps}.`
                 );
             }
 
-            let bytes = new Uint8Array(sizage!.ls! + raw.length);
+            const bytes = new Uint8Array(sizage!.ls! + raw.length);
             for (let i = 0; i < sizage!.ls!; i++) {
                 bytes[i] = 0;
             }
             for (let i = 0; i < raw.length; i++) {
-                let odx = i + ps;
+                const odx = i + ps;
                 bytes[odx] = raw[i];
             }
 
             return both + Base64.encode(Buffer.from(bytes));
         } else {
-            let both = code;
-            let cs = both.length;
+            const both = code;
+            const cs = both.length;
             if (cs % 4 != ps - sizage!.ls!) {
                 // adjusted pad given lead bytes
                 throw new Error(
@@ -432,12 +432,12 @@ export class Matter {
             // prepad, convert, and replace upfront
             // when fixed and ls != 0 then cs % 4 is zero and ps==ls
             // otherwise  fixed and ls == 0 then cs % 4 == ps
-            let bytes = new Uint8Array(ps + raw.length);
+            const bytes = new Uint8Array(ps + raw.length);
             for (let i = 0; i < ps; i++) {
                 bytes[i] = 0;
             }
             for (let i = 0; i < raw.length; i++) {
-                let odx = i + ps;
+                const odx = i + ps;
                 bytes[odx] = raw[i];
             }
 
@@ -450,23 +450,23 @@ export class Matter {
             throw new Error('Empty Material');
         }
 
-        let first = qb64[0];
+        const first = qb64[0];
         if (!Array.from(Matter.Hards.keys()).includes(first)) {
             throw new Error(`Unexpected code ${first}`);
         }
 
-        let hs = Matter.Hards.get(first);
+        const hs = Matter.Hards.get(first);
         if (qb64.length < hs!) {
             throw new Error(`Shortage Error`);
         }
 
-        let hard = qb64.slice(0, hs);
+        const hard = qb64.slice(0, hs);
         if (!Array.from(Matter.Sizes.keys()).includes(hard)) {
             throw new Error(`Unsupported code ${hard}`);
         }
 
-        let sizage = Matter.Sizes.get(hard);
-        let cs = sizage!.hs + sizage!.ss;
+        const sizage = Matter.Sizes.get(hard);
+        const cs = sizage!.hs + sizage!.ss;
         let size = -1;
         if (sizage!.fs == -1) {
             // Variable size code, Not supported
@@ -480,13 +480,13 @@ export class Matter {
         }
 
         qb64 = qb64.slice(0, sizage!.fs);
-        let ps = cs % 4;
-        let pbs = 2 * (ps == 0 ? sizage!.ls! : ps);
+        const ps = cs % 4;
+        const pbs = 2 * (ps == 0 ? sizage!.ls! : ps);
         let raw;
         if (ps != 0) {
-            let base = new Array(ps + 1).join('A') + qb64.slice(cs);
-            let paw = Base64.decode(base); // decode base to leave prepadded raw
-            let pi = readInt(paw.subarray(0, ps)); // prepad as int
+            const base = new Array(ps + 1).join('A') + qb64.slice(cs);
+            const paw = Base64.decode(base); // decode base to leave prepadded raw
+            const pi = readInt(paw.subarray(0, ps)); // prepad as int
             if (pi & (2 ** pbs - 1)) {
                 // masked pad bits non-zero
                 throw new Error(
@@ -495,9 +495,9 @@ export class Matter {
             }
             raw = paw.subarray(ps); // strip off ps prepad paw bytes
         } else {
-            let base = qb64.slice(cs);
-            let paw = Base64.decode(base);
-            let li = readInt(paw.subarray(0, sizage!.ls));
+            const base = qb64.slice(cs);
+            const paw = Base64.decode(base);
+            const li = readInt(paw.subarray(0, sizage!.ls));
             if (li != 0) {
                 if (li == 1) {
                     throw new Error(`Non zeroed lead byte = 0x{li:02x}.`);

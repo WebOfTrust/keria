@@ -18,7 +18,7 @@ export function pad(n: any, width = 3, z = 0) {
  */
 export function extractValues(ked: any, labels: any) {
     let values = [];
-    for (let label of labels) {
+    for (const label of labels) {
         values = extractElementValues(ked[label], values);
     }
 
@@ -46,7 +46,7 @@ function extractElementValues(element: any, values: any) {
 
     try {
         if (element instanceof Array && !(typeof element == 'string')) {
-            for (let k in element) extractElementValues(element[k], values);
+            for (const k in element) extractElementValues(element[k], values);
         } else if (typeof element == 'string') {
             values.push(element);
         }
@@ -88,7 +88,7 @@ export function range(start: number, stop: number, step: number) {
         return [];
     }
 
-    let result = new Array<number>();
+    const result = new Array<number>();
     for (let i: number = start; step > 0 ? i < stop : i > stop; i += step) {
         result.push(i);
     }
@@ -100,7 +100,7 @@ export function intToBytes(value: number, length: number): Uint8Array {
     const byteArray = new Uint8Array(length); // Assuming a 4-byte integer (32 bits)
 
     for (let index = byteArray.length - 1; index >= 0; index--) {
-        let byte = value & 0xff;
+        const byte = value & 0xff;
         byteArray[index] = byte;
         value = (value - byte) / 256;
     }
@@ -116,15 +116,15 @@ export function bytesToInt(ar: Uint8Array): number {
 }
 
 export function serializeACDCAttachment(acdc: Serder): Uint8Array {
-    let prefixer = new Prefixer({ raw: b(acdc.raw) });
-    let seqner = new Seqner({ sn: acdc.sn });
-    let saider = new Saider({ qb64: acdc.ked['d'] });
-    let craw = new Uint8Array();
-    let ctr = new Counter({ code: CtrDex.SealSourceTriples, count: 1 }).qb64b;
-    let prefix = prefixer.qb64b;
-    let seq = seqner.qb64b;
-    let said = saider.qb64b;
-    let newCraw = new Uint8Array(
+    const prefixer = new Prefixer({ raw: b(acdc.raw) });
+    const seqner = new Seqner({ sn: acdc.sn });
+    const saider = new Saider({ qb64: acdc.ked['d'] });
+    const craw = new Uint8Array();
+    const ctr = new Counter({ code: CtrDex.SealSourceTriples, count: 1 }).qb64b;
+    const prefix = prefixer.qb64b;
+    const seq = seqner.qb64b;
+    const said = saider.qb64b;
+    const newCraw = new Uint8Array(
         craw.length + ctr.length + prefix.length + seq.length + said.length
     );
     newCraw.set(craw);
@@ -136,19 +136,19 @@ export function serializeACDCAttachment(acdc: Serder): Uint8Array {
 }
 
 export function serializeIssExnAttachment(iss: Serder): Uint8Array {
-    let seqner = new Seqner({ sn: iss.sn });
-    let ancSaider = new Saider({ qb64: iss.ked['d'] });
-    let coupleArray = new Uint8Array(
+    const seqner = new Seqner({ sn: iss.sn });
+    const ancSaider = new Saider({ qb64: iss.ked['d'] });
+    const coupleArray = new Uint8Array(
         seqner.qb64b.length + ancSaider.qb64b.length
     );
     coupleArray.set(seqner.qb64b);
     coupleArray.set(ancSaider.qb64b, seqner.qb64b.length);
-    let counter = new Counter({
+    const counter = new Counter({
         code: CtrDex.SealSourceCouples,
         count: 1,
     });
-    let counterQb64b = counter.qb64b;
-    let atc = new Uint8Array(counter.qb64b.length + coupleArray.length);
+    const counterQb64b = counter.qb64b;
+    const atc = new Uint8Array(counter.qb64b.length + coupleArray.length);
     atc.set(counterQb64b);
     atc.set(coupleArray, counterQb64b.length);
 
@@ -157,11 +157,11 @@ export function serializeIssExnAttachment(iss: Serder): Uint8Array {
             `Invalid attachments size: ${atc.length}, non-integral quadlets detected.`
         );
     }
-    let pcnt = new Counter({
+    const pcnt = new Counter({
         code: CtrDex.AttachedMaterialQuadlets,
         count: Math.floor(atc.length / 4),
     });
-    let msg = new Uint8Array(pcnt.qb64b.length + atc.length);
+    const msg = new Uint8Array(pcnt.qb64b.length + atc.length);
     msg.set(pcnt.qb64b);
     msg.set(atc, pcnt.qb64b.length);
 

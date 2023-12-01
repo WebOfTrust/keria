@@ -36,8 +36,8 @@ namespace vdr {
         code = MtrDex.Blake3_256,
     }: VDRInceptArgs): Serder {
         const vs = versify(Ident.KERI, version, kind, 0);
-        let isn = 0;
-        let ilk = Ilks.vcp;
+        const isn = 0;
+        const ilk = Ilks.vcp;
 
         if (cnfg.includes(TraitDex.NoBackers) && baks.length > 0) {
             throw new Error(
@@ -70,7 +70,7 @@ namespace vdr {
             }
         }
 
-        let ked = {
+        const ked = {
             v: vs,
             t: ilk,
             d: '',
@@ -83,7 +83,7 @@ namespace vdr {
             n: nonce,
         };
 
-        let prefixer = new Prefixer({ code }, ked);
+        const prefixer = new Prefixer({ code }, ked);
         ked.i = prefixer.qb64;
         ked.d = prefixer.qb64;
 

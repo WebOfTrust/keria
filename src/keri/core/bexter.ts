@@ -95,7 +95,7 @@ export class Bexter extends Matter {
             if (bext === undefined)
                 throw new EmptyMaterialError('Missing bext string.');
 
-            let match = Reb64.exec(bext);
+            const match = Reb64.exec(bext);
             if (!match) throw new Error('Invalid Base64.');
 
             raw = Bexter._rawify(bext);
@@ -108,21 +108,21 @@ export class Bexter extends Matter {
     }
 
     static _rawify(bext: string): Uint8Array {
-        let ts = bext.length % 4; // bext size mod 4
-        let ws = (4 - ts) % 4; // pre conv wad size in chars
-        let ls = (3 - ts) % 3; // post conv lead size in bytes
-        let wad = new Array(ws);
+        const ts = bext.length % 4; // bext size mod 4
+        const ws = (4 - ts) % 4; // pre conv wad size in chars
+        const ls = (3 - ts) % 3; // post conv lead size in bytes
+        const wad = new Array(ws);
         wad.fill('A');
-        let base = wad.join('') + bext; // pre pad with wad of zeros in Base64 == 'A'
-        let raw = Base64.decode(base); // [ls:]  // convert and remove leader
+        const base = wad.join('') + bext; // pre pad with wad of zeros in Base64 == 'A'
+        const raw = Base64.decode(base); // [ls:]  // convert and remove leader
 
         return Uint8Array.from(raw).subarray(ls); // raw binary equivalent of text
     }
 
     get bext(): string {
-        let sizage = Matter.Sizes.get(this.code);
-        let wad = Uint8Array.from(new Array(sizage?.ls).fill(0));
-        let bext = Base64.encode(Buffer.from([...wad, ...this.raw]));
+        const sizage = Matter.Sizes.get(this.code);
+        const wad = Uint8Array.from(new Array(sizage?.ls).fill(0));
+        const bext = Base64.encode(Buffer.from([...wad, ...this.raw]));
 
         let ws = 0;
         if (sizage?.ls === 0 && bext !== undefined) {

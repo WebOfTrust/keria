@@ -29,15 +29,15 @@ export class Signage {
 }
 
 export function signature(signages: Array<Signage>): Headers {
-    let values = new Array<string>();
+    const values = new Array<string>();
 
-    for (let signage of signages) {
+    for (const signage of signages) {
         let markers: Array<Siger | Cigar>;
         let indexed = signage.indexed;
-        let signer = signage.signer;
-        let ordinal = signage.ordinal;
-        let digest = signage.digest;
-        let kind = signage.kind;
+        const signer = signage.signer;
+        const ordinal = signage.ordinal;
+        const digest = signage.digest;
+        const kind = signage.kind;
         let tags: Array<string>;
 
         if (signage.markers instanceof Map) {
@@ -52,8 +52,8 @@ export function signature(signages: Array<Signage>): Headers {
             indexed = markers[0] instanceof Siger;
         }
 
-        let items = new Array<string>();
-        let tag = 'indexed';
+        const items = new Array<string>();
+        const tag = 'indexed';
 
         let val = indexed ? '?1' : '?0';
         items.push(`${tag}="${val}"`);
@@ -102,13 +102,13 @@ export function signature(signages: Array<Signage>): Headers {
 }
 
 export function designature(value: string) {
-    let values = value.replace(' ', '').split(',');
+    const values = value.replace(' ', '').split(',');
 
-    let signages = new Array<Signage>();
+    const signages = new Array<Signage>();
     values.forEach((val) => {
-        let dict = new Map<string, string>();
+        const dict = new Map<string, string>();
         val.split(';').forEach((v) => {
-            let splits = v.split('=', 2);
+            const splits = v.split('=', 2);
             dict.set(splits[0], splits[1].replaceAll('"', ''));
         });
 
@@ -117,8 +117,8 @@ export function designature(value: string) {
                 'Missing indexed field in Signature header signage.'
             );
         }
-        let item = dict.get('indexed')!;
-        let indexed = !FALSY.includes(item);
+        const item = dict.get('indexed')!;
+        const indexed = !FALSY.includes(item);
         dict.delete('indexed');
 
         let signer;

@@ -36,7 +36,7 @@ export class Agent {
     }
 
     private parse(agent: Agent) {
-        let [state, verfer] = this.event(agent);
+        const [state, verfer] = this.event(agent);
 
         this.sn = new CesrNumber({}, undefined, state['s']).num;
         this.said = state['d'];
@@ -61,20 +61,20 @@ export class Agent {
             throw new Error(`agent inception event can only have one key`);
         }
 
-        let verfer = new Verfer({ qb64: evt['k'][0] });
+        const verfer = new Verfer({ qb64: evt['k'][0] });
 
         if (evt['n'].length !== 1) {
             throw new Error(`agent inception event can only have one next key`);
         }
 
-        let diger = new Diger({ qb64: evt['n'][0] });
+        const diger = new Diger({ qb64: evt['n'][0] });
 
-        let tholder = new Tholder({ sith: evt['kt'] });
+        const tholder = new Tholder({ sith: evt['kt'] });
         if (tholder.num !== 1) {
             throw new Error(`invalid threshold ${tholder.num}, must be 1`);
         }
 
-        let ntholder = new Tholder({ sith: evt['nt'] });
+        const ntholder = new Tholder({ sith: evt['nt'] });
         if (ntholder.num !== 1) {
             throw new Error(
                 `invalid next threshold ${ntholder.num}, must be 1`
@@ -113,7 +113,7 @@ export class Controller {
 
         this.salter = new Salter({ qb64: this.bran, tier: this.tier });
 
-        let creator = new SaltyCreator(this.salter.qb64, this.tier, this.stem);
+        const creator = new SaltyCreator(this.salter.qb64, this.tier, this.stem);
 
         this.signer = creator
             .create(
@@ -161,9 +161,9 @@ export class Controller {
     }
 
     approveDelegation(_agent: Agent) {
-        let seqner = new Seqner({ sn: _agent.sn });
-        let anchor = { i: _agent.pre, s: seqner.snh, d: _agent.said };
-        let sn = new CesrNumber({}, undefined, this.serder.ked['s']).num + 1;
+        const seqner = new Seqner({ sn: _agent.sn });
+        const anchor = { i: _agent.pre, s: seqner.snh, d: _agent.said };
+        const sn = new CesrNumber({}, undefined, this.serder.ked['s']).num + 1;
         this.serder = interact({
             pre: this.serder.pre,
             dig: this.serder.ked['d'],
@@ -180,7 +180,7 @@ export class Controller {
     }
 
     get event() {
-        let siger = this.signer.sign(this.serder.raw, 0);
+        const siger = this.signer.sign(this.serder.raw, 0);
         return [this.serder, siger];
     }
 
@@ -205,12 +205,12 @@ export class Controller {
     }
 
     rotate(bran: string, aids: Array<any>) {
-        let nbran = MtrDex.Salt_128 + 'A' + bran.substring(0, 21); // qb64 salt for seed
-        let nsalter = new Salter({ qb64: nbran, tier: this.tier });
-        let nsigner = this.salter.signer(undefined, false);
+        const nbran = MtrDex.Salt_128 + 'A' + bran.substring(0, 21); // qb64 salt for seed
+        const nsalter = new Salter({ qb64: nbran, tier: this.tier });
+        const nsigner = this.salter.signer(undefined, false);
 
-        let creator = new SaltyCreator(this.salter.qb64, this.tier, this.stem);
-        let signer = creator
+        const creator = new SaltyCreator(this.salter.qb64, this.tier, this.stem);
+        const signer = creator
             .create(
                 undefined,
                 1,
@@ -223,7 +223,7 @@ export class Controller {
             )
             .signers.pop();
 
-        let ncreator = new SaltyCreator(nsalter.qb64, this.tier, this.stem);
+        const ncreator = new SaltyCreator(nsalter.qb64, this.tier, this.stem);
         this.signer = ncreator
             .create(
                 undefined,
@@ -252,7 +252,7 @@ export class Controller {
         this.keys = [this.signer.verfer.qb64, signer?.verfer.qb64];
         this.ndigs = [new Diger({}, this.nsigner.verfer.qb64b).qb64];
 
-        let rot = rotate({
+        const rot = rotate({
             pre: this.pre,
             keys: this.keys,
             dig: this.serder.ked['d'],
@@ -261,32 +261,32 @@ export class Controller {
             ndigs: this.ndigs,
         });
 
-        let sigs = [
+        const sigs = [
             signer?.sign(b(rot.raw), 1, false, 0).qb64,
             this.signer.sign(rot.raw, 0).qb64,
         ];
-        let encrypter = new Encrypter({}, b(nsigner.verfer.qb64));
-        let decrypter = new Decrypter({}, nsigner.qb64b);
-        let sxlt = encrypter.encrypt(b(this.bran)).qb64;
+        const encrypter = new Encrypter({}, b(nsigner.verfer.qb64));
+        const decrypter = new Decrypter({}, nsigner.qb64b);
+        const sxlt = encrypter.encrypt(b(this.bran)).qb64;
 
-        let keys: Record<any, any> = {};
+        const keys: Record<any, any> = {};
 
-        for (let aid of aids) {
-            let pre: string = aid['prefix'] as string;
+        for (const aid of aids) {
+            const pre: string = aid['prefix'] as string;
             if ('salty' in aid) {
                 console.log('salty aid to rotate');
                 console.log(aid);
-                let salty: any = aid['salty'];
-                let cipher = new Cipher({ qb64: salty['sxlt'] });
-                let dnxt = decrypter.decrypt(null, cipher).qb64;
+                const salty: any = aid['salty'];
+                const cipher = new Cipher({ qb64: salty['sxlt'] });
+                const dnxt = decrypter.decrypt(null, cipher).qb64;
 
                 // Now we have the AID salt, use it to verify against the current public keys
-                let acreator = new SaltyCreator(
+                const acreator = new SaltyCreator(
                     dnxt,
                     salty['tier'],
                     salty['stem']
                 );
-                let signers = acreator.create(
+                const signers = acreator.create(
                     salty['icodes'],
                     undefined,
                     MtrDex.Ed25519_Seed,
@@ -296,36 +296,36 @@ export class Controller {
                     salty['kidx'],
                     false
                 );
-                let _signers = [];
-                for (let signer of signers.signers) {
+                const _signers = [];
+                for (const signer of signers.signers) {
                     _signers.push(signer.verfer.qb64);
                 }
-                let pubs = aid['state']['k'];
+                const pubs = aid['state']['k'];
 
                 if (pubs.join(',') != _signers.join(',')) {
                     throw new Error('Invalid Salty AID');
                 }
 
-                let asxlt = encrypter.encrypt(b(dnxt)).qb64;
+                const asxlt = encrypter.encrypt(b(dnxt)).qb64;
                 keys[pre] = {
                     sxlt: asxlt,
                 };
             } else if ('randy' in aid) {
-                let randy = aid['randy'];
-                let prxs = randy['prxs'];
-                let nxts = randy['nxts'];
+                const randy = aid['randy'];
+                const prxs = randy['prxs'];
+                const nxts = randy['nxts'];
 
-                let nprxs = [];
-                let signers = [];
-                for (let prx of prxs) {
-                    let cipher = new Cipher({ qb64: prx });
-                    let dsigner = decrypter.decrypt(null, cipher, true);
+                const nprxs = [];
+                const signers = [];
+                for (const prx of prxs) {
+                    const cipher = new Cipher({ qb64: prx });
+                    const dsigner = decrypter.decrypt(null, cipher, true);
                     signers.push(dsigner);
                     nprxs.push(encrypter.encrypt(b(dsigner.qb64)).qb64);
                 }
-                let pubs = aid['state']['k'];
-                let _signers = [];
-                for (let signer of signers) {
+                const pubs = aid['state']['k'];
+                const _signers = [];
+                for (const signer of signers) {
                     _signers.push(signer.verfer.qb64);
                 }
 
@@ -335,8 +335,8 @@ export class Controller {
                     );
                 }
 
-                let nnxts = [];
-                for (let nxt of nxts) {
+                const nnxts = [];
+                for (const nxt of nxts) {
                     nnxts.push(this.recrypt(nxt, decrypter, encrypter));
                 }
 
@@ -349,7 +349,7 @@ export class Controller {
             }
         }
 
-        let data = {
+        const data = {
             rot: rot.ked,
             sigs: sigs,
             sxlt: sxlt,
@@ -359,8 +359,8 @@ export class Controller {
     }
 
     recrypt(enc: string, decrypter: Decrypter, encrypter: Encrypter) {
-        let cipher = new Cipher({ qb64: enc });
-        let dnxt = decrypter.decrypt(null, cipher).qb64;
+        const cipher = new Cipher({ qb64: enc });
+        const dnxt = decrypter.decrypt(null, cipher).qb64;
         return encrypter.encrypt(b(dnxt)).qb64;
     }
 }

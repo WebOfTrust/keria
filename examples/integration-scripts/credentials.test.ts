@@ -57,8 +57,8 @@ async function waitForNotifications(
 ): Promise<Notification[]> {
     const awaitedNotifications = [];
     while (true) {
-        let notifications = await client.notifications().list();
-        for (let note of notifications.notes) {
+        const notifications = await client.notifications().list();
+        for (const note of notifications.notes) {
             if (note.a.r === route) {
                 awaitedNotifications.push(note);
             }
@@ -115,7 +115,7 @@ test('credentials', async () => {
     const verifierAidName = 'verifier';
 
     // Create two identifiers, one for each client
-    let issuerIcpRes = await issuerClient.identifiers().create(issuerAidName, {
+    const issuerIcpRes = await issuerClient.identifiers().create(issuerAidName, {
         toad: 3,
         wits: [...KLI_WITNESS_DEMO_PREFIXES],
     });
@@ -131,7 +131,7 @@ test('credentials', async () => {
         .addEndRole(issuerAidName, 'agent', issuerClient!.agent!.pre);
     console.log("Issuer's AID:", issuerAID);
 
-    let holderIcpRes = await holderClient.identifiers().create(holderAidName, {
+    const holderIcpRes = await holderClient.identifiers().create(holderAidName, {
         toad: 3,
         wits: [...KLI_WITNESS_DEMO_PREFIXES],
     });
@@ -147,7 +147,7 @@ test('credentials', async () => {
         .addEndRole(holderAidName, 'agent', holderClient!.agent!.pre);
     console.log("Recipient's AID:", holderAID);
 
-    let verifierIcpRes = await verifierClient
+    const verifierIcpRes = await verifierClient
         .identifiers()
         .create(verifierAidName, {
             toad: 3,
@@ -187,18 +187,18 @@ test('credentials', async () => {
         await new Promise((resolve) => setTimeout(resolve, 250));
     }
 
-    let issSchema = await issuerClient.schemas().get(schemaSAID);
+    const issSchema = await issuerClient.schemas().get(schemaSAID);
     assert.equal(issSchema.$id, schemaSAID);
-    let hldSchemas = await holderClient.schemas().list();
+    const hldSchemas = await holderClient.schemas().list();
     assert.equal(hldSchemas.length, 1);
     assert.equal(hldSchemas[0].$id, schemaSAID);
     console.log('Resolved QVI Schema OOBI for issuer, holder, and verifier');
 
     // Agent discovery through OOBI exchange between issuer, holder, and verifier
     console.log('Getting Agent OOBIs for issuer, holder, and verifier');
-    let issAgentOOBI = await issuerClient.oobis().get(issuerAidName, 'agent');
-    let hldAgentOOBI = await holderClient.oobis().get(holderAidName, 'agent');
-    let vfyAgentOOBI = await verifierClient
+    const issAgentOOBI = await issuerClient.oobis().get(issuerAidName, 'agent');
+    const hldAgentOOBI = await holderClient.oobis().get(holderAidName, 'agent');
+    const vfyAgentOOBI = await verifierClient
         .oobis()
         .get(verifierAidName, 'agent');
 
@@ -263,7 +263,7 @@ test('credentials', async () => {
         issOp = await issuerClient.operations().get(issOp.name);
         await new Promise((resolve) => setTimeout(resolve, 250));
     }
-    let registries = await issuerClient.registries().list(issuerAidName);
+    const registries = await issuerClient.registries().list(issuerAidName);
     const registry = registries[0];
     assert.equal(registries.length, 1);
     assert.equal(registry.name, registryName);
@@ -373,7 +373,7 @@ test('credentials', async () => {
         verifierClient,
         '/exn/ipex/grant'
     );
-    let verifierGrantNote = verifierNotifications[0];
+    const verifierGrantNote = verifierNotifications[0];
 
     const [admit3, sigs3, aend3] = await verifierClient
         .ipex()

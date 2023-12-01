@@ -24,7 +24,7 @@ describe('RandyCreator', () => {
     it('should create sets of random signers', async () => {
         await libsodium.ready;
 
-        let randy = new RandyCreator();
+        const randy = new RandyCreator();
 
         // test default arguments
         let keys = randy.create();
@@ -82,9 +82,9 @@ describe('SaltyCreator', () => {
             assert.equal(signer.qb64.length, 44);
         });
 
-        let raw = '0123456789abcdef';
-        let salter = new Salter({ raw: b(raw) });
-        let salt = salter.qb64;
+        const raw = '0123456789abcdef';
+        const salter = new Salter({ raw: b(raw) });
+        const salt = salter.qb64;
         assert.equal(salter.qb64, '0AAwMTIzNDU2Nzg5YWJjZGVm');
         salty = new SaltyCreator(salter.qb64);
         assert.equal(salty.salter.code, MtrDex.Salt_128);
@@ -134,9 +134,9 @@ describe('Creator', () => {
     it('should create Randy or Salty creator', async () => {
         await libsodium.ready;
 
-        let raw = '0123456789abcdef';
-        let salter = new Salter({ raw: b(raw) });
-        let salt = salter.qb64;
+        const raw = '0123456789abcdef';
+        const salter = new Salter({ raw: b(raw) });
+        const salt = salter.qb64;
 
         let creator = new Creatory(Algos.salty).make(salt) as SaltyCreator;
         assert.equal(creator instanceof SaltyCreator, true);
@@ -146,7 +146,7 @@ describe('Creator', () => {
         assert.equal(creator instanceof SaltyCreator, true);
         assert.equal(creator.salter.qb64, salt);
 
-        let rcreator = new Creatory(Algos.randy).make(salt) as RandyCreator;
+        const rcreator = new Creatory(Algos.randy).make(salt) as RandyCreator;
         assert.equal(rcreator instanceof RandyCreator, true);
     });
 });
@@ -163,11 +163,11 @@ describe('Manager', () => {
     it('should manage key pairs for identifiers', async () => {
         await libsodium.ready;
 
-        let raw = '0123456789abcdef';
-        let salter = new Salter({ raw: b(raw) });
-        let salt = salter.qb64;
+        const raw = '0123456789abcdef';
+        const salter = new Salter({ raw: b(raw) });
+        const salt = salter.qb64;
         assert.equal(salt, '0AAwMTIzNDU2Nzg5YWJjZGVm');
-        let stem = 'red';
+        const stem = 'red';
 
         // Create a randy Manager without encryption should raise an exception
         assert.throws(() => {
@@ -175,44 +175,44 @@ describe('Manager', () => {
         });
 
         // cryptseed0 = b('h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf')
-        let cryptseed0 = new Uint8Array([
+        const cryptseed0 = new Uint8Array([
             104, 44, 35, 124, 138, 112, 34, 18, 196, 51, 116, 50, 166, 225, 24,
             25, 240, 102, 50, 44, 121, 196, 194, 49, 64, 245, 64, 21, 46, 162,
             26, 207,
         ]);
-        let cryptsigner0 = new Signer({
+        const cryptsigner0 = new Signer({
             raw: cryptseed0,
             code: MtrDex.Ed25519_Seed,
             transferable: false,
         });
-        let seed0 = cryptsigner0.qb64;
-        let seed0b = cryptsigner0.qb64b;
-        let aeid0 = cryptsigner0.verfer.qb64;
+        const seed0 = cryptsigner0.qb64;
+        const seed0b = cryptsigner0.qb64b;
+        const aeid0 = cryptsigner0.verfer.qb64;
         assert.equal(aeid0, 'BCa7mK96FwxkU0TdF54Yqg3qBDXUWpOhQ_Mtr7E77yZB');
-        let decrypter0 = new Decrypter({}, seed0b);
-        let encrypter0 = new Encrypter({}, b(aeid0));
+        const decrypter0 = new Decrypter({}, seed0b);
+        const encrypter0 = new Encrypter({}, b(aeid0));
         assert.equal(encrypter0.verifySeed(seed0b), true);
 
         // cryptseed1 = (b"\x89\xfe{\xd9'\xa7\xb3\x89#\x19\xbec\xee\xed\xc0\xf9\x97\xd0\x8f9\x1dyNI"
         //                b'I\x98\xbd\xa4\xf6\xfe\xbb\x03')
-        let cryptseed1 = new Uint8Array([
+        const cryptseed1 = new Uint8Array([
             137, 254, 123, 217, 39, 167, 179, 137, 35, 25, 190, 99, 238, 237,
             192, 249, 151, 208, 143, 57, 29, 121, 78, 73, 73, 152, 189, 164,
             246, 254, 187, 3,
         ]);
-        let cryptsigner1 = new Signer({
+        const cryptsigner1 = new Signer({
             raw: cryptseed1,
             code: MtrDex.Ed25519_Seed,
             transferable: false,
         });
-        let seed1 = cryptsigner1.qb64b;
-        let aeid1 = cryptsigner1.verfer.qb64;
+        const seed1 = cryptsigner1.qb64b;
+        const aeid1 = cryptsigner1.verfer.qb64;
         assert.equal(aeid1, 'BEcOrMrG_7r_NWaLl6h8UJapwIfQWIkjrIPXkCZm2fFM');
         // let decrypter1 = new Decrypter({}, seed1)
-        let encrypter1 = new Encrypter({}, b(aeid1));
+        const encrypter1 = new Encrypter({}, b(aeid1));
         assert.equal(encrypter1.verifySeed(seed1), true);
 
-        let manager = new Manager({ seed: seed0, salter: salter, aeid: aeid0 });
+        const manager = new Manager({ seed: seed0, salter: salter, aeid: aeid0 });
         assert.equal(manager.encrypter!.qb64, encrypter0.qb64);
         assert.equal(manager.decrypter!.qb64, decrypter0.qb64);
         assert.equal(manager.seed, seed0);
@@ -222,7 +222,7 @@ describe('Manager', () => {
         assert.equal(manager.salt, salt);
         assert.equal(manager.pidx, 0);
         assert.equal(manager.tier, Tier.low);
-        let saltCipher0 = new Cipher({ qb64: manager.ks.getGbls('salt') });
+        const saltCipher0 = new Cipher({ qb64: manager.ks.getGbls('salt') });
         assert.equal(saltCipher0.decrypt(undefined, seed0b).qb64, salt);
 
         let [verfers, digers] = manager.incept({ salt: salt, temp: true });
@@ -268,7 +268,7 @@ describe('Manager', () => {
             'ENmcKrctbztF36MttN7seUYJqH2IMnkavBgGLR6Mj2-B',
         ]);
 
-        let oldspre = spre;
+        const oldspre = spre;
         spre = 'DCu5o5cxzv1lgMqxMVG3IcCNK4lpFfpMM-9rfkY3XVUc';
         manager.move(oldspre, spre);
 
@@ -277,7 +277,7 @@ describe('Manager', () => {
         pl = manager.ks.getPubs(riKey(spre, ps.nxt.ridx))!;
         assert.deepStrictEqual(pl.pubs, ps.nxt.pubs);
 
-        let serb = b(ser);
+        const serb = b(ser);
         let psigers = manager.sign({ ser: serb, pubs: ps.new.pubs });
         assert.equal(psigers.length, 1);
         assert.equal(psigers[0] instanceof Siger, true);
@@ -297,7 +297,7 @@ describe('Manager', () => {
         );
 
         // Test sign with indices
-        let indices = [3];
+        const indices = [3];
         psigers = manager.sign({
             ser: serb,
             pubs: ps.new.pubs,
@@ -323,24 +323,24 @@ describe('Manager', () => {
         vsigs = Array.from(vsigers as Array<Siger>, (vsiger) => vsiger.qb64);
         assert.deepStrictEqual(psigs, vsigs);
 
-        let pcigars = manager.sign({
+        const pcigars = manager.sign({
             ser: serb,
             pubs: ps.new.pubs,
             indexed: false,
         });
         assert.equal(pcigars.length, 1);
         assert.equal(pcigars[0] instanceof Cigar, true);
-        let vcigars = manager.sign({
+        const vcigars = manager.sign({
             ser: serb,
             verfers: verfers,
             indexed: false,
         });
         assert.equal(vcigars.length, 1);
-        let pcigs = Array.from(
+        const pcigs = Array.from(
             pcigars as Array<Cigar>,
             (psiger) => psiger.qb64
         );
-        let vcigs = Array.from(
+        const vcigs = Array.from(
             vcigars as Array<Cigar>,
             (vsiger) => vsiger.qb64
         );
@@ -392,7 +392,7 @@ describe('Manager', () => {
         assert.deepStrictEqual(oldpubs, ps.old.pubs);
 
         oldpubs = Array.from(verfers, (verfer: Verfer) => verfer.qb64);
-        let deadpubs = ps.old.pubs;
+        const deadpubs = ps.old.pubs;
 
         manager.rotate({ pre: spre });
 
@@ -457,7 +457,7 @@ describe('Manager', () => {
             assert.notEqual(manager.ks.getPris(key, decrypter0), undefined);
         });
 
-        let oldrpre = rpre;
+        const oldrpre = rpre;
         rpre = 'DMqxMVG3IcCNK4lpFfCu5o5cxzv1lgpMM-9rfkY3XVUc';
         manager.move(oldrpre, rpre);
 
@@ -541,7 +541,7 @@ describe('Manager', () => {
         verfers = hashes[0];
         digers = hashes[1];
 
-        let witpre0 = verfers[0].qb64;
+        const witpre0 = verfers[0].qb64;
         assert.equal(
             verfers[0].qb64,
             'BOTNI4RzN706NecNdqTlGEcMSTWiFUvesEqmxWR_op8n'
@@ -559,7 +559,7 @@ describe('Manager', () => {
         verfers = hashes[0];
         digers = hashes[1];
 
-        let witpre1 = verfers[0].qb64;
+        const witpre1 = verfers[0].qb64;
         assert.equal(
             verfers[0].qb64,
             'BAB_5xNXH4hoxDCtAHPFPDedZ6YwTo8mbdw_v0AOHOMt'
@@ -574,11 +574,11 @@ describe('Manager', () => {
         await libsodium.ready;
 
         // Support Salty/Unencrypted - pass only stretched passcode as Salt.
-        let passcode = '0123456789abcdefghijk';
-        let salter = new Salter({ raw: b(passcode) });
-        let salt = salter.qb64;
+        const passcode = '0123456789abcdefghijk';
+        const salter = new Salter({ raw: b(passcode) });
+        const salt = salter.qb64;
 
-        let manager = new Manager({ salter: salter });
+        const manager = new Manager({ salter: salter });
         assert.equal(manager.encrypter, undefined);
 
         let [verfers, digers] = manager.incept({ salt: salt, temp: true });
@@ -609,7 +609,7 @@ describe('Manager', () => {
             'ENmcKrctbztF36MttN7seUYJqH2IMnkavBgGLR6Mj2-B',
         ]);
 
-        let serb = b(ser);
+        const serb = b(ser);
         let psigers = manager.sign({ ser: serb, pubs: ps.new.pubs });
         assert.equal(psigers.length, 1);
         assert.equal(psigers[0] instanceof Siger, true);
@@ -628,18 +628,18 @@ describe('Manager', () => {
             'AACRPqO6vdXm1oSSa82rmVVHikf7NdN4JXjOWEk30Ub5JHChL0bW6DzJfA-7VlgLm_B1XR0Z61FweP87bBQpVawI'
         );
 
-        let oldspre = spre;
+        const oldspre = spre;
         spre = 'DCu5o5cxzv1lgMqxMVG3IcCNK4lpFfpMM-9rfkY3XVUc';
         manager.move(oldspre, spre);
 
-        let oldpubs = Array.from(verfers, (verfer) => verfer.qb64);
-        let hashes = manager.rotate({ pre: spre });
+        const oldpubs = Array.from(verfers, (verfer) => verfer.qb64);
+        const hashes = manager.rotate({ pre: spre });
         verfers = hashes[0];
         digers = hashes[1];
 
         assert.equal(verfers.length, 1);
         assert.equal(digers.length, 1);
-        let pp = manager.ks.getPrms(spre)!;
+        const pp = manager.ks.getPrms(spre)!;
         assert.equal(pp.pidx, 0);
         assert.equal(pp.algo, Algos.salty);
         assert.equal(pp.salt, '');

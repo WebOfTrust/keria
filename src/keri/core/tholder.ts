@@ -78,9 +78,9 @@ export class Tholder {
     }
 
     private _processLimen(limen: string) {
-        let matter = new Matter({ qb64: limen });
+        const matter = new Matter({ qb64: limen });
         if (NumDex.has(matter.code)) {
-            let number = new CesrNumber({ raw: matter.raw, code: matter.code });
+            const number = new CesrNumber({ raw: matter.raw, code: matter.code });
             this._processUnweighted(number.num);
         } else if (BexDex.has(matter.code)) {
             // TODO: Implement Bexter
@@ -104,7 +104,7 @@ export class Tholder {
                 throw new Error('Empty weight list');
             }
 
-            let mask = _sith.map((x: any) => {
+            const mask = _sith.map((x: any) => {
                 return typeof x !== 'string';
             });
 
@@ -112,8 +112,8 @@ export class Tholder {
                 _sith = [_sith];
             }
 
-            for (let c of _sith) {
-                let mask = c.map((x: any) => {
+            for (const c of _sith) {
+                const mask = c.map((x: any) => {
                     return typeof x === 'string';
                 });
                 if (mask.length > 0 && !mask.every((x: boolean) => x)) {
@@ -125,13 +125,13 @@ export class Tholder {
                 }
             }
 
-            let thold = this._processClauses(_sith);
+            const thold = this._processClauses(_sith);
             this._processWeighted(thold);
         }
     }
 
     private _processClauses(sith: Array<Array<string>>): Fraction[][] {
-        let thold = new Array<Array<Fraction>>();
+        const thold = new Array<Array<Fraction>>();
         sith.forEach((clause) => {
             thold.push(
                 clause.map((w) => {
@@ -155,7 +155,7 @@ export class Tholder {
     }
 
     private _processWeighted(thold: Array<Array<Fraction>>) {
-        for (let clause of thold) {
+        for (const clause of thold) {
             if (Number(math.sum(clause)) < 1) {
                 throw new Error(
                     'Invalid sith clause: ' +
@@ -187,15 +187,15 @@ export class Tholder {
             return false;
         }
 
-        let indexes: Set<number> = new Set(indices.sort());
-        let sats = new Array(indices.length).fill(false);
-        for (let idx of indexes) {
+        const indexes: Set<number> = new Set(indices.sort());
+        const sats = new Array(indices.length).fill(false);
+        for (const idx of indexes) {
             sats[idx] = true;
         }
         let wio = 0;
-        for (let clause of this.thold) {
+        for (const clause of this.thold) {
             let cw = 0;
-            for (let w of clause) {
+            for (const w of clause) {
                 if (sats[wio]) {
                     cw += Number(w);
                 }

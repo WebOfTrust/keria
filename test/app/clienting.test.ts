@@ -134,7 +134,7 @@ fetchMock.mockResponse((req) => {
     } else if (req.url == boot_url + '/boot') {
         return Promise.resolve({ body: '', init: { status: 202 } });
     } else {
-        let headers = new Headers();
+        const headers = new Headers();
         let signed_headers = new Headers();
 
         headers.set(
@@ -148,21 +148,21 @@ fetchMock.mockResponse((req) => {
         headers.set('Content-Type', 'application/json');
 
         const requrl = new URL(req.url);
-        let salter = new Salter({ qb64: '0AAwMTIzNDU2Nzg5YWJjZGVm' });
-        let signer = salter.signer(
+        const salter = new Salter({ qb64: '0AAwMTIzNDU2Nzg5YWJjZGVm' });
+        const signer = salter.signer(
             'A',
             true,
             'agentagent-ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose00',
             Tier.low
         );
 
-        let authn = new Authenticater(signer!, signer!.verfer);
+        const authn = new Authenticater(signer!, signer!.verfer);
         signed_headers = authn.sign(
             headers,
             req.method,
             requrl.pathname.split('?')[0]
         );
-        let body = req.url.startsWith(url + '/identifiers/aid1/credentials')
+        const body = req.url.startsWith(url + '/identifiers/aid1/credentials')
             ? mockCredential
             : mockGetAID;
 
@@ -177,12 +177,12 @@ describe('SignifyClient', () => {
     it('SignifyClient initialization', async () => {
         await libsodium.ready;
 
-        let t = () => {
+        const t = () => {
             new SignifyClient(url, 'short', Tier.low, boot_url);
         };
         expect(t).toThrow('bran must be 21 characters');
 
-        let client = new SignifyClient(url, bran, Tier.low, boot_url);
+        const client = new SignifyClient(url, bran, Tier.low, boot_url);
         assert.equal(client.bran, '0123456789abcdefghijk');
         assert.equal(client.url, url);
         assert.equal(client.bootUrl, boot_url);
@@ -205,7 +205,7 @@ describe('SignifyClient', () => {
         );
         assert.deepEqual(client.controller.serder.ked.s, '0');
 
-        let res = await client.boot();
+        const res = await client.boot();
         assert.equal(fetchMock.mock.calls[0]![0]!, boot_url + '/boot');
         assert.equal(
             fetchMock.mock.calls[0]![1]!.body!.toString(),
@@ -247,7 +247,7 @@ describe('SignifyClient', () => {
         );
         assert.equal(client.controller.serder.ked.a[0].s, '0');
 
-        let data = client.data;
+        const data = client.data;
         assert(data[0], url);
         assert(data[0], bran);
 

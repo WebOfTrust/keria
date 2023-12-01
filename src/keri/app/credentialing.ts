@@ -137,21 +137,21 @@ export class Credentials {
      * @returns {Promise<any>} A promise to the list of credentials
      */
     async list(kargs: CredentialFilter = {}): Promise<any> {
-        let path = `/credentials/query`;
-        let filtr = kargs.filter === undefined ? {} : kargs.filter;
-        let sort = kargs.sort === undefined ? [] : kargs.sort;
-        let limit = kargs.limit === undefined ? 25 : kargs.limit;
-        let skip = kargs.skip === undefined ? 0 : kargs.skip;
+        const path = `/credentials/query`;
+        const filtr = kargs.filter === undefined ? {} : kargs.filter;
+        const sort = kargs.sort === undefined ? [] : kargs.sort;
+        const limit = kargs.limit === undefined ? 25 : kargs.limit;
+        const skip = kargs.skip === undefined ? 0 : kargs.skip;
 
-        let data = {
+        const data = {
             filter: filtr,
             sort: sort,
             skip: skip,
             limit: limit,
         };
-        let method = 'POST';
+        const method = 'POST';
 
-        let res = await this.client.fetch(path, method, data, undefined);
+        const res = await this.client.fetch(path, method, data, undefined);
         return await res.json();
     }
 
@@ -168,12 +168,12 @@ export class Credentials {
         said: string,
         includeCESR: boolean = false
     ): Promise<any> {
-        let path = `/identifiers/${name}/credentials/${said}`;
-        let method = 'GET';
-        let headers = includeCESR
+        const path = `/identifiers/${name}/credentials/${said}`;
+        const method = 'GET';
+        const headers = includeCESR
             ? new Headers({ Accept: 'application/json+cesr' })
             : new Headers({ Accept: 'application/json' });
-        let res = await this.client.fetch(path, method, null, headers);
+        const res = await this.client.fetch(path, method, null, headers);
 
         return includeCESR ? await res.text() : await res.json();
     }
@@ -278,16 +278,16 @@ export class Credentials {
      * @returns {Promise<any>} A promise to the long-running operation
      */
     async revoke(name: string, said: string): Promise<any> {
-        let hab = await this.client.identifiers().get(name);
-        let pre: string = hab.prefix;
+        const hab = await this.client.identifiers().get(name);
+        const pre: string = hab.prefix;
 
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0);
         const dt = new Date().toISOString().replace('Z', '000+00:00');
 
-        let cred = await this.get(name, said);
+        const cred = await this.get(name, said);
 
         // Create rev
-        let _rev = {
+        const _rev = {
             v: vs,
             t: Ilks.rev,
             d: '',
@@ -298,23 +298,23 @@ export class Credentials {
             dt: dt,
         };
 
-        let [, rev] = Saider.saidify(_rev);
+        const [, rev] = Saider.saidify(_rev);
 
         // create ixn
         let ixn = {};
         let sigs = [];
 
-        let state = hab.state;
+        const state = hab.state;
         if (state.c !== undefined && state.c.includes('EO')) {
             var estOnly = true;
         } else {
             var estOnly = false;
         }
 
-        let sn = Number(state.s);
-        let dig = state.d;
+        const sn = Number(state.s);
+        const dig = state.d;
 
-        let data: any = [
+        const data: any = [
             {
                 i: rev.i,
                 s: rev.s,
@@ -325,7 +325,7 @@ export class Credentials {
             // TODO implement rotation event
             throw new Error('Establishment only not implemented');
         } else {
-            let serder = interact({
+            const serder = interact({
                 pre: pre,
                 sn: sn + 1,
                 data: data,
@@ -333,23 +333,23 @@ export class Credentials {
                 version: undefined,
                 kind: undefined,
             });
-            let keeper = this.client!.manager!.get(hab);
+            const keeper = this.client!.manager!.get(hab);
             sigs = await keeper.sign(b(serder.raw));
             ixn = serder.ked;
         }
 
-        let body = {
+        const body = {
             rev: rev,
             ixn: ixn,
             sigs: sigs,
         };
 
-        let path = `/identifiers/${name}/credentials/${said}`;
-        let method = 'DELETE';
-        let headers = new Headers({
+        const path = `/identifiers/${name}/credentials/${said}`;
+        const method = 'DELETE';
+        const headers = new Headers({
             Accept: 'application/json+cesr',
         });
-        let res = await this.client.fetch(path, method, body, headers);
+        const res = await this.client.fetch(path, method, body, headers);
         return await res.json();
     }
 
@@ -368,11 +368,11 @@ export class Credentials {
         recipient: string,
         include: boolean = true
     ): Promise<string> {
-        let hab = await this.client.identifiers().get(name);
-        let pre: string = hab.prefix;
+        const hab = await this.client.identifiers().get(name);
+        const pre: string = hab.prefix;
 
-        let cred = await this.get(name, said);
-        let data = {
+        const cred = await this.get(name, said);
+        const data = {
             i: cred.sad.i,
             s: cred.sad.s,
             n: said,
@@ -392,28 +392,28 @@ export class Credentials {
         const [, sad] = Saider.saidify(_sad);
         const exn = new Serder(sad);
 
-        let keeper = this.client!.manager!.get(hab);
+        const keeper = this.client!.manager!.get(hab);
 
-        let sig = keeper.sign(b(exn.raw), true);
+        const sig = keeper.sign(b(exn.raw), true);
 
-        let siger = new Siger({ qb64: sig[0] });
-        let seal = ['SealLast', { i: pre }];
+        const siger = new Siger({ qb64: sig[0] });
+        const seal = ['SealLast', { i: pre }];
         let ims = messagize(exn, [siger], seal, undefined, undefined, true);
         ims = ims.slice(JSON.stringify(exn.ked).length);
 
-        let body = {
+        const body = {
             exn: exn.ked,
             sig: new TextDecoder().decode(ims),
             recipient: recipient,
             include: include,
         };
 
-        let path = `/identifiers/${name}/credentials/${said}/presentations`;
-        let method = 'POST';
-        let headers = new Headers({
+        const path = `/identifiers/${name}/credentials/${said}/presentations`;
+        const method = 'POST';
+        const headers = new Headers({
             Accept: 'application/json+cesr',
         });
-        let res = await this.client.fetch(path, method, body, headers);
+        const res = await this.client.fetch(path, method, body, headers);
         return await res.text();
     }
 
@@ -432,10 +432,10 @@ export class Credentials {
         schema: string,
         issuer?: string
     ): Promise<string> {
-        let hab = await this.client.identifiers().get(name);
-        let pre: string = hab.prefix;
+        const hab = await this.client.identifiers().get(name);
+        const pre: string = hab.prefix;
 
-        let data: any = {
+        const data: any = {
             s: schema,
         };
         if (issuer !== undefined) {
@@ -456,27 +456,27 @@ export class Credentials {
         const [, sad] = Saider.saidify(_sad);
         const exn = new Serder(sad);
 
-        let keeper = this.client!.manager!.get(hab);
+        const keeper = this.client!.manager!.get(hab);
 
-        let sig = await keeper.sign(b(exn.raw), true);
+        const sig = await keeper.sign(b(exn.raw), true);
 
-        let siger = new Siger({ qb64: sig[0] });
-        let seal = ['SealLast', { i: pre }];
+        const siger = new Siger({ qb64: sig[0] });
+        const seal = ['SealLast', { i: pre }];
         let ims = messagize(exn, [siger], seal, undefined, undefined, true);
         ims = ims.slice(JSON.stringify(exn.ked).length);
 
-        let body = {
+        const body = {
             exn: exn.ked,
             sig: new TextDecoder().decode(ims),
             recipient: recipient,
         };
 
-        let path = `/identifiers/${name}/requests`;
-        let method = 'POST';
-        let headers = new Headers({
+        const path = `/identifiers/${name}/requests`;
+        const method = 'POST';
+        const headers = new Headers({
             Accept: 'application/json+cesr',
         });
-        let res = await this.client.fetch(path, method, body, headers);
+        const res = await this.client.fetch(path, method, body, headers);
         return await res.text();
     }
 }
@@ -521,7 +521,7 @@ export class RegistryResult {
     }
 
     async op(): Promise<any> {
-        let res = await this.promise;
+        const res = await this.promise;
         return await res.json();
     }
 }
@@ -546,9 +546,9 @@ export class Registries {
      * @returns {Promise<any>} A promise to the list of registries
      */
     async list(name: string): Promise<any> {
-        let path = `/identifiers/${name}/registries`;
-        let method = 'GET';
-        let res = await this.client.fetch(path, method, null);
+        const path = `/identifiers/${name}/registries`;
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, null);
         return await res.json();
     }
 
@@ -566,30 +566,30 @@ export class Registries {
         baks = [],
         nonce,
     }: CreateRegistryArgs): Promise<RegistryResult> {
-        let hab = await this.client.identifiers().get(name);
-        let pre: string = hab.prefix;
+        const hab = await this.client.identifiers().get(name);
+        const pre: string = hab.prefix;
 
-        let cnfg: string[] = [];
+        const cnfg: string[] = [];
         if (noBackers) {
             cnfg.push(TraitDex.NoBackers);
         }
 
-        let state = hab.state;
-        let estOnly = state.c !== undefined && state.c.includes('EO');
+        const state = hab.state;
+        const estOnly = state.c !== undefined && state.c.includes('EO');
         if (estOnly) {
             cnfg.push(TraitDex.EstOnly);
         }
 
-        let regser = vdr.incept({ pre, baks, toad, nonce, cnfg });
+        const regser = vdr.incept({ pre, baks, toad, nonce, cnfg });
 
         if (estOnly) {
             throw new Error('establishment only not implemented');
         } else {
-            let state = hab.state;
-            let sn = Number(state.s);
-            let dig = state.d;
+            const state = hab.state;
+            const sn = Number(state.s);
+            const dig = state.d;
 
-            let data: any = [
+            const data: any = [
                 {
                     i: regser.pre,
                     s: '0',
@@ -597,7 +597,7 @@ export class Registries {
                 },
             ];
 
-            let serder = interact({
+            const serder = interact({
                 pre: pre,
                 sn: sn + 1,
                 data: data,
@@ -605,9 +605,9 @@ export class Registries {
                 version: Versionage,
                 kind: Serials.JSON,
             });
-            let keeper = this.client.manager!.get(hab);
-            let sigs = await keeper.sign(b(serder.raw));
-            let res = this.createFromEvents(
+            const keeper = this.client.manager!.get(hab);
+            const sigs = await keeper.sign(b(serder.raw));
+            const res = this.createFromEvents(
                 hab,
                 name,
                 registryName,
@@ -627,16 +627,16 @@ export class Registries {
         ixn: Dict<any>,
         sigs: any[]
     ) {
-        let path = `/identifiers/${name}/registries`;
-        let method = 'POST';
+        const path = `/identifiers/${name}/registries`;
+        const method = 'POST';
 
-        let data: any = {
+        const data: any = {
             name: registryName,
             vcp: vcp,
             ixn: ixn,
             sigs: sigs,
         };
-        let keeper = this.client!.manager!.get(hab);
+        const keeper = this.client!.manager!.get(hab);
         data[keeper.algo] = keeper.params();
 
         return this.client.fetch(path, method, data);
@@ -662,9 +662,9 @@ export class Schemas {
      * @returns {Promise<any>} A promise to the schema
      */
     async get(said: string): Promise<any> {
-        let path = `/schema/${said}`;
-        let method = 'GET';
-        let res = await this.client.fetch(path, method, null);
+        const path = `/schema/${said}`;
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, null);
         return await res.json();
     }
 
@@ -674,9 +674,9 @@ export class Schemas {
      * @returns {Promise<any>} A promise to the list of schemas
      */
     async list(): Promise<any> {
-        let path = `/schema`;
-        let method = 'GET';
-        let res = await this.client.fetch(path, method, null);
+        const path = `/schema`;
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, null);
         return await res.json();
     }
 }
@@ -745,8 +745,8 @@ export class Ipex {
         grant: string,
         datetime?: string
     ): Promise<[Serder, string[], string]> {
-        let hab = await this.client.identifiers().get(name);
-        let data: any = {
+        const hab = await this.client.identifiers().get(name);
+        const data: any = {
             m: message,
         };
 

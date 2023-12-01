@@ -3,8 +3,8 @@ import signify from 'signify-ts';
 await connect();
 
 async function connect() {
-    let url = 'http://127.0.0.1:3901';
-    let bran = '0123456789abcdefghijk';
+    const url = 'http://127.0.0.1:3901';
+    const bran = '0123456789abcdefghijk';
 
     await signify.ready();
     const client = new signify.SignifyClient(url, bran);
@@ -27,17 +27,17 @@ async function connect() {
     });
 
     await client.connect();
-    let d = await client.state();
+    const d = await client.state();
     console.log('Connected: ');
     console.log(' Agent: ', d.agent.i, '   Controller: ', d.controller.state.i);
 
-    let identifiers = client.identifiers();
+    const identifiers = client.identifiers();
     const oobis = client.oobis();
     const operations = client.operations();
     const exchanges = client.exchanges();
 
-    let salt = '0123456789lmnopqrstuv';
-    let res = await identifiers.create('agent0', { bran: salt });
+    const salt = '0123456789lmnopqrstuv';
+    const res = await identifiers.create('agent0', { bran: salt });
     let op = await res.op();
     let aid = op['response'];
 
@@ -55,7 +55,7 @@ async function connect() {
         await new Promise((resolve) => setTimeout(resolve, 1000)); // sleep for 1 second
     }
     console.log('done.');
-    let multisig1 = op['response'];
+    const multisig1 = op['response'];
 
     console.log('Resolving multisig2...');
     op = await oobis.resolve(
@@ -67,13 +67,13 @@ async function connect() {
         await new Promise((resolve) => setTimeout(resolve, 1000)); // sleep for 1 second
     }
     console.log('done.');
-    let multisig2 = op['response'];
+    const multisig2 = op['response'];
 
     aid = await identifiers.get('agent0');
-    let agent0 = aid['state'];
+    const agent0 = aid['state'];
 
-    let states = [multisig2, multisig1, agent0];
-    let ires = await identifiers.create('multisig', {
+    const states = [multisig2, multisig1, agent0];
+    const ires = await identifiers.create('multisig', {
         algo: signify.Algos.group,
         mhab: aid,
         toad: 3,
@@ -94,11 +94,11 @@ async function connect() {
 
     let ims = signify.d(signify.messagize(serder, sigers));
     let atc = ims.substring(serder.size);
-    let embeds = {
+    const embeds = {
         icp: [serder, atc],
     };
 
-    let smids = states.map((state) => state['i']);
+    const smids = states.map((state) => state['i']);
     let recp = [multisig2, multisig1].map((state) => state['i']);
 
     await exchanges.send(
@@ -111,7 +111,7 @@ async function connect() {
         recp
     );
 
-    let multisigAID = serder.pre;
+    const multisigAID = serder.pre;
     console.log('Waiting for multisig AID to be created');
 
     op = await ires.op();
@@ -131,10 +131,10 @@ async function connect() {
         await new Promise((resolve) => setTimeout(resolve, 1000)); // sleep for 1 second
     }
     console.log('done.');
-    let schemaSAID = 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao';
+    const schemaSAID = 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao';
 
     console.log('Creating registry...');
-    let vcpRes1 = await client.registries().create({
+    const vcpRes1 = await client.registries().create({
         name: 'multisig',
         registryName: 'vLEI Registry',
         nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
@@ -142,15 +142,15 @@ async function connect() {
 
     let op1 = await vcpRes1.op();
     serder = vcpRes1.regser;
-    let regk = serder.pre;
-    let anc = vcpRes1.serder;
+    const regk = serder.pre;
+    const anc = vcpRes1.serder;
     sigs = vcpRes1.sigs;
 
     sigers = sigs.map((sig: any) => new signify.Siger({ qb64: sig }));
     ims = signify.d(signify.messagize(anc, sigers));
     atc = ims.substring(anc.size);
 
-    let regbeds = {
+    const regbeds = {
         vcp: [serder, ''],
         anc: [anc, atc],
     };
@@ -182,10 +182,10 @@ async function connect() {
     const vcdata = {
         LEI: '5493001KJTIIGC8Y1R17',
     };
-    let holder = 'ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k';
+    const holder = 'ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k';
 
-    let TIME = '2023-09-25T16:01:37.000000+00:00';
-    let credRes = await client
+    const TIME = '2023-09-25T16:01:37.000000+00:00';
+    const credRes = await client
         .credentials()
         .issue(
             'multisig',
@@ -199,16 +199,16 @@ async function connect() {
         );
     op1 = await credRes.op();
 
-    let acdc = new signify.Serder(credRes.acdc);
-    let iss = credRes.iserder;
-    let ianc = credRes.anc;
-    let isigs = credRes.sigs;
+    const acdc = new signify.Serder(credRes.acdc);
+    const iss = credRes.iserder;
+    const ianc = credRes.anc;
+    const isigs = credRes.sigs;
 
     sigers = isigs.map((sig: any) => new signify.Siger({ qb64: sig }));
     ims = signify.d(signify.messagize(ianc, sigers));
     atc = ims.substring(anc.size);
 
-    let vcembeds = {
+    const vcembeds = {
         acdc: [acdc, ''],
         iss: [iss, ''],
         anc: [ianc, atc],
@@ -233,25 +233,25 @@ async function connect() {
 
     console.log('Creating IPEX grant message to send...');
 
-    let [grant, gsigs, end] = await client
+    const [grant, gsigs, end] = await client
         .ipex()
         .grant('multisig', holder, '', acdc, iss, ianc, atc, undefined, TIME);
-    let m = await client.identifiers().get('multisig');
+    const m = await client.identifiers().get('multisig');
 
-    let mstate = m['state'];
-    let seal = [
+    const mstate = m['state'];
+    const seal = [
         'SealEvent',
         { i: m['prefix'], s: mstate['ee']['s'], d: mstate['ee']['d'] },
     ];
     sigers = gsigs.map((sig: any) => new signify.Siger({ qb64: sig }));
 
-    let gims = signify.d(
+    const gims = signify.d(
         signify.messagize(grant, sigers, seal, undefined, undefined, true)
     );
     atc = gims.substring(grant.size);
     atc += end;
 
-    let gembeds: any = {
+    const gembeds: any = {
         exn: [grant, atc],
     };
 

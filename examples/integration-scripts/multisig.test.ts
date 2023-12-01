@@ -289,17 +289,17 @@ test('multisig', async function run() {
         `[${identifiers3.aids[1].prefix}]`
     );
 
-    let multisig = identifiers3.aids[1].prefix;
+    const multisig = identifiers3.aids[1].prefix;
 
     // Multisig end role
     // for brevity, this script authorize only the agent of member 1
     // a full implementation should repeat the process to authorize all agents
 
-    let members = await client1.identifiers().members('multisig');
+    const members = await client1.identifiers().members('multisig');
     let hab = await client1.identifiers().get('multisig');
     let aid = hab['prefix'];
-    let signing = members['signing'];
-    let eid1 = Object.keys(signing[0].ends.agent)[0]; //agent of member 1
+    const signing = members['signing'];
+    const eid1 = Object.keys(signing[0].ends.agent)[0]; //agent of member 1
     // other agent eids can be obtained with
     // let eid2 = Object.keys(signing[1].ends.agent)[0];
     // let eid3 = Object.keys(signing[2].ends.agent)[0];
@@ -446,7 +446,7 @@ test('multisig', async function run() {
     console.log(`End role authorization for agent ${eid1}completed!`);
 
     // Holder resolve multisig OOBI
-    let oobimultisig = await client1.oobis().get('multisig', 'agent');
+    const oobimultisig = await client1.oobis().get('multisig', 'agent');
     op4 = await client4.oobis().resolve(oobimultisig.oobis[0], 'multisig');
     op4 = await waitForOp(client4, op4);
     console.log(`Holder resolved multisig OOBI`);
@@ -593,16 +593,16 @@ test('multisig', async function run() {
     // Update new key states
     op1 = await client1.keyStates().query(aid2.prefix, 1);
     op1 = await waitForOp(client1, op1);
-    let aid2State = op1['response'];
+    const aid2State = op1['response'];
     op1 = await client1.keyStates().query(aid3.prefix, 1);
     op1 = await waitForOp(client1, op1);
-    let aid3State = op1['response'];
+    const aid3State = op1['response'];
 
     op2 = await client2.keyStates().query(aid3.prefix, 1);
     op2 = await waitForOp(client2, op2);
     op2 = await client2.keyStates().query(aid1.prefix, 1);
     op2 = await waitForOp(client2, op2);
-    let aid1State = op2['response'];
+    const aid1State = op2['response'];
 
     op3 = await client3.keyStates().query(aid1.prefix, 1);
     op3 = await waitForOp(client3, op3);
@@ -744,14 +744,14 @@ test('multisig', async function run() {
 
     console.log('Starting multisig registry creation');
 
-    let vcpRes1 = await client1.registries().create({
+    const vcpRes1 = await client1.registries().create({
         name: 'multisig',
         registryName: 'vLEI Registry',
         nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
     });
     op1 = await vcpRes1.op();
     serder = vcpRes1.regser;
-    let regk = serder.pre;
+    const regk = serder.pre;
     let anc = vcpRes1.serder;
     sigs = vcpRes1.sigs;
 
@@ -787,14 +787,14 @@ test('multisig', async function run() {
     res = await client2.groups().getRequest(msgSaid);
     exn = res[0].exn;
 
-    let vcpRes2 = await client2.registries().create({
+    const vcpRes2 = await client2.registries().create({
         name: 'multisig',
         registryName: 'vLEI Registry',
         nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
     });
     op2 = await vcpRes2.op();
     serder = vcpRes2.regser;
-    let regk2 = serder.pre;
+    const regk2 = serder.pre;
     anc = vcpRes2.serder;
     sigs = vcpRes2.sigs;
 
@@ -830,14 +830,14 @@ test('multisig', async function run() {
     res = await client3.groups().getRequest(msgSaid);
     exn = res[0].exn;
 
-    let vcpRes3 = await client3.registries().create({
+    const vcpRes3 = await client3.registries().create({
         name: 'multisig',
         registryName: 'vLEI Registry',
         nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
     });
     op3 = await vcpRes3.op();
     serder = vcpRes3.regser;
-    let regk3 = serder.pre;
+    const regk3 = serder.pre;
     anc = vcpRes3.serder;
     sigs = vcpRes3.sigs;
 
@@ -875,10 +875,10 @@ test('multisig', async function run() {
     const vcdata = {
         LEI: '5493001KJTIIGC8Y1R17',
     };
-    let holder = aid4.prefix;
+    const holder = aid4.prefix;
 
-    let TIME = new Date().toISOString().replace('Z', '000+00:00');
-    let credRes = await client1.credentials().issue({
+    const TIME = new Date().toISOString().replace('Z', '000+00:00');
+    const credRes = await client1.credentials().issue({
         issuerName: 'multisig',
         registryId: regk,
         schemaId: SCHEMA_SAID,
@@ -922,7 +922,7 @@ test('multisig', async function run() {
     res = await client3.groups().getRequest(msgSaid);
     exn = res[0].exn;
 
-    let credRes3 = await client3.credentials().issue({
+    const credRes3 = await client3.credentials().issue({
         issuerName: 'multisig',
         registryId: regk3,
         schemaId: SCHEMA_SAID,
@@ -941,7 +941,7 @@ test('multisig', async function run() {
     op3 = await waitForOp(client3, op3);
     console.log('Multisig create credential completed!');
 
-    let m = await client1.identifiers().get('multisig');
+    const m = await client1.identifiers().get('multisig');
 
     // Update states
     op1 = await client1.keyStates().query(m.prefix, 4);
@@ -957,7 +957,7 @@ test('multisig', async function run() {
     console.log('Starting grant message');
     stamp = new Date().toISOString().replace('Z', '000+00:00');
 
-    let [grant, gsigs, end] = await client1.ipex().grant({
+    const [grant, gsigs, end] = await client1.ipex().grant({
         senderName: 'multisig',
         acdc: credRes.acdc,
         anc: credRes.anc,
@@ -1005,7 +1005,7 @@ test('multisig', async function run() {
     res = await client2.groups().getRequest(msgSaid);
     exn = res[0].exn;
 
-    let [grant2, gsigs2, end2] = await client2.ipex().grant({
+    const [grant2, gsigs2, end2] = await client2.ipex().grant({
         senderName: 'multisig',
         recipient: holder,
         acdc: credRes2.acdc,
@@ -1049,7 +1049,7 @@ test('multisig', async function run() {
     res = await client3.groups().getRequest(msgSaid);
     exn = res[0].exn;
 
-    let [grant3, gsigs3, end3] = await client3.ipex().grant({
+    const [grant3, gsigs3, end3] = await client3.ipex().grant({
         senderName: 'multisig',
         recipient: holder,
         acdc: credRes3.acdc,
@@ -1092,7 +1092,7 @@ test('multisig', async function run() {
     console.log('Holder received exchange message with the grant message');
     res = await client4.exchanges().get(msgSaid);
 
-    let [admit, asigs, aend] = await client4
+    const [admit, asigs, aend] = await client4
         .ipex()
         .admit('holder', '', res.exn.d);
 
@@ -1104,7 +1104,7 @@ test('multisig', async function run() {
 
     msgSaid = await waitForMessage(client1, '/exn/ipex/admit');
     console.log('Member1 received exchange message with the admit response');
-    let creds = await client4.credentials().list();
+    const creds = await client4.credentials().list();
     console.log(`Holder holds ${creds.length} credential`);
 }, 240000);
 
@@ -1119,8 +1119,8 @@ async function waitForOp(client: SignifyClient, op: any) {
 async function waitForMessage(client: SignifyClient, route: string) {
     let msgSaid = '';
     while (msgSaid == '') {
-        let notifications = await client.notifications().list();
-        for (let notif of notifications.notes) {
+        const notifications = await client.notifications().list();
+        for (const notif of notifications.notes) {
             if (notif.a.r == route) {
                 msgSaid = notif.a.d;
                 await client.notifications().mark(notif.i);
@@ -1132,11 +1132,11 @@ async function waitForMessage(client: SignifyClient, route: string) {
 }
 
 async function bootClient(): Promise<SignifyClient> {
-    let bran = signify.randomPasscode();
-    let client = new SignifyClient(url, bran, signify.Tier.low, bootUrl);
+    const bran = signify.randomPasscode();
+    const client = new SignifyClient(url, bran, signify.Tier.low, bootUrl);
     await client.boot();
     await client.connect();
-    let state = await client.state();
+    const state = await client.state();
     console.log(
         'Client AID:',
         state.controller.state.i,
@@ -1149,13 +1149,13 @@ async function bootClient(): Promise<SignifyClient> {
 }
 
 async function createAID(client: SignifyClient, name: string, wits: string[]) {
-    let icpResult1 = await client.identifiers().create(name, {
+    const icpResult1 = await client.identifiers().create(name, {
         toad: wits.length,
         wits: wits,
     });
     let op = await icpResult1.op();
     op = await waitForOp(client, op);
-    let aid = await client.identifiers().get(name);
+    const aid = await client.identifiers().get(name);
     await client.identifiers().addEndRole(name, 'agent', client!.agent!.pre);
     console.log(name, 'AID:', aid.prefix);
     return aid;
