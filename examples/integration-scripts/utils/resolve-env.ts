@@ -1,6 +1,7 @@
 export type TestEnvironmentPreset = 'local' | 'docker';
 
 export interface TestEnvironment {
+    preset: TestEnvironmentPreset;
     url: string;
     bootUrl: string;
     vleiServerUrl: string;
@@ -23,6 +24,7 @@ export function resolveEnvironment(
     switch (preset) {
         case 'docker':
             return {
+                preset: preset,
                 url,
                 bootUrl,
                 witnessUrls: [
@@ -35,6 +37,7 @@ export function resolveEnvironment(
             };
         case 'local':
             return {
+                preset: preset,
                 url,
                 bootUrl,
                 vleiServerUrl: 'http://localhost:7723',
