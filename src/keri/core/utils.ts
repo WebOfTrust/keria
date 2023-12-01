@@ -99,7 +99,7 @@ export function range(start: number, stop: number, step: number) {
 export function intToBytes(value: number, length: number): Uint8Array {
     const byteArray = new Uint8Array(length); // Assuming a 4-byte integer (32 bits)
 
-    for (let index = byteArray.length-1; index >= 0; index--) {
+    for (let index = byteArray.length - 1; index >= 0; index--) {
         let byte = value & 0xff;
         byteArray[index] = byte;
         value = (value - byte) / 256;
@@ -109,18 +109,16 @@ export function intToBytes(value: number, length: number): Uint8Array {
 
 export function bytesToInt(ar: Uint8Array): number {
     let value = 0;
-    for (let i = 0; i <ar.length; i++) {
+    for (let i = 0; i < ar.length; i++) {
         value = value * 256 + ar[i];
     }
     return value;
 }
 
-export function serializeACDCAttachment(
-    acdc: Serder,
-    saider: Saider
-): Uint8Array {
+export function serializeACDCAttachment(acdc: Serder): Uint8Array {
     let prefixer = new Prefixer({ raw: b(acdc.raw) });
     let seqner = new Seqner({ sn: acdc.sn });
+    let saider = new Saider({ qb64: acdc.ked['d'] });
     let craw = new Uint8Array();
     let ctr = new Counter({ code: CtrDex.SealSourceTriples, count: 1 }).qb64b;
     let prefix = prefixer.qb64b;
@@ -137,11 +135,9 @@ export function serializeACDCAttachment(
     return newCraw;
 }
 
-export function serializeIssExnAttachment(
-    anc: Serder,
-    ancSaider: Saider
-): Uint8Array {
-    let seqner = new Seqner({ sn: anc.sn });
+export function serializeIssExnAttachment(iss: Serder): Uint8Array {
+    let seqner = new Seqner({ sn: iss.sn });
+    let ancSaider = new Saider({ qb64: iss.ked['d'] });
     let coupleArray = new Uint8Array(
         seqner.qb64b.length + ancSaider.qb64b.length
     );

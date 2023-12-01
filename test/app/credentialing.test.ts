@@ -7,6 +7,7 @@ import libsodium from 'libsodium-wrappers-sumo';
 import fetchMock from 'jest-fetch-mock';
 import 'whatwg-fetch';
 import {
+    b,
     Ident,
     Ilks,
     interact,
@@ -207,17 +208,16 @@ describe('Credentialing', () => {
         const registry = 'EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX';
         const schema = 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao';
         const isuee = 'EG2XjQN-3jPN5rcR4spLjaJyM4zA6Lgg-Hd5vSMymu5p';
-        await credentials.issue(
-            'aid1',
-            registry,
-            schema,
-            isuee,
-            { LEI: '1234' },
-            {},
-            {},
-            undefined,
-            false
-        );
+        await credentials.issue({
+            issuerName: 'aid1',
+            registryId: registry,
+            schemaId: schema,
+            recipient: isuee,
+            data: { LEI: '1234' },
+            source: {},
+            rules: {},
+            privacy: false,
+        });
         lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
         lastBody = JSON.parse(lastCall[1]!.body!.toString());
         assert.equal(lastCall[0]!, url + '/identifiers/aid1/credentials');
@@ -359,19 +359,15 @@ describe('Ipex', () => {
             kind: undefined,
         });
 
-        let [grant, gsigs, end] = await ipex.grant(
-            'multisig',
-            holder,
-            '',
-            new Serder(acdc),
-            acdcSaider,
-            iserder,
-            issSaider,
+        let [grant, gsigs, end] = await ipex.grant({
+            senderName: 'multisig',
+            recipient: holder,
+            message: '',
+            acdc: new Serder(acdc),
+            iss: iserder,
             anc,
-            '-vtest',
-            undefined,
-            mockCredential.sad.a.dt
-        );
+            datetime: mockCredential.sad.a.dt,
+        });
 
         assert.deepStrictEqual(grant.ked, {
             v: 'KERI10JSON0004b1_',
@@ -426,8 +422,8 @@ describe('Ipex', () => {
             end,
             '-LAg4AACA' +
                 '-e-acdc-IABBHsidiI6IkFDREMxMEpTT04wMDAxOTdfIiwiZCI6IkVN0AAAAAAAAAAAAAAAAAAAAAAAEMwcsEMUEruPXVwPCW7zmqmN8m0I3CihxolBm-RDrsJo-LAW5AACAA' +
-                '-e-iss-VAS-GAB0AAAAAAAAAAAAAAAAAAAAAAAENf3IEYwYtFmlq5ZzoI-zFzeR7E3ZNRN2YH_0KAFbdJW-LAE5AACAA' +
-                '-e-anc-vtest'
+                '-e-iss-VAS-GAB0AAAAAAAAAAAAAAAAAAAAAAAECVCyxNpB4PJkpLbWqI02WXs1wf7VUxPNY2W28SN2qqm-LAa5AACAA' +
+                '-e-anc-AABAADMtDfNihvCSXJNp1VronVojcPGo--0YZ4Kh6CAnowRnn4Or4FgZQqaqCEv6XVS413qfZoVp8j2uxTTPkItO7ED'
         );
 
         let [admit, asigs, aend] = await ipex.admit(

@@ -21,6 +21,7 @@ import {
     serializeACDCAttachment,
     serializeIssExnAttachment,
 } from '../core/utils';
+import { Operation } from './coring';
 
 /** Types of credentials */
 export class CredentialTypes {
@@ -36,61 +37,84 @@ export interface CredentialFilter {
     limit?: number;
 }
 
-export class CredentialResult {
-    private readonly _acdc: any;
-    private readonly _iserder: Serder;
-    private readonly _anc: Serder;
-    private readonly _sigs: string[];
-    private readonly _acdcSaider: Saider;
-    private readonly _issExnSaider: Saider;
-    private readonly promise: Promise<Response>;
+export interface IssueCredentialArgs {
+    /**
+     * Name of the issuer identifier
+     */
+    issuerName: string;
 
-    constructor(
-        acdc: Dict<any>,
-        iserder: Serder,
-        anc: Serder,
-        sigs: any[],
-        acdcSaider: Saider,
-        issExnSaider: Saider,
-        promise: Promise<Response>
-    ) {
-        this._acdc = acdc;
-        this._iserder = iserder;
-        this._anc = anc;
-        this._sigs = sigs;
-        this._acdcSaider = acdcSaider;
-        this._issExnSaider = issExnSaider;
-        this.promise = promise;
-    }
+    /**
+     * QB64 AID of credential registry
+     */
+    registryId: string;
 
-    get acdc() {
-        return this._acdc;
-    }
+    /**
+     * SAID Of the schema
+     */
+    schemaId: string;
 
-    get iserder() {
-        return this._iserder;
-    }
+    /**
+     * Prefix of recipient identifier
+     */
+    recipient?: string;
 
-    get acdcSaider() {
-        return this._acdcSaider;
-    }
+    /**
+     * Credential data
+     */
+    data?: Record<string, unknown>;
 
-    get issExnSaider() {
-        return this._issExnSaider;
-    }
+    /**
+     * Credential rules
+     */
+    rules?: Record<string, unknown>;
 
-    get anc() {
-        return this._anc;
-    }
+    /**
+     * Credential sources
+     */
+    source?: Record<string, unknown>;
 
-    get sigs() {
-        return this._sigs;
-    }
+    /**
+     * Datetime to set for the credential
+     */
+    datetime?: string;
 
-    async op(): Promise<any> {
-        let res = await this.promise;
-        return await res.json();
-    }
+    /**
+     * Flag to issue a credential with privacy preserving features
+     */
+    privacy?: boolean;
+}
+
+export interface IssueCredentialResult {
+    acdc: Serder;
+    anc: Serder;
+    iss: Serder;
+    op: Operation;
+}
+
+export interface IpexGrantArgs {
+    /**
+     * Alias for the IPEX sender AID
+     */
+    senderName: string;
+
+    /**
+     * Prefix of the IPEX recipient AID
+     */
+    recipient: string;
+
+    /**
+     * Message to send
+     */
+    message?: string;
+
+    /**
+     * qb64 SAID of agree message this grant is responding to
+     */
+    agree?: string;
+    datetime?: string;
+    acdc: Serder;
+    iss: Serder;
+    anc: Serder;
 }
 
 /**
@@ -156,161 +180,94 @@ export class Credentials {
 
     /**
      * Issue a credential
-     * @async
-     * @param {string} name Name or alias of the identifier
-     * @param {string} registy qb64 AID of credential registry
-     * @param {string} schema SAID of the schema
-     * @param {string} [recipient] Optional prefix of recipient identifier
-     * @param {any} [credentialData] Optional credential data
-     * @param {any} [rules] Optional credential rules
-     * @param {any} [source] Optional credential sources
-     * @param {string} [datetime] Optional datetime to set for the credential
-     * @param {boolean} [priv=false] Flag to issue a credential with privacy preserving features
-     * @returns {Promise<any>} A promise to the long-running operation
      */
-    async issue(
-        name: string,
-        registy: string,
-        schema: string,
-        recipient?: string,
-        credentialData?: any,
-        rules?: any,
-        source?: any,
-        datetime?: string,
-        priv: boolean = false
-    ): Promise<any> {
-        // Create Credential
-        let hab = await this.client.identifiers().get(name);
-        let pre: string = hab.prefix;
-
-        const dt =
-            datetime === undefined
-                ? new Date().toISOString().replace('Z', '000+00:00')
-                : datetime;
-
-        const vsacdc = versify(Ident.ACDC, undefined, Serials.JSON, 0);
-        const vs = versify(Ident.KERI, undefined, Serials.JSON, 0);
-
-        let cred: any = {
-            v: vsacdc,
-            d: '',
-        };
-        let subject: any = {
-            d: '',
-        };
-        if (priv) {
-            cred.u = new Salter({});
-            subject.u = new Salter({});
-        }
-        if (recipient != undefined) {
-            subject.i = recipient;
-        }
-        subject.dt = dt;
-        subject = { ...subject, ...credentialData };
-
-        const [, a] = Saider.saidify(subject, undefined, undefined, 'd');
-
-        cred = { ...cred, i: pre };
-        cred.ri = registy;
-        cred = { ...cred, ...{ s: schema }, ...{ a: a } };
-
-        if (source !== undefined) {
-            cred.e = source;
-        }
-        if (rules !== undefined) {
-            cred.r = rules;
-        }
-        const [vcSaider, vc] = Saider.saidify(cred);
-
-        // Create iss
-        let _iss = {
-            v: vs,
-            t: Ilks.iss,
-            d: '',
-            i: vc.d,
-            s: '0',
-            ri: registy,
-            dt: dt,
-        };
-
-        let [issSaider, iss] = Saider.saidify(_iss);
-        let iserder = new Serder(iss);
-
-        // Create paths and sign
-        let keeper = this.client!.manager!.get(hab);
-
-        let state = hab.state;
-        if (state.c !== undefined && state.c.includes('EO')) {
-            var estOnly = true;
-        } else {
-            var estOnly = false;
-        }
-        let sn = Number(state.s);
-        let dig = state.d;
-
-        let data: any = [
-            {
-                i: iss.i,
-                s: iss.s,
-                d: iss.d,
-            },
-        ];
-
-        // Create ixn
-        let ixn = {};
-        let anc: Serder;
-        let sigs = [];
+    async issue(args: IssueCredentialArgs): Promise<IssueCredentialResult> {
+        const hab = await this.client.identifiers().get(args.issuerName);
+        const estOnly = hab.state.c !== undefined && hab.state.c.includes('EO');
         if (estOnly) {
             // TODO implement rotation event
             throw new Error('Establishment only not implemented');
-        } else {
-            anc = interact({
-                pre: pre,
-                sn: sn + 1,
-                data: data,
-                dig: dig,
-                version: undefined,
-                kind: undefined,
-            });
-            sigs = await keeper.sign(b(anc.raw));
-            ixn = anc.ked;
+        }
+        if (!this.client.manager) {
+            throw new Error('No manager on client');
         }
 
-        let res = this.issueFromEvents(hab, name, vc, iss, ixn, sigs);
-        return new CredentialResult(
-            vc,
-            iserder,
-            anc,
-            sigs,
-            vcSaider,
-            issSaider,
-            res
-        );
-    }
+        const keeper = this.client.manager.get(hab);
 
-    issueFromEvents(
-        hab: Dict<any>,
-        name: string,
-        vc: Dict<any>,
-        iss: Dict<any>,
-        ixn: Dict<any>,
-        sigs: any[]
-    ) {
-        let path = `/identifiers/${name}/credentials`;
-        let method = 'POST';
-        let body: any = {
-            acdc: vc,
+        const dt =
+            args.datetime ?? new Date().toISOString().replace('Z', '000+00:00');
+
+        const [, subject] = Saider.saidify({
+            d: '',
+            u: args.privacy ? new Salter({}) : undefined,
+            i: args.recipient,
+            dt: dt,
+            ...args.data,
+        });
+
+        const [, acdc] = Saider.saidify({
+            v: versify(Ident.ACDC, undefined, Serials.JSON, 0),
+            d: '',
+            u: args.privacy ? new Salter({}) : undefined,
+            i: hab.prefix,
+            ri: args.registryId,
+            s: args.schemaId,
+            a: subject,
+            e: args.source,
+            r: args.rules,
+        });
+
+        const [, iss] = Saider.saidify({
+            v: versify(Ident.KERI, undefined, Serials.JSON, 0),
+            t: Ilks.iss,
+            d: '',
+            i: acdc.d,
+            s: '0',
+            ri: args.registryId,
+            dt: dt,
+        });
+
+        const sn = Number(hab.state.s);
+        const anc = interact({
+            pre: hab.prefix,
+            sn: sn + 1,
+            data: [
+                {
+                    i: iss.i,
+                    s: iss.s,
+                    d: iss.d,
+                },
+            ],
+            dig: hab.state.d,
+            version: undefined,
+            kind: undefined,
+        });
+
+        const sigs = await keeper.sign(b(anc.raw));
+
+        const path = `/identifiers/${hab.name}/credentials`;
+        const method = 'POST';
+        const body = {
+            acdc: acdc,
             iss: iss,
-            ixn: ixn,
-            sigs: sigs,
+            ixn: anc.ked,
+            sigs,
+            [keeper.algo]: keeper.params(),
         };
-        let keeper = this.client!.manager!.get(hab);
-        body[keeper.algo] = keeper.params();
 
-        let headers = new Headers({
+        const headers = new Headers({
             Accept: 'application/json+cesr',
         });
-        return this.client.fetch(path, method, body, headers);
+
+        const res = await this.client.fetch(path, method, body, headers);
+        const op = await res.json();
+
+        return {
+            acdc: new Serder(acdc),
+            iss: new Serder(iss),
+            anc,
+            op,
+        };
     }
 
     /**
@@ -740,46 +697,24 @@ export class Ipex {
 
     /**
      * Create an IPEX grant EXN message
-     * @async
-     * @param {string} name Name or alias of the identifier
-     * @param {string} recp qb64 AID of recipient of the grant
-     * @param {string} message accompany human readable description of the credential being issued
-     * @param {Serder} acdc Credential
-     * @param acdcSaider The Saider instance of an ACDC. Typically comes from the Creder instance yet Creder is not yet ported to SignifyTS
-     * @param {Serder} iss TEL issuance event
-     * @param issSaider The Saider instance of the iss EXN interaction event for an ACDC. ypically comes from the Creder instance yet Creder is not yet ported to SignifyTS
-     * @param {Serder} anc Anchoring event
-     * @param {string} atc attachments for the anchoring event
-     * @param {string} agree Option qb64 SAID of agree message this grant is responding to
-     * @param {string} datetime Optional datetime to set for the credential
-     * @returns {Promise<any>} A promise to the long-running operation
      */
-    async grant(
-        name: string,
-        recp: string,
-        message: string,
-        acdc: Serder,
-        acdcSaider: Saider,
-        iss: Serder,
-        issSaider: Saider,
-        anc: Serder,
-        atc: string,
-        agree?: string,
-        datetime?: string
-    ): Promise<[Serder, string[], string]> {
-        let hab = await this.client.identifiers().get(name);
-        let data: any = {
-            m: message,
-            i: recp,
+    async grant(args: IpexGrantArgs): Promise<[Serder, string[], string]> {
+        const hab = await this.client.identifiers().get(args.senderName);
+        const data = {
+            m: args.message ?? '',
+            i: args.recipient,
         };
 
-        let acdcAtc = d(serializeACDCAttachment(acdc, acdcSaider));
-        let issAtc = d(serializeIssExnAttachment(anc, issSaider));
+        const keeper = this.client.manager?.get(hab);
+        const sigs = await keeper.sign(b(args.anc.raw));
+        const sigers = sigs.map((sig: string) => new Siger({ qb64: sig }));
+        const ims = d(messagize(args.anc, sigers));
+        const atc = ims.substring(args.anc.size);
 
-        let embeds: any = {
-            acdc: [acdc, acdcAtc],
-            iss: [iss, issAtc],
-            anc: [anc, atc],
+        const embeds: Record<string, [Serder, string]> = {
+            acdc: [args.acdc, d(serializeACDCAttachment(args.acdc))],
+            iss: [args.iss, d(serializeIssExnAttachment(args.anc))],
+            anc: [args.anc, atc],
         };
 
         return this.client
@@ -790,8 +725,8 @@ export class Ipex {
                 data,
                 embeds,
                 undefined,
-                datetime,
-                agree
+                args.datetime,
+                args.agree
             );
     }
 
