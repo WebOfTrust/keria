@@ -11,7 +11,7 @@ import falcon
 from falcon import testing
 from hio.base import doing
 from keri.app import habbing
-from keri.core import scheming, coring, parsing
+from keri.core import scheming, coring, parsing, serdering
 from keri.core.eventing import TraitCodex, SealEvent
 from keri.vc import proving
 from keri.vdr import eventing
@@ -238,7 +238,7 @@ def test_issue_credential(helpers, seeder):
             iss=regser.ked,
             ixn=serder.ked,
             sigs=sigers,
-            acdc=creder.ked,
+            acdc=creder.sad,
             csigs=csigers,
             path=pather.qb64)
         
@@ -251,7 +251,7 @@ def test_issue_credential(helpers, seeder):
         op = result.json
 
         assert 'ced' in op['metadata']
-        assert op['metadata']['ced'] == creder.ked
+        assert op['metadata']['ced'] == creder.sad
 
         while not agent.credentialer.complete(creder.said):
             doist.recur(deeds=deeds)
@@ -297,7 +297,7 @@ def test_credentialing_ends(helpers, seeder):
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
         anc = hab.interact(data=[rseal])
 
-        aserder = coring.Serder(raw=bytes(anc))
+        aserder = serdering.SerderKERI(raw=bytes(anc))
         registrar.incept(iserder=registry.vcp, anc=aserder)
 
         assert registry.regk == "EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4"
@@ -459,7 +459,7 @@ def test_revoke_credential(helpers, seeder):
             iss=regser.ked,
             ixn=serder.ked,
             sigs=sigers,
-            acdc=creder.ked,
+            acdc=creder.sad,
             csigs=csigers,
             path=pather.qb64)
         
@@ -472,7 +472,7 @@ def test_revoke_credential(helpers, seeder):
         op = result.json
 
         assert 'ced' in op['metadata']
-        assert op['metadata']['ced'] == creder.ked
+        assert op['metadata']['ced'] == creder.sad
 
         while not agent.credentialer.complete(creder.said):
             doist.recur(deeds=deeds)
@@ -491,7 +491,7 @@ def test_revoke_credential(helpers, seeder):
         assert res.json[0]['sad']['d'] == creder.said
         assert res.json[0]['status']['s'] == "0"
 
-        regser = eventing.revoke(vcdig=creder.said, regk=registry["regk"], dig = regser.said, dt=dt)
+        regser = eventing.revoke(vcdig=creder.said, regk=registry["regk"], dig=regser.said, dt=dt)
         anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)
         serder, sigers = helpers.interact(pre=iaid, bran=isalt, pidx=0, ridx=0, dig=serder.said, sn='3', data=[anchor])
 
@@ -508,22 +508,29 @@ def test_revoke_credential(helpers, seeder):
         assert res.status_code == 404
         assert res.json == {'description': f"credential for said {regser.said} not found.",
                             'title': '404 Not Found'}
-        
+
+        badrev = regser.ked.copy()
+        badrev["ri"] = "EIVtei3pGKGUw8H2Ri0h1uOevtSA6QGAq5wifbtHIaNI"
+        _, sad = coring.Saider.saidify(badrev)
+
         badbody = dict(
-            rev=regser.ked.copy(),
+            rev=sad,
             ixn=serder.ked,
             sigs=sigers)
-        badbody["rev"]["ri"] = "badregk"
         res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}", body=json.dumps(badbody).encode("utf-8"))
         assert res.status_code == 404
-        assert res.json == {'description': f"revocation against invalid registry SAID badregk",
+        assert res.json == {'description': 'revocation against invalid registry SAID '
+                                           'EIVtei3pGKGUw8H2Ri0h1uOevtSA6QGAq5wifbtHIaNI',
                             'title': '404 Not Found'}
-        
+
+        badrev = regser.ked.copy()
+        badrev["i"] = "EMgdjM1qALk3jlh4P2YyLRSTcjSOjLXD3e_uYpxbdbg6"
+        _, sad = coring.Saider.saidify(badrev)
+
         badbody = dict(
-            rev=regser.ked.copy(),
+            rev=sad,
             ixn=serder.ked,
             sigs=sigers)
-        badbody["rev"]["i"] = "EMgdjM1qALk3jlh4P2YyLRSTcjSOjLXD3e_uYpxbdbg6"
         res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}", body=json.dumps(badbody).encode("utf-8"))
         assert res.status_code == 400
         assert res.json == {'description': "invalid revocation event.",

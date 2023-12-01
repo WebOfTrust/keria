@@ -12,7 +12,7 @@ import falcon
 from keri import kering
 from keri.app import habbing
 from keri.app.keeping import Algos
-from keri.core import coring, eventing
+from keri.core import coring, serdering
 from keri.core.coring import Ilks
 from keri.db import dbing
 from keri.help import ogler
@@ -100,7 +100,7 @@ class AgentResourceEnd:
         state = asdict(agent.hby.kevers[agent.caid].state())
         key = dbing.dgKey(state['i'], state['ee']['d'])  # digest key
         msg = agent.hby.db.getEvt(key)
-        eserder = coring.Serder(raw=bytes(msg))
+        eserder = serdering.SerderKERI(raw=bytes(msg))
 
         body = dict(
             agent=asdict(agent.hby.kevers[agent.pre].state()),
@@ -151,7 +151,7 @@ class AgentResourceEnd:
         if "keys" not in body:
             raise falcon.HTTPBadRequest(description="required field 'keys' missing from body")
 
-        rot = coring.Serder(ked=body["rot"])
+        rot = serdering.SerderKERI(sad=body["rot"])
         sigs = body["sigs"]
 
         ctrlHab = agent.hby.habByName(caid, ns="agent")
@@ -209,7 +209,7 @@ class AgentResourceEnd:
 
         ked = body['ixn']
         sigs = body['sigs']
-        ixn = coring.Serder(ked=ked)
+        ixn = serdering.SerderKERI(sad=ked)
         sigers = [coring.Siger(qb64=sig) for sig in sigs]
 
         ctrlHab = agent.hby.habByName(caid, ns="agent")
@@ -308,7 +308,7 @@ class IdentifierCollectionEnd:
             name = httping.getRequiredParam(body, "name")
             sigs = httping.getRequiredParam(body, "sigs")
 
-            serder = coring.Serder(ked=icp)
+            serder = serdering.SerderKERI(sad=icp)
 
             sigers = [coring.Siger(qb64=sig) for sig in sigs]
 
@@ -500,7 +500,7 @@ class IdentifierResourceEnd:
             raise falcon.HTTPBadRequest(title="invalid rotation",
                                         description=f"required field 'sigs' missing from request")
 
-        serder = coring.Serder(ked=rot)
+        serder = serdering.SerderKERI(sad=rot)
         sigers = [coring.Siger(qb64=sig) for sig in sigs]
 
         hab.rotate(serder=serder, sigers=sigers)
@@ -566,7 +566,7 @@ class IdentifierResourceEnd:
             raise falcon.HTTPBadRequest(title="invalid interaction",
                                         description=f"required field 'sigs' missing from request")
 
-        serder = coring.Serder(ked=ixn)
+        serder = serdering.SerderKERI(sad=ixn)
         sigers = [coring.Siger(qb64=sig) for sig in sigs]
 
         hab.interact(serder=serder, sigers=sigers)
@@ -772,7 +772,7 @@ class EndRoleCollectionEnd:
         rpy = httping.getRequiredParam(body, "rpy")
         rsigs = httping.getRequiredParam(body, "sigs")
 
-        rserder = coring.Serder(ked=rpy)
+        rserder = serdering.SerderKERI(sad=rpy)
         data = rserder.ked['a']
         pre = data['cid']
         role = data['role']
@@ -787,7 +787,7 @@ class EndRoleCollectionEnd:
                 description=f"error trying to create end role for unknown local AID {pre}")
 
         rsigers = [coring.Siger(qb64=rsig) for rsig in rsigs]
-        tsg = (hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn), hab.kever.serder.saider, rsigers)
+        tsg = (hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn), coring.Saider(qb64=hab.kever.serder.said), rsigers)
         try:
             agent.hby.rvy.processReply(rserder, tsgs=[tsg])
         except kering.UnverifiedReplyError:
@@ -932,7 +932,7 @@ class ChallengeResourceEnd:
         exn = body["exn"]
         sig = body["sig"]
         recpt = body["recipient"]
-        serder = coring.Serder(ked=exn)
+        serder = serdering.SerderKERI(sad=exn)
 
         ims = bytearray(serder.raw)
         ims.extend(sig.encode("utf-8"))

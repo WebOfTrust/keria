@@ -8,7 +8,7 @@ Testing the Mark II Agent
 import falcon.testing
 from hio.help import Hict
 from keri.app import habbing, httping
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.core.coring import randomNonce, MtrDex
 from keri.vdr import eventing
 from keria.end import ending
@@ -34,7 +34,7 @@ def test_indirecting(helpers):
 
         hab = hby.makeHab("test")
         icp = hab.makeOwnInception()
-        serder = coring.Serder(raw=icp)
+        serder = serdering.SerderKERI(raw=icp)
         atc = icp[:serder.size]
 
         client = falcon.testing.TestClient(app)
@@ -69,7 +69,7 @@ def test_indirecting(helpers):
 
         # Regular (non-mbx) query messages accepted
         msg = hab.query(pre=hab.pre, src=hab.pre, route="ksn")
-        serder = coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg)
         atc = msg[:serder.size]
 
         headers = Hict([
@@ -85,7 +85,7 @@ def test_indirecting(helpers):
 
         # Mailbox query not found
         msg = hab.query(pre=hab.pre, src=hab.pre, route="mbx")
-        serder = coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg)
         atc = msg[:serder.size]
 
         headers = Hict([
@@ -159,9 +159,4 @@ def test_indirecting(helpers):
 
         result = client.simulate_get(path="/oobi/EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3")
         assert result.status == falcon.HTTP_404 
-
-
-
-
-
 

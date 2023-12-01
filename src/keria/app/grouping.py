@@ -8,7 +8,8 @@ import json
 
 import falcon
 from keri.app import habbing
-from keri.core import coring, eventing
+from keri.core import coring, eventing, serdering
+from keri.kering import SerializeError
 
 from keria.core import httping, longrunning
 
@@ -50,7 +51,7 @@ class MultisigRequestCollectionEnd:
 
         # grab all of the required parameters
         ked = httping.getRequiredParam(body, "exn")
-        serder = coring.Serder(ked=ked)
+        serder = serdering.SerderKERI(sad=ked)
         sigs = httping.getRequiredParam(body, "sigs")
         atc = httping.getRequiredParam(body, "atc")
 
@@ -131,13 +132,13 @@ class MultisigJoinCollectionEnd:
 
         hab = agent.hby.joinSignifyGroupHab(gid, name=name, mhab=mhab, smids=smids, rmids=rmids)
         try:
-            hab.make(serder=coring.Serder(ked=rot), sigers=sigers)
+            hab.make(serder=serdering.SerderKERI(sad=rot), sigers=sigers)
             agent.inceptGroup(pre=gid, mpre=mhab.pre, verfers=verfers, digers=digers)
-        except ValueError as e:
+        except (ValueError, SerializeError) as e:
             agent.hby.deleteHab(name=name)
             raise falcon.HTTPBadRequest(description=f"{e.args[0]}")
 
-        serder = coring.Serder(ked=rot)
+        serder = serdering.SerderKERI(sad=rot)
         agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
         op = agent.monitor.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=0))
 
@@ -184,7 +185,7 @@ class MultisigRequestResourceEnd:
 
         for d in exns:
             exn = d['exn']
-            serder = coring.Serder(ked=exn)
+            serder = serdering.SerderKERI(sad=exn)
 
             route = serder.ked['r']
             payload = serder.ked['a']

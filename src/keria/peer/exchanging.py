@@ -7,7 +7,7 @@ keria.app.exchanging module
 import json
 
 import falcon
-from keri.core import coring, eventing
+from keri.core import coring, eventing, serdering
 from keri.peer import exchanging
 
 from keria.core import httping
@@ -57,7 +57,7 @@ class ExchangeCollectionEnd:
                 raise falcon.HTTPBadRequest(f"attempt to send to unknown AID={recp}")
 
         # use that data to create th Serder and Sigers for the exn
-        serder = coring.Serder(ked=ked)
+        serder = serdering.SerderKERI(sad=ked)
         sigers = [coring.Siger(qb64=sig) for sig in sigs]
 
         # Now create the stream to send, need the signer seal

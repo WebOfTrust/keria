@@ -12,7 +12,7 @@ import falcon
 from dataclasses_json import dataclass_json
 from keri import kering
 from keri.app.oobiing import Result
-from keri.core import eventing, coring
+from keri.core import eventing, coring, serdering
 from keri.db import dbing, koming
 from keri.help import helping
 
@@ -178,7 +178,7 @@ class Monitor:
 
             if len(wigs) >= kever.toader.num:
                 evt = self.hby.db.getEvt(dbing.dgKey(pre=kever.prefixer.qb64, dig=bytes(sdig)))
-                serder = coring.Serder(raw=bytes(evt))
+                serder = serdering.SerderKERI(raw=bytes(evt))
                 operation.done = True
                 operation.response = serder.ked
 
@@ -230,7 +230,7 @@ class Monitor:
 
             if self.swain.complete(kever.prefixer, seqner):
                 evt = self.hby.db.getEvt(dbing.dgKey(pre=kever.prefixer.qb64, dig=bytes(sdig)))
-                serder = coring.Serder(raw=bytes(evt))
+                serder = serdering.SerderKERI(raw=bytes(evt))
 
                 operation.done = True
                 operation.response = serder.ked
@@ -247,7 +247,7 @@ class Monitor:
             if self.counselor.complete(prefixer, seqner):
                 sdig = self.hby.db.getKeLast(key=dbing.snKey(pre=op.oid, sn=seqner.sn))
                 evt = self.hby.db.getEvt(dbing.dgKey(pre=prefixer.qb64, dig=bytes(sdig)))
-                serder = coring.Serder(raw=bytes(evt))
+                serder = serdering.SerderKERI(raw=bytes(evt))
 
                 operation.done = True
                 operation.response = serder.ked

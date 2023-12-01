@@ -8,7 +8,7 @@ services and endpoint for IPEX message managements
 import json
 
 import falcon
-from keri.core import coring, eventing
+from keri.core import coring, eventing, serdering
 
 from keria.core import httping
 
@@ -72,7 +72,7 @@ class IpexAdmitCollectionEnd:
                 raise falcon.HTTPBadRequest(description=f"attempt to send to unknown AID={recp}")
 
         # use that data to create th Serder and Sigers for the exn
-        serder = coring.Serder(ked=ked)
+        serder = serdering.SerderKERI(sad=ked)
         sigers = [coring.Siger(qb64=sig) for sig in sigs]
 
         # Now create the stream to send, need the signer seal
@@ -106,14 +106,14 @@ class IpexAdmitCollectionEnd:
             raise falcon.HTTPBadRequest(description=f"attachment missing for ACDC, unable to process request.")
 
         holder = admit['a']['i']
-        serder = coring.Serder(ked=admit)
+        serder = serdering.SerderKERI(sad=admit)
         ims = bytearray(serder.raw) + atc['exn'].encode("utf-8")
         agent.hby.psr.parseOne(ims=ims)
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=holder, topic="credential"))
         agent.admits.append(dict(said=admit['d'], pre=hab.pre))
 
         # use that data to create th Serder and Sigers for the exn
-        serder = coring.Serder(ked=ked)
+        serder = serdering.SerderKERI(sad=ked)
         sigers = [coring.Siger(qb64=sig) for sig in sigs]
 
         # Now create the stream to send, need the signer seal
@@ -181,7 +181,7 @@ class IpexGrantCollectionEnd:
                 raise falcon.HTTPBadRequest(description=f"attempt to send to unknown AID={recp}")
 
         # use that data to create th Serder and Sigers for the exn
-        serder = coring.Serder(ked=ked)
+        serder = serdering.SerderKERI(sad=ked)
         sigers = [coring.Siger(qb64=sig) for sig in sigs]
 
         # Now create the stream to send, need the signer seal
@@ -215,14 +215,14 @@ class IpexGrantCollectionEnd:
             raise falcon.HTTPBadRequest(description=f"attachment missing for ACDC, unable to process request.")
 
         holder = grant['a']['i']
-        serder = coring.Serder(ked=grant)
+        serder = serdering.SerderKERI(sad=grant)
         ims = bytearray(serder.raw) + atc['exn'].encode("utf-8")
         agent.hby.psr.parseOne(ims=ims)
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=holder, topic="credential"))
         agent.grants.append(dict(said=grant['d'], pre=hab.pre))
 
         # use that data to create th Serder and Sigers for the exn
-        serder = coring.Serder(ked=ked)
+        serder = serdering.SerderKERI(sad=ked)
         sigers = [coring.Siger(qb64=sig) for sig in sigs]
 
         # Now create the stream to send, need the signer seal

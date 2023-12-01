@@ -14,7 +14,7 @@ import falcon
 from falcon import testing
 from keri.app import habbing, keeping, configing
 from keri.app.keeping import Algos
-from keri.core import coring, eventing, parsing
+from keri.core import coring, eventing, parsing, serdering
 from keri.core.coring import MtrDex
 from keri.db.basing import LocationRecord
 from keri.peer import exchanging
@@ -86,7 +86,7 @@ def test_endrole_ends(helpers):
         res = client.simulate_post(path=f"/identifiers/user1/endroles", json=body)
         op = res.json
         ked = op["response"]
-        serder = coring.Serder(ked=ked)
+        serder = serdering.SerderKERI(sad=ked)
         assert serder.raw == rpy.raw
 
         keys = (recp, 'agent', agent.agentHab.pre)
@@ -795,7 +795,7 @@ def test_identifier_collection_end(helpers):
         assert op['name'] == "delegation.EFt8G8gkCJ71e4amQaRUYss0BDK4pUpzKelEIr3yZ1D0"
 
         # try unknown delegator
-        delpre = "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHUNKN"
+        delpre = "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHUNKNx"
         serder, signers = helpers.incept(salt, "signify:aid", pidx=0, delpre=delpre)
 
         salter = coring.Salter(raw=salt)
@@ -815,7 +815,7 @@ def test_identifier_collection_end(helpers):
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
         assert res.status_code == 400
         assert res.json == {'title': '400 Bad Request',
-                            'description': "unknown delegator EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHUNKN"}
+                            'description': "unknown delegator EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHUNKNx"}
 
     # Test extern keys for HSM integration, only initial tests, work still needed
     with helpers.openKeria() as (agency, agent, app, client):
@@ -934,7 +934,7 @@ def test_challenge_ends(helpers):
         assert op["done"] is False
 
         # Set the signed result to True so it verifies
-        agent.hby.db.reps.add(keys=(aid['i'],), val=exn.saider)
+        agent.hby.db.reps.add(keys=(aid['i'],), val=coring.Saider(qb64=exn.said))
         agent.hby.db.exns.pin(keys=(exn.said,), val=exn)
 
         result = client.simulate_post(path=f"/challenges/pal/verify/{aid['i']}", body=b)
@@ -1225,7 +1225,7 @@ def test_oobi_ends(helpers):
         # Create an AID to test against
         salt = b'0123456789abcdef'
         op = helpers.createAid(client, "pal", salt)
-        iserder = coring.Serder(ked=op["response"])
+        iserder = serdering.SerderKERI(sad=op["response"])
         assert iserder.pre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
 
         # Test before endroles are added
@@ -1240,7 +1240,7 @@ def test_oobi_ends(helpers):
         res = client.simulate_post(path=f"/identifiers/pal/endroles", json=body)
         op = res.json
         ked = op["response"]
-        serder = coring.Serder(ked=ked)
+        serder = serdering.SerderKERI(sad=ked)
         assert serder.raw == rpy.raw
 
         # not valid calls
@@ -1309,7 +1309,7 @@ def test_oobi_ends(helpers):
         res = client.simulate_post(path=f"/identifiers/pal/endroles", json=body)
         op = res.json
         ked = op["response"]
-        serder = coring.Serder(ked=ked)
+        serder = serdering.SerderKERI(sad=ked)
         assert serder.raw == rpy.raw
 
         res = client.simulate_get("/identifiers/pal/oobis?role=mailbox")
@@ -1330,19 +1330,19 @@ def test_rpy_escow_end(helpers):
 
         rpy1 = helpers.endrole("EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY",
                                "ECL8abFVW_0RTZXFhiiA4rkRobNvjTfJ6t-T8UdBRV1e")
-        agent.hby.db.rpes.add(keys=("/end/role",), val=rpy1.saider)
+        agent.hby.db.rpes.add(keys=("/end/role",), val=coring.Saider(qb64=rpy1.said))
         agent.hby.db.rpys.put(keys=(rpy1.said,), val=rpy1)
 
         rpy2 = helpers.endrole("EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY",
                                "ECL8abFVW_0RTZXFhiiA4rkRobNvjTfJ6t-T8UdBRV1e",
                                role=kering.Roles.controller)
-        agent.hby.db.rpes.add(keys=("/end/role",), val=rpy2.saider)
+        agent.hby.db.rpes.add(keys=("/end/role",), val=coring.Saider(qb64=rpy2.said))
         agent.hby.db.rpys.put(keys=(rpy2.said,), val=rpy2)
 
         rpy3 = helpers.endrole("EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY",
                                "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
                                role=kering.Roles.witness)
-        agent.hby.db.rpes.add(keys=("/end/role",), val=rpy3.saider)
+        agent.hby.db.rpes.add(keys=("/end/role",), val=coring.Saider(qb64=rpy3.said))
         agent.hby.db.rpys.put(keys=(rpy3.said,), val=rpy3)
 
         res = client.simulate_get(path="/escrows/rpy?route=/end/role")

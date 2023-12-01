@@ -22,7 +22,7 @@ from keri.app import configing, keeping, habbing, storing, signaling, oobiing, a
     forwarding, querying, connecting, grouping
 from keri.app.grouping import Counselor
 from keri.app.keeping import Algos
-from keri.core import coring, parsing, eventing, routing
+from keri.core import coring, parsing, eventing, routing, serdering
 from keri.core.coring import Ilks, randomNonce
 from keri.db import dbing
 from keri.db.basing import OobiRecord
@@ -803,7 +803,7 @@ class BootEnd:
         if "icp" not in body:
             raise falcon.HTTPBadRequest(title="invalid inception",
                                         description=f'required field "icp" missing from body')
-        icp = eventing.Serder(ked=body["icp"])
+        icp = serdering.SerderKERI(sad=body["icp"])
 
         if "sig" not in body:
             raise falcon.HTTPBadRequest(title="invalid inception",
@@ -962,7 +962,7 @@ class KeyEventCollectionEnd:
             if not (raw := agent.hby.db.getEvt(key=dgkey)):
                 raise falcon.HTTPInternalServerError(f"Missing event for dig={dig}.")
 
-            serder = coring.Serder(raw=bytes(raw))
+            serder = serdering.SerderKERI(raw=bytes(raw))
             events.append(serder.ked)
 
         rep.status = falcon.HTTP_200

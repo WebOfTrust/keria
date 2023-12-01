@@ -138,7 +138,7 @@ def test_multisig_request_ends(helpers):
 
         # Fudge this because we won't be able to save a message from someone else:
         esaid = exn.ked['e']['d']
-        agent.hby.db.meids.add(keys=(esaid,), val=exn.saider)
+        agent.hby.db.meids.add(keys=(esaid,), val=coring.Saider(qb64=exn.said))
 
         res = client.simulate_get(path=f"/multisig/request/BADSAID")
         assert res.status_code == 404
@@ -230,7 +230,7 @@ def test_join(helpers, monkeypatch):
 
         res = client.simulate_post("/identifiers/mms/multisig/join", json=body)
         assert res.status_code == 400
-        assert res.json == {'description': "Missing or empty version string in key event dict = {'k': "
+        assert res.json == {'description': "Missing version string field in {'k': "
                                            "['DNp1NUbUEgei6KOlIfT5evXueOi3TDFZkUXgJQWNvegf', "
                                            "'DLsXs0-dxqrM4hugX7NkfZUzET13ngfRhWC9GgXvX9my', "
                                            "'DE2W_yGSF-m44vXPuQ5_wHJ9EK59N-OIT3hABgdAcCKs', "
@@ -242,7 +242,7 @@ def test_join(helpers, monkeypatch):
                                            "'EBFg-5SGDCv5YfwpkArWRBdTxNRUXU8uVcDKNzizOQZc', "
                                            "'EBmW2bXbgsP3HITwW3FmITzAb3wVmHlxCusZ46vgGgP5', "
                                            "'EL4RpdS2Atb2Syu5xLdpz9CcNNYoFUUDlLHxHD09vcgh', "
-                                           "'EAiBVuuhCZrgckeHc9KzROVGJpmGbk2-e1B25GaeRrJs']}",
+                                           "'EAiBVuuhCZrgckeHc9KzROVGJpmGbk2-e1B25GaeRrJs']}.",
                             'title': '400 Bad Request'}
 
         body['rot'] = {

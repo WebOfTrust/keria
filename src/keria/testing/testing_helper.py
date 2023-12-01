@@ -12,7 +12,7 @@ from falcon import testing
 from hio.core import http
 from keri import kering
 from keri.app import keeping, habbing, configing, signing
-from keri.core import coring, eventing, parsing, routing, scheming
+from keri.core import coring, eventing, parsing, routing, scheming, serdering
 from keri.core.coring import MtrDex
 from keri.core.eventing import SealEvent
 from keri.help import helping
@@ -458,7 +458,7 @@ class Helpers:
         res = client.simulate_post(path=f"/identifiers/{name}/endroles", json=body)
         op = res.json
         ked = op["response"]
-        serder = coring.Serder(ked=ked)
+        serder = serdering.SerderKERI(sad=ked)
         assert serder.raw == rpy.raw
 
     @staticmethod
@@ -587,7 +587,7 @@ class Issuer:
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
         anc = hab.interact(data=[rseal])
 
-        aserder = coring.Serder(raw=bytes(anc))
+        aserder = serdering.SerderKERI(raw=bytes(anc))
         self.registrar.incept(iserder=registry.vcp, anc=aserder)
 
         # Process escrows to clear event
@@ -620,7 +620,7 @@ class Issuer:
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
         anc = issuer.interact(data=[rseal])
-        aserder = coring.Serder(raw=anc)
+        aserder = serdering.SerderKERI(raw=anc)
         self.registrar.issue(creder=creder, iserder=iserder, anc=aserder)
 
         prefixer = coring.Prefixer(qb64=iserder.pre)
@@ -661,7 +661,7 @@ class Issuer:
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
         anc = issuer.interact(data=[rseal])
-        aserder = coring.Serder(raw=anc)
+        aserder = serdering.SerderKERI(raw=anc)
         self.registrar.issue(creder=creder, iserder=iserder, anc=aserder)
 
         prefixer = coring.Prefixer(qb64=iserder.pre)

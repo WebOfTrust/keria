@@ -9,7 +9,7 @@ Testing the Mark II Agent Grouping endpoints
 import json
 
 from hio.base import doing
-from keri.core import coring, eventing
+from keri.core import eventing, serdering
 from keri.peer.exchanging import exchange
 
 from keria.app import aiding
@@ -125,11 +125,11 @@ def test_exchange_end(helpers):
         assert len(res.json) == 2
 
         ked = res.json[0]['exn']
-        serder = coring.Serder(ked=ked)
+        serder = serdering.SerderKERI(sad=ked)
         assert serder.said == cexn.said
 
         ked = res.json[1]['exn']
-        serder = coring.Serder(ked=ked)
+        serder = serdering.SerderKERI(sad=ked)
         assert serder.said == exn.said
 
         body = json.dumps({'filter': {'-i': pre}, 'sort': ['-dt'], 'skip': 1, "limit": 1}).encode("utf-8")
@@ -138,12 +138,12 @@ def test_exchange_end(helpers):
         assert len(res.json) == 1
 
         ked = res.json[0]['exn']
-        serder = coring.Serder(ked=ked)
+        serder = serdering.SerderKERI(sad=ked)
         assert serder.said == exn.said
 
         res = client.simulate_get(f"/exchanges/{exn.said}")
         assert res.status_code == 200
-        serder = coring.Serder(ked=res.json['exn'])
+        serder = serdering.SerderKERI(sad=res.json['exn'])
         assert serder.said == exn.said
 
         payload = dict(

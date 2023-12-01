@@ -18,7 +18,7 @@ from hio.help import decking
 from keri import kering
 from keri.app import habbing, configing, oobiing, querying
 from keri.app.agenting import Receiptor
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.core.coring import MtrDex
 from keri.db import basing
 from keri.vc import proving
@@ -423,7 +423,7 @@ def test_seeker_doer(helpers):
         cues = decking.Deck()
         seeker = agenting.SeekerDoer(agent.seeker, cues)
 
-        creder = proving.Creder(ked={
+        creder = serdering.SerderACDC(sad={
             "v": "ACDC10JSON000197_",
             "d": "EG7ZlUq0Z6a1EUPTM_Qg1LGEg1BWiypHLAekxo8crGzK",
             "i": "EPbOCiPM7IItIMzMwslKWfPM4tqNIKUCyVVuYJNQHwMB",
