@@ -1,5 +1,6 @@
 import { SignifyClient } from "signify-ts";
 import { getOrCreateClients, getOrCreateIdentifier } from "./utils/test-setup";
+import { resolveEnvironment } from "./utils/resolve-env";
 
 let client: SignifyClient;
 let name1_id: string, name1_oobi: string;
@@ -18,7 +19,22 @@ describe("test-setup-single-client", () => {
         expect(client.controller?.pre).toEqual("EB3UGWwIMq7ppzcQ697ImQIuXlBG5jzh-baSx-YG3-tY");
     });
     test("step2", async () => {
-        expect(name1_id).toEqual("ENpvkzG5PhOXPn0LOBIRR6wyd8YXZPW9dn7Drxd7jJcH");
-        expect(name1_oobi).toEqual("http://localhost:3902/oobi/ENpvkzG5PhOXPn0LOBIRR6wyd8YXZPW9dn7Drxd7jJcH/agent/EC60ue9GOpQGrLBlS9T0dO6JkBTbv3V05Y4O730QBBoc");
+        let env = resolveEnvironment();
+        let oobi = await client.oobis().get("name1", "witness");
+        expect(oobi.oobis).toHaveLength(3);
+        switch (env.preset) {
+            case "local":
+                expect(name1_oobi).toEqual(`http://localhost:3902/oobi/${name1_id}/agent/EC60ue9GOpQGrLBlS9T0dO6JkBTbv3V05Y4O730QBBoc`);
+                expect(oobi.oobis[0]).toEqual(`http://localhost:5642/oobi/${name1_id}/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha`);
+                expect(oobi.oobis[1]).toEqual(`http://localhost:5643/oobi/${name1_id}/witness/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM`);
+                expect(oobi.oobis[2]).toEqual(`http://localhost:5644/oobi/${name1_id}/witness/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX`);
+                break;
+            case "docker":
+                expect(name1_oobi).toEqual(`http://keria:3902/oobi/${name1_id}/agent/EC60ue9GOpQGrLBlS9T0dO6JkBTbv3V05Y4O730QBBoc`);
+                expect(oobi.oobis[0]).toEqual(`http://witness-demo:5642/oobi/${name1_id}/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha`);
+                expect(oobi.oobis[1]).toEqual(`http://witness-demo:5643/oobi/${name1_id}/witness/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM`);
+                expect(oobi.oobis[2]).toEqual(`http://witness-demo:5644/oobi/${name1_id}/witness/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX`);
+                break;
+        }
     });
 });
