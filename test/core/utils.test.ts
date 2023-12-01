@@ -22,6 +22,7 @@ describe(serializeIssExnAttachment, () => {
 describe(serializeACDCAttachment, () => {
     it('serializes acdc data', () => {
         const [, data] = Saider.saidify({
+            i: 'EP-hA0w9X5FDonCDxQv32OTCAvcxkZxgDLOnDb3Jcn3a',
             d: '',
             v: versify(Ident.ACDC, undefined, Serials.JSON, 0),
             a: {
@@ -32,7 +33,7 @@ describe(serializeACDCAttachment, () => {
         const result = serializeACDCAttachment(new Serder(data));
 
         expect(d(result)).toEqual(
-            '-IABBHsiZCI6IkVORTZzbWw4X1NMZVIzdk9NajRJRExLX2Nn0AAAAAAAAAAAAAAAAAAAAAAAENE6sml8_SLeR3vOMj4IDLK_cgd-A-vtg0Jnu7ozdBjW'
+            '-IABEP-hA0w9X5FDonCDxQv32OTCAvcxkZxgDLOnDb3Jcn3a0AAAAAAAAAAAAAAAAAAAAAAAEHGU7u7cSMjMcJ1UyN8r-MnoZ3cDw4sMQNYxRLjqGVJI'
         );
     });
 });
