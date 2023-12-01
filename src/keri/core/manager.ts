@@ -216,7 +216,10 @@ export function openManager(passcode: string, salt?: string) {
     }
 
     const bran = MtrDex.Salt_128 + 'A' + passcode.substring(0, 21); // qb64 salt for seed
-    const signer = new Salter({ qb64: bran }).signer(MtrDex.Ed25519_Seed, false);
+    const signer = new Salter({ qb64: bran }).signer(
+        MtrDex.Ed25519_Seed,
+        false
+    );
     const seed = signer.qb64;
     const aeid = signer.verfer.qb64; // lest it remove encryption
 

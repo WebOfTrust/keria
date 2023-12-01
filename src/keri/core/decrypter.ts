@@ -64,7 +64,11 @@ export class Decrypter extends Matter {
 
     _x25519(cipher: Cipher, prikey: Uint8Array, transferable: boolean = false) {
         const pubkey = libsodium.crypto_scalarmult_base(prikey);
-        const plain = libsodium.crypto_box_seal_open(cipher.raw, pubkey, prikey);
+        const plain = libsodium.crypto_box_seal_open(
+            cipher.raw,
+            pubkey,
+            prikey
+        );
         if (cipher.code == MtrDex.X25519_Cipher_Salt) {
             return new Salter({ qb64b: plain });
         } else if (cipher.code == MtrDex.X25519_Cipher_Seed) {

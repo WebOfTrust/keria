@@ -7,7 +7,9 @@ import { Buffer } from 'buffer';
 
 export class Codex {
     has(prop: string): boolean {
-        const m = new Map(Array.from(Object.entries(this), (v) => [v[1], v[0]]));
+        const m = new Map(
+            Array.from(Object.entries(this), (v) => [v[1], v[0]])
+        );
         return m.has(prop);
     }
 }

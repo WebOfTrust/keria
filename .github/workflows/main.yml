@@ -27,13 +27,23 @@ jobs:
           node-version: '18.12.1'
           cache: 'npm'
 
-      - name: build
+      - name: Install dependencies
         run: |
           npm cache clean --force
           npm set registry https://registry.npmjs.org/
-          npm i
-          npm test -- --coverage=true
-          npm run build
+          npm ci
+      
+      - name: Check formatting
+        run: npm run pretty:check 
+      
+      - name: Lint
+        run: npm run lint
+      
+      - name: Test
+        run: npm test -- --coverage=true
+      
+      - name: Build
+        run: npm run build
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3

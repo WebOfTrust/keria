@@ -113,7 +113,11 @@ export class Controller {
 
         this.salter = new Salter({ qb64: this.bran, tier: this.tier });
 
-        const creator = new SaltyCreator(this.salter.qb64, this.tier, this.stem);
+        const creator = new SaltyCreator(
+            this.salter.qb64,
+            this.tier,
+            this.stem
+        );
 
         this.signer = creator
             .create(
@@ -209,7 +213,11 @@ export class Controller {
         const nsalter = new Salter({ qb64: nbran, tier: this.tier });
         const nsigner = this.salter.signer(undefined, false);
 
-        const creator = new SaltyCreator(this.salter.qb64, this.tier, this.stem);
+        const creator = new SaltyCreator(
+            this.salter.qb64,
+            this.tier,
+            this.stem
+        );
         const signer = creator
             .create(
                 undefined,

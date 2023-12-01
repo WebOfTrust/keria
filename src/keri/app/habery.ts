@@ -76,7 +76,8 @@ export class Habery {
             }
         }
         let algo;
-        const salter = salt != undefined ? new Salter({ qb64: salt }) : undefined;
+        const salter =
+            salt != undefined ? new Salter({ qb64: salt }) : undefined;
         if (salt != undefined) {
             algo = Algos.salty;
         } else {
