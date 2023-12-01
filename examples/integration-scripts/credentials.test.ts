@@ -115,10 +115,12 @@ test('credentials', async () => {
     const verifierAidName = 'verifier';
 
     // Create two identifiers, one for each client
-    const issuerIcpRes = await issuerClient.identifiers().create(issuerAidName, {
-        toad: 3,
-        wits: [...KLI_WITNESS_DEMO_PREFIXES],
-    });
+    const issuerIcpRes = await issuerClient
+        .identifiers()
+        .create(issuerAidName, {
+            toad: 3,
+            wits: [...KLI_WITNESS_DEMO_PREFIXES],
+        });
     let issOp = await issuerIcpRes.op();
     while (!issOp['done']) {
         issOp = await issuerClient.operations().get(issOp.name);
@@ -131,10 +133,12 @@ test('credentials', async () => {
         .addEndRole(issuerAidName, 'agent', issuerClient!.agent!.pre);
     console.log("Issuer's AID:", issuerAID);
 
-    const holderIcpRes = await holderClient.identifiers().create(holderAidName, {
-        toad: 3,
-        wits: [...KLI_WITNESS_DEMO_PREFIXES],
-    });
+    const holderIcpRes = await holderClient
+        .identifiers()
+        .create(holderAidName, {
+            toad: 3,
+            wits: [...KLI_WITNESS_DEMO_PREFIXES],
+        });
     let hldOp = await holderIcpRes.op();
     while (!hldOp['done']) {
         hldOp = await holderClient.operations().get(hldOp.name);

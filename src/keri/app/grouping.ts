@@ -82,10 +82,9 @@ export class Groups {
             sigs: sigs,
             gid: gid,
             smids: smids,
-            rmids: rmids
+            rmids: rmids,
         };
         const res = await this.client.fetch(path, method, data);
         return await res.json();
     }
-
 }

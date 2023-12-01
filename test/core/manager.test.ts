@@ -212,7 +212,11 @@ describe('Manager', () => {
         const encrypter1 = new Encrypter({}, b(aeid1));
         assert.equal(encrypter1.verifySeed(seed1), true);
 
-        const manager = new Manager({ seed: seed0, salter: salter, aeid: aeid0 });
+        const manager = new Manager({
+            seed: seed0,
+            salter: salter,
+            aeid: aeid0,
+        });
         assert.equal(manager.encrypter!.qb64, encrypter0.qb64);
         assert.equal(manager.decrypter!.qb64, decrypter0.qb64);
         assert.equal(manager.seed, seed0);

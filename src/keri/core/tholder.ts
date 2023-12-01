@@ -80,7 +80,10 @@ export class Tholder {
     private _processLimen(limen: string) {
         const matter = new Matter({ qb64: limen });
         if (NumDex.has(matter.code)) {
-            const number = new CesrNumber({ raw: matter.raw, code: matter.code });
+            const number = new CesrNumber({
+                raw: matter.raw,
+                code: matter.code,
+            });
             this._processUnweighted(number.num);
         } else if (BexDex.has(matter.code)) {
             // TODO: Implement Bexter

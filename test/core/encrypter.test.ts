@@ -32,7 +32,8 @@ describe('Encrypter', () => {
             114,
         ]);
         const saltqb64 = new Matter({ raw: salt, code: MtrDex.Salt_128 }).qb64;
-        const saltqb64b = new Matter({ raw: salt, code: MtrDex.Salt_128 }).qb64b;
+        const saltqb64b = new Matter({ raw: salt, code: MtrDex.Salt_128 })
+            .qb64b;
         assert.equal(saltqb64, '0AA2CGQNobs5jXCNoMATSody');
 
         // b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'

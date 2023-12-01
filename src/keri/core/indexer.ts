@@ -43,7 +43,9 @@ export class IndexedSigCodex {
     Ed448_Big_Crt_Sig: string = '3B'; // Ed448 signature appears in current list only.
 
     has(prop: string): boolean {
-        const m = new Map(Array.from(Object.entries(this), (v) => [v[1], v[0]]));
+        const m = new Map(
+            Array.from(Object.entries(this), (v) => [v[1], v[0]])
+        );
         return m.has(prop);
     }
 }
@@ -61,7 +63,9 @@ export class IndexedCurrentSigCodex {
     Ed448_Big_Crt_Sig: string = '3B'; // Ed448 signature appears in current list only.
 
     has(prop: string): boolean {
-        const m = new Map(Array.from(Object.entries(this), (v) => [v[1], v[0]]));
+        const m = new Map(
+            Array.from(Object.entries(this), (v) => [v[1], v[0]])
+        );
         return m.has(prop);
     }
 }
@@ -77,7 +81,9 @@ export class IndexedBothSigCodex {
     Ed448_Big_Sig: string = '3A'; // Ed448 signature appears in both lists.
 
     has(prop: string): boolean {
-        const m = new Map(Array.from(Object.entries(this), (v) => [v[1], v[0]]));
+        const m = new Map(
+            Array.from(Object.entries(this), (v) => [v[1], v[0]])
+        );
         return m.has(prop);
     }
 }
