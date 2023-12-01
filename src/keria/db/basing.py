@@ -181,7 +181,7 @@ class Seeker(dbing.LMDBer):
     def value(self, said):
         saider = self.reger.saved.get(keys=(said,))
         creder = self.reger.creds.get(keys=(saider.qb64,))
-        return creder.crd
+        return creder.sad
 
     def saidIter(self):
         return self.reger.saved.getItemIter()
@@ -209,7 +209,7 @@ class Seeker(dbing.LMDBer):
             values = []
             for path in idx.paths:
                 pather = coring.Pather(qb64=path)
-                values.append(pather.resolve(creder.crd))
+                values.append(pather.resolve(creder.sad))
 
             value = "".join(values)
             db.add(keys=(value,), val=saider)

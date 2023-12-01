@@ -6,15 +6,15 @@ keria.app.credentialing module
 services and endpoint for ACDC credential managements
 """
 import json
+from dataclasses import asdict
 
 import falcon
 from keri import kering
 from keri.app import signing
 from keri.app.habbing import SignifyGroupHab
-from keri.core import coring, scheming
+from keri.core import coring, scheming, serdering
 from keri.core.eventing import SealEvent
 from keri.db import dbing
-from keri.vc import proving
 
 from keria.core import httping, longrunning
 
@@ -88,7 +88,7 @@ class RegistryCollectionEnd:
                     name=registry.name,
                     regk=registry.regk,
                     pre=registry.hab.pre,
-                    state=registry.tever.state().ked
+                    state=asdict(registry.tever.state())
                 )
                 res.append(rd)
 
@@ -152,10 +152,10 @@ class RegistryCollectionEnd:
 
         rname = httping.getRequiredParam(body, "name")
         ked = httping.getRequiredParam(body, "vcp")
-        vcp = coring.Serder(ked=ked)
+        vcp = serdering.SerderKERI(sad=ked)
 
         ked = httping.getRequiredParam(body, "ixn")
-        ixn = coring.Serder(ked=ked)
+        ixn = serdering.SerderKERI(sad=ked)
 
         hab = agent.hby.habByName(name)
         if hab is None:
@@ -173,7 +173,7 @@ class RegistryCollectionEnd:
 
         seqner = coring.Seqner(sn=ixn.sn)
         prefixer = coring.Prefixer(qb64=ixn.pre)
-        agent.registrar.incept(hab, registry, prefixer=prefixer, seqner=seqner, saider=ixn.saider)
+        agent.registrar.incept(hab, registry, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=ixn.said))
         op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.registry,
                                   metadata=dict(anchor=anchor, depends=op))
 
@@ -474,12 +474,12 @@ class CredentialCollectionEnd:
         if hab is None:
             raise falcon.HTTPNotFound(description="name is not a valid reference to an identifier")
 
-        creder = proving.Creder(ked=httping.getRequiredParam(body, "acdc"))
-        iserder = coring.Serder(ked=httping.getRequiredParam(body, "iss"))
+        creder = serdering.SerderACDC(sad=httping.getRequiredParam(body, "acdc"))
+        iserder = serdering.SerderKERI(sad=httping.getRequiredParam(body, "iss"))
         if "ixn" in body:
-            anc = coring.Serder(ked=httping.getRequiredParam(body, "ixn"))
+            anc = serdering.SerderKERI(sad=httping.getRequiredParam(body, "ixn"))
         else:
-            anc = coring.Serder(ked=httping.getRequiredParam(body, "rot"))
+            anc = serdering.SerderKERI(sad=httping.getRequiredParam(body, "rot"))
 
         regk = iserder.ked['ri']
         if regk not in agent.rgy.tevers:
@@ -495,7 +495,7 @@ class CredentialCollectionEnd:
             agent.registrar.issue(regk, iserder, anc)
             agent.credentialer.issue(creder=creder, serder=iserder)
             op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.credential,
-                                      metadata=dict(ced=creder.ked, depends=op))
+                                      metadata=dict(ced=creder.sad, depends=op))
 
         except kering.ConfigurationError as e:
             rep.status = falcon.HTTP_400
@@ -579,7 +579,7 @@ class CredentialResourceEnd:
     def outputCred(hby, rgy, said):
         out = bytearray()
         creder, prefixer, seqner, saider = rgy.reger.cloneCred(said=said)
-        chains = creder.chains
+        chains = creder.edge
         saids = []
         for key, source in chains.items():
             if key == 'd':
@@ -595,28 +595,28 @@ class CredentialResourceEnd:
 
         issr = creder.issuer
         for msg in hby.db.clonePreIter(pre=issr):
-            serder = coring.Serder(raw=msg)
+            serder = serdering.SerderKERI(raw=msg)
             atc = msg[serder.size:]
             out.extend(serder.raw)
             out.extend(atc)
 
-        if "i" in creder.subject:
-            subj = creder.subject["i"]
+        if "i" in creder.attrib:
+            subj = creder.attrib["i"]
             for msg in hby.db.clonePreIter(pre=subj):
-                serder = coring.Serder(raw=msg)
+                serder = serdering.SerderKERI(raw=msg)
                 atc = msg[serder.size:]
                 out.extend(serder.raw)
                 out.extend(atc)
 
-        if creder.status is not None:
-            for msg in rgy.reger.clonePreIter(pre=creder.status):
-                serder = coring.Serder(raw=msg)
+        if creder.regi is not None:
+            for msg in rgy.reger.clonePreIter(pre=creder.regi):
+                serder = serdering.SerderKERI(raw=msg)
                 atc = msg[serder.size:]
                 out.extend(serder.raw)
                 out.extend(atc)
 
             for msg in rgy.reger.clonePreIter(pre=creder.said):
-                serder = coring.Serder(raw=msg)
+                serder = serdering.SerderKERI(raw=msg)
                 atc = msg[serder.size:]
                 out.extend(serder.raw)
                 out.extend(atc)
@@ -651,7 +651,7 @@ class CredentialResourceEnd:
         if hab is None:
             raise falcon.HTTPNotFound(description="name is not a valid reference to an identifier")
 
-        rserder = coring.Serder(ked=httping.getRequiredParam(body, "rev"))
+        rserder = serdering.SerderKERI(sad=httping.getRequiredParam(body, "rev"))
 
         regk = rserder.ked['ri']
         if regk not in agent.rgy.tevers:
@@ -672,7 +672,6 @@ class CredentialResourceEnd:
         try:
             agent.registrar.revoke(regk, rserder, anc)
         except Exception as e:
-            print(e)
             raise falcon.HTTPBadRequest(description=f"invalid revocation event.")
 
         rep.status = falcon.HTTP_200
@@ -731,7 +730,7 @@ class Registrar:
         if not isinstance(hab, SignifyGroupHab):
 
             seqner = coring.Seqner(sn=hab.kever.sner.num)
-            saider = hab.kever.serder.saider
+            saider = coring.Saider(qb64=hab.kever.serder.said)
             registry.anchorMsg(pre=registry.regk, regd=registry.regd, seqner=seqner, saider=saider)
             self.witDoer.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
             self.rgy.reger.tpwe.add(keys=(registry.regk, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
@@ -761,7 +760,7 @@ class Registrar:
 
         if not isinstance(hab, SignifyGroupHab):  # not a multisig group
             seqner = coring.Seqner(sn=hab.kever.sner.num)
-            saider = hab.kever.serder.saider
+            saider = coring.Saider(qb64=hab.kever.serder.said)
             registry.anchorMsg(pre=vcid, regd=iserder.said, seqner=seqner, saider=saider)
 
             print("Waiting for TEL event witness receipts")
@@ -800,7 +799,7 @@ class Registrar:
         if not isinstance(hab, SignifyGroupHab):
 
             seqner = coring.Seqner(sn=hab.kever.sner.num)
-            saider = hab.kever.serder.saider
+            saider = coring.Saider(qb64=hab.kever.serder.said)
             registry.anchorMsg(pre=vcid, regd=rserder.said, seqner=seqner, saider=saider)
 
             print("Waiting for TEL event witness receipts")
@@ -932,7 +931,7 @@ class Credentialer:
             bool: true if credential is valid against a known schema
 
         """
-        schema = creder.crd['s']
+        schema = creder.sad['s']
         scraw = self.verifier.resolver.resolve(schema)
         if not scraw:
             raise kering.ConfigurationError("Credential schema {} not found.  It must be loaded with data oobi before "
@@ -960,7 +959,8 @@ class Credentialer:
         self.rgy.reger.cmse.put(keys=(creder.said, seqner.qb64), val=creder)
 
         try:
-            self.verifier.processCredential(creder=creder, prefixer=prefixer, seqner=seqner, saider=serder.saider)
+            self.verifier.processCredential(creder=creder, prefixer=prefixer, seqner=seqner,
+                                            saider=coring.Saider(qb64=serder.said))
         except kering.MissingRegistryError:
             pass
 
@@ -977,7 +977,6 @@ class Credentialer:
             # Remove from this escrow
             self.rgy.reger.cmse.rem(keys=(said, snq))
 
-            hab = self.hby.habs[creder.issuer]
             # place in escrow to diseminate to other if witnesser and if there is an issuee
             self.rgy.reger.ccrd.put(keys=(creder.said,), val=creder)
 

@@ -6,7 +6,7 @@ keria.app.ending module
 Testing the Mark II Agent Grouping endpoints
 
 """
-from keri.core import coring
+from keri.core import serdering
 
 from keria.app import aiding
 from keria.end import ending
@@ -54,7 +54,7 @@ def test_oobi_end(helpers):
         res = client.simulate_post(path=f"/identifiers/aid1/endroles", json=body)
         op = res.json
         ked = op["response"]
-        serder = coring.Serder(ked=ked)
+        serder = serdering.SerderKERI(sad=ked)
         assert serder.raw == rpy.raw
 
         res = client.simulate_get(path=f"/oobi")
