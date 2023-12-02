@@ -1,4 +1,4 @@
-import { CreateIdentiferArgs, EventResult, SignifyClient } from "signify-ts";
+import { CreateIdentiferArgs, SignifyClient } from "signify-ts";
 import { getOrCreateClients, getOrCreateContact, getOrCreateIdentifier } from "./utils/test-setup";
 import { waitOperation } from "./utils/test-util";
 import { resolveEnvironment } from "./utils/resolve-env";
