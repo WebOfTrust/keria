@@ -1,1 +1,0 @@
-for f in ./*.ts; do ts-node --esm $f; done
