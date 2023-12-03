@@ -115,10 +115,10 @@ export function bytesToInt(ar: Uint8Array): number {
     return value;
 }
 
-export function serializeACDCAttachment(acdc: Serder): Uint8Array {
-    const prefixer = new Prefixer({ raw: b(acdc.raw) });
-    const seqner = new Seqner({ sn: acdc.sn });
-    const saider = new Saider({ qb64: acdc.ked['d'] });
+export function serializeACDCAttachment(anc: Serder): Uint8Array {
+    const prefixer = new Prefixer({ qb64: anc.pre });
+    const seqner = new Seqner({ sn: anc.sn });
+    const saider = new Saider({ qb64: anc.ked['d'] });
     const craw = new Uint8Array();
     const ctr = new Counter({ code: CtrDex.SealSourceTriples, count: 1 }).qb64b;
     const prefix = prefixer.qb64b;
@@ -135,9 +135,9 @@ export function serializeACDCAttachment(acdc: Serder): Uint8Array {
     return newCraw;
 }
 
-export function serializeIssExnAttachment(iss: Serder): Uint8Array {
-    const seqner = new Seqner({ sn: iss.sn });
-    const ancSaider = new Saider({ qb64: iss.ked['d'] });
+export function serializeIssExnAttachment(anc: Serder): Uint8Array {
+    const seqner = new Seqner({ sn: anc.sn });
+    const ancSaider = new Saider({ qb64: anc.ked['d'] });
     const coupleArray = new Uint8Array(
         seqner.qb64b.length + ancSaider.qb64b.length
     );

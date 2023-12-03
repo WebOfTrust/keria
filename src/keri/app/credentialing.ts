@@ -712,7 +712,7 @@ export class Ipex {
         const atc = ims.substring(args.anc.size);
 
         const embeds: Record<string, [Serder, string]> = {
-            acdc: [args.acdc, d(serializeACDCAttachment(args.acdc))],
+            acdc: [args.acdc, d(serializeACDCAttachment(args.iss))],
             iss: [args.iss, d(serializeIssExnAttachment(args.anc))],
             anc: [args.anc, atc],
         };
