@@ -1,4 +1,4 @@
-import { createHash } from 'blake3';
+import { blake3 } from '@noble/hashes/blake3';
 
 import { Matter, MatterArgs, MtrDex } from './matter';
 
@@ -25,8 +25,9 @@ export class Diger extends Matter {
             }
 
             if (code === MtrDex.Blake3_256) {
-                const hasher = createHash();
-                const dig = hasher.update(ser).digest('');
+                const dig = Buffer.from(
+                    blake3.create({ dkLen: 32 }).update(ser).digest()
+                );
                 super({ raw: dig, code: code });
             } else {
                 throw new Error(`Unsupported code = ${code} for digester.`);
@@ -74,8 +75,9 @@ export class Diger extends Matter {
     }
 
     blake3_256(ser: Uint8Array, dig: any) {
-        const hasher = createHash();
-        const digest = hasher.update(ser).digest('');
+        const digest = Buffer.from(
+            blake3.create({ dkLen: 32 }).update(ser).digest()
+        );
         return digest.toString() === dig.toString();
     }
 }

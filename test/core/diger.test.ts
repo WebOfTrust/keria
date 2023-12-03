@@ -1,7 +1,6 @@
 import { Matter } from '../../src/keri/core/matter';
-
-import { createHash } from 'blake3';
 import { strict as assert } from 'assert';
+import { blake3 } from '@noble/hashes/blake3';
 
 import { Diger } from '../../src/keri/core/diger';
 import { MtrDex } from '../../src/keri/core/matter';
@@ -14,8 +13,9 @@ describe('Diger', () => {
             'abcdefghijklmnopqrstuvwxyz0123456789',
             'binary'
         );
-        const hasher = createHash();
-        const digest = hasher.update(ser).digest('');
+        const digest = Buffer.from(
+            blake3.create({ dkLen: 32 }).update(ser).digest()
+        );
 
         let diger = new Diger({ raw: digest });
         assert.deepStrictEqual(diger.code, MtrDex.Blake3_256);
