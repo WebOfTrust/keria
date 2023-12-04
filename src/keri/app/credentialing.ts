@@ -15,7 +15,6 @@ import {
 import { Saider } from '../core/saider';
 import { Serder } from '../core/serder';
 import { Siger } from '../core/siger';
-import { TextDecoder } from 'util';
 import { TraitDex } from './habery';
 import {
     serializeACDCAttachment,
