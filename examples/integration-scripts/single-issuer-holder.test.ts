@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import signify, {
     SignifyClient,
     IssueCredentialArgs,
-    Operation,
+    Operation, Serder,
 } from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
 
@@ -118,6 +118,32 @@ async function issueCredential(
     return creds[0];
 }
 
+async function grantCredential(
+    client: SignifyClient,
+    issuerName: string,
+    recipient: string,
+    acdc: Serder, anc: Serder, iss: Serder
+) {
+    const dt = createTimestamp();
+
+    const [grant, gsigs, end] = await client.ipex().grant({
+        senderName: issuerName,
+        recipient: recipient,
+        datetime: dt,
+        acdc: acdc,
+        anc: anc,
+        iss: iss,
+    });
+
+    await client
+        .exchanges()
+        .sendFromEvents(issuerName, 'credential', grant, gsigs, end, [
+            recipient,
+        ]);
+
+    console.log('Grant message sent');
+}
+
 interface Notification {
     i: string;
     dt: string;
@@ -207,9 +233,11 @@ test(
         await signify.ready();
         const issuerClient = await connect(url, bootUrl);
         const holderClient = await connect(url, bootUrl);
+        const verifierClient = await connect(url, bootUrl);
 
         await issuerClient.state();
         await holderClient.state();
+        await verifierClient.state();
 
         const issuerWits = await Promise.all(
             witnessUrls.map(async (url, i) => {
@@ -233,6 +261,17 @@ test(
             })
         );
 
+        const verifierWits = await Promise.all(
+            witnessUrls.map(async (url, i) => {
+                const result = await resolveOobi(
+                    verifierClient,
+                    url + '/oobi',
+                    `witness-${i}`
+                );
+                return result.i;
+            })
+        );
+
         // Create two identifiers, one for each client
         const issuerPrefix = await createIdentifier(
             issuerClient,
@@ -244,10 +283,16 @@ test(
             'holder',
             holderWits
         );
+        const verifierPrefix = await createIdentifier(
+            verifierClient,
+            'verifier',
+            verifierWits
+        );
 
         // Exchange OOBIs
         const issuerOobi = await getAgentOobi(issuerClient, 'issuer');
         const holderOobi = await getAgentOobi(holderClient, 'holder');
+        const verifierOobi = await getAgentOobi(verifierClient, 'verifier');
         await resolveOobi(issuerClient, holderOobi, 'holder');
         await resolveOobi(
             issuerClient,
@@ -257,6 +302,13 @@ test(
         await resolveOobi(holderClient, issuerOobi, 'issuer');
         await resolveOobi(
             holderClient,
+            vleiServerUrl + '/oobi/' + SCHEMA_SAID,
+            'schema'
+        );
+        await resolveOobi(verifierClient, holderOobi, 'holder');
+        await resolveOobi(holderClient, verifierOobi, 'verifier');
+        await resolveOobi(
+            verifierClient,
             vleiServerUrl + '/oobi/' + SCHEMA_SAID,
             'schema'
         );
@@ -288,10 +340,13 @@ test(
 
         await holderClient.notifications().mark(grantNotification.i);
 
-        await wait(async () => {
+        const c = await wait(async () => {
             const creds = await holderClient.credentials().list();
             assert(creds.length >= 1);
+            return creds[0]
         });
+
+        const cred = await holderClient.credentials().get("holder", c['sad']['d'])
     },
     1000 * 60 * 5
 );
