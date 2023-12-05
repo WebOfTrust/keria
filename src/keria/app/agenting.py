@@ -865,7 +865,7 @@ class BootEnd:
             raise falcon.HTTPBadRequest(description="multisig groups not supported as agent controller")
 
         rep.status = falcon.HTTP_202
-        rep.data = json.dumps(asdict(ctrlHab.kever.state())).encode("utf-8")
+        rep.data = json.dumps(asdict(agent.agentHab.kever.state())).encode("utf-8")
 
 
 class KeyStateCollectionEnd:
