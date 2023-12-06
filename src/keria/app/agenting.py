@@ -528,7 +528,7 @@ class Granter(doing.DoDoer):
                     postman = forwarding.StreamPoster(hby=self.hby, hab=self.agentHab, recp=recp, topic="credential")
                     try:
                         credSaid = serder.ked['e']['acdc']['d']
-                        creder = self.rgy.creds.get(keys=(credSaid,))
+                        creder = self.rgy.reger.creds.get(keys=(credSaid,))
                         sendArtifacts(self.hby, self.rgy.reger, postman, creder, recp)
                         sources = self.rgy.reger.sources(self.hby.db, creder)
                         for source, atc in sources:
@@ -585,6 +585,7 @@ class Admitter(doing.Doer):
             for label in ("anc", "iss", "acdc"):
                 ked = embeds[label]
                 if label not in pathed or not pathed[label]:
+                    print(f"missing path label {label}")
                     continue
 
                 sadder = coring.Sadder(ked=ked)
@@ -865,7 +866,7 @@ class BootEnd:
             raise falcon.HTTPBadRequest(description="multisig groups not supported as agent controller")
 
         rep.status = falcon.HTTP_202
-        rep.data = json.dumps(asdict(ctrlHab.kever.state())).encode("utf-8")
+        rep.data = json.dumps(asdict(agent.agentHab.kever.state())).encode("utf-8")
 
 
 class KeyStateCollectionEnd:
