@@ -2,7 +2,8 @@ import assert from 'node:assert';
 import signify, {
     SignifyClient,
     IssueCredentialArgs,
-    Operation, Serder,
+    Operation,
+    Serder,
 } from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
 
@@ -122,7 +123,12 @@ async function grantCredential(
     client: SignifyClient,
     issuerName: string,
     recipient: string,
-    acdc: Serder, anc: Serder, iss: Serder
+    acdc: Serder,
+    acdcAttachment: string,
+    anc: Serder,
+    ancAttachment: string,
+    iss: Serder,
+    issAttachment: string
 ) {
     const dt = createTimestamp();
 
@@ -131,17 +137,14 @@ async function grantCredential(
         recipient: recipient,
         datetime: dt,
         acdc: acdc,
+        acdcAttachment: acdcAttachment,
         anc: anc,
+        ancAttachment: ancAttachment,
         iss: iss,
+        issAttachment: issAttachment,
     });
 
-    await client
-        .exchanges()
-        .sendFromEvents(issuerName, 'credential', grant, gsigs, end, [
-            recipient,
-        ]);
-
-    console.log('Grant message sent');
+    await client.ipex().submitGrant(issuerName, grant, gsigs, end, [recipient]);
 }
 
 interface Notification {
@@ -343,10 +346,56 @@ test(
         const c = await wait(async () => {
             const creds = await holderClient.credentials().list();
             assert(creds.length >= 1);
-            return creds[0]
+            return creds[0];
         });
 
-        const cred = await holderClient.credentials().get("holder", c['sad']['d'])
+        console.log('Loading full credential');
+        const cred = await holderClient
+            .credentials()
+            .get('holder', c['sad']['d']);
+
+        const acdc = new Serder(cred['sad']);
+        const iss = new Serder(cred['iss']);
+        const anc = new Serder(cred['anc']);
+
+        console.log(`Presenting credential to verifier: ${c['sad']['d']}`);
+        await grantCredential(
+            holderClient,
+            'holder',
+            verifierPrefix,
+            acdc,
+            cred['atc'],
+            anc,
+            cred['ancatc'],
+            iss,
+            cred['issatc']
+        );
+
+        const verifierGrantNotification = await waitForNotification(
+            verifierClient,
+            '/exn/ipex/grant'
+        );
+
+        console.log(
+            `Notifcation of grant received by verifier ${verifierGrantNotification.a.d}`
+        );
+        await admitCredential(
+            verifierClient,
+            'verifier',
+            verifierGrantNotification.a.d!,
+            holderPrefix
+        );
+
+        await verifierClient.notifications().mark(verifierGrantNotification.i);
+
+        console.log('Checking for credential');
+        const p = await wait(async () => {
+            const creds = await verifierClient.credentials().list();
+            assert(creds.length >= 1);
+            return creds[0];
+        });
+
+        console.log(`Credential ${p.sad.d} received by Verifier`);
     },
     1000 * 60 * 5
 );
