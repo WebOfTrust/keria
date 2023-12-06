@@ -1,7 +1,8 @@
 import { strict as assert } from 'assert';
 import signify from 'signify-ts';
-import {resolveEnvironment} from "./utils/resolve-env";
-const { url, bootUrl, vleiServerUrl, witnessIds, witnessUrls } = resolveEnvironment();
+import { resolveEnvironment } from './utils/resolve-env';
+const { url, bootUrl, vleiServerUrl, witnessIds, witnessUrls } =
+    resolveEnvironment();
 
 const boot_url = bootUrl;
 const WAN_WITNESS_AID = witnessIds[0];
@@ -12,8 +13,6 @@ const WITNESS_OOBIS = [
     `${witnessUrls[1]}/oobi/${WIL_WITNESS_AID}/controller?name=Wil&tag=witness`,
     `${witnessUrls[2]}/oobi/${WES_WITNESS_AID}/controller?name=Wes&tag=witness`,
 ];
-
-console.log(WITNESS_OOBIS)
 
 const KLI_WITNESS_DEMO_PREFIXES = [
     WAN_WITNESS_AID,
