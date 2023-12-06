@@ -295,8 +295,8 @@ export class Credentials {
             d: '',
             i: said,
             s: '1',
-            p: cred.status.d,
             ri: cred.sad.ri,
+            p: cred.status.d,
             dt: dt,
         };
 
@@ -710,7 +710,7 @@ export class Ipex {
         let atc = args.ancAttachment;
         if (atc === undefined) {
             const keeper = this.client.manager?.get(hab);
-            const sigs = keeper.sign(b(args.anc.raw));
+            const sigs = await keeper.sign(b(args.anc.raw));
             const sigers = sigs.map((sig: string) => new Siger({ qb64: sig }));
             const ims = d(messagize(args.anc, sigers));
             atc = ims.substring(args.anc.size);
