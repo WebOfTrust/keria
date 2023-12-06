@@ -151,7 +151,6 @@ class IpexGrantCollectionEnd:
 
         """
         agent = req.context.agent
-        # Get the hab
         hab = agent.hby.habByName(name)
         if hab is None:
             raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
@@ -167,7 +166,7 @@ class IpexGrantCollectionEnd:
 
         match route:
             case "/ipex/grant":
-                IpexGrantCollectionEnd.sendGrant(agent, hab, ked, sigs, rec)
+                IpexGrantCollectionEnd.sendGrant(agent, hab, ked, sigs, atc, rec)
             case "/multisig/exn":
                 IpexGrantCollectionEnd.sendMultisigExn(agent, hab, ked, sigs, atc, rec)
 
@@ -175,7 +174,7 @@ class IpexGrantCollectionEnd:
         rep.data = json.dumps(ked).encode("utf-8")
 
     @staticmethod
-    def sendGrant(agent, hab, ked, sigs, rec):
+    def sendGrant(agent, hab, ked, sigs, atc, rec):
         for recp in rec:  # Have to verify we already know all the recipients.
             if recp not in agent.hby.kevers:
                 raise falcon.HTTPBadRequest(description=f"attempt to send to unknown AID={recp}")
@@ -189,6 +188,7 @@ class IpexGrantCollectionEnd:
         seal = eventing.SealEvent(i=hab.pre, s=hex(kever.lastEst.s), d=kever.lastEst.d)
 
         ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
+        ims = ims + atc.encode("utf-8")
 
         # make a copy and parse
         agent.hby.psr.parseOne(ims=bytearray(ims))
@@ -197,7 +197,7 @@ class IpexGrantCollectionEnd:
         del ims[:serder.size]
 
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=rec, topic='credential'))
-        agent.grants.append(dict(said=ked['d'], pre=hab.pre))
+        agent.grants.append(dict(said=ked['d'], pre=hab.pre, rec=rec))
 
     @staticmethod
     def sendMultisigExn(agent, hab, ked, sigs, atc, rec):
@@ -210,13 +210,13 @@ class IpexGrantCollectionEnd:
         if grant['r'] != "/ipex/grant":
             raise falcon.HTTPBadRequest(description=f"invalid route for embedded ipex grant {ked['r']}")
 
-        # Have to add the atc to the end... this will be Pathed signatures for embeds
-        if 'exn' not in atc or not atc['exn']:
-            raise falcon.HTTPBadRequest(description=f"attachment missing for ACDC, unable to process request.")
-
         holder = grant['a']['i']
         serder = serdering.SerderKERI(sad=grant)
-        ims = bytearray(serder.raw) + atc['exn'].encode("utf-8")
+        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+        seal = eventing.SealEvent(i=hab.pre, s=hex(hab.kever.lastEst.s), d=hab.kever.lastEst.d)
+
+        ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
+        ims = ims + atc.encode("utf-8")
         agent.hby.psr.parseOne(ims=ims)
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=holder, topic="credential"))
         agent.grants.append(dict(said=grant['d'], pre=hab.pre))
@@ -231,7 +231,7 @@ class IpexGrantCollectionEnd:
 
         ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
 
-        ims.extend(atc['exn'].encode("utf-8"))  # add the pathed attachments
+        ims.extend(atc.encode("utf-8"))  # add the pathed attachments
 
         # make a copy and parse
         agent.hby.psr.parseOne(ims=bytearray(ims))
