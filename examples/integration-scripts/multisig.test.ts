@@ -6,14 +6,13 @@ import signify, {
 } from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
 
-const { url, bootUrl, witnessUrls, vleiServerUrl } = resolveEnvironment();
+const { url, bootUrl, vleiServerUrl } = resolveEnvironment();
 const WITNESS_AIDS = [
     'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
     'BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM',
     'BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX',
 ];
 
-const WITNESS_OOBIS = witnessUrls.map((url) => `${url}/oobi`);
 const SCHEMA_SAID = 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao';
 const SCHEMA_OOBI = `${vleiServerUrl}/oobi/${SCHEMA_SAID}`;
 
@@ -1144,7 +1143,6 @@ async function bootClient(): Promise<SignifyClient> {
         state.agent.i
     );
 
-    await resolveWitnesses(client);
     return client;
 }
 
@@ -1159,12 +1157,6 @@ async function createAID(client: SignifyClient, name: string, wits: string[]) {
     await client.identifiers().addEndRole(name, 'agent', client!.agent!.pre);
     console.log(name, 'AID:', aid.prefix);
     return aid;
-}
-
-async function resolveWitnesses(client: SignifyClient) {
-    await Promise.all(
-        WITNESS_OOBIS.map((oobi) => client.oobis().resolve(oobi))
-    );
 }
 
 async function multisigIssue(
