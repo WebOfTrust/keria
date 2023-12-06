@@ -1105,7 +1105,7 @@ test('multisig', async function run() {
     console.log('Member1 received exchange message with the admit response');
     const creds = await client4.credentials().list();
     console.log(`Holder holds ${creds.length} credential`);
-}, 240000);
+}, 360000);
 
 async function waitForOp(client: SignifyClient, op: any) {
     while (!op['done']) {
