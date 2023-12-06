@@ -1,12 +1,11 @@
 import { strict as assert } from 'assert';
 import signify from 'signify-ts';
+import { resolveEnvironment } from './utils/resolve-env';
+import { resolveOobi, waitOperation } from './utils/test-util';
 
-const url = 'http://127.0.0.1:3901';
-const boot_url = 'http://127.0.0.1:3903';
+const { url, bootUrl } = resolveEnvironment();
 
-await run();
-
-async function run() {
+test('delegation', async () => {
     await signify.ready();
     // Boot two clients
     const bran1 = signify.randomPasscode();
@@ -15,13 +14,13 @@ async function run() {
         url,
         bran1,
         signify.Tier.low,
-        boot_url
+        bootUrl
     );
     const client2 = new signify.SignifyClient(
         url,
         bran2,
         signify.Tier.low,
-        boot_url
+        bootUrl
     );
     await client1.boot();
     await client2.boot();
@@ -52,10 +51,7 @@ async function run() {
         ],
     });
     let op1 = await icpResult1.op();
-    while (!op1['done']) {
-        op1 = await client1.operations().get(op1.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
+    await waitOperation(client1, op1);
     const aid1 = await client1.identifiers().get('delegator');
     await client1
         .identifiers()
@@ -65,18 +61,14 @@ async function run() {
     // Client 2 resolves delegator OOBI
     console.log('Client 2 resolving delegator OOBI');
     const oobi1 = await client1.oobis().get('delegator', 'agent');
-    let op2 = await client2.oobis().resolve(oobi1.oobis[0], 'delegator');
-    while (!op2['done']) {
-        op2 = await client2.operations().get(op2.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
+    await resolveOobi(client2, oobi1.oobis[0], 'delegator');
     console.log('OOBI resolved');
 
     // Client 2 creates delegate AID
     const icpResult2 = await client2
         .identifiers()
         .create('delegate', { delpre: aid1.prefix });
-    op2 = await icpResult2.op();
+    let op2 = await icpResult2.op();
     const delegatePrefix = op2.name.split('.')[1];
     console.log("Delegate's prefix:", delegatePrefix);
     console.log('Delegate waiting for approval...');
@@ -91,11 +83,8 @@ async function run() {
     console.log('Delegator approved delegation');
 
     // Client 2 check approval
-    while (!op2['done']) {
-        op2 = await client2.operations().get(op2.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
+    await waitOperation(client2, op2);
     const aid2 = await client2.identifiers().get('delegate');
     assert.equal(aid2.prefix, delegatePrefix);
     console.log('Delegation approved for aid:', aid2.prefix);
-}
+}, 60000);

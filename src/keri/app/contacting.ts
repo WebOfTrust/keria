@@ -1,4 +1,5 @@
 import { SignifyClient } from './clienting';
+import { Operation } from './coring';
 
 /**
  * Contacts
@@ -157,13 +158,13 @@ export class Challenges {
      * @param {string} name Name or alias of the identifier
      * @param {string} source Prefix of the identifier that was challenged
      * @param {Array<string>} words List of challenge words to check for
-     * @returns {Promise<Response>} A promise to the result
+     * @returns A promise to the long running operation
      */
     async verify(
         name: string,
         source: string,
         words: string[]
-    ): Promise<Response> {
+    ): Promise<Operation<unknown>> {
         const path = `/challenges/${name}/verify/${source}`;
         const method = 'POST';
         const data = {
