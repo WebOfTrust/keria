@@ -40,7 +40,7 @@ describe('singlesig-rot', () => {
 
         // local and remote keystate sequence match
         expect(keystate1[0].s).toEqual(keystate2[0].s);
-    });
+    }, 30000);
     test('rot1', async () => {
         // local keystate before rot
         const keystate0: KeyState = (
@@ -86,5 +86,5 @@ describe('singlesig-rot', () => {
         expect(keystate3.s).toEqual(keystate1.s);
         expect(keystate3.k[0]).toEqual(keystate1.k[0]);
         expect(keystate3.n[0]).toEqual(keystate1.n[0]);
-    });
+    }, 30000);
 });
