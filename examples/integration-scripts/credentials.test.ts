@@ -1,16 +1,17 @@
 import { strict as assert } from 'assert';
 import signify from 'signify-ts';
+import { resolveEnvironment } from './utils/resolve-env';
+const { url, bootUrl, vleiServerUrl, witnessIds, witnessUrls } =
+    resolveEnvironment();
 
-const url = 'http://127.0.0.1:3901';
-const boot_url = 'http://127.0.0.1:3903';
-const WAN_WITNESS_AID = 'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha';
-const WIL_WITNESS_AID = 'BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM';
-const WES_WITNESS_AID = 'BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX';
-const WITNESS_HOST = 'witness-demo';
+const boot_url = bootUrl;
+const WAN_WITNESS_AID = witnessIds[0];
+const WIL_WITNESS_AID = witnessIds[1];
+const WES_WITNESS_AID = witnessIds[2];
 const WITNESS_OOBIS = [
-    `http://${WITNESS_HOST}:5642/oobi/${WAN_WITNESS_AID}/controller?name=Wan&tag=witness`,
-    `http://${WITNESS_HOST}:5643/oobi/${WIL_WITNESS_AID}/controller?name=Wil&tag=witness`,
-    `http://${WITNESS_HOST}:5644/oobi/${WES_WITNESS_AID}/controller?name=Wes&tag=witness`,
+    `${witnessUrls[0]}/oobi/${WAN_WITNESS_AID}/controller?name=Wan&tag=witness`,
+    `${witnessUrls[1]}/oobi/${WIL_WITNESS_AID}/controller?name=Wil&tag=witness`,
+    `${witnessUrls[2]}/oobi/${WES_WITNESS_AID}/controller?name=Wes&tag=witness`,
 ];
 
 const KLI_WITNESS_DEMO_PREFIXES = [
@@ -21,7 +22,7 @@ const KLI_WITNESS_DEMO_PREFIXES = [
 
 // Credential Schema discovery through credential schema OOBI resolution
 const qviSchemaSAID = 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao';
-const vLEIServerHostUrl = 'http://vlei-server:7723/oobi';
+const vLEIServerHostUrl = `${vleiServerUrl}/oobi`;
 const schemaOobiUrl = `${vLEIServerHostUrl}/${qviSchemaSAID}`;
 
 // Boots an agent and connects to it, returning the connected SignifyClient
@@ -82,11 +83,6 @@ test('credentials', async () => {
     const issuerClient = await bootAndConnect(signify.randomPasscode());
     const holderClient = await bootAndConnect(signify.randomPasscode());
     const verifierClient = await bootAndConnect(signify.randomPasscode());
-    await Promise.all([
-        resolveWitnesses(issuerClient),
-        resolveWitnesses(holderClient),
-        resolveWitnesses(verifierClient),
-    ]);
 
     const state1 = await issuerClient.state();
     const state2 = await holderClient.state();

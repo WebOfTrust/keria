@@ -29,16 +29,16 @@ describe('test-setup-single-client', () => {
         switch (env.preset) {
             case 'local':
                 expect(name1_oobi).toEqual(
-                    `http://localhost:3902/oobi/${name1_id}/agent/EC60ue9GOpQGrLBlS9T0dO6JkBTbv3V05Y4O730QBBoc`
+                    `http://127.0.0.1:3902/oobi/${name1_id}/agent/EC60ue9GOpQGrLBlS9T0dO6JkBTbv3V05Y4O730QBBoc`
                 );
                 expect(oobi.oobis[0]).toEqual(
-                    `http://localhost:5642/oobi/${name1_id}/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha`
+                    `http://127.0.0.1:5642/oobi/${name1_id}/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha`
                 );
                 expect(oobi.oobis[1]).toEqual(
-                    `http://localhost:5643/oobi/${name1_id}/witness/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM`
+                    `http://127.0.0.1:5643/oobi/${name1_id}/witness/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM`
                 );
                 expect(oobi.oobis[2]).toEqual(
-                    `http://localhost:5644/oobi/${name1_id}/witness/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX`
+                    `http://127.0.0.1:5644/oobi/${name1_id}/witness/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX`
                 );
                 break;
             case 'docker':

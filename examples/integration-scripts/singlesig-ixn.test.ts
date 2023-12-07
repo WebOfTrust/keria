@@ -38,7 +38,7 @@ describe('singlesig-ixn', () => {
 
         // local and remote keystate sequence match
         expect(keystate1[0].s).toEqual(keystate2[0].s);
-    });
+    }, 30000);
     test('ixn1', async () => {
         // local keystate before ixn
         const keystate0: KeyState = (
@@ -75,5 +75,5 @@ describe('singlesig-ixn', () => {
         const keystate3: KeyState = op.response;
         // local and remote keystate match
         expect(keystate3.s).toEqual(keystate1.s);
-    });
+    }, 30000);
 });

@@ -112,8 +112,11 @@ export interface IpexGrantArgs {
     agree?: string;
     datetime?: string;
     acdc: Serder;
+    acdcAttachment?: string;
     iss: Serder;
+    issAttachment?: string;
     anc: Serder;
+    ancAttachment?: string;
 }
 
 /**
@@ -292,8 +295,8 @@ export class Credentials {
             d: '',
             i: said,
             s: '1',
-            p: cred.status.d,
             ri: cred.sad.ri,
+            p: cred.status.d,
             dt: dt,
         };
 
@@ -704,15 +707,27 @@ export class Ipex {
             i: args.recipient,
         };
 
-        const keeper = this.client.manager?.get(hab);
-        const sigs = await keeper.sign(b(args.anc.raw));
-        const sigers = sigs.map((sig: string) => new Siger({ qb64: sig }));
-        const ims = d(messagize(args.anc, sigers));
-        const atc = ims.substring(args.anc.size);
+        let atc = args.ancAttachment;
+        if (atc === undefined) {
+            const keeper = this.client.manager?.get(hab);
+            const sigs = await keeper.sign(b(args.anc.raw));
+            const sigers = sigs.map((sig: string) => new Siger({ qb64: sig }));
+            const ims = d(messagize(args.anc, sigers));
+            atc = ims.substring(args.anc.size);
+        }
+
+        const acdcAtc =
+            args.acdcAttachment === undefined
+                ? d(serializeACDCAttachment(args.iss))
+                : args.acdcAttachment;
+        const issAtc =
+            args.issAttachment === undefined
+                ? d(serializeIssExnAttachment(args.anc))
+                : args.issAttachment;
 
         const embeds: Record<string, [Serder, string]> = {
-            acdc: [args.acdc, d(serializeACDCAttachment(args.iss))],
-            iss: [args.iss, d(serializeIssExnAttachment(args.anc))],
+            acdc: [args.acdc, acdcAtc],
+            iss: [args.iss, issAtc],
             anc: [args.anc, atc],
         };
 
@@ -727,6 +742,29 @@ export class Ipex {
                 args.datetime,
                 args.agree
             );
+    }
+
+    async submitGrant(
+        name: string,
+        exn: Serder,
+        sigs: string[],
+        atc: string,
+        recp: string[]
+    ): Promise<any> {
+        const body = {
+            exn: exn.ked,
+            sigs: sigs,
+            atc: atc,
+            rec: recp,
+        };
+
+        const response = await this.client.fetch(
+            `/identifiers/${name}/ipex/grant`,
+            'POST',
+            body
+        );
+
+        return response.json();
     }
 
     /**

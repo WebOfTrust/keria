@@ -66,6 +66,10 @@ jobs:
       - name: Build
         run: npm run build
       - name: Start dependencies
-        run: docker compose up deps
+        run: docker compose up deps --pull always
       - name: Run integration test
         run: npm run test:integration
+      - name: Print logs
+        run: docker compose logs
+        if: always()
+
