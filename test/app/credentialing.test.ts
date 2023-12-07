@@ -7,12 +7,15 @@ import libsodium from 'libsodium-wrappers-sumo';
 import fetchMock from 'jest-fetch-mock';
 import 'whatwg-fetch';
 import {
-    b, d,
+    b,
+    d,
     Ident,
     Ilks,
     interact,
     Saider,
-    Serder, serializeACDCAttachment, serializeIssExnAttachment,
+    Serder,
+    serializeACDCAttachment,
+    serializeIssExnAttachment,
     Serials,
     versify,
 } from '../../src';
@@ -435,17 +438,21 @@ describe('Ipex', () => {
             iss: iserder,
             issAttachment: d(serializeIssExnAttachment(anc)),
             anc,
-            ancAttachment: "-AABAADMtDfNihvCSXJNp1VronVojcPGo--0YZ4Kh6CAnowRnn4Or4FgZQqaqCEv6XVS413qfZoVp8j2uxTTPkItO7ED",
+            ancAttachment:
+                '-AABAADMtDfNihvCSXJNp1VronVojcPGo--0YZ4Kh6CAnowRnn4Or4FgZQqaqCEv6XVS413qfZoVp8j2uxTTPkItO7ED',
             datetime: mockCredential.sad.a.dt,
         });
 
-        assert.deepStrictEqual(ng.ked, grant.ked)
-        assert.deepStrictEqual(ngsigs, gsigs)
-        assert.deepStrictEqual(ngend, ngend)
+        assert.deepStrictEqual(ng.ked, grant.ked);
+        assert.deepStrictEqual(ngsigs, gsigs);
+        assert.deepStrictEqual(ngend, ngend);
 
-        await ipex.submitGrant("multisig", ng, ngsigs, ngend, [holder])
+        await ipex.submitGrant('multisig', ng, ngsigs, ngend, [holder]);
         let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
-        assert.equal(lastCall[0], 'http://127.0.0.1:3901/identifiers/multisig/ipex/grant')
+        assert.equal(
+            lastCall[0],
+            'http://127.0.0.1:3901/identifiers/multisig/ipex/grant'
+        );
 
         const [admit, asigs, aend] = await ipex.admit(
             'holder',
@@ -471,10 +478,12 @@ describe('Ipex', () => {
             'AAD6NAWzEr_KonMJhKL32JLTVZ2_xwVNMqlr-ovAwoIQS5IEWZ8POd4rbWO49-8NqK8GedjUyii3y9o1b0QkYzQJ',
         ]);
 
-        await ipex.submitAdmit("multisig", admit, asigs, aend, [holder])
+        await ipex.submitAdmit('multisig', admit, asigs, aend, [holder]);
         lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
-        assert.equal(lastCall[0], 'http://127.0.0.1:3901/identifiers/multisig/ipex/admit')
-
+        assert.equal(
+            lastCall[0],
+            'http://127.0.0.1:3901/identifiers/multisig/ipex/admit'
+        );
 
         assert.equal(aend, '');
     });
