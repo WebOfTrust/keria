@@ -21,7 +21,7 @@
     "build:types": "tsc -p tsconfig.build.json",
     "build": "npm run build:cjs && npm run build:esm && npm run build:types",
     "test": "jest test/",
-    "test:integration": "jest examples/integration-scripts/ --runInBand",
+    "test:integration": "jest examples/integration-scripts/ --runInBand --bail",
     "lint": "npx eslint src test examples/integration-scripts examples/scripts",
     "prepare": "npm run build",
     "generate-docs": "node_modules/.bin/jsdoc --configure .jsdoc.json --verbose",
