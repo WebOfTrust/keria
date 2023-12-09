@@ -32,7 +32,6 @@
   "author": "Phil Feairheller",
   "devDependencies": {
     "@mermaid-js/mermaid-cli": "^10.3.0",
-    "@size-limit/preset-small-lib": "^5.0.4",
     "@types/jest": "^29.5.8",
     "@types/libsodium-wrappers-sumo": "^0.7.5",
     "@types/node": "^18.11.18",
@@ -47,11 +46,9 @@
     "jsdoc": "^4.0.2",
     "minami": "^1.2.3",
     "prettier": "^3.0.3",
-    "size-limit": "^5.0.4",
     "ts-jest": "^29.1.1",
     "ts-mockito": "^2.6.1",
     "ts-node": "^10.9.1",
-    "tslib": "^2.3.1",
     "typedoc": "^0.25.3",
     "typescript": "^5.2.2",
     "whatwg-fetch": "^3.6.19"
