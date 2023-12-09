@@ -2,13 +2,14 @@ import assert from 'node:assert';
 import signify, {
     SignifyClient,
     IssueCredentialArgs,
-    Operation,
     Serder,
 } from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
+import { waitForNotifications, waitOperation } from './utils/test-util';
+import { retry } from './utils/retry';
 
 const SCHEMA_SAID = 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao';
-const { bootUrl, url, vleiServerUrl, witnessUrls } = resolveEnvironment();
+const { bootUrl, url, vleiServerUrl, witnessIds } = resolveEnvironment();
 
 function createTimestamp() {
     const dt = new Date().toISOString().replace('Z', '000+00:00');
@@ -39,7 +40,7 @@ async function createIdentifier(
         wits: witnesses,
     });
     const op = await icpResult1.op();
-    await waitOperation(client, op, 5000);
+    await waitOperation(client, op);
     const aid = await client.identifiers().get(name);
 
     if (!client.agent) {
@@ -62,7 +63,7 @@ async function getAgentOobi(
 async function resolveOobi(client: SignifyClient, oobi: string, alias: string) {
     console.log(`Resolve ${alias} -> ${oobi}`);
     const op = await client.oobis().resolve(oobi, alias);
-    const result = await waitOperation<{ i: string }>(client, op, 5000);
+    const result = await waitOperation<{ i: string }>(client, op);
     return result.response;
 }
 
@@ -73,7 +74,7 @@ async function createRegistry(
 ) {
     const result = await client.registries().create({ name, registryName });
     const op = await result.op();
-    await waitOperation(client, op, 5000);
+    await waitOperation(client, op);
 
     const registries = await client.registries().list(name);
     assert.equal(registries.length, 1);
@@ -88,7 +89,7 @@ async function issueCredential(
 ) {
     const result = await client.credentials().issue(args);
 
-    await waitOperation(client, result.op, 5000);
+    await waitOperation(client, result.op);
 
     const creds = await client.credentials().list();
     assert.equal(creds.length, 1);
@@ -147,30 +148,6 @@ async function grantCredential(
     await client.ipex().submitGrant(issuerName, grant, gsigs, end, [recipient]);
 }
 
-interface Notification {
-    i: string;
-    dt: string;
-    r: boolean;
-    a: { r: string; d?: string; m?: string };
-}
-
-async function waitForNotification(
-    client: SignifyClient,
-    route: string
-): Promise<Notification> {
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-        const notifications = await client.notifications().list();
-        for (const notif of notifications.notes) {
-            if (notif.a.r == route) {
-                return notif;
-            }
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-}
-
 async function admitCredential(
     client: SignifyClient,
     name: string,
@@ -182,52 +159,6 @@ async function admitCredential(
     const [admit, sigs, end] = await client.ipex().admit(name, '', said, dt);
 
     await client.ipex().submitAdmit(name, admit, sigs, end, [recipient]);
-}
-
-async function wait<T>(fn: () => Promise<T>, timeout: number = 10000) {
-    const start = Date.now();
-    const errors: Error[] = [];
-    while (Date.now() - start < timeout) {
-        try {
-            const result = await fn();
-            return result;
-        } catch (error) {
-            errors.push(error as Error);
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-        }
-    }
-
-    throw new RetryError(`Retry failed after ${Date.now() - start} ms`, errors);
-}
-
-async function waitOperation<T>(
-    client: SignifyClient,
-    op: Operation<T>,
-    timeout: number = 30000
-): Promise<Operation<T>> {
-    const start = Date.now();
-    while (Date.now() - start < timeout) {
-        const current = (await client
-            .operations()
-            .get(op.name)) as Operation<T>;
-
-        if (current.done) {
-            return current;
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-
-    throw new Error(`Operation timed out after ${Date.now() - start}ms`);
-}
-
-class RetryError extends Error {
-    constructor(
-        message: string,
-        public errors: Error[]
-    ) {
-        super(message);
-    }
 }
 
 test(
@@ -242,54 +173,21 @@ test(
         await holderClient.state();
         await verifierClient.state();
 
-        const issuerWits = await Promise.all(
-            witnessUrls.map(async (url, i) => {
-                const result = await resolveOobi(
-                    issuerClient,
-                    url + '/oobi',
-                    `witness-${i}`
-                );
-                return result.i;
-            })
-        );
-
-        const holderWits = await Promise.all(
-            witnessUrls.map(async (url, i) => {
-                const result = await resolveOobi(
-                    holderClient,
-                    url + '/oobi',
-                    `witness-${i}`
-                );
-                return result.i;
-            })
-        );
-
-        const verifierWits = await Promise.all(
-            witnessUrls.map(async (url, i) => {
-                const result = await resolveOobi(
-                    verifierClient,
-                    url + '/oobi',
-                    `witness-${i}`
-                );
-                return result.i;
-            })
-        );
-
         // Create two identifiers, one for each client
         const issuerPrefix = await createIdentifier(
             issuerClient,
             'issuer',
-            issuerWits
+            witnessIds
         );
         const holderPrefix = await createIdentifier(
             holderClient,
             'holder',
-            holderWits
+            witnessIds
         );
         const verifierPrefix = await createIdentifier(
             verifierClient,
             'verifier',
-            verifierWits
+            witnessIds
         );
 
         // Exchange OOBIs
@@ -329,7 +227,7 @@ test(
             },
         });
 
-        const grantNotification = await waitForNotification(
+        const grantNotifications = await waitForNotifications(
             holderClient,
             '/exn/ipex/grant'
         );
@@ -337,13 +235,13 @@ test(
         await admitCredential(
             holderClient,
             'holder',
-            grantNotification.a.d!,
+            grantNotifications[0].a.d!,
             issuerPrefix
         );
 
-        await holderClient.notifications().mark(grantNotification.i);
+        await holderClient.notifications().mark(grantNotifications[0].i);
 
-        const c = await wait(async () => {
+        const c = await retry(async () => {
             const creds = await holderClient.credentials().list();
             assert(creds.length >= 1);
             return creds[0];
@@ -371,25 +269,27 @@ test(
             cred['issatc']
         );
 
-        const verifierGrantNotification = await waitForNotification(
+        const verifierGrantNotifications = await waitForNotifications(
             verifierClient,
             '/exn/ipex/grant'
         );
 
         console.log(
-            `Notifcation of grant received by verifier ${verifierGrantNotification.a.d}`
+            `Notifcation of grant received by verifier ${verifierGrantNotifications[0].a.d}`
         );
         await admitCredential(
             verifierClient,
             'verifier',
-            verifierGrantNotification.a.d!,
+            verifierGrantNotifications[0].a.d!,
             holderPrefix
         );
 
-        await verifierClient.notifications().mark(verifierGrantNotification.i);
+        await verifierClient
+            .notifications()
+            .mark(verifierGrantNotifications[0].i);
 
         console.log('Checking for credential');
-        const p = await wait(async () => {
+        const p = await retry(async () => {
             const creds = await verifierClient.credentials().list();
             assert(creds.length >= 1);
             return creds[0];

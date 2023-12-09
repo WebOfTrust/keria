@@ -1,4 +1,5 @@
 import { Operation, SignifyClient } from 'signify-ts';
+import { RetryOptions, retry } from './retry';
 
 export function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => {
@@ -9,18 +10,20 @@ export function sleep(ms: number): Promise<void> {
 /**
  * Poll for operation to become completed
  */
-export async function waitOperation<T>(
+export async function waitOperation<T = any>(
     client: SignifyClient,
     op: Operation<T>,
-    retries: number = 10
+    options: RetryOptions = {}
 ): Promise<Operation<T>> {
-    const WAIT = 500; // 0.5 seconds
-    while (retries-- > 0) {
+    return retry(async () => {
         op = await client.operations().get(op.name);
-        if (op.done === true) return op;
-        await sleep(WAIT);
-    }
-    throw new Error(`Timeout: operation ${op.name}`);
+
+        if (op.done !== true) {
+            throw new Error(`Operation ${op.name} not done`);
+        }
+
+        return op;
+    }, options);
 }
 
 export async function resolveOobi(
@@ -32,36 +35,31 @@ export async function resolveOobi(
     await waitOperation(client, op);
 }
 
-export interface WaitOptions {
-    timeout?: number;
+export interface Notification {
+    i: string;
+    dt: string;
+    r: boolean;
+    a: { r: string; d?: string; m?: string };
 }
 
-/**
- * Retry fn until timeout, throws the last caught excetion after timeout passed
- */
-export async function wait<T>(
-    fn: () => Promise<T>,
-    options: WaitOptions = {}
-): Promise<T> {
-    const start = Date.now();
-    const timeout = options.timeout ?? 10000;
-    let error: Error | null = null;
+export async function waitForNotifications(
+    client: SignifyClient,
+    route: string,
+    options: RetryOptions = {}
+): Promise<Notification[]> {
+    return retry(async () => {
+        const response: { notes: Notification[] } = await client
+            .notifications()
+            .list();
 
-    while (Date.now() - start < timeout) {
-        try {
-            const result = await fn();
-            return result;
-        } catch (err) {
-            error = err as Error;
-            if (Date.now() - start < timeout) {
-                await new Promise((resolve) => setTimeout(resolve, 1000));
-            }
+        const notes = response.notes.filter(
+            (note) => note.a.r === route && note.r === false
+        );
+
+        if (!notes.length) {
+            throw new Error(`No notifications with route ${route}`);
         }
-    }
 
-    if (error) {
-        throw error;
-    } else {
-        throw new Error(`Timeout after ${Date.now() - start}ms`);
-    }
+        return notes;
+    }, options);
 }

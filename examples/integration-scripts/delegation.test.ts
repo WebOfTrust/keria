@@ -50,8 +50,7 @@ test('delegation', async () => {
             'BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX',
         ],
     });
-    let op1 = await icpResult1.op();
-    await waitOperation(client1, op1);
+    await waitOperation(client1, await icpResult1.op());
     const aid1 = await client1.identifiers().get('delegator');
     await client1
         .identifiers()
@@ -68,7 +67,7 @@ test('delegation', async () => {
     const icpResult2 = await client2
         .identifiers()
         .create('delegate', { delpre: aid1.prefix });
-    let op2 = await icpResult2.op();
+    const op2 = await icpResult2.op();
     const delegatePrefix = op2.name.split('.')[1];
     console.log("Delegate's prefix:", delegatePrefix);
     console.log('Delegate waiting for approval...');
@@ -79,7 +78,7 @@ test('delegation', async () => {
         s: 0,
         d: delegatePrefix,
     };
-    op1 = await client1.identifiers().interact('delegator', anchor);
+    await client1.identifiers().interact('delegator', anchor);
     console.log('Delegator approved delegation');
 
     // Client 2 check approval

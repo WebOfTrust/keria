@@ -1,6 +1,10 @@
 import { strict as assert } from 'assert';
 import signify from 'signify-ts';
-import { resolveOobi, waitOperation } from './utils/test-util';
+import {
+    resolveOobi,
+    waitForNotifications,
+    waitOperation,
+} from './utils/test-util';
 import { resolveEnvironment } from './utils/resolve-env';
 
 const { url, bootUrl, vleiServerUrl } = resolveEnvironment();
@@ -191,18 +195,8 @@ test.skip('request-present', async () => {
     await client3.credentials().request('verifier', aid2.prefix, schemaSAID);
 
     // Recipient checks for a presentation request notification
-    let requestReceived = false;
-    while (!requestReceived) {
-        const notifications = await client2.notifications().list();
-        for (const notif of notifications) {
-            if (notif.a.r == '/presentation/request') {
-                assert.equal(notif.a.schema.n, schemaSAID);
-                requestReceived = true;
-                await client2.notifications().mark(notif.i);
-            }
-        }
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
+    const notes2 = await waitForNotifications(client2, '/presentation/request');
+    await Promise.all(notes2.map((n) => client2.notifications().mark(n.i)));
 
     // Recipient present credential to verifier
     await client1
@@ -210,18 +204,8 @@ test.skip('request-present', async () => {
         .present('issuer', creds1[0].sad.d, 'verifier', true);
 
     // Verifier checks for a presentation notification
-    requestReceived = false;
-    while (!requestReceived) {
-        const notifications = await client3.notifications().list();
-        for (const notif of notifications) {
-            if (notif.a.r == '/presentation') {
-                assert.equal(notif.a.schema.n, schemaSAID);
-                requestReceived = true;
-                await client3.notifications().mark(notif.i);
-            }
-        }
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
+    const notes3 = await waitForNotifications(client3, '/presentation');
+    await Promise.all(notes3.map((n) => client3.notifications().mark(n.i)));
 
     const creds3 = await client3
         .credentials()

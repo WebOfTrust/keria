@@ -1,7 +1,12 @@
 import assert from 'node:assert';
 import signify, { SignifyClient, Saider } from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
-import { resolveOobi, wait, waitOperation } from './utils/test-util';
+import {
+    resolveOobi,
+    waitForNotifications,
+    waitOperation,
+} from './utils/test-util';
+import { retry } from './utils/retry';
 
 const { bootUrl, url, vleiServerUrl } = resolveEnvironment();
 
@@ -40,8 +45,7 @@ async function createIdentifier(
         toad: witnesses.length,
         wits: witnesses,
     });
-    const op = await icpResult1.op();
-    await waitOperation(client, op, 15000);
+    await waitOperation(client, await icpResult1.op());
     const aid = await client.identifiers().get(name);
 
     if (!client.agent) {
@@ -67,8 +71,7 @@ async function createRegistry(
     registryName: string
 ) {
     const result = await client.registries().create({ name, registryName });
-    const op = await result.op();
-    await waitOperation(client, op, 5000);
+    await waitOperation(client, await result.op());
 
     const registries = await client.registries().list(name);
     assert.equal(registries.length, 1);
@@ -99,7 +102,7 @@ async function issueCredential(
         source: args.source && Saider.saidify({ d: '', ...args.source })[1],
     });
 
-    await waitOperation(client, result.op, 10000);
+    await waitOperation(client, result.op);
 
     const creds = await client.credentials().list();
     const dt = createTimestamp();
@@ -115,29 +118,6 @@ async function issueCredential(
 
     await client.ipex().submitGrant(name, grant, gsigs, end, [args.recipient]);
     return creds[0];
-}
-
-interface Notification {
-    i: string;
-    dt: string;
-    r: boolean;
-    a: { r: string; d?: string; m?: string };
-}
-
-async function waitForNotification(
-    client: SignifyClient,
-    route: string
-): Promise<Notification> {
-    return wait(async () => {
-        const notifications = await client.notifications().list();
-        for (const notif of notifications.notes) {
-            if (notif.a.r == route) {
-                return notif;
-            }
-        }
-
-        throw new Error('No notification');
-    });
 }
 
 async function admitCredential(
@@ -194,8 +174,8 @@ test('single issuer chained credentials', async () => {
         },
     });
 
-    await waitOperation(issuerClient, result.op, 5);
-    const sourceCredential = await wait(async () => {
+    await waitOperation(issuerClient, result.op);
+    const sourceCredential = await retry(async () => {
         const result = await issuerClient.credentials().list();
         assert(result.length >= 1);
         return result[0];
@@ -225,7 +205,7 @@ test('single issuer chained credentials', async () => {
         },
     });
 
-    const grantNotification = await waitForNotification(
+    const grantNotifications = await waitForNotifications(
         holderClient,
         '/exn/ipex/grant'
     );
@@ -233,25 +213,22 @@ test('single issuer chained credentials', async () => {
     await admitCredential(
         holderClient,
         'holder',
-        grantNotification.a.d!,
+        grantNotifications[0].a.d!,
         issuerPrefix
     );
 
-    await holderClient.notifications().mark(grantNotification.i);
+    await holderClient.notifications().mark(grantNotifications[0].i);
 
-    const holderCredential = await wait(
-        async () => {
-            const creds = await holderClient.credentials().list();
-            const lei = creds.find(
-                (cred: { schema: { $id: string } }) =>
-                    cred.schema.$id === LE_SCHEMA_SAID
-            );
+    const holderCredential = await retry(async () => {
+        const creds = await holderClient.credentials().list();
+        const lei = creds.find(
+            (cred: { schema: { $id: string } }) =>
+                cred.schema.$id === LE_SCHEMA_SAID
+        );
 
-            expect(lei).toBeDefined();
-            return lei;
-        },
-        { timeout: 10000 }
-    );
+        expect(lei).toBeDefined();
+        return lei;
+    });
 
     expect(holderCredential).toMatchObject({
         sad: { a: { LEI: '5493001KJTIIGC8Y1R17' } },

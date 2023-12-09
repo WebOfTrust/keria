@@ -2,6 +2,7 @@
 import { strict as assert } from 'assert';
 import signify from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
+import { resolveOobi, waitOperation } from './utils/test-util';
 
 const WITNESS_AID = 'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha';
 const { url, bootUrl, witnessUrls } = resolveEnvironment();
@@ -27,13 +28,7 @@ test('test witness', async () => {
     );
 
     // Client 1 resolves witness OOBI
-    let op1 = await client1
-        .oobis()
-        .resolve(witnessUrls[0] + `/oobi/${WITNESS_AID}`, 'wit');
-    while (!op1['done']) {
-        op1 = await client1.operations().get(op1.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
+    await resolveOobi(client1, witnessUrls[0] + `/oobi/${WITNESS_AID}`, 'wit');
     console.log('Witness OOBI resolved');
 
     // Client 1 creates AID with 1 witness
@@ -41,22 +36,14 @@ test('test witness', async () => {
         toad: 1,
         wits: [WITNESS_AID],
     });
-    op1 = await icpResult1.op();
-    while (!op1['done']) {
-        op1 = await client1.operations().get(op1.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
+    await waitOperation(client1, await icpResult1.op());
     let aid1 = await client1.identifiers().get('aid1');
     console.log('AID:', aid1.prefix);
     assert.equal(aid1.state.b.length, 1);
     assert.equal(aid1.state.b[0], WITNESS_AID);
 
     icpResult1 = await client1.identifiers().rotate('aid1');
-    op1 = await icpResult1.op();
-    while (!op1['done']) {
-        op1 = await client1.operations().get(op1.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
+    await waitOperation(client1, await icpResult1.op());
     aid1 = await client1.identifiers().get('aid1');
     assert.equal(aid1.state.b.length, 1);
     assert.equal(aid1.state.b[0], WITNESS_AID);
@@ -65,12 +52,7 @@ test('test witness', async () => {
     icpResult1 = await client1
         .identifiers()
         .rotate('aid1', { cuts: [WITNESS_AID] });
-
-    op1 = await icpResult1.op();
-    while (!op1['done']) {
-        op1 = await client1.operations().get(op1.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
+    await waitOperation(client1, await icpResult1.op());
     aid1 = await client1.identifiers().get('aid1');
     assert.equal(aid1.state.b.length, 0);
 
@@ -80,11 +62,7 @@ test('test witness', async () => {
         .identifiers()
         .rotate('aid1', { adds: [WITNESS_AID] });
 
-    op1 = await icpResult1.op();
-    while (!op1['done']) {
-        op1 = await client1.operations().get(op1.name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
+    await waitOperation(client1, await icpResult1.op());
     aid1 = await client1.identifiers().get('aid1');
     assert.equal(aid1.state.b.length, 1);
     assert.equal(aid1.state.b.length, 1);

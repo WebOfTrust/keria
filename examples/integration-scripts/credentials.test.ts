@@ -1,18 +1,18 @@
 import { strict as assert } from 'assert';
 import signify from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
-const { url, bootUrl, vleiServerUrl, witnessIds, witnessUrls } =
-    resolveEnvironment();
+import {
+    resolveOobi,
+    waitForNotifications,
+    waitOperation,
+} from './utils/test-util';
+import { retry } from './utils/retry';
+const { url, bootUrl, vleiServerUrl, witnessIds } = resolveEnvironment();
 
 const boot_url = bootUrl;
 const WAN_WITNESS_AID = witnessIds[0];
 const WIL_WITNESS_AID = witnessIds[1];
 const WES_WITNESS_AID = witnessIds[2];
-const WITNESS_OOBIS = [
-    `${witnessUrls[0]}/oobi/${WAN_WITNESS_AID}/controller?name=Wan&tag=witness`,
-    `${witnessUrls[1]}/oobi/${WIL_WITNESS_AID}/controller?name=Wil&tag=witness`,
-    `${witnessUrls[2]}/oobi/${WES_WITNESS_AID}/controller?name=Wes&tag=witness`,
-];
 
 const KLI_WITNESS_DEMO_PREFIXES = [
     WAN_WITNESS_AID,
@@ -41,40 +41,6 @@ async function bootAndConnect(
 // utility function for making a correctly formatted timestamp
 function createTimestamp() {
     return new Date().toISOString().replace('Z', '000+00:00');
-}
-
-// typed interface for Notification
-interface Notification {
-    i: string;
-    dt: string;
-    r: boolean;
-    a: { r: string; d?: string; m?: string };
-}
-
-// checks for notifications on a route and returns them as an array
-async function waitForNotifications(
-    client: signify.SignifyClient,
-    route: string
-): Promise<Notification[]> {
-    const awaitedNotifications = [];
-    while (true) {
-        const notifications = await client.notifications().list();
-        for (const note of notifications.notes) {
-            if (note.a.r === route) {
-                awaitedNotifications.push(note);
-            }
-        }
-        if (awaitedNotifications.length > 0) break;
-
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
-    return awaitedNotifications;
-}
-
-async function resolveWitnesses(client: signify.SignifyClient) {
-    await Promise.all(
-        WITNESS_OOBIS.map((oobi) => client.oobis().resolve(oobi))
-    );
 }
 
 test('credentials', async () => {
@@ -117,11 +83,7 @@ test('credentials', async () => {
             toad: 3,
             wits: [...KLI_WITNESS_DEMO_PREFIXES],
         });
-    let issOp = await issuerIcpRes.op();
-    while (!issOp['done']) {
-        issOp = await issuerClient.operations().get(issOp.name);
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
+    await waitOperation(issuerClient, await issuerIcpRes.op());
     const issAidResp = await issuerClient.identifiers().get(issuerAidName);
     const issuerAID = issAidResp.prefix;
     await issuerClient
@@ -135,11 +97,7 @@ test('credentials', async () => {
             toad: 3,
             wits: [...KLI_WITNESS_DEMO_PREFIXES],
         });
-    let hldOp = await holderIcpRes.op();
-    while (!hldOp['done']) {
-        hldOp = await holderClient.operations().get(hldOp.name);
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
+    await waitOperation(holderClient, await holderIcpRes.op());
     const hldAidResp = await holderClient.identifiers().get(holderAidName);
     const holderAID = hldAidResp.prefix;
     await holderClient
@@ -153,11 +111,7 @@ test('credentials', async () => {
             toad: 3,
             wits: [...KLI_WITNESS_DEMO_PREFIXES],
         });
-    let vfyOp = await verifierIcpRes.op();
-    while (!vfyOp['done']) {
-        vfyOp = await verifierClient.operations().get(vfyOp.name);
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
+    await waitOperation(verifierClient, await verifierIcpRes.op());
     const vfyAidResp = await verifierClient.identifiers().get(verifierAidName);
     const verifierAID = vfyAidResp.prefix;
     await verifierClient
@@ -171,21 +125,9 @@ test('credentials', async () => {
     console.log('Resolving Schema and Agent OOBIs...');
 
     console.log(`Resolving schema OOBIs with ${schemaOobiUrl}`);
-    issOp = await issuerClient.oobis().resolve(schemaOobiUrl, 'schema');
-    while (!issOp['done']) {
-        issOp = await issuerClient.operations().get(issOp.name);
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
-    hldOp = await holderClient.oobis().resolve(schemaOobiUrl, 'schema');
-    while (!hldOp['done']) {
-        hldOp = await holderClient.operations().get(hldOp.name);
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
-    vfyOp = await verifierClient.oobis().resolve(schemaOobiUrl, 'schema');
-    while (!vfyOp['done']) {
-        vfyOp = await verifierClient.operations().get(vfyOp.name);
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
+    await resolveOobi(issuerClient, schemaOobiUrl, 'schema');
+    await resolveOobi(holderClient, schemaOobiUrl, 'schema');
+    await resolveOobi(verifierClient, schemaOobiUrl, 'schema');
 
     const issSchema = await issuerClient.schemas().get(schemaSAID);
     assert.equal(issSchema.$id, schemaSAID);
@@ -203,54 +145,18 @@ test('credentials', async () => {
         .get(verifierAidName, 'agent');
 
     // issuer -> holder, verifier
-    issOp = await issuerClient
-        .oobis()
-        .resolve(hldAgentOOBI.oobis[0], holderAidName);
-    while (!issOp['done']) {
-        issOp = await issuerClient.operations().get(issOp.name);
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
-    issOp = await issuerClient
-        .oobis()
-        .resolve(vfyAgentOOBI.oobis[0], verifierAidName);
-    while (!issOp['done']) {
-        issOp = await issuerClient.operations().get(issOp.name);
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
+    await resolveOobi(issuerClient, hldAgentOOBI.oobis[0], holderAidName);
+    await resolveOobi(issuerClient, vfyAgentOOBI.oobis[0], verifierAidName);
     console.log('Issuer resolved 2 OOBIs: [holder, verifier]');
 
     // holder -> issuer, verifier
-    hldOp = await holderClient
-        .oobis()
-        .resolve(issAgentOOBI.oobis[0], issuerAidName);
-    while (!hldOp['done']) {
-        hldOp = await holderClient.operations().get(hldOp.name);
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
-    hldOp = await holderClient
-        .oobis()
-        .resolve(vfyAgentOOBI.oobis[0], verifierAidName);
-    while (!hldOp['done']) {
-        hldOp = await holderClient.operations().get(hldOp.name);
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
+    await resolveOobi(holderClient, issAgentOOBI.oobis[0], issuerAidName);
+    await resolveOobi(holderClient, vfyAgentOOBI.oobis[0], verifierAidName);
     console.log('Holder resolved 2 OOBIs: [issuer, verifier]');
 
     // verifier -> issuer, holder
-    vfyOp = await verifierClient
-        .oobis()
-        .resolve(issAgentOOBI.oobis[0], issuerAidName);
-    while (!vfyOp['done']) {
-        vfyOp = await verifierClient.operations().get(vfyOp.name);
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
-    vfyOp = await verifierClient
-        .oobis()
-        .resolve(hldAgentOOBI.oobis[0], holderAidName);
-    while (!vfyOp['done']) {
-        vfyOp = await verifierClient.operations().get(vfyOp.name);
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
+    await resolveOobi(verifierClient, issAgentOOBI.oobis[0], issuerAidName);
+    await resolveOobi(verifierClient, hldAgentOOBI.oobis[0], holderAidName);
     console.log('Verifier resolved 2 OOBIs: [issuer, holder]');
 
     // Create registry for issuer
@@ -258,11 +164,7 @@ test('credentials', async () => {
     const regResult = await issuerClient
         .registries()
         .create({ name: issuerAidName, registryName: registryName });
-    issOp = await regResult.op();
-    while (!issOp['done']) {
-        issOp = await issuerClient.operations().get(issOp.name);
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
+    await waitOperation(issuerClient, await regResult.op());
     const registries = await issuerClient.registries().list(issuerAidName);
     const registry = registries[0];
     assert.equal(registries.length, 1);
@@ -285,11 +187,7 @@ test('credentials', async () => {
         recipient: holderAID,
         data: vcdata,
     });
-    issOp = issResult.op;
-    while (!issOp['done']) {
-        issOp = await issuerClient.operations().get(issOp.name);
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
+    await waitOperation(issuerClient, issResult.op);
     let issCreds = await issuerClient.credentials().list();
     assert.equal(issCreds.length, 1);
     assert.equal(issCreds[0].sad.s, schemaSAID);
@@ -339,13 +237,12 @@ test('credentials', async () => {
     console.log('Holder: IPEX GRANT notification marked');
 
     // list credentials to show new credential received through IPEX GRANT+ADMIT
-    let holderCreds = await holderClient.credentials().list();
-    while (holderCreds.length < 1) {
-        console.log('Holder: No credentials yet...');
-        await new Promise((resolve) => setTimeout(resolve, 250));
-        holderCreds = await holderClient.credentials().list();
-    }
-    const hldVleiAcdc: any = holderCreds[0];
+    const holderCreds = await retry(async () => {
+        const result = await holderClient.credentials().list();
+        expect(result.length).toBeGreaterThanOrEqual(1);
+        return result;
+    });
+    const hldVleiAcdc = holderCreds[0];
     assert.equal(holderCreds.length, 1);
     assert.equal(hldVleiAcdc.sad.s, schemaSAID);
     assert.equal(hldVleiAcdc.sad.i, issuerAID);
@@ -387,12 +284,11 @@ test('credentials', async () => {
     console.log('Verifier: Notification marked for presentation');
 
     // list credentials for verifier
-    let verifierCreds = await verifierClient.credentials().list();
-    while (verifierCreds.length < 1) {
-        console.log('No credentials yet...');
-        await new Promise((resolve) => setTimeout(resolve, 250));
-        verifierCreds = await verifierClient.credentials().list();
-    }
+    const verifierCreds = await retry(async () => {
+        const result = await verifierClient.credentials().list();
+        expect(result.length).toBeGreaterThanOrEqual(1);
+        return result;
+    });
     assert.equal(verifierCreds.length, 1);
     assert.equal(verifierCreds[0].sad.s, schemaSAID);
     assert.equal(verifierCreds[0].sad.i, issuerAID);
@@ -400,13 +296,10 @@ test('credentials', async () => {
     console.log('Credential presented and received by verifier');
 
     // Revoke credential
-    issOp = await issuerClient
+    const revokeOperation = await issuerClient
         .credentials()
         .revoke(issuerAidName, issCreds[0].sad.d);
-    while (!issOp['done']) {
-        issOp = await issuerClient.operations().get(issOp.name);
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
+    await waitOperation(issuerClient, revokeOperation);
     issCreds = await issuerClient.credentials().list();
     const issVleiAcdc = issCreds[0];
     assert.equal(issCreds.length, 1);

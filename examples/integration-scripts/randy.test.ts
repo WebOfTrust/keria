@@ -1,6 +1,7 @@
 import { strict as assert } from 'assert';
 import signify from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
+import { waitOperation } from './utils/test-util';
 
 const { url, bootUrl } = resolveEnvironment();
 
@@ -21,7 +22,7 @@ test('randy', async () => {
     let icpResult = await client1
         .identifiers()
         .create('aid1', { algo: signify.Algos.randy });
-    let op = await icpResult.op();
+    let op = await waitOperation(client1, await icpResult.op());
     assert.equal(op['done'], true);
     let aid = op['response'];
     const icp = new signify.Serder(aid);
@@ -37,8 +38,7 @@ test('randy', async () => {
     assert.equal(aid.prefix, icp.pre);
 
     icpResult = await client1.identifiers().interact('aid1', [icp.pre]);
-    op = await icpResult.op();
-    assert.equal(op['done'], true);
+    op = await waitOperation(client1, await icpResult.op());
     let ked = op['response'];
     const ixn = new signify.Serder(ked);
     assert.equal(ixn.ked['s'], '1');
@@ -53,8 +53,7 @@ test('randy', async () => {
     assert.equal(log.length, 2);
 
     icpResult = await client1.identifiers().rotate('aid1');
-    op = await icpResult.op();
-    assert.equal(op['done'], true);
+    op = await waitOperation(client1, await icpResult.op());
     ked = op['response'];
     const rot = new signify.Serder(ked);
     assert.equal(rot.ked['s'], '2');

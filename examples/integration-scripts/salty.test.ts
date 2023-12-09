@@ -1,6 +1,7 @@
 import { strict as assert } from 'assert';
 import signify from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
+import { waitOperation } from './utils/test-util';
 
 const { url, bootUrl } = resolveEnvironment();
 
@@ -27,8 +28,8 @@ test('salty', async () => {
     let icpResult = await client1
         .identifiers()
         .create('aid1', { bran: '0123456789abcdefghijk' });
-    let op = await icpResult.op();
-    assert.equal(op['done'], true);
+    let op = await waitOperation(client1, await icpResult.op());
+
     const aid1 = op['response'];
     const icp = new signify.Serder(aid1);
     assert.equal(icp.pre, 'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK');
@@ -60,8 +61,7 @@ test('salty', async () => {
         nsith: '2',
         bran: '0123456789lmnopqrstuv',
     });
-    op = await icpResult.op();
-    assert.equal(op['done'], true);
+    op = await waitOperation(client1, await icpResult.op());
     const aid2 = op['response'];
     const icp2 = new signify.Serder(aid2);
     assert.equal(icp2.pre, 'EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX');
@@ -119,8 +119,7 @@ test('salty', async () => {
     assert.equal(aid.name, 'aid3');
 
     icpResult = await client1.identifiers().rotate('aid1');
-    op = await icpResult.op();
-    assert.equal(op['done'], true);
+    op = await waitOperation(client1, await icpResult.op());
     let ked = op['response'];
     const rot = new signify.Serder(ked);
     assert.equal(rot.ked['d'], 'EBQABdRgaxJONrSLcgrdtbASflkvLxJkiDO0H-XmuhGg');
@@ -137,8 +136,7 @@ test('salty', async () => {
     );
 
     icpResult = await client1.identifiers().interact('aid1', [icp.pre]);
-    op = await icpResult.op();
-    assert.equal(op['done'], true);
+    op = await waitOperation(client1, await icpResult.op());
     ked = op['response'];
     const ixn = new signify.Serder(ked);
     assert.equal(ixn.ked['d'], 'ENsmRAg_oM7Hl1S-GTRMA7s4y760lQMjzl0aqOQ2iTce');

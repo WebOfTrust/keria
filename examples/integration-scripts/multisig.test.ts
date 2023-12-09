@@ -5,9 +5,10 @@ import signify, {
     IssueCredentialResult,
 } from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
-import { waitOperation } from './utils/test-util';
+import { waitForNotifications, waitOperation } from './utils/test-util';
+import { getOrCreateClient } from './utils/test-setup';
 
-const { url, bootUrl, vleiServerUrl } = resolveEnvironment();
+const { vleiServerUrl } = resolveEnvironment();
 const WITNESS_AIDS = [
     'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
     'BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM',
@@ -21,10 +22,10 @@ test('multisig', async function run() {
     await signify.ready();
     // Boot Four clients
     const [client1, client2, client3, client4] = await Promise.all([
-        bootClient(),
-        bootClient(),
-        bootClient(),
-        bootClient(),
+        getOrCreateClient(),
+        getOrCreateClient(),
+        getOrCreateClient(),
+        getOrCreateClient(),
     ]);
 
     // Create four identifiers, one for each client
@@ -159,7 +160,7 @@ test('multisig', async function run() {
 
     // Second member check notifications and join the multisig
 
-    let msgSaid = await waitForMessage(client2, '/multisig/icp');
+    let msgSaid = await waitAndMarkNotification(client2, '/multisig/icp');
     console.log('Member2 received exchange message to join multisig');
 
     let res = await client2.groups().getRequest(msgSaid);
@@ -204,7 +205,7 @@ test('multisig', async function run() {
     console.log('Member2 joined multisig, waiting for others...');
 
     // Third member check notifications and join the multisig
-    msgSaid = await waitForMessage(client3, '/multisig/icp');
+    msgSaid = await waitAndMarkNotification(client3, '/multisig/icp');
     console.log('Member3 received exchange message to join multisig');
 
     res = await client3.groups().getRequest(msgSaid);
@@ -345,7 +346,7 @@ test('multisig', async function run() {
     );
 
     //Member2 check for notifications and join the authorization
-    msgSaid = await waitForMessage(client2, '/multisig/rpy');
+    msgSaid = await waitAndMarkNotification(client2, '/multisig/rpy');
     console.log(
         'Member2 received exchange message to join the end role authorization'
     );
@@ -393,7 +394,7 @@ test('multisig', async function run() {
     );
 
     //Member3 check for notifications and join the authorization
-    msgSaid = await waitForMessage(client3, '/multisig/rpy');
+    msgSaid = await waitAndMarkNotification(client3, '/multisig/rpy');
     console.log(
         'Member3 received exchange message to join the end role authorization'
     );
@@ -490,7 +491,7 @@ test('multisig', async function run() {
     );
 
     // Member2 check for notifications and join the interaction event
-    msgSaid = await waitForMessage(client2, '/multisig/ixn');
+    msgSaid = await waitAndMarkNotification(client2, '/multisig/ixn');
     console.log(
         'Member2 received exchange message to join the interaction event'
     );
@@ -528,7 +529,7 @@ test('multisig', async function run() {
     console.log('Member2 joins interaction event, waiting for others...');
 
     // Member3 check for notifications and join the interaction event
-    msgSaid = await waitForMessage(client3, '/multisig/ixn');
+    msgSaid = await waitAndMarkNotification(client3, '/multisig/ixn');
     console.log(
         'Member3 received exchange message to join the interaction event'
     );
@@ -655,7 +656,7 @@ test('multisig', async function run() {
     );
 
     // Member2 check for notifications and join the rotation event
-    msgSaid = await waitForMessage(client2, '/multisig/rot');
+    msgSaid = await waitAndMarkNotification(client2, '/multisig/rot');
     console.log('Member2 received exchange message to join the rotation event');
 
     await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -693,7 +694,7 @@ test('multisig', async function run() {
     console.log('Member2 joins rotation event, waiting for others...');
 
     // Member3 check for notifications and join the rotation event
-    msgSaid = await waitForMessage(client3, '/multisig/rot');
+    msgSaid = await waitAndMarkNotification(client3, '/multisig/rot');
     console.log('Member3 received exchange message to join the rotation event');
     res = await client3.groups().getRequest(msgSaid);
     exn = res[0].exn;
@@ -780,7 +781,7 @@ test('multisig', async function run() {
     console.log('Member1 initiated registry, waiting for others to join...');
 
     // Member2 check for notifications and join the create registry event
-    msgSaid = await waitForMessage(client2, '/multisig/vcp');
+    msgSaid = await waitAndMarkNotification(client2, '/multisig/vcp');
     console.log(
         'Member2 received exchange message to join the create registry event'
     );
@@ -822,7 +823,7 @@ test('multisig', async function run() {
     console.log('Member2 joins registry event, waiting for others...');
 
     // Member3 check for notifications and join the create registry event
-    msgSaid = await waitForMessage(client3, '/multisig/vcp');
+    msgSaid = await waitAndMarkNotification(client3, '/multisig/vcp');
     console.log(
         'Member3 received exchange message to join the create registry event'
     );
@@ -894,7 +895,7 @@ test('multisig', async function run() {
     );
 
     // Member2 check for notifications and join the credential create  event
-    msgSaid = await waitForMessage(client2, '/multisig/iss');
+    msgSaid = await waitAndMarkNotification(client2, '/multisig/iss');
     console.log(
         'Member2 received exchange message to join the credential create event'
     );
@@ -915,7 +916,7 @@ test('multisig', async function run() {
     console.log('Member2 joins credential create event, waiting for others...');
 
     // Member3 check for notifications and join the create registry event
-    msgSaid = await waitForMessage(client3, '/multisig/iss');
+    msgSaid = await waitAndMarkNotification(client3, '/multisig/iss');
     console.log(
         'Member3 received exchange message to join the credential create event'
     );
@@ -1000,7 +1001,7 @@ test('multisig', async function run() {
         'Member1 initiated grant message, waiting for others to join...'
     );
 
-    msgSaid = await waitForMessage(client2, '/multisig/exn');
+    msgSaid = await waitAndMarkNotification(client2, '/multisig/exn');
     console.log('Member2 received exchange message to join the grant message');
     res = await client2.groups().getRequest(msgSaid);
     exn = res[0].exn;
@@ -1044,7 +1045,7 @@ test('multisig', async function run() {
 
     console.log('Member2 joined grant message, waiting for others to join...');
 
-    msgSaid = await waitForMessage(client3, '/multisig/exn');
+    msgSaid = await waitAndMarkNotification(client3, '/multisig/exn');
     console.log('Member3 received exchange message to join the grant message');
     res = await client3.groups().getRequest(msgSaid);
     exn = res[0].exn;
@@ -1088,7 +1089,7 @@ test('multisig', async function run() {
 
     console.log('Member3 joined grant message, waiting for others to join...');
 
-    msgSaid = await waitForMessage(client4, '/exn/ipex/grant');
+    msgSaid = await waitAndMarkNotification(client4, '/exn/ipex/grant');
     console.log('Holder received exchange message with the grant message');
     res = await client4.exchanges().get(msgSaid);
 
@@ -1102,41 +1103,22 @@ test('multisig', async function run() {
 
     console.log('Holder creates and sends admit message');
 
-    msgSaid = await waitForMessage(client1, '/exn/ipex/admit');
+    msgSaid = await waitAndMarkNotification(client1, '/exn/ipex/admit');
     console.log('Member1 received exchange message with the admit response');
     const creds = await client4.credentials().list();
     console.log(`Holder holds ${creds.length} credential`);
 }, 360000);
 
-async function waitForMessage(client: SignifyClient, route: string) {
-    let msgSaid = '';
-    while (msgSaid == '') {
-        const notifications = await client.notifications().list();
-        for (const notif of notifications.notes) {
-            if (notif.a.r == route) {
-                msgSaid = notif.a.d;
-                await client.notifications().mark(notif.i);
-            }
-        }
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-    return msgSaid;
-}
+async function waitAndMarkNotification(client: SignifyClient, route: string) {
+    const notes = await waitForNotifications(client, route);
 
-async function bootClient(): Promise<SignifyClient> {
-    const bran = signify.randomPasscode();
-    const client = new SignifyClient(url, bran, signify.Tier.low, bootUrl);
-    await client.boot();
-    await client.connect();
-    const state = await client.state();
-    console.log(
-        'Client AID:',
-        state.controller.state.i,
-        'Agent AID: ',
-        state.agent.i
+    await Promise.all(
+        notes.map(async (note) => {
+            await client.notifications().mark(note.i);
+        })
     );
 
-    return client;
+    return notes[notes.length - 1]?.a.d ?? '';
 }
 
 async function createAID(client: SignifyClient, name: string, wits: string[]) {
