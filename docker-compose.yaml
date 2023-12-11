@@ -1,6 +1,9 @@
 services:
     vlei-server:
         image: gleif/vlei
+        environment:
+            - PYTHONUNBUFFERED=1
+            - PYTHONIOENCODING=UTF-8
         command:
             - vLEI-server
             - -s
@@ -27,6 +30,8 @@ services:
         environment:
             - KERI_AGENT_CORS=1
             - KERI_URL=http://keria:3902
+            - PYTHONUNBUFFERED=1
+            - PYTHONIOENCODING=UTF-8
         volumes:
             - ./config/keria.json:/keria/config/keri/cf/keria.json
         entrypoint: keria
@@ -51,6 +56,9 @@ services:
 
     witness-demo:
         image: weboftrust/keri-witness-demo:1.1.0
+        environment:
+            - PYTHONUNBUFFERED=1
+            - PYTHONIOENCODING=UTF-8
         healthcheck:
             test: ['CMD', 'curl', '-f', 'http://localhost:5642/oobi']
             interval: 2s
