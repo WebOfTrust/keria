@@ -73,3 +73,16 @@ jobs:
         run: docker compose logs
         if: always()
 
+  audit:
+    name: Find vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '18.12.1'
+          cache: 'npm'
+      - name: Run audit
+        run: npm audit
