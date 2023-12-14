@@ -167,7 +167,7 @@ class Monitor:
                 raise kering.ValidationError(f"long running {op.type} operation identifier {op.oid} not found")
 
             if "sn" not in op.metadata:
-                raise kering.ValidationError(f"invalid long running {op.type} operaiton, metadata missing 'sn' field")
+                raise kering.ValidationError(f"invalid long running {op.type} operation, metadata missing 'sn' field")
 
             sn = op.metadata["sn"]
             kever = self.hby.kevers[op.oid]
@@ -221,7 +221,7 @@ class Monitor:
                 raise kering.ValidationError(f"long running {op.type} operation identifier {op.oid} not found")
 
             if "sn" not in op.metadata:
-                raise kering.ValidationError(f"invalid long running {op.type} operaiton, metadata missing 'sn' field")
+                raise kering.ValidationError(f"invalid long running {op.type} operation, metadata missing 'sn' field")
 
             kever = self.hby.kevers[op.oid]
             sn = op.metadata["sn"]
@@ -239,7 +239,7 @@ class Monitor:
 
         elif op.type in (OpTypes.group, ):
             if "sn" not in op.metadata:
-                raise kering.ValidationError(f"invalid long running {op.type} operaiton, metadata missing 'sn' field")
+                raise kering.ValidationError(f"invalid long running {op.type} operation, metadata missing 'sn' field")
 
             prefixer = coring.Prefixer(qb64=op.oid)
             seqner = coring.Seqner(sn=op.metadata["sn"])
@@ -291,7 +291,7 @@ class Monitor:
                     f"long running {op.type} operation identifier {op.oid} not found")
             if "anchor" not in op.metadata:
                 raise kering.ValidationError(
-                    f"invalid long running {op.type} operaiton, metadata missing 'anchor' field")
+                    f"invalid long running {op.type} operation, metadata missing 'anchor' field")
 
             anchor = op.metadata["anchor"]
             if self.hby.db.findAnchoringEvent(op.oid, anchor=anchor) is not None:
@@ -303,7 +303,7 @@ class Monitor:
         elif op.type in (OpTypes.credential,):
             if "ced" not in op.metadata:
                 raise kering.ValidationError(
-                    f"invalid long running {op.type} operaiton, metadata missing 'ced' field")
+                    f"invalid long running {op.type} operation, metadata missing 'ced' field")
 
             ced = op.metadata["ced"]
             if self.credentialer.complete(ced['d']):
@@ -315,7 +315,7 @@ class Monitor:
         elif op.type in (OpTypes.endrole, ):
             if "cid" not in op.metadata or "role" not in op.metadata or "eid" not in op.metadata:
                 raise kering.ValidationError(
-                    f"invalid long running {op.type} operaiton, metadata missing 'ced' field")
+                    f"invalid long running {op.type} operation, metadata missing 'ced' field")
 
             cid = op.metadata['cid']
             role = op.metadata['role']
@@ -336,7 +336,7 @@ class Monitor:
 
             if "words" not in op.metadata:
                 raise kering.ValidationError(
-                    f"invalid long running {op.type} operaiton, metadata missing 'ced' field")
+                    f"invalid long running {op.type} operation, metadata missing 'ced' field")
 
             found = False
             words = op.metadata["words"]
