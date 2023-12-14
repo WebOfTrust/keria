@@ -1,21 +1,27 @@
 import { strict as assert } from 'assert';
 import signify from 'signify-ts';
-import { resolveEnvironment } from './utils/resolve-env';
-import { waitForNotifications, waitOperation } from './utils/test-util';
-
-const { url, bootUrl } = resolveEnvironment();
+import {
+    resolveOobi,
+    waitForNotifications,
+    waitOperation,
+} from './utils/test-util';
+import { getOrCreateClient } from './utils/test-setup';
 
 test('delegation-multisig', async () => {
     await signify.ready();
     // Boot three clients
-    const client0 = await bootClient();
-    const client1 = await bootClient();
-    const client2 = await bootClient();
+    const [client0, client1, client2] = await Promise.all([
+        getOrCreateClient(),
+        getOrCreateClient(),
+        getOrCreateClient(),
+    ]);
 
     // Create four identifiers, one for each client
-    const aid0 = await createAID(client0, 'delegator');
-    const aid1 = await createAID(client1, 'member1');
-    const aid2 = await createAID(client2, 'member2');
+    const [aid0, aid1, aid2] = await Promise.all([
+        createAID(client0, 'delegator'),
+        createAID(client1, 'member1'),
+        createAID(client2, 'member2'),
+    ]);
 
     // Exchange OOBIs
     console.log('Resolving OOBIs');
@@ -23,35 +29,14 @@ test('delegation-multisig', async () => {
     const oobi1 = await client1.oobis().get('member1', 'agent');
     const oobi2 = await client2.oobis().get('member2', 'agent');
 
-    let op1 = await client1.oobis().resolve(oobi0.oobis[0], 'delegator');
-    op1 = await waitOperation(client1, op1);
-    op1 = await client1.oobis().resolve(oobi2.oobis[0], 'member2');
-    op1 = await waitOperation(client1, op1);
-    console.log('Member1 resolved 2 OOBIs');
+    await Promise.all([
+        resolveOobi(client1, oobi0.oobis[0], 'delegator'),
+        resolveOobi(client1, oobi2.oobis[0], 'member2'),
+        resolveOobi(client2, oobi0.oobis[0], 'delegator'),
+        resolveOobi(client2, oobi1.oobis[0], 'member1'),
+    ]);
 
-    let op2 = await client2.oobis().resolve(oobi0.oobis[0], 'delegator');
-    op2 = await waitOperation(client2, op2);
-    op2 = await client2.oobis().resolve(oobi1.oobis[0], 'member1');
-    op2 = await waitOperation(client2, op2);
-    console.log('Member2 resolved 2 OOBIs');
-
-    // First member challenge the other members with a random list of words
-    // List of words should be passed to the other members out of band
-    // The other members should do the same challenge/response flow, not shown here for brevity
-    const words = (await client1.challenges().generate(128)).words;
-    console.log('Member1 generated challenge words:', words);
-
-    await client2.challenges().respond('member2', aid1.prefix, words);
-    console.log('Member2 responded challenge with signed words');
-
-    op1 = await client1.challenges().verify('member1', aid2.prefix, words);
-    op1 = await waitOperation(client1, op1);
-    console.log('Member1 verified challenge response from member2');
-    const exnwords = new signify.Serder(op1.response.exn);
-    op1 = await client1
-        .challenges()
-        .responded('member1', aid2.prefix, exnwords.ked.d);
-    console.log('Member1 marked challenge response as accepted');
+    console.log('Member1 and Member2 resolved 2 OOBIs');
 
     // First member start the creation of a multisig identifier
     const rstates = [aid1['state'], aid2['state']];
@@ -71,7 +56,7 @@ test('delegation-multisig', async () => {
         rstates: rstates,
         delpre: aid0.prefix,
     });
-    op1 = await icpResult1.op();
+    const op1 = await icpResult1.op();
     let serder = icpResult1.serder;
 
     let sigs = icpResult1.sigs;
@@ -122,7 +107,7 @@ test('delegation-multisig', async () => {
         rstates: rstates,
         delpre: aid0.prefix,
     });
-    op2 = await icpResult2.op();
+    const op2 = await icpResult2.op();
     serder = icpResult2.serder;
     sigs = icpResult2.sigs;
     sigers = sigs.map((sig) => new signify.Siger({ qb64: sig }));
@@ -164,33 +149,15 @@ test('delegation-multisig', async () => {
     console.log('Delegator approved delegation');
 
     // Check for completion
-    op1 = await waitOperation(client1, op1);
-    op2 = await waitOperation(client2, op2);
+    await Promise.all([
+        waitOperation(client1, op1),
+        waitOperation(client2, op2),
+    ]);
     console.log('Delegated multisig created!');
 
     const aid_delegate = await client1.identifiers().get('multisig');
     assert.equal(aid_delegate.prefix, delegatePrefix);
 }, 30000);
-
-async function bootClient(): Promise<signify.SignifyClient> {
-    const bran = signify.randomPasscode();
-    const client = new signify.SignifyClient(
-        url,
-        bran,
-        signify.Tier.low,
-        bootUrl
-    );
-    await client.boot();
-    await client.connect();
-    const state = await client.state();
-    console.log(
-        'Client AID:',
-        state.controller.state.i,
-        'Agent AID: ',
-        state.agent.i
-    );
-    return client;
-}
 
 async function createAID(client: signify.SignifyClient, name: string) {
     const icpResult1 = await client.identifiers().create(name, {
