@@ -75,15 +75,11 @@ describe('singlesig-dip', () => {
         let op = waitOperation(client1, await result.op());
     });
     // https://github.com/WebOfTrust/signify-ts/issues/145
-    test.failing(
-        'delegate2b',
-        async () => {
-            // delegate waits for completion
-            let delegate2 = await client2.identifiers().get('delegate2');
-            let op: any = { name: `delegation.${delegate2.prefix}` };
-            op = await waitOperation(client2, op);
-            expect(delegate2.prefix).toEqual(op.response.i);
-        },
-        30000
-    );
+    test('delegate2b', async () => {
+        // delegate waits for completion
+        let delegate2 = await client2.identifiers().get('delegate2');
+        let op: any = { name: `delegation.${delegate2.prefix}` };
+        op = await waitOperation(client2, op);
+        expect(delegate2.prefix).toEqual(op.response.i);
+    });
 });
