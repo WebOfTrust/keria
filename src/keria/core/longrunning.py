@@ -279,7 +279,7 @@ class Monitor:
                         ksn = self.hby.db.ksns.get(keys=(saider.qb64,))
                         break
 
-                    if ksn and ksn.ked['d'] == kever.serder.said:
+                    if ksn and ksn.d == kever.serder.said:
                         operation.done = True
                         operation.response = asdict(kever.state())
                     else:
