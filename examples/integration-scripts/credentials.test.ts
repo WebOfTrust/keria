@@ -58,35 +58,37 @@ test('single signature credentials', async () => {
     ]);
 
     await step('Resolve oobis', async () => {
-        const [issAgentOOBI, holderAgentOOBI, vfyAgentOOBI] = await Promise.all(
-            [
+        const [issAgentOOBIs, holderAgentOOBIs, verifierAgentOOBIs] =
+            await Promise.all([
                 issuerClient.oobis().get(issuerAid.name, 'agent'),
                 holderClient.oobis().get(holderAid.name, 'agent'),
                 verifierClient.oobis().get(verifierAid.name, 'agent'),
-            ]
-        );
+            ]);
 
-        assert(issAgentOOBI.oobis.length >= 1);
-        assert(holderAgentOOBI.oobis.length >= 1);
-        assert(vfyAgentOOBI.oobis.length >= 1);
+        assert(issAgentOOBIs.oobis.length >= 1);
+        assert(holderAgentOOBIs.oobis.length >= 1);
+        assert(verifierAgentOOBIs.oobis.length >= 1);
+
+        const holderAgentOOBI = holderAgentOOBIs.oobis[0];
+        const verifierAgentOOBI = verifierAgentOOBIs.oobis[0];
+        const issuerAgentOOBI = issAgentOOBIs.oobis[0];
 
         await Promise.all([
+            // Issuer resolves schemas, holder and verifier oobis
             resolveOobi(issuerClient, QVI_SCHEMA_URL, 'schema'),
-            resolveOobi(holderClient, QVI_SCHEMA_URL, 'schema'),
-            resolveOobi(verifierClient, QVI_SCHEMA_URL, 'schema'),
             resolveOobi(issuerClient, LE_SCHEMA_URL, 'le-schema'),
+            resolveOobi(issuerClient, holderAgentOOBI, holderAid.name),
+            resolveOobi(issuerClient, verifierAgentOOBI, verifierAid.name),
+            // Holder resolves schemas, issuer and verifier oobis
+            resolveOobi(holderClient, QVI_SCHEMA_URL, 'schema'),
             resolveOobi(holderClient, LE_SCHEMA_URL, 'le-schema'),
+            resolveOobi(holderClient, issuerAgentOOBI, issuerAid.name),
+            resolveOobi(holderClient, verifierAgentOOBI, verifierAid.name),
+            // Verifier resolves schemas, issuer and holder oobis
+            resolveOobi(verifierClient, QVI_SCHEMA_URL, 'schema'),
             resolveOobi(verifierClient, LE_SCHEMA_URL, 'le-schema'),
-            resolveOobi(issuerClient, holderAgentOOBI.oobis[0], holderAid.name),
-            resolveOobi(issuerClient, vfyAgentOOBI.oobis[0], verifierAid.name),
-            resolveOobi(holderClient, issAgentOOBI.oobis[0], issuerAid.name),
-            resolveOobi(holderClient, vfyAgentOOBI.oobis[0], verifierAid.name),
-            resolveOobi(verifierClient, issAgentOOBI.oobis[0], issuerAid.name),
-            resolveOobi(
-                verifierClient,
-                holderAgentOOBI.oobis[0],
-                holderAid.name
-            ),
+            resolveOobi(verifierClient, issuerAgentOOBI, issuerAid.name),
+            resolveOobi(verifierClient, holderAgentOOBI, holderAid.name),
         ]);
     });
 
