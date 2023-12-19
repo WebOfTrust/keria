@@ -14,7 +14,6 @@ from keri.app import habbing, signing
 from keri.core import eventing, coring
 from keri.help import helping
 from keri.peer import exchanging
-from keri.vc import proving
 
 from keria.app import ipexing, aiding, agenting
 from keria.app.credentialing import CredentialResourceEnd

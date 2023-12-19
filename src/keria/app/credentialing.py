@@ -579,7 +579,7 @@ class CredentialResourceEnd:
     def outputCred(hby, rgy, said):
         out = bytearray()
         creder, prefixer, seqner, saider = rgy.reger.cloneCred(said=said)
-        chains = creder.edge
+        chains = creder.edge or dict()
         saids = []
         for key, source in chains.items():
             if key == 'd':
