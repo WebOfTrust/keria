@@ -384,7 +384,7 @@ class IdentifierCollectionEnd:
                     rand = body[Algos.randy]
                     hab = agent.hby.makeSignifyHab(name, serder=serder, sigers=sigers)
                     try:
-                        agent.inceptRandy(pre=serder.pre, verfers=serder.verfers, digers=serder.digers, **rand)
+                        agent.inceptRandy(pre=serder.pre, verfers=serder.verfers, digers=serder.ndigers, **rand)
                     except ValueError as e:
                         agent.hby.deleteHab(name=name)
                         raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
@@ -393,7 +393,7 @@ class IdentifierCollectionEnd:
                     extern = body[Algos.extern]
                     hab = agent.hby.makeSignifyHab(name, serder=serder, sigers=sigers)
                     try:
-                        agent.inceptExtern(pre=serder.pre, verfers=serder.verfers, digers=serder.digers, **extern)
+                        agent.inceptExtern(pre=serder.pre, verfers=serder.verfers, digers=serder.ndigers, **extern)
                     except ValueError as e:
                         agent.hby.deleteHab(name=name)
                         raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
@@ -519,12 +519,12 @@ class IdentifierResourceEnd:
             rand = body[Algos.randy]
             keeper = agent.mgr.get(Algos.randy)
 
-            keeper.rotate(pre=serder.pre, verfers=serder.verfers, digers=serder.digers, **rand)
+            keeper.rotate(pre=serder.pre, verfers=serder.verfers, digers=serder.ndigers, **rand)
 
         elif Algos.group in body:
             keeper = agent.mgr.get(Algos.group)
 
-            keeper.rotate(pre=serder.pre, verfers=serder.verfers, digers=serder.digers)
+            keeper.rotate(pre=serder.pre, verfers=serder.verfers, digers=serder.ndigers)
 
             smids = httping.getRequiredParam(body, "smids")
             rmids = httping.getRequiredParam(body, "rmids")

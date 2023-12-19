@@ -263,7 +263,7 @@ def test_identifier_collection_end(helpers):
         serder, signers = helpers.incept(salt, "signify:aid", pidx=0)
         assert len(signers) == 1
         signer0 = signers[0]
-        diger0 = serder.digers[0]
+        diger0 = serder.ndigers[0]
 
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
         body = {'name': 'aid1',
@@ -448,7 +448,7 @@ def test_identifier_collection_end(helpers):
 
         # Test Group Multisig
         keys = [signer0.verfer.qb64, p1.kever.verfers[0].qb64, p2.kever.verfers[0].qb64, ]
-        ndigs = [diger0.qb64, p1.kever.digers[0].qb64, p2.kever.digers[0].qb64]
+        ndigs = [diger0.qb64, p1.kever.ndigers[0].qb64, p2.kever.ndigers[0].qb64]
 
         serder = eventing.incept(keys=keys,
                                  isith="2",
