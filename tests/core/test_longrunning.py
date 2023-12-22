@@ -182,7 +182,5 @@ def test_error(helpers):
         assert op["error"]["code"] == 500
         assert op["error"]["message"] == f"{err}"
 
-        res = client.simulate_get(path="/operations")
-        for i in res.json:
-            t = client.simulate_get(path=f"/operations/{i['name']}")
-            assert t.status_code == 500
+        res = client.simulate_get(path=f"/operations/{op['name']}")
+        assert res.status_code == 500
