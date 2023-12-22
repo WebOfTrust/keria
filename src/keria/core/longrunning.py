@@ -268,7 +268,7 @@ class Monitor:
                         operation.done = False
                 elif "anchor" in op.metadata:
                     anchor = op.metadata["anchor"]
-                    if self.hby.db.findAnchoringEvent(op.oid, anchor=anchor) is not None:
+                    if self.hby.db.findAnchoringSealEvent(op.oid, seal=anchor) is not None:
                         operation.done = True
                         operation.response = asdict(kever.state())
                     else:
@@ -294,7 +294,7 @@ class Monitor:
                     f"invalid long running {op.type} operation, metadata missing 'anchor' field")
 
             anchor = op.metadata["anchor"]
-            if self.hby.db.findAnchoringEvent(op.oid, anchor=anchor) is not None:
+            if self.hby.db.findAnchoringSealEvent(op.oid, seal=anchor) is not None:
                 operation.done = True
                 operation.response = dict(anchor=anchor)
             else:
