@@ -138,20 +138,25 @@ class Monitor:
         operation = self.status(op)
 
         return operation
-    
+
     def getOperations(self, type=None):
+        """ Return list of long running opterations, optionally filtered by type """
         ops = self.opr.ops.getItemIter()
         if type != None:
             ops = filter(lambda i: i[1].type == type, ops)
+
         def get_status(op):
             try:
                 return self.status(op)
             except Exception as err:
+                # self.status may throw an exception.
+                # Handling error by returning an operation with error status
                 return Operation(
-                    name=f"{op.type}.{op.oid}", 
-                    metadata=op.metadata, 
-                    done=False, 
+                    name=f"{op.type}.{op.oid}",
+                    metadata=op.metadata,
+                    done=True,
                     error=Status(code=500, message=f"{err}"))
+
         return [get_status(op) for (_, op) in ops]
 
     def rem(self, name):
