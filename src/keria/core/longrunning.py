@@ -389,6 +389,29 @@ class Monitor:
 class OperationCollectionEnd:
     @staticmethod
     def on_get(req, rep):
+        """ Get list of long running operations 
+        
+        Parameters:
+            req (Request):  Falcon HTTP Request object
+            rep (Response): Falcon HTTP Response object
+
+        ---
+        summary: Get list of long running operations
+        parameters:
+          - in: query
+            name: type
+            schema:
+              type: string
+            required: false
+            description: filter list of long running operations by type
+        responses:
+            200:
+              content:
+                  application/json:
+                    schema:
+                        type: array
+
+        """
         agent = req.context.agent
         type = req.params.get("type")
         ops = agent.monitor.getOperations(type=type)
