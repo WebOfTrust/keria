@@ -85,7 +85,7 @@ class Monitor:
     Attributes:
         hby (Habery): identifier database environment
         opr(Operator): long running operations database
-        swain(Boatswain): Delegation processes tracker
+        swain(Sealer): Delegation processes tracker
 
     """
 
@@ -94,7 +94,7 @@ class Monitor:
 
         Parameters:
             hby (Habery): identifier database environment
-            swain(Boatswain): Delegation processes tracker
+            swain(Sealer): Delegation processes tracker
             opr (Operator): long running operations database
 
         """
