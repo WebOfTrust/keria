@@ -13,7 +13,6 @@ from keri import kering
 from keri.app import signing
 from keri.app.habbing import SignifyGroupHab
 from keri.core import coring, scheming, serdering
-from keri.core.eventing import SealEvent
 from keri.db import dbing
 
 from keria.core import httping, longrunning
@@ -755,8 +754,6 @@ class Registrar:
 
         vcid = iserder.ked["i"]
         rseq = coring.Seqner(snh=iserder.ked["s"])
-        rseal = SealEvent(vcid, rseq.snh, iserder.said)
-        rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
         if not isinstance(hab, SignifyGroupHab):  # not a multisig group
             seqner = coring.Seqner(sn=hab.kever.sner.num)
@@ -822,6 +819,16 @@ class Registrar:
             return vcid, rseq.sn
 
     def complete(self, pre, sn=0):
+        """ Determine if registry event (inception, issuance, revocation, etc.) is finished validation
+
+        Parameters:
+            pre (str): qb64 identifier of registry event
+            sn (int): integer sequence number of regsitry event
+
+        Returns:
+            bool: True means event has completed and is commited to database
+        """
+
         seqner = coring.Seqner(sn=sn)
         said = self.rgy.reger.ctel.get(keys=(pre, seqner.qb64))
         return said is not None
