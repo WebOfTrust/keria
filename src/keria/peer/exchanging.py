@@ -62,7 +62,7 @@ class ExchangeCollectionEnd:
 
         # Now create the stream to send, need the signer seal
         kever = hab.kever
-        seal = eventing.SealEvent(i=hab.pre, s=hex(kever.lastEst.s), d=kever.lastEst.d)
+        seal = eventing.SealEvent(i=hab.pre, s="{:x}".format(kever.lastEst.s), d=kever.lastEst.d)
 
         ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
 

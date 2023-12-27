@@ -60,7 +60,7 @@ class MultisigRequestCollectionEnd:
 
         # create seal for the proper location to find the signatures
         kever = hab.mhab.kever
-        seal = eventing.SealEvent(i=hab.mhab.pre, s=hex(kever.lastEst.s), d=kever.lastEst.d)
+        seal = eventing.SealEvent(i=hab.mhab.pre, s="{:x}".format(kever.lastEst.s), d=kever.lastEst.d)
 
         ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
         ims.extend(atc.encode("utf-8"))  # add the pathed attachments
