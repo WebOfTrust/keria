@@ -637,7 +637,6 @@ class ExchangeCueDoer(doing.Doer):
                     self.cues.append(cue)
                     return False
             elif cue["kin"] == "query":
-                print("passing it along to the querier!")
                 self.queries.append(cue['q'])
                 return False
             else:

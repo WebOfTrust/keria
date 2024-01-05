@@ -8,7 +8,9 @@ services and endpoint for IPEX message managements
 import json
 
 import falcon
+from keri.app import habbing
 from keri.core import coring, eventing, serdering
+from keri.peer import exchanging
 
 from keria.core import httping
 
@@ -92,41 +94,51 @@ class IpexAdmitCollectionEnd:
 
     @staticmethod
     def sendMultisigExn(agent, hab, ked, sigs, atc, rec):
+        if not isinstance(hab, habbing.SignifyGroupHab):
+            raise falcon.HTTPBadRequest(description=f"attempt to send multisig message with non-group AID={hab.pre}")
+
         for recp in rec:  # Have to verify we already know all the recipients.
             if recp not in agent.hby.kevers:
                 raise falcon.HTTPBadRequest(description=f"attempt to send to unknown AID={recp}")
 
         embeds = ked['e']
-        admit = embeds['exn']
-        if admit['r'] != "/ipex/admit":
-            raise falcon.HTTPBadRequest(description=f"invalid route for embedded ipex admit {ked['r']}")
+        admitked = embeds['exn']
+        if admitked['r'] != "/ipex/admit":
+            raise falcon.HTTPBadRequest(description=f"invalid route for embedded ipex admit {admitked['r']}")
 
         # Have to add the atc to the end... this will be Pathed signatures for embeds
-        if 'exn' not in atc or not atc['exn']:
+        if not atc:
             raise falcon.HTTPBadRequest(description=f"attachment missing for ACDC, unable to process request.")
-
-        holder = admit['a']['i']
-        serder = serdering.SerderKERI(sad=admit)
-        ims = bytearray(serder.raw) + atc['exn'].encode("utf-8")
-        agent.hby.psr.parseOne(ims=ims)
-        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=holder, topic="credential"))
-        agent.admits.append(dict(said=admit['d'], pre=hab.pre))
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
         sigers = [coring.Siger(qb64=sig) for sig in sigs]
 
         # Now create the stream to send, need the signer seal
-        kever = hab.kever
-        seal = eventing.SealEvent(i=hab.pre, s="{:x}".format(kever.lastEst.s), d=kever.lastEst.d)
+        kever = hab.mhab.kever
+        seal = eventing.SealEvent(i=hab.mhab.pre, s="{:x}".format(kever.lastEst.s), d=kever.lastEst.d)
 
         ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
-
-        ims.extend(atc['exn'].encode("utf-8"))  # add the pathed attachments
+        ims.extend(atc.encode("utf-8"))  # add the pathed attachments
 
         # make a copy and parse
         agent.hby.psr.parseOne(ims=bytearray(ims))
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=rec, topic='credential'))
+
+        exn, pathed = exchanging.cloneMessage(agent.hby, serder.said)
+        if not exn:
+            raise falcon.HTTPBadRequest(description=f"invalid exn request message {serder.said}")
+
+        grant, _ = exchanging.cloneMessage(agent.hby, admitked['p'])
+        embeds = grant.ked['e']
+        acdc = embeds["acdc"]
+        issr = acdc['i']
+
+        serder = serdering.SerderKERI(sad=admitked)
+        ims = bytearray(serder.raw) + pathed['exn']
+        agent.hby.psr.parseOne(ims=ims)
+        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=[issr], topic="credential"))
+        agent.admits.append(dict(said=admitked['d'], pre=hab.pre))
 
 
 class IpexGrantCollectionEnd:
@@ -201,6 +213,9 @@ class IpexGrantCollectionEnd:
 
     @staticmethod
     def sendMultisigExn(agent, hab, ked, sigs, atc, rec):
+        if not isinstance(hab, habbing.SignifyGroupHab):
+            raise falcon.HTTPBadRequest(description=f"attempt to send multisig message with non-group AID={hab.pre}")
+
         for recp in rec:  # Have to verify we already know all the recipients.
             if recp not in agent.hby.kevers:
                 raise falcon.HTTPBadRequest(description=f"attempt to send to unknown AID={recp}")
@@ -212,11 +227,7 @@ class IpexGrantCollectionEnd:
 
         holder = grant['a']['i']
         serder = serdering.SerderKERI(sad=grant)
-        sigers = [coring.Siger(qb64=sig) for sig in sigs]
-        seal = eventing.SealEvent(i=hab.pre, s="{:x}".format(hab.kever.lastEst.s), d=hab.kever.lastEst.d)
-
-        ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
-        ims = ims + atc.encode("utf-8")
+        ims = bytearray(serder.raw) + atc.encode("utf-8")
         agent.hby.psr.parseOne(ims=ims)
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=holder, topic="credential"))
         agent.grants.append(dict(said=grant['d'], pre=hab.pre))

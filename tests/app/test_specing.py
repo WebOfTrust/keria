@@ -43,8 +43,6 @@ def test_spec_resource(helpers):
         assert "/states" in paths
 
         js = json.dumps(sd)
-        print(js)
-
         # Assert on the entire JSON to ensure we are getting all the docs
         assert js == ('{"paths": {"/oobis": {"post": {"summary": "Resolve OOBI and assign an '
                       'alias for the remote identifier", "description": "Resolve OOBI URL or '
