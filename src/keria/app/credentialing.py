@@ -219,7 +219,7 @@ class RegistryResourceEnd:
             name=registry.name,
             regk=registry.regk,
             pre=registry.hab.pre,
-            state=registry.tever.state().ked
+            state=asdict(registry.tever.state())
         )
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"

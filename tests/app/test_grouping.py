@@ -32,7 +32,6 @@ def test_load_ends(helpers):
 def test_multisig_request_ends(helpers):
     with helpers.openKeria() as (agency, agent, app, client):
         grouping.loadEnds(app=app)
-
         end = aiding.IdentifierCollectionEnd()
         app.add_route("/identifiers", end)
         aidEnd = aiding.IdentifierResourceEnd()
