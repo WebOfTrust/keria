@@ -29,7 +29,7 @@ export async function waitOperation<T = any>(
 export async function resolveOobi(
     client: SignifyClient,
     oobi: string,
-    alias: string
+    alias?: string
 ) {
     const op = await client.oobis().resolve(oobi, alias);
     await waitOperation(client, op);

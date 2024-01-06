@@ -19,10 +19,10 @@ export async function step<T>(
 
         // Bypassing console.log to avoid the verbose log output from jest
         process.stdout.write(
-            `Finished step - ${description} - ${Date.now() - start}ms\n`
+            `Step - ${description} - finished (${Date.now() - start}ms)\n`
         );
         return response;
     } catch (error) {
-        throw new Error(`${description} - failed`, { cause: error });
+        throw new Error(`Step - ${description} - failed`, { cause: error });
     }
 }

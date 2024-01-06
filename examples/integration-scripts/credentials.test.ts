@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import signify, { Saider, Serder, SignifyClient } from 'signify-ts';
+import { Saider, Serder, SignifyClient } from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
 import {
     resolveOobi,
@@ -7,21 +7,15 @@ import {
     waitOperation,
 } from './utils/test-util';
 import { retry } from './utils/retry';
-import { getOrCreateClient } from './utils/test-setup';
+import {
+    getOrCreateClients,
+    getOrCreateContact,
+    getOrCreateIdentifier,
+} from './utils/test-setup';
 import { randomUUID } from 'crypto';
 import { step } from './utils/test-step';
 
-const { vleiServerUrl, witnessIds } = resolveEnvironment();
-
-const WAN_WITNESS_AID = witnessIds[0];
-const WIL_WITNESS_AID = witnessIds[1];
-const WES_WITNESS_AID = witnessIds[2];
-
-const KLI_WITNESS_DEMO_PREFIXES = [
-    WAN_WITNESS_AID,
-    WIL_WITNESS_AID,
-    WES_WITNESS_AID,
-];
+const { vleiServerUrl } = resolveEnvironment();
 
 const QVI_SCHEMA_SAID = 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao';
 const LE_SCHEMA_SAID = 'ENPXp1vQzRF6JwIuS-mp2U8Uf1MoADoP_GqQ62VsDZWY';
@@ -29,66 +23,69 @@ const vLEIServerHostUrl = `${vleiServerUrl}/oobi`;
 const QVI_SCHEMA_URL = `${vLEIServerHostUrl}/${QVI_SCHEMA_SAID}`;
 const LE_SCHEMA_URL = `${vLEIServerHostUrl}/${LE_SCHEMA_SAID}`;
 
+interface Aid {
+    name: string;
+    prefix: string;
+    oobi: string;
+}
+
 function createTimestamp() {
     return new Date().toISOString().replace('Z', '000+00:00');
 }
 
-async function createAid(client: signify.SignifyClient, name: string) {
-    const verifierIcpRes = await client.identifiers().create(name, {
-        toad: 3,
-        wits: [...KLI_WITNESS_DEMO_PREFIXES],
-    });
-    await waitOperation(client, await verifierIcpRes.op());
-    const hab = await client.identifiers().get(name);
-    await client.identifiers().addEndRole(name, 'agent', client!.agent!.pre);
-    return hab;
+async function createAid(client: SignifyClient, name: string): Promise<Aid> {
+    const [prefix, oobi] = await getOrCreateIdentifier(client, name);
+    return { prefix, oobi, name };
 }
 
-test('single signature credentials', async () => {
-    const [issuerClient, holderClient, verifierClient] = await Promise.all([
-        getOrCreateClient(),
-        getOrCreateClient(),
-        getOrCreateClient(),
-    ]);
+let issuerClient: SignifyClient;
+let holderClient: SignifyClient;
+let verifierClient: SignifyClient;
+let legalEntityClient: SignifyClient;
 
-    const [issuerAid, holderAid, verifierAid] = await Promise.all([
+let issuerAid: Aid;
+let holderAid: Aid;
+let verifierAid: Aid;
+let legalEntityAid: Aid;
+
+beforeAll(async () => {
+    [issuerClient, holderClient, verifierClient, legalEntityClient] =
+        await getOrCreateClients(4);
+});
+
+beforeAll(async () => {
+    [issuerAid, holderAid, verifierAid, legalEntityAid] = await Promise.all([
         createAid(issuerClient, 'issuer'),
         createAid(holderClient, 'holder'),
         createAid(verifierClient, 'verifier'),
+        createAid(legalEntityClient, 'legal-entity'),
     ]);
+});
 
-    await step('Resolve oobis', async () => {
-        const [issAgentOOBIs, holderAgentOOBIs, verifierAgentOOBIs] =
-            await Promise.all([
-                issuerClient.oobis().get(issuerAid.name, 'agent'),
-                holderClient.oobis().get(holderAid.name, 'agent'),
-                verifierClient.oobis().get(verifierAid.name, 'agent'),
-            ]);
+beforeAll(async () => {
+    await Promise.all([
+        getOrCreateContact(issuerClient, 'holder', holderAid.oobi),
+        getOrCreateContact(issuerClient, 'verifier', verifierAid.oobi),
+        getOrCreateContact(holderClient, 'issuer', issuerAid.oobi),
+        getOrCreateContact(holderClient, 'verifier', verifierAid.oobi),
+        getOrCreateContact(holderClient, 'legal-entity', legalEntityAid.oobi),
+        getOrCreateContact(verifierClient, 'issuer', issuerAid.oobi),
+        getOrCreateContact(verifierClient, 'holder', holderAid.oobi),
+        getOrCreateContact(legalEntityClient, 'holder', holderAid.oobi),
+    ]);
+});
 
-        assert(issAgentOOBIs.oobis.length >= 1);
-        assert(holderAgentOOBIs.oobis.length >= 1);
-        assert(verifierAgentOOBIs.oobis.length >= 1);
-
-        const holderAgentOOBI = holderAgentOOBIs.oobis[0];
-        const verifierAgentOOBI = verifierAgentOOBIs.oobis[0];
-        const issuerAgentOOBI = issAgentOOBIs.oobis[0];
-
+test('single signature credentials', async () => {
+    await step('Resolve schema oobis', async () => {
         await Promise.all([
-            // Issuer resolves schemas, holder and verifier oobis
-            resolveOobi(issuerClient, QVI_SCHEMA_URL, 'schema'),
-            resolveOobi(issuerClient, LE_SCHEMA_URL, 'le-schema'),
-            resolveOobi(issuerClient, holderAgentOOBI, holderAid.name),
-            resolveOobi(issuerClient, verifierAgentOOBI, verifierAid.name),
-            // Holder resolves schemas, issuer and verifier oobis
-            resolveOobi(holderClient, QVI_SCHEMA_URL, 'schema'),
-            resolveOobi(holderClient, LE_SCHEMA_URL, 'le-schema'),
-            resolveOobi(holderClient, issuerAgentOOBI, issuerAid.name),
-            resolveOobi(holderClient, verifierAgentOOBI, verifierAid.name),
-            // Verifier resolves schemas, issuer and holder oobis
-            resolveOobi(verifierClient, QVI_SCHEMA_URL, 'schema'),
-            resolveOobi(verifierClient, LE_SCHEMA_URL, 'le-schema'),
-            resolveOobi(verifierClient, issuerAgentOOBI, issuerAid.name),
-            resolveOobi(verifierClient, holderAgentOOBI, holderAid.name),
+            resolveOobi(issuerClient, QVI_SCHEMA_URL),
+            resolveOobi(issuerClient, LE_SCHEMA_URL),
+            resolveOobi(holderClient, QVI_SCHEMA_URL),
+            resolveOobi(holderClient, LE_SCHEMA_URL),
+            resolveOobi(verifierClient, QVI_SCHEMA_URL),
+            resolveOobi(verifierClient, LE_SCHEMA_URL),
+            resolveOobi(legalEntityClient, QVI_SCHEMA_URL),
+            resolveOobi(legalEntityClient, LE_SCHEMA_URL),
         ]);
     });
 
@@ -319,37 +316,6 @@ test('single signature credentials', async () => {
         assert.equal(verifierCredential.status.s, '0'); // 0 = issued
     });
 
-    const legalEntityClient: SignifyClient = await getOrCreateClient();
-    const legalEntityAid: { name: string; prefix: string } = await createAid(
-        legalEntityClient,
-        'legal-entity'
-    );
-
-    await step('resolve oobis', async () => {
-        const [holderAgentOOBI, legalEntityOOBI] = await Promise.all([
-            holderClient.oobis().get(holderAid.name, 'agent'),
-            legalEntityClient.oobis().get(legalEntityAid.name, 'agent'),
-        ]);
-
-        assert(holderAgentOOBI.oobis.length >= 1);
-        assert(legalEntityOOBI.oobis.length >= 1);
-
-        await Promise.all([
-            resolveOobi(legalEntityClient, QVI_SCHEMA_URL, 'schema'),
-            resolveOobi(legalEntityClient, LE_SCHEMA_URL, 'le-schema'),
-            resolveOobi(
-                holderClient,
-                legalEntityOOBI.oobis[0],
-                legalEntityAid.name
-            ),
-            resolveOobi(
-                legalEntityClient,
-                holderAgentOOBI.oobis[0],
-                holderAid.name
-            ),
-        ]);
-    });
-
     const holderRegistry: { regk: string } = await step(
         'holder create registry for LE credential',
         async () => {
@@ -468,4 +434,4 @@ test('single signature credentials', async () => {
         assert.equal(legalEntityCredential.chains[0].sad.d, qviCredentialId);
         assert(legalEntityCredential.atc !== undefined);
     });
-}, 60000);
+}, 90000);
