@@ -434,4 +434,17 @@ test('single signature credentials', async () => {
         assert.equal(legalEntityCredential.chains[0].sad.d, qviCredentialId);
         assert(legalEntityCredential.atc !== undefined);
     });
+
+    await step('Issuer revoke QVI credential', async () => {
+        const revokeOperation = await issuerClient
+            .credentials()
+            .revoke(issuerAid.name, qviCredentialId);
+
+        await waitOperation(issuerClient, revokeOperation);
+        const issuerCredential = await issuerClient
+            .credentials()
+            .get(issuerAid.name, qviCredentialId);
+
+        assert.equal(issuerCredential.status.s, '1');
+    });
 }, 90000);
