@@ -4,9 +4,10 @@ import signify, {
     Serder,
     IssueCredentialResult,
     IssueCredentialArgs,
+    Operation,
 } from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
-import { waitForNotifications, waitOperation } from './utils/test-util';
+import { sleep, waitForNotifications } from './utils/test-util';
 import { getOrCreateClient } from './utils/test-setup';
 
 const { vleiServerUrl } = resolveEnvironment();
@@ -68,36 +69,6 @@ test('multisig', async function run() {
     op3 = await client3.oobis().resolve(SCHEMA_OOBI, 'schema');
     op3 = await waitOperation(client3, op3);
     console.log('Issuer resolved 3 OOBIs');
-
-    // // First member challenge the other members with a random list of words
-    // // List of words should be passed to the other members out of band
-    // // The other members should do the same challenge/response flow, not shown here for brevity
-    // const words = (await client1.challenges().generate(128)).words;
-    // console.log('Member1 generated challenge words:', words);
-
-    // await client2.challenges().respond('member2', aid1.prefix, words);
-    // console.log('Member2 responded challenge with signed words');
-
-    // await client3.challenges().respond('member3', aid1.prefix, words);
-    // console.log('Member3 responded challenge with signed words');
-
-    // op1 = await client1.challenges().verify('member1', aid2.prefix, words);
-    // op1 = await waitOperation(client1, op1);
-    // console.log('Member1 verified challenge response from member2');
-    // let exnwords = new Serder(op1.response.exn);
-    // op1 = await client1
-    //     .challenges()
-    //     .responded('member1', aid2.prefix, exnwords.ked.d);
-    // console.log('Member1 marked challenge response as accepted');
-
-    // op1 = await client1.challenges().verify('member1', aid3.prefix, words);
-    // op1 = await waitOperation(client1, op1);
-    // console.log('Member1 verified challenge response from member3');
-    // exnwords = new Serder(op1.response.exn);
-    // op1 = await client1
-    //     .challenges()
-    //     .responded('member1', aid3.prefix, exnwords.ked.d);
-    // console.log('Member1 marked challenge response as accepted');
 
     //// First member start the creation of a multisig identifier
     let rstates = [aid1['state'], aid2['state']];
@@ -313,7 +284,7 @@ test('multisig', async function run() {
     // Check for completion
     op1 = await waitOperation(client1, op1, 30);
     op2 = await waitOperation(client2, op2, 30);
-    console.log(`End role authorization for agent ${eid1}completed!`);
+    console.log(`End role authorization for agent ${eid1} completed!`);
 
 
     console.log(`Starting multisig end role authorization for agent ${eid2}`);
@@ -408,15 +379,15 @@ test('multisig', async function run() {
     // Check for completion
     op1 = await waitOperation(client1, op1);
     op2 = await waitOperation(client2, op2);
-    console.log(`End role authorization for agent ${eid2}completed!`);
+    console.log(`End role authorization for agent ${eid2} completed!`);
 
 
     // Holder resolve multisig OOBI
     const oobiMultisig = await client1.oobis().get('holder', 'agent');
-    console.log(`Memeber1: Holder multisig AID OOBIs` + JSON.stringify(oobiMultisig));
+    console.log(`Memeber1: Holder multisig AID OOBIs: ` + JSON.stringify(oobiMultisig));
 
     const oobiMultisig2 = await client2.oobis().get('holder', 'agent');
-    console.log(`Memeber2: Holder multisig AID OOBIs` + JSON.stringify(oobiMultisig2));
+    console.log(`Memeber2: Holder multisig AID OOBIs: ` + JSON.stringify(oobiMultisig2));
 
 
     op3 = await client3.oobis().resolve(oobiMultisig.oobis[0], 'holder');
@@ -430,6 +401,7 @@ test('multisig', async function run() {
 
     console.log(`Issuer starting credential issuance to holder...`);
     const registires = await client3.registries().list('issuer');
+    let recps: string[] = [aid1['prefix'], aid2['prefix']]
     await issueCredential(client3, {
         issuerName: 'issuer',
         registryId: registires[0].regk,
@@ -438,12 +410,14 @@ test('multisig', async function run() {
         data: {
             LEI: '5493001KJTIIGC8Y1R17',
         },
-    });
+    }
+        , recps
+    );
     console.log(`Issuer sent credential grant to holder.`);
 
-    console.log(`Member1 waits for grant notification...`);
+
     let grantMsgSaid = await waitForNotification(client1, '/exn/ipex/grant')
-    console.log('Member1 received grant exn notification...');
+    console.log(`Member1 received /exn/ipex/grant msg with SAID: ${grantMsgSaid} `);
     let exnRes = await client1.exchanges().get(grantMsgSaid)
 
     recp = [aid2['state']].map((state) => state['i']);
@@ -457,15 +431,15 @@ test('multisig', async function run() {
     )
     console.log(`Member1 admitted credential with SAID : ${exnRes.exn.e.acdc.d}`)
 
-    ////let grantMsgSaid2 = await waitAndMarkNotification(client2, '/exn/ipex/grant')
-    //let grantMsgSaid2 = await waitForNotification(client2, '/exn/ipex/grant', true)
-    let grantMsgSaid2_1 = await waitForNotification(client2, '/multisig/exn', true)
-    console.log('Member2 received grant exn notification...');
-    //assert.equal(grantMsgSaid, grantMsgSaid2);
 
-    //let exnRes2 = await client2.exchanges().get(grantMsgSaid2)
-    let exnRes2_1 = await client2.exchanges().get(grantMsgSaid2_1)
-    console.log(`Memeber2: received grant multisig/exn notifications` + JSON.stringify(exnRes2_1));
+    let grantMsgSaid2 = await waitForNotification(client2, '/exn/ipex/grant')
+    //grantMsgSaid2 = await waitForNotification(client2, '/multisig/exn', true)
+    console.log(`Member2 received /exn/ipex/grant msg with SAID: ${grantMsgSaid2} `);
+    let exnRes2 = await client2.exchanges().get(grantMsgSaid2)
+
+    assert.equal(grantMsgSaid, grantMsgSaid2);
+
+    console.log(`Member2 /exn/ipex/grant msg :  ` + JSON.stringify(exnRes2));
 
     let recp2 = [aid1['state']].map((state) => state['i']);
     await multisigAdmitCredential(
@@ -476,21 +450,28 @@ test('multisig', async function run() {
         exnRes.exn.i,
         recp2
     )
-    console.log(`Member2 admitted credential with SAID : ${exnRes.exn.e.acdc.d}`)    
+    console.log(`Member2 admitted credential with SAID : ${exnRes.exn.e.acdc.d}`)
 
     // msgSaid = await waitForNotification(client3, '/exn/ipex/admit');
-    // console.log('Member1 received exn notification with the admit response');
+    // console.log('Issuer received exn admit response');
 
-    let creds = await client1.credentials().list();
-    console.log(`Member1 has ${creds.length} credential`);
+    let creds1 = await client1.credentials().list();
+    console.log(`Member1 has ${creds1.length} credential`);
 
-    while (creds.length < 1) {
-        console.log(' No credentials yet...');
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        creds = await client1.credentials().list();
+    const MAX_RETRIES: number = 10
+    let retryCount = 0
+    while (retryCount < MAX_RETRIES) {
+        retryCount = retryCount + 1
+        console.log(` retry-${retryCount}: No credentials yet...`);
+
+        creds1 = await client1.credentials().list();
+        if (creds1.length > 0)
+            break;
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    console.log(`Holder has ${creds.length} credential ` + JSON.stringify(creds));
-
+    console.log(`Member1 has ${creds1.length} credential : ` + JSON.stringify(creds1));
+    assert.equal(creds1.length, 1);
 
 }, 360000);
 
@@ -509,13 +490,17 @@ async function waitAndMarkNotification(client: SignifyClient, route: string) {
 export async function waitForNotification(
     client: SignifyClient,
     route: string,
-    enableLog: boolean = false
+    enableLog: boolean = false,
+    maxRetries: number = 10
 ) {
     if (enableLog === true) {
         console.log(`  Waiting for notification with route : ${route}`)
     }
+    let retryCount = 0
     let msgSaid = ''
     while (msgSaid == '') {
+        retryCount = retryCount + 1
+
         const notifications = await client.notifications().list()
         if (enableLog === true) {
             console.log(`  Notifications list : ${JSON.stringify(notifications)}`)
@@ -526,9 +511,28 @@ export async function waitForNotification(
                 await client.notifications().mark(notif.i)
             }
         }
+        if (retryCount >= maxRetries) {
+            console.log(`No notification found with route : ${route}`)
+            break;
+        }
+
         await new Promise((resolve) => setTimeout(resolve, 1000))
     }
     return msgSaid
+}
+
+export async function waitOperation<T>(
+    client: SignifyClient,
+    op: Operation<T>,
+    retries: number = 10
+): Promise<Operation<T>> {
+    const WAIT = 1000;
+    while (retries-- > 0) {
+        op = await client.operations().get(op.name);
+        if (op.done === true) return op;
+        await sleep(WAIT);
+    }
+    throw new Error(`Timeout: operation ${op.name}`);
 }
 
 async function createAID(client: SignifyClient, name: string, wits: string[]) {
@@ -561,7 +565,8 @@ async function createRegistry(
 
 async function issueCredential(
     client: SignifyClient,
-    args: IssueCredentialArgs
+    args: IssueCredentialArgs,
+    recps: string[]
 ) {
     const result = await client.credentials().issue(args);
 
@@ -584,13 +589,9 @@ async function issueCredential(
             iss: result.iss,
         });
 
-        // await client
-        //     .exchanges()
-        //     .sendFromEvents(args.issuerName, 'credential', grant, gsigs, end, [
-        //         args.recipient,
-        //     ]);
-
-        await client.ipex().submitGrant(args.issuerName, grant, gsigs, end, [args.recipient]);
+        //// TODO: use multisig holder as exn recipient
+        //await client.ipex().submitGrant(args.issuerName, grant, gsigs, end, [args.recipient]);
+        await client.ipex().submitGrant(args.issuerName, grant, gsigs, end, recps);
     }
 
     console.log('Grant message sent');
@@ -653,44 +654,4 @@ async function multisigAdmitCredential(
             gembeds,
             recipients
         )
-}
-
-
-async function multisigIssue(
-    client: SignifyClient,
-    memberName: string,
-    groupName: string,
-    result: IssueCredentialResult
-) {
-    const leaderHab = await client.identifiers().get(memberName);
-    const groupHab = await client.identifiers().get(groupName);
-    const members = await client.identifiers().members(groupName);
-
-    const keeper = client.manager!.get(groupHab);
-    const sigs = await keeper.sign(signify.b(result.anc.raw));
-    const sigers = sigs.map((sig: string) => new signify.Siger({ qb64: sig }));
-    const ims = signify.d(signify.messagize(result.anc, sigers));
-    const atc = ims.substring(result.anc.size);
-
-    const embeds = {
-        acdc: [result.acdc, ''],
-        iss: [result.iss, ''],
-        anc: [result.anc, atc],
-    };
-
-    const recipients = members.signing
-        .map((m: { aid: string }) => m.aid)
-        .filter((aid: string) => aid !== leaderHab.prefix);
-
-    await client
-        .exchanges()
-        .send(
-            memberName,
-            'multisig',
-            leaderHab,
-            '/multisig/iss',
-            { gid: groupHab.prefix },
-            embeds,
-            recipients
-        );
 }
