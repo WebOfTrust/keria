@@ -9,6 +9,7 @@ from collections import namedtuple
 from dataclasses import dataclass, asdict
 
 import falcon
+import json
 from dataclasses_json import dataclass_json
 from keri import kering
 from keri.app.oobiing import Result
@@ -137,6 +138,26 @@ class Monitor:
         operation = self.status(op)
 
         return operation
+
+    def getOperations(self, type=None):
+        """ Return list of long running opterations, optionally filtered by type """
+        ops = self.opr.ops.getItemIter()
+        if type != None:
+            ops = filter(lambda i: i[1].type == type, ops)
+
+        def get_status(op):
+            try:
+                return self.status(op)
+            except Exception as err:
+                # self.status may throw an exception.
+                # Handling error by returning an operation with error status
+                return Operation(
+                    name=f"{op.type}.{op.oid}",
+                    metadata=op.metadata,
+                    done=True,
+                    error=Status(code=500, message=f"{err}"))
+
+        return [get_status(op) for (_, op) in ops]
 
     def rem(self, name):
         """ Remove tracking of the long running operation represented by name """
@@ -363,6 +384,40 @@ class Monitor:
                                      message=f"long running operation type {op.type} unknown")
 
         return operation
+
+
+class OperationCollectionEnd:
+    @staticmethod
+    def on_get(req, rep):
+        """ Get list of long running operations 
+        
+        Parameters:
+            req (Request):  Falcon HTTP Request object
+            rep (Response): Falcon HTTP Response object
+
+        ---
+        summary: Get list of long running operations
+        parameters:
+          - in: query
+            name: type
+            schema:
+              type: string
+            required: false
+            description: filter list of long running operations by type
+        responses:
+            200:
+              content:
+                  application/json:
+                    schema:
+                        type: array
+
+        """
+        agent = req.context.agent
+        type = req.params.get("type")
+        ops = agent.monitor.getOperations(type=type)
+        rep.data = json.dumps(ops, default=lambda o: o.to_dict()).encode("utf-8")
+        rep.content_type = "application/json"
+        rep.status = falcon.HTTP_200
 
 
 class OperationResourceEnd:
