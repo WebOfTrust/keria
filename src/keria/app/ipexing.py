@@ -130,6 +130,9 @@ class IpexAdmitCollectionEnd:
             raise falcon.HTTPBadRequest(description=f"invalid exn request message {serder.said}")
 
         grant, _ = exchanging.cloneMessage(agent.hby, admitked['p'])
+        if grant is None:
+            raise falcon.HTTPBadRequest(description=f"attempt to admit an invalid grant {admitked['p']}")
+
         embeds = grant.ked['e']
         acdc = embeds["acdc"]
         issr = acdc['i']
@@ -225,20 +228,13 @@ class IpexGrantCollectionEnd:
         if grant['r'] != "/ipex/grant":
             raise falcon.HTTPBadRequest(description=f"invalid route for embedded ipex grant {ked['r']}")
 
-        holder = grant['a']['i']
-        serder = serdering.SerderKERI(sad=grant)
-        ims = bytearray(serder.raw) + atc.encode("utf-8")
-        agent.hby.psr.parseOne(ims=ims)
-        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=holder, topic="credential"))
-        agent.grants.append(dict(said=grant['d'], pre=hab.pre))
-
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
         sigers = [coring.Siger(qb64=sig) for sig in sigs]
 
         # Now create the stream to send, need the signer seal
-        kever = hab.kever
-        seal = eventing.SealEvent(i=hab.pre, s="{:x}".format(kever.lastEst.s), d=kever.lastEst.d)
+        kever = hab.mhab.kever
+        seal = eventing.SealEvent(i=hab.mhab.pre, s="{:x}".format(kever.lastEst.s), d=kever.lastEst.d)
 
         ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
 
@@ -247,3 +243,14 @@ class IpexGrantCollectionEnd:
         # make a copy and parse
         agent.hby.psr.parseOne(ims=bytearray(ims))
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=rec, topic='credential'))
+        holder = grant['a']['i']
+
+        exn, pathed = exchanging.cloneMessage(agent.hby, serder.said)
+        if not exn:
+            raise falcon.HTTPBadRequest(description=f"invalid exn request message {serder.said}")
+
+        serder = serdering.SerderKERI(sad=grant)
+        ims = bytearray(serder.raw) + pathed['exn']
+        agent.hby.psr.parseOne(ims=ims)
+        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=holder, topic="credential"))
+        agent.grants.append(dict(said=grant['d'], pre=hab.pre, rec=holder))
