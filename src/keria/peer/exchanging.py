@@ -54,7 +54,7 @@ class ExchangeCollectionEnd:
 
         for recp in rec:  # Have to verify we already know all the recipients.
             if recp not in agent.hby.kevers:
-                raise falcon.HTTPBadRequest(f"attempt to send to unknown AID={recp}")
+                raise falcon.HTTPBadRequest(description=f"attempt to send to unknown AID={recp}")
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
