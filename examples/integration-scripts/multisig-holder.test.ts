@@ -1,13 +1,7 @@
 import { strict as assert } from 'assert';
-import signify, {
-    SignifyClient,
-    Serder,
-    IssueCredentialResult,
-    IssueCredentialArgs,
-    Operation,
-} from 'signify-ts';
+import signify, { SignifyClient, IssueCredentialArgs } from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
-import { sleep, waitForNotifications } from './utils/test-util';
+import { waitForNotifications, waitOperation } from './utils/test-util';
 import { getOrCreateClient } from './utils/test-setup';
 
 const { vleiServerUrl } = resolveEnvironment();
@@ -19,6 +13,8 @@ const WITNESS_AIDS = [
 
 const SCHEMA_SAID = 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao';
 const SCHEMA_OOBI = `${vleiServerUrl}/oobi/${SCHEMA_SAID}`;
+
+const TIME = createTimestamp();
 
 test('multisig', async function run() {
     await signify.ready();
@@ -291,8 +287,8 @@ test('multisig', async function run() {
         `Member2 authorized agent role to ${eid1}, waiting for others to authorize...`
     );
     // Check for completion
-    op1 = await waitOperation(client1, op1, 30);
-    op2 = await waitOperation(client2, op2, 30);
+    op1 = await waitOperation(client1, op1);
+    op2 = await waitOperation(client2, op2);
     console.log(`End role authorization for agent ${eid1} completed!`);
 
     console.log(`Starting multisig end role authorization for agent ${eid2}`);
@@ -398,17 +394,10 @@ test('multisig', async function run() {
     console.log(`End role authorization for agent ${eid2} completed!`);
 
     // Holder resolve multisig OOBI
-    const oobiMultisig = await client1.oobis().get('holder', 'agent');
-    console.log(
-        `Memeber1: Holder multisig AID OOBIs: ` + JSON.stringify(oobiMultisig)
-    );
+    const oobisRes = await client1.oobis().get('holder', 'agent');
+    let oobiMultisig = oobisRes.oobis[0].split('/agent/')[0];
 
-    const oobiMultisig2 = await client2.oobis().get('holder', 'agent');
-    console.log(
-        `Memeber2: Holder multisig AID OOBIs: ` + JSON.stringify(oobiMultisig2)
-    );
-
-    op3 = await client3.oobis().resolve(oobiMultisig.oobis[0], 'holder');
+    op3 = await client3.oobis().resolve(oobiMultisig, 'holder');
     op3 = await waitOperation(client3, op3);
     console.log(`Issuer resolved multisig holder OOBI`);
 
@@ -434,7 +423,10 @@ test('multisig', async function run() {
     );
     console.log(`Issuer sent credential grant to holder.`);
 
-    let grantMsgSaid = await waitForNotification(client1, '/exn/ipex/grant');
+    let grantMsgSaid = await waitAndMarkNotification(
+        client1,
+        '/exn/ipex/grant'
+    );
     console.log(
         `Member1 received /exn/ipex/grant msg with SAID: ${grantMsgSaid} `
     );
@@ -453,8 +445,10 @@ test('multisig', async function run() {
         `Member1 admitted credential with SAID : ${exnRes.exn.e.acdc.d}`
     );
 
-    let grantMsgSaid2 = await waitForNotification(client2, '/exn/ipex/grant');
-    //grantMsgSaid2 = await waitForNotification(client2, '/multisig/exn', true)
+    let grantMsgSaid2 = await waitAndMarkNotification(
+        client2,
+        '/exn/ipex/grant'
+    );
     console.log(
         `Member2 received /exn/ipex/grant msg with SAID: ${grantMsgSaid2} `
     );
@@ -476,9 +470,6 @@ test('multisig', async function run() {
     console.log(
         `Member2 admitted credential with SAID : ${exnRes.exn.e.acdc.d}`
     );
-
-    // msgSaid = await waitForNotification(client3, '/exn/ipex/admit');
-    // console.log('Issuer received exn admit response');
 
     let creds1 = await client1.credentials().list();
     console.log(`Member1 has ${creds1.length} credential`);
@@ -510,56 +501,6 @@ async function waitAndMarkNotification(client: SignifyClient, route: string) {
     );
 
     return notes[notes.length - 1]?.a.d ?? '';
-}
-
-export async function waitForNotification(
-    client: SignifyClient,
-    route: string,
-    enableLog: boolean = false,
-    maxRetries: number = 10
-) {
-    if (enableLog === true) {
-        console.log(`  Waiting for notification with route : ${route}`);
-    }
-    let retryCount = 0;
-    let msgSaid = '';
-    while (msgSaid == '') {
-        retryCount = retryCount + 1;
-
-        const notifications = await client.notifications().list();
-        if (enableLog === true) {
-            console.log(
-                `  Notifications list : ${JSON.stringify(notifications)}`
-            );
-        }
-        for (const notif of notifications.notes) {
-            if (notif.a.r == route) {
-                msgSaid = notif.a.d;
-                await client.notifications().mark(notif.i);
-            }
-        }
-        if (retryCount >= maxRetries) {
-            console.log(`No notification found with route : ${route}`);
-            break;
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-    return msgSaid;
-}
-
-export async function waitOperation<T>(
-    client: SignifyClient,
-    op: Operation<T>,
-    retries: number = 10
-): Promise<Operation<T>> {
-    const WAIT = 1000;
-    while (retries-- > 0) {
-        op = await client.operations().get(op.name);
-        if (op.done === true) return op;
-        await sleep(WAIT);
-    }
-    throw new Error(`Timeout: operation ${op.name}`);
 }
 
 async function createAID(client: SignifyClient, name: string, wits: string[]) {
@@ -641,25 +582,16 @@ async function multisigAdmitCredential(
     issuerPrefix: string,
     recipients: string[]
 ) {
-    const dt = createTimestamp();
-
     let mHab = await client.identifiers().get(memberAlias);
     let gHab = await client.identifiers().get(groupName);
 
     const [admit, sigs, end] = await client
         .ipex()
-        .admit(groupName, '', grantSaid, dt);
+        .admit(groupName, '', grantSaid, TIME);
 
     await client
         .ipex()
         .submitAdmit(groupName, admit, sigs, end, [issuerPrefix]);
-    // await client
-    //   .exchanges()
-    //   .sendFromEvents(groupName, 'credential', admit, sigs, end, [issuerPrefix])
-
-    if (recipients?.length < 1) {
-        return;
-    }
 
     let mstate = gHab['state'];
     let seal = [
