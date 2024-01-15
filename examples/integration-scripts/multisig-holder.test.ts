@@ -67,9 +67,9 @@ test('multisig', async function run() {
     console.log('Issuer resolved 3 OOBIs');
 
     //// First member start the creation of a multisig identifier
-    let rstates = [aid1['state'], aid2['state']];
-    let states = rstates;
-    let icpResult1 = await client1.identifiers().create('holder', {
+    const rstates = [aid1['state'], aid2['state']];
+    const states = rstates;
+    const icpResult1 = await client1.identifiers().create('holder', {
         algo: signify.Algos.group,
         mhab: aid1,
         isith: 2,
@@ -178,8 +178,6 @@ test('multisig', async function run() {
         identifiers2.aids[1].name,
         `[${identifiers2.aids[1].prefix}]`
     );
-
-    const multisig = identifiers2.aids[1].prefix;
 
     // Multisig end role
 
@@ -407,20 +405,15 @@ test('multisig', async function run() {
 
     console.log(`Issuer starting credential issuance to holder...`);
     const registires = await client3.registries().list('issuer');
-    let recps: string[] = [aid1['prefix'], aid2['prefix']];
-    await issueCredential(
-        client3,
-        {
-            issuerName: 'issuer',
-            registryId: registires[0].regk,
-            schemaId: SCHEMA_SAID,
-            recipient: holderAid['prefix'],
-            data: {
-                LEI: '5493001KJTIIGC8Y1R17',
-            },
+    await issueCredential(client3, {
+        issuerName: 'issuer',
+        registryId: registires[0].regk,
+        schemaId: SCHEMA_SAID,
+        recipient: holderAid['prefix'],
+        data: {
+            LEI: '5493001KJTIIGC8Y1R17',
         },
-        recps
-    );
+    });
     console.log(`Issuer sent credential grant to holder.`);
 
     let grantMsgSaid = await waitAndMarkNotification(
@@ -533,8 +526,7 @@ async function createRegistry(
 
 async function issueCredential(
     client: SignifyClient,
-    args: IssueCredentialArgs,
-    recps: string[]
+    args: IssueCredentialArgs
 ) {
     const result = await client.credentials().issue(args);
 
@@ -557,11 +549,9 @@ async function issueCredential(
             iss: result.iss,
         });
 
-        //// TODO: use multisig holder as exn recipient
-        //await client.ipex().submitGrant(args.issuerName, grant, gsigs, end, [args.recipient]);
         await client
             .ipex()
-            .submitGrant(args.issuerName, grant, gsigs, end, recps);
+            .submitGrant(args.issuerName, grant, gsigs, end, [args.recipient]);
     }
 
     console.log('Grant message sent');
