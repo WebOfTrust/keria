@@ -29,7 +29,7 @@ def test_operations(helpers):
 
         salt = b"C6X8UfJqYrOmJQHKqnI5a"
         op = helpers.createAid(client, "user1", salt)
-        assert op["done"] == True
+        assert op["done"] is True
         assert op["name"] == "done.EAF7geUfHm-M5lA-PI6Jv-4708a-KknnlMlA7U1_Wduv"
         aid = op["response"]
         recp = aid['i']
@@ -57,7 +57,7 @@ def test_operations(helpers):
         res = client.simulate_post(
             path=f"/identifiers/user1/endroles", json=body)
         op = res.json
-        assert op["done"] == True
+        assert op["done"] is True
         assert op["name"] == "endrole.EAF7geUfHm-M5lA-PI6Jv-4708a-KknnlMlA7U1_Wduv.agent.EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
 
         # operations has 2 elements
@@ -78,7 +78,7 @@ def test_operations(helpers):
 
         salt = b"tRkaivxZkQPfqjlDY6j1K"
         op = helpers.createAid(client, "user2", salt)
-        assert op["done"] == True
+        assert op["done"] is True
         assert op["name"] == "done.EAyXphfc0qOLqEDAe0cCYCj-ovbSaEFgVgX6MrC_b5ZO"
         aid = op["response"]
         recp = aid['i']
@@ -106,7 +106,7 @@ def test_operations(helpers):
         res = client.simulate_post(
             path=f"/identifiers/user2/endroles", json=body)
         op = res.json
-        assert op["done"] == True
+        assert op["done"] is True
         assert op["name"] == "endrole.EAyXphfc0qOLqEDAe0cCYCj-ovbSaEFgVgX6MrC_b5ZO.agent.EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
 
         # operations has 4 elements
@@ -184,3 +184,15 @@ def test_error(helpers):
 
         res = client.simulate_get(path=f"/operations/{op['name']}")
         assert res.status_code == 500
+
+        # Test other error conditions
+        res = client.simulate_get(path=f"/operations/exchange.EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
+        assert res.status_code == 404
+        assert res.json == {
+            'title': "long running operation 'exchange.EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao' not found"
+        }
+
+        res = client.simulate_get(path=f"/operations/query.EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
+        assert res.status_code == 404
+        assert res.json == {'title': 'long running operation '
+                                     "'query.EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao' not found"}

@@ -111,7 +111,7 @@ def test_ipex_admit(helpers, mockHelpingNowIso8601):
         data = json.dumps(body).encode("utf-8")
         res = client.simulate_post(path="/identifiers/test/ipex/admit", body=data)
 
-        assert res.status_code == 202
+        assert res.status_code == 200
         assert len(agent.exchanges) == 1
         assert len(agent.admits) == 1
 
@@ -297,8 +297,12 @@ def test_ipex_grant(helpers, mockHelpingNowIso8601, seeder):
 
         data = json.dumps(body).encode("utf-8")
         res = client.simulate_post(path="/identifiers/legal-entity/ipex/grant", body=data)
-        assert res.status_code == 202
-        assert res.json == exn.ked
+        assert res.status_code == 200
+        assert res.json == {'done': False,
+                            'error': None,
+                            'metadata': {'said': 'EHwjDEsub6XT19ISLft1m1xMNvVXnSfH0IsDGllox4Y8'},
+                            'name': 'exchange.EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm',
+                            'response': None}
         assert len(agent.exchanges) == 1
         assert len(agent.grants) == 1
 
@@ -731,7 +735,7 @@ def test_multisig_grant_admit(seeder, helpers):
         data = json.dumps(body).encode("utf-8")
         res = client0.simulate_post(path="/identifiers/issuer/ipex/grant", body=data)
 
-        assert res.status_code == 202
+        assert res.status_code == 200
 
         # Package up the GRANT into a multisig/exn from participant 1 to send to participant 0
         multiExnSerder, end = exchanging.exchange(route="/multisig/exn",
@@ -749,7 +753,7 @@ def test_multisig_grant_admit(seeder, helpers):
 
         data = json.dumps(body).encode("utf-8")
         res = client1.simulate_post(path="/identifiers/issuer/ipex/grant", body=data)
-        assert res.status_code == 202
+        assert res.status_code == 200
 
         # Wait until the GRANT has been persisted by Agent0
         while agent0.exc.complete(said=grantSerder.said) is not True:
@@ -803,7 +807,7 @@ def test_multisig_grant_admit(seeder, helpers):
         data = json.dumps(body).encode("utf-8")
         res = hclient0.simulate_post(path="/identifiers/holder/ipex/admit", body=data)
 
-        assert res.status_code == 202
+        assert res.status_code == 200
 
         # Package up the ADMIT into a multisig/exn from participant 1 to send to participant 0
         multiExnSerder, end = exchanging.exchange(route="/multisig/exn",
@@ -821,7 +825,7 @@ def test_multisig_grant_admit(seeder, helpers):
 
         data = json.dumps(body).encode("utf-8")
         res = hclient1.simulate_post(path="/identifiers/holder/ipex/admit", body=data)
-        assert res.status_code == 202
+        assert res.status_code == 200
 
         # Wait until the ADMIT has been persisted by Hagent0
         while hagent0.exc.complete(said=admitSerder.said) is not True:

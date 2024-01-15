@@ -21,7 +21,7 @@ ENV PATH=/keria/venv/bin:${PATH}
 RUN pip install --upgrade pip
 
 # Copy in Python dependency files
-COPY requirements.txt setup.py .
+COPY requirements.txt setup.py ./
 # "src/" dir required for installation of dependencies with setup.py
 RUN mkdir /keria/src
 # Install Python dependencies
