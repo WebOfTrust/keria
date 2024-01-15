@@ -12,7 +12,7 @@ from keri.app import habbing
 from keri.core import coring, eventing, serdering
 from keri.peer import exchanging
 
-from keria.core import httping
+from keria.core import httping, longrunning
 
 
 def loadEnds(app):
@@ -60,12 +60,14 @@ class IpexAdmitCollectionEnd:
 
         match route:
             case "/ipex/admit":
-                IpexAdmitCollectionEnd.sendAdmit(agent, hab, ked, sigs, rec)
+                op = IpexAdmitCollectionEnd.sendAdmit(agent, hab, ked, sigs, rec)
             case "/multisig/exn":
-                IpexAdmitCollectionEnd.sendMultisigExn(agent, hab, ked, sigs, atc, rec)
+                op = IpexAdmitCollectionEnd.sendMultisigExn(agent, hab, ked, sigs, atc, rec)
+            case _:
+                raise falcon.HTTPBadRequest(description=f"invalid message route {route}")
 
-        rep.status = falcon.HTTP_202
-        rep.data = json.dumps(ked).encode("utf-8")
+        rep.status = falcon.HTTP_200
+        rep.data = op.to_json().encode("utf-8")
 
     @staticmethod
     def sendAdmit(agent, hab, ked, sigs, rec):
@@ -91,6 +93,8 @@ class IpexAdmitCollectionEnd:
 
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=rec, topic='credential'))
         agent.admits.append(dict(said=ked['d'], pre=hab.pre))
+
+        return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
 
     @staticmethod
     def sendMultisigExn(agent, hab, ked, sigs, atc, rec):
@@ -143,6 +147,8 @@ class IpexAdmitCollectionEnd:
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=[issr], topic="credential"))
         agent.admits.append(dict(said=admitked['d'], pre=hab.pre))
 
+        return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
+
 
 class IpexGrantCollectionEnd:
 
@@ -181,12 +187,14 @@ class IpexGrantCollectionEnd:
 
         match route:
             case "/ipex/grant":
-                IpexGrantCollectionEnd.sendGrant(agent, hab, ked, sigs, atc, rec)
+                op = IpexGrantCollectionEnd.sendGrant(agent, hab, ked, sigs, atc, rec)
             case "/multisig/exn":
-                IpexGrantCollectionEnd.sendMultisigExn(agent, hab, ked, sigs, atc, rec)
+                op = IpexGrantCollectionEnd.sendMultisigExn(agent, hab, ked, sigs, atc, rec)
+            case _:
+                raise falcon.HTTPBadRequest(description=f"invalid route {route}")
 
-        rep.status = falcon.HTTP_202
-        rep.data = json.dumps(ked).encode("utf-8")
+        rep.status = falcon.HTTP_200
+        rep.data = op.to_json().encode("utf-8")
 
     @staticmethod
     def sendGrant(agent, hab, ked, sigs, atc, rec):
@@ -213,6 +221,8 @@ class IpexGrantCollectionEnd:
 
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=rec, topic='credential'))
         agent.grants.append(dict(said=ked['d'], pre=hab.pre, rec=rec))
+
+        return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
 
     @staticmethod
     def sendMultisigExn(agent, hab, ked, sigs, atc, rec):
@@ -252,5 +262,7 @@ class IpexGrantCollectionEnd:
         serder = serdering.SerderKERI(sad=grant)
         ims = bytearray(serder.raw) + pathed['exn']
         agent.hby.psr.parseOne(ims=ims)
-        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=holder, topic="credential"))
-        agent.grants.append(dict(said=grant['d'], pre=hab.pre, rec=holder))
+        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=[holder], topic="credential"))
+        agent.grants.append(dict(said=grant['d'], pre=hab.pre, rec=[holder]))
+
+        return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))

@@ -18,10 +18,12 @@ from keri.db import dbing, koming
 from keri.help import helping
 
 # long running operationt types
-Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole challenge done')
+Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole challenge exchange '
+                                'done')
 
 OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation', group='group', query='query',
-                  registry='registry', credential='credential', endrole='endrole', challenge='challenge', done='done')
+                  registry='registry', credential='credential', endrole='endrole', challenge='challenge',
+                  exchange='exchange', done='done')
 
 
 @dataclass_json
@@ -90,7 +92,8 @@ class Monitor:
 
     """
 
-    def __init__(self, hby, swain, counselor=None, registrar=None, credentialer=None, opr=None, temp=False):
+    def __init__(self, hby, swain, counselor=None, registrar=None, exchanger=None, credentialer=None, opr=None,
+                 temp=False):
         """ Create long running operation monitor
 
         Parameters:
@@ -103,6 +106,7 @@ class Monitor:
         self.swain = swain
         self.counselor = counselor
         self.registrar = registrar
+        self.exchanger = exchanger
         self.credentialer = credentialer
         self.opr = opr if opr is not None else Operator(name=hby.name, temp=temp)
 
@@ -330,6 +334,18 @@ class Monitor:
             if self.credentialer.complete(ced['d']):
                 operation.done = True
                 operation.response = dict(ced=ced)
+            else:
+                operation.done = False
+
+        elif op.type in (OpTypes.exchange,):
+            if "said" not in op.metadata:
+                raise kering.ValidationError(
+                    f"invalid long running {op.type} operation, metadata missing 'said' field")
+
+            said = op.metadata["said"]
+            if self.exchanger.complete(said):
+                operation.done = True
+                operation.response = dict(said=said)
             else:
                 operation.done = False
 

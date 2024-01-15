@@ -326,8 +326,6 @@ class Agent(doing.DoDoer):
                                                        registrar=self.registrar, verifier=self.verifier,
                                                        notifier=self.notifier)
 
-        self.monitor = longrunning.Monitor(hby=hby, swain=self.swain, counselor=self.counselor, temp=hby.temp,
-                                           registrar=self.registrar, credentialer=self.credentialer)
         self.seeker = basing.Seeker(name=hby.name, db=hby.db, reger=self.rgy.reger, reopen=True, temp=self.hby.temp)
         self.exnseeker = basing.ExnSeeker(name=hby.name, db=hby.db, reopen=True, temp=self.hby.temp)
 
@@ -337,6 +335,8 @@ class Agent(doing.DoDoer):
         self.exc = exchanging.Exchanger(hby=hby, handlers=handlers)
         grouping.loadHandlers(exc=self.exc, mux=self.mux)
         protocoling.loadHandlers(hby=self.hby, exc=self.exc, notifier=self.notifier)
+        self.monitor = longrunning.Monitor(hby=hby, swain=self.swain, counselor=self.counselor, temp=hby.temp,
+                                           registrar=self.registrar, credentialer=self.credentialer, exchanger=self.exc)
 
         self.rvy = routing.Revery(db=hby.db, cues=self.cues)
         self.kvy = eventing.Kevery(db=hby.db,
