@@ -286,7 +286,8 @@ class Monitor:
             else:
                 kever = self.hby.kevers[op.oid]
                 if "sn" in op.metadata:
-                    if kever.sn >= op.metadata["sn"]:
+                    sn = int(op.metadata['sn'], 16)
+                    if kever.sn >= sn:
                         operation.done = True
                         operation.response = asdict(kever.state())
                     else:
@@ -304,7 +305,7 @@ class Monitor:
                         ksn = self.hby.db.ksns.get(keys=(saider.qb64,))
                         break
 
-                    if ksn and ksn.ked['d'] == kever.serder.said:
+                    if ksn and ksn.d == kever.serder.said:
                         operation.done = True
                         operation.response = asdict(kever.state())
                     else:

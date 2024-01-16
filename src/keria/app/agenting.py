@@ -705,7 +705,8 @@ class Querier(doing.DoDoer):
             pre = msg["pre"]
 
             if "sn" in msg:
-                seqNoDo = querying.SeqNoQuerier(hby=self.hby, hab=self.agentHab, pre=pre, sn=msg["sn"])
+                sn = int(msg['sn'], 16)
+                seqNoDo = querying.SeqNoQuerier(hby=self.hby, hab=self.agentHab, pre=pre, sn=sn)
                 self.extend([seqNoDo])
             elif "anchor" in msg:
                 pass
