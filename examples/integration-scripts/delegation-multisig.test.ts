@@ -46,12 +46,12 @@ test('delegation-multisig', async () => {
         mhab: aid1,
         isith: 2,
         nsith: 2,
-        // toad: 3,
-        // wits: [
-        //     'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
-        //     'BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM',
-        //     'BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX',
-        // ],
+        toad: 3,
+        wits: [
+            'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
+            'BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM',
+            'BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX',
+        ],
         states: states,
         rstates: rstates,
         delpre: aid0.prefix,
