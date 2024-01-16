@@ -75,7 +75,7 @@ test('delegation', async () => {
     // Client 1 approves deletation
     const anchor = {
         i: delegatePrefix,
-        s: 0,
+        s: '0',
         d: delegatePrefix,
     };
     await client1.identifiers().interact('delegator', anchor);

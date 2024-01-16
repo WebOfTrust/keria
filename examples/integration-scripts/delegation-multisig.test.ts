@@ -142,7 +142,7 @@ test('delegation-multisig', async () => {
     // Client 0 approves delegation
     const anchor = {
         i: delegatePrefix,
-        s: 0,
+        s: '0',
         d: delegatePrefix,
     };
     await client0.identifiers().interact('delegator', anchor);
