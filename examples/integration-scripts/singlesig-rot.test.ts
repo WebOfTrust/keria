@@ -79,7 +79,7 @@ describe('singlesig-rot', () => {
         // refresh remote keystate
         let op = await client2
             .keyStates()
-            .query(contact1_id, parseInt(keystate1.s), undefined);
+            .query(contact1_id, keystate1.s, undefined);
         op = await waitOperation(client2, op);
         const keystate3: KeyState = op.response;
         // local and remote keystate match

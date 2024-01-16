@@ -592,29 +592,29 @@ test('multisig', async function run() {
     console.log('Member3 rotated keys');
 
     // Update new key states
-    op1 = await client1.keyStates().query(aid2.prefix, 1);
+    op1 = await client1.keyStates().query(aid2.prefix, "1");
     op1 = await waitOperation(client1, op1);
     const aid2State = op1['response'];
-    op1 = await client1.keyStates().query(aid3.prefix, 1);
+    op1 = await client1.keyStates().query(aid3.prefix, "1");
     op1 = await waitOperation(client1, op1);
     const aid3State = op1['response'];
 
-    op2 = await client2.keyStates().query(aid3.prefix, 1);
+    op2 = await client2.keyStates().query(aid3.prefix, "1");
     op2 = await waitOperation(client2, op2);
-    op2 = await client2.keyStates().query(aid1.prefix, 1);
+    op2 = await client2.keyStates().query(aid1.prefix, "1");
     op2 = await waitOperation(client2, op2);
     const aid1State = op2['response'];
 
-    op3 = await client3.keyStates().query(aid1.prefix, 1);
+    op3 = await client3.keyStates().query(aid1.prefix, "1");
     op3 = await waitOperation(client3, op3);
-    op3 = await client3.keyStates().query(aid2.prefix, 1);
+    op3 = await client3.keyStates().query(aid2.prefix, "1");
     op3 = await waitOperation(client3, op3);
 
-    op4 = await client4.keyStates().query(aid1.prefix, 1);
+    op4 = await client4.keyStates().query(aid1.prefix, "1");
     op4 = await waitOperation(client4, op4);
-    op4 = await client4.keyStates().query(aid2.prefix, 1);
+    op4 = await client4.keyStates().query(aid2.prefix, "1");
     op4 = await waitOperation(client4, op4);
-    op4 = await client4.keyStates().query(aid3.prefix, 1);
+    op4 = await client4.keyStates().query(aid3.prefix, "1");
     op4 = await waitOperation(client4, op4);
 
     rstates = [aid1State, aid2State, aid3State];
@@ -945,13 +945,13 @@ test('multisig', async function run() {
     const m = await client1.identifiers().get('multisig');
 
     // Update states
-    op1 = await client1.keyStates().query(m.prefix, 4);
+    op1 = await client1.keyStates().query(m.prefix, "4");
     op1 = await waitOperation(client1, op1);
-    op2 = await client2.keyStates().query(m.prefix, 4);
+    op2 = await client2.keyStates().query(m.prefix, "4");
     op2 = await waitOperation(client2, op2);
-    op3 = await client3.keyStates().query(m.prefix, 4);
+    op3 = await client3.keyStates().query(m.prefix, "4");
     op3 = await waitOperation(client3, op3);
-    op4 = await client4.keyStates().query(m.prefix, 4);
+    op4 = await client4.keyStates().query(m.prefix, "4");
     op4 = await waitOperation(client4, op4);
 
     // IPEX grant message
