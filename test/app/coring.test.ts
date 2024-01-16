@@ -261,7 +261,7 @@ describe('Coring', () => {
 
         await keyStates.query(
             'EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX',
-            "1",
+            '1',
             'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao'
         );
         lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
@@ -272,7 +272,7 @@ describe('Coring', () => {
             lastBody.pre,
             'EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX'
         );
-        assert.equal(lastBody.sn, "1");
+        assert.equal(lastBody.sn, '1');
         assert.equal(
             lastBody.anchor,
             'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao'
