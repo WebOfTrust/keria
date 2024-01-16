@@ -37,7 +37,7 @@ describe('singlesig-dip', () => {
         let delegate1 = await client2.identifiers().get('delegate1');
         let seal = {
             i: delegate1.prefix,
-            s: 0,
+            s: '0',
             d: delegate1.prefix,
         };
         let result = await client1.identifiers().interact('name1', seal);
@@ -68,13 +68,12 @@ describe('singlesig-dip', () => {
         let delegate2 = await client2.identifiers().get('delegate2');
         let seal = {
             i: delegate2.prefix,
-            s: 0,
+            s: '0',
             d: delegate2.prefix,
         };
         let result = await client1.identifiers().interact('name1', seal);
         let op = waitOperation(client1, await result.op());
     });
-    // https://github.com/WebOfTrust/signify-ts/issues/145
     test('delegate2b', async () => {
         // delegate waits for completion
         let delegate2 = await client2.identifiers().get('delegate2');
