@@ -367,7 +367,7 @@ def test_querier(helpers):
         doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
         deeds = doist.enter(doers=[qry])
 
-        qry.queries.append(dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9", sn=1))
+        qry.queries.append(dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9", sn="1"))
         qry.recur(1.0, deeds=deeds)
 
         assert len(qry.doers) == 1

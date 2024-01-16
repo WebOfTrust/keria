@@ -1,3 +1,5 @@
+from keri.help import helping
+
 from keria.app import aiding
 from keri.kering import ValidationError
 from keria.core import longrunning
@@ -155,6 +157,16 @@ def test_operations(helpers):
         res = client.simulate_get(path="/operations")
         assert isinstance(res.json, list)
         assert len(res.json) == 0
+
+        op = agent.monitor.status(
+            longrunning.Op(type='query', oid=recp, start=helping.nowIso8601(), metadata={'sn': '0'}))
+        assert op.name == f"query.{recp}"
+        assert op.done is True
+
+        op = agent.monitor.status(
+            longrunning.Op(type='query', oid=recp, start=helping.nowIso8601(), metadata={'sn': '4'}))
+        assert op.name == f"query.{recp}"
+        assert op.done is False
 
 
 def test_error(helpers):
