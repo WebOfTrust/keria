@@ -18,7 +18,7 @@ from falcon import media
 from hio.base import doing
 from hio.core import http, tcp
 from hio.help import decking
-from keri.app import configing, keeping, habbing, storing, signaling, oobiing, agenting, delegating, \
+from keri.app import configing, keeping, habbing, storing, signaling, oobiing, agenting, \
     forwarding, querying, connecting, grouping
 from keri.app.grouping import Counselor
 from keri.app.keeping import Algos
@@ -36,7 +36,7 @@ from keri.vdr.credentialing import Regery, sendArtifacts
 from keri.vdr.eventing import Tevery
 from keri.app import challenging
 
-from . import aiding, notifying, indirecting, credentialing, ipexing
+from . import aiding, notifying, indirecting, credentialing, ipexing, delegating
 from . import grouping as keriagrouping
 from ..peer import exchanging as keriaexchanging
 from .specing import AgentSpecResource
