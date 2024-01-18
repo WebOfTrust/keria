@@ -22,6 +22,7 @@ export async function waitOperation<T = any>(
             throw new Error(`Operation ${op.name} not done`);
         }
 
+        console.log("DONE", op.name)
         return op;
     }, options);
 }
