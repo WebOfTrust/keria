@@ -535,7 +535,7 @@ class IdentifierResourceEnd:
             return op
 
         if hab.kever.delegator:
-            agent.anchors.append(dict(alias=name, pre=hab.pre, sn=0))
+            agent.anchors.append(dict(alias=name, pre=hab.pre, sn=serder.sn))
             op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
                                       metadata=dict(pre=hab.pre, sn=serder.sn))
             return op
