@@ -2,7 +2,7 @@ import { SignifyClient } from './clienting';
 import { Tier } from '../core/salter';
 import { Algos } from '../core/manager';
 import { incept, interact, reply, rotate } from '../core/eventing';
-import {b, Ilks, Serials, Versionage} from '../core/core';
+import { b, Ilks, Serials, Versionage } from '../core/core';
 import { Tholder } from '../core/tholder';
 import { MtrDex } from '../core/matter';
 import { Serder } from '../core/serder';
@@ -287,7 +287,7 @@ export class Identifier {
 
         const hab = await this.get(name);
         const pre = hab.prefix;
-        const delegated = hab.state.di !== ''
+        const delegated = hab.state.di !== '';
 
         const state = hab.state;
         const count = state.k.length;

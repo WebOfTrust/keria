@@ -32,7 +32,6 @@ describe('singlesig-dip', () => {
         let delegate1 = await client2.identifiers().get('delegate1');
         expect(op.name).toEqual(`delegation.${delegate1.prefix}`);
 
-
         delegate1 = await client2.identifiers().get('delegate1');
         let seal = {
             i: delegate1.prefix,
@@ -40,15 +39,15 @@ describe('singlesig-dip', () => {
             d: delegate1.prefix,
         };
         result = await client1.identifiers().interact('name1', seal);
-        let op1 = await result.op()
+        let op1 = await result.op();
 
         let op2 = await client2.keyStates().query(name1_id, '1');
 
         await Promise.all([
-            op = await waitOperation(client2, op),
+            (op = await waitOperation(client2, op)),
             waitOperation(client1, op1),
-            waitOperation(client2, op2)
-        ])
+            waitOperation(client2, op2),
+        ]);
 
         delegate1 = await client2.identifiers().get('delegate1');
         expect(delegate1.prefix).toEqual(op.response.i);
@@ -65,7 +64,6 @@ describe('singlesig-dip', () => {
         let delegate2 = await client2.identifiers().get('delegate2');
         expect(op.name).toEqual(`delegation.${delegate2.prefix}`);
 
-
         // delegator approves delegate
         delegate2 = await client2.identifiers().get('delegate2');
         seal = {
@@ -74,19 +72,18 @@ describe('singlesig-dip', () => {
             d: delegate2.prefix,
         };
         result = await client1.identifiers().interact('name1', seal);
-        op1 = await result.op()
+        op1 = await result.op();
 
         op2 = await client2.keyStates().query(name1_id, '2');
 
         await Promise.all([
-            op = await waitOperation(client2, op),
+            (op = await waitOperation(client2, op)),
             waitOperation(client1, op1),
-            waitOperation(client2, op2)
-        ])
+            waitOperation(client2, op2),
+        ]);
 
         // delegate waits for completion
         delegate2 = await client2.identifiers().get('delegate2');
         expect(delegate2.prefix).toEqual(op.response.i);
-
     });
 });

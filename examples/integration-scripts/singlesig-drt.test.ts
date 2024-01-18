@@ -1,13 +1,10 @@
-import {
-    CreateIdentiferArgs,
-    SignifyClient,
-} from 'signify-ts';
+import { CreateIdentiferArgs, SignifyClient } from 'signify-ts';
 import {
     getOrCreateClients,
     getOrCreateContact,
     getOrCreateIdentifier,
 } from './utils/test-setup';
-import {waitOperation} from './utils/test-util';
+import { waitOperation } from './utils/test-util';
 
 let delegator: SignifyClient, delegate: SignifyClient;
 let name1_id: string, name1_oobi: string;
@@ -45,12 +42,11 @@ describe('singlesig-drt', () => {
 
         let op2 = await delegate.keyStates().query(name1_id, '1');
 
-
         await Promise.all([
             waitOperation(delegate, op),
             waitOperation(delegator, op1),
-            waitOperation(delegate, op2)
-        ])
+            waitOperation(delegate, op2),
+        ]);
 
         kargs = {};
         result = await delegate.identifiers().rotate('delegate1', kargs);
@@ -71,14 +67,12 @@ describe('singlesig-drt', () => {
         op2 = await delegate.keyStates().query(name1_id, '2');
 
         await Promise.all([
-            op = await waitOperation(delegate, op),
+            (op = await waitOperation(delegate, op)),
             waitOperation(delegator, op1),
-            waitOperation(delegate, op2)
-        ])
+            waitOperation(delegate, op2),
+        ]);
 
         expect(op.response.t).toEqual(`drt`);
         expect(op.response.s).toEqual(`1`);
-
-
     });
 });
