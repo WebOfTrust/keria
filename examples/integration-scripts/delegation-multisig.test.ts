@@ -46,7 +46,7 @@ test('delegation-multisig', async () => {
         mhab: aid1,
         isith: 2,
         nsith: 2,
-        toad: 3,
+        toad: 2,
         wits: [
             'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
             'BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM',
@@ -148,10 +148,15 @@ test('delegation-multisig', async () => {
     await client0.identifiers().interact('delegator', anchor);
     console.log('Delegator approved delegation');
 
+    let op3 = await client1.keyStates().query(aid0.prefix, '1');
+    let op4 = await client2.keyStates().query(aid0.prefix, '1');
+
     // Check for completion
     await Promise.all([
         waitOperation(client1, op1),
         waitOperation(client2, op2),
+        waitOperation(client1, op3),
+        waitOperation(client2, op4),
     ]);
     console.log('Delegated multisig created!');
 
