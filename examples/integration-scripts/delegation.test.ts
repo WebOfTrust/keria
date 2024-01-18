@@ -81,6 +81,9 @@ test('delegation', async () => {
     await client1.identifiers().interact('delegator', anchor);
     console.log('Delegator approved delegation');
 
+    let op3 = await client2.keyStates().query(aid1.prefix, '1');
+    await waitOperation(client2, op3);
+
     // Client 2 check approval
     await waitOperation(client2, op2);
     const aid2 = await client2.identifiers().get('delegate');

@@ -31,54 +31,59 @@ describe('singlesig-dip', () => {
         let op = await result.op();
         let delegate1 = await client2.identifiers().get('delegate1');
         expect(op.name).toEqual(`delegation.${delegate1.prefix}`);
-    });
-    test('delegator1', async () => {
-        // delegator approves delegate
-        let delegate1 = await client2.identifiers().get('delegate1');
+
+        delegate1 = await client2.identifiers().get('delegate1');
         let seal = {
             i: delegate1.prefix,
             s: '0',
             d: delegate1.prefix,
         };
-        let result = await client1.identifiers().interact('name1', seal);
-        let op = waitOperation(client1, await result.op());
-    });
-    test('delegate1b', async () => {
-        // delegate waits for completion
-        let delegate1 = await client2.identifiers().get('delegate1');
-        let op: any = { name: `delegation.${delegate1.prefix}` };
-        op = await waitOperation(client2, op);
+        result = await client1.identifiers().interact('name1', seal);
+        let op1 = await result.op();
+
+        let op2 = await client2.keyStates().query(name1_id, '1');
+
+        await Promise.all([
+            (op = await waitOperation(client2, op)),
+            waitOperation(client1, op1),
+            waitOperation(client2, op2),
+        ]);
+
+        delegate1 = await client2.identifiers().get('delegate1');
         expect(delegate1.prefix).toEqual(op.response.i);
-    });
-    test('delegate2a', async () => {
+
         // delegate creates identifier with default witness config
         let env = resolveEnvironment();
-        let kargs: CreateIdentiferArgs = {
+        kargs = {
             delpre: name1_id,
             toad: env.witnessIds.length,
             wits: env.witnessIds,
         };
-        let result = await client2.identifiers().create('delegate2', kargs);
-        let op = await result.op();
+        result = await client2.identifiers().create('delegate2', kargs);
+        op = await result.op();
         let delegate2 = await client2.identifiers().get('delegate2');
         expect(op.name).toEqual(`delegation.${delegate2.prefix}`);
-    });
-    test('delegator2', async () => {
+
         // delegator approves delegate
-        let delegate2 = await client2.identifiers().get('delegate2');
-        let seal = {
+        delegate2 = await client2.identifiers().get('delegate2');
+        seal = {
             i: delegate2.prefix,
             s: '0',
             d: delegate2.prefix,
         };
-        let result = await client1.identifiers().interact('name1', seal);
-        let op = waitOperation(client1, await result.op());
-    });
-    test('delegate2b', async () => {
+        result = await client1.identifiers().interact('name1', seal);
+        op1 = await result.op();
+
+        op2 = await client2.keyStates().query(name1_id, '2');
+
+        await Promise.all([
+            (op = await waitOperation(client2, op)),
+            waitOperation(client1, op1),
+            waitOperation(client2, op2),
+        ]);
+
         // delegate waits for completion
-        let delegate2 = await client2.identifiers().get('delegate2');
-        let op: any = { name: `delegation.${delegate2.prefix}` };
-        op = await waitOperation(client2, op);
+        delegate2 = await client2.identifiers().get('delegate2');
         expect(delegate2.prefix).toEqual(op.response.i);
     });
 });
