@@ -65,7 +65,7 @@ export interface IssueCredentialArgs {
     /**
      * Credential rules
      */
-    rules?: Record<string, unknown>;
+    rules?: string | Record<string, unknown>;
 
     /**
      * Credential sources
