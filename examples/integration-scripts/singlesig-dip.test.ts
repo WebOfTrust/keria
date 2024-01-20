@@ -87,5 +87,9 @@ describe('singlesig-dip', () => {
         // delegate waits for completion
         delegate2 = await client2.identifiers().get('delegate2');
         expect(delegate2.prefix).toEqual(op.response.i);
+
+        // make sure query with seal is idempotent
+        op = await client2.keyStates().query(name1_id, undefined, seal);
+        await waitOperation(client2, op)
     });
 });
