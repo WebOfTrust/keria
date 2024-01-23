@@ -166,14 +166,14 @@ export class KeyStates {
     }
 
     /**
-     * Query the key state of an identifier for a given sequence number or anchor SAID
+     * Query the key state of an identifier for a given sequence number or anchor
      * @async
      * @param {string} pre Identifier prefix
      * @param {number} [sn] Optional sequence number
-     * @param {string} [anchor] Optional anchor SAID
+     * @param {any} [anchor] Optional anchor
      * @returns {Promise<any>} A promise to the long-running operation
      */
-    async query(pre: string, sn?: string, anchor?: string): Promise<any> {
+    async query(pre: string, sn?: string, anchor?: any): Promise<any> {
         const path = `/queries`;
         const data: any = {
             pre: pre,

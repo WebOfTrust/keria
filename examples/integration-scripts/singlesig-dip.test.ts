@@ -41,6 +41,7 @@ describe('singlesig-dip', () => {
         result = await client1.identifiers().interact('name1', seal);
         let op1 = await result.op();
 
+        // refresh keystate to sn=1
         let op2 = await client2.keyStates().query(name1_id, '1');
 
         await Promise.all([
@@ -74,7 +75,8 @@ describe('singlesig-dip', () => {
         result = await client1.identifiers().interact('name1', seal);
         op1 = await result.op();
 
-        op2 = await client2.keyStates().query(name1_id, '2');
+        // refresh keystate to seal event
+        op2 = await client2.keyStates().query(name1_id, undefined, seal);
 
         await Promise.all([
             (op = await waitOperation(client2, op)),
@@ -85,5 +87,9 @@ describe('singlesig-dip', () => {
         // delegate waits for completion
         delegate2 = await client2.identifiers().get('delegate2');
         expect(delegate2.prefix).toEqual(op.response.i);
+
+        // make sure query with seal is idempotent
+        op = await client2.keyStates().query(name1_id, undefined, seal);
+        await waitOperation(client2, op);
     });
 });
