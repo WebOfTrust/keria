@@ -381,7 +381,12 @@ def test_querier(helpers):
         # Anchor not implemented yet
         qry.queries.append(dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9", anchor={}))
         qry.recur(1.0, deeds=deeds)
-        assert len(qry.doers) == 0
+        assert len(qry.doers) == 1
+        anchorDoer = qry.doers[0]
+        assert isinstance(anchorDoer, querying.AnchorQuerier) is True
+        assert anchorDoer.pre == "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
+        assert anchorDoer.anchor == {}
+        qry.doers.remove(anchorDoer)
 
         qry.queries.append(dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"))
         qry.recur(1.0, deeds=deeds)
