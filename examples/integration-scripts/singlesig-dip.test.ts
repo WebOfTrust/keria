@@ -90,6 +90,6 @@ describe('singlesig-dip', () => {
 
         // make sure query with seal is idempotent
         op = await client2.keyStates().query(name1_id, undefined, seal);
-        await waitOperation(client2, op)
+        await waitOperation(client2, op);
     });
 });
