@@ -377,4 +377,29 @@ describe('SignifyClient', () => {
             'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK'
         );
     });
+
+    test('includes HTTP status info in error message', async () => {
+        await libsodium.ready;
+        const bran = '0123456789abcdefghijk';
+        const client = new SignifyClient(url, bran, Tier.low, boot_url);
+
+        await client.connect();
+
+        fetchMock.mockResolvedValue(
+            new Response('Error info', {
+                status: 400,
+                statusText: 'Bad Request',
+            })
+        );
+
+        const error = await client
+            .fetch('/somepath', 'GET', undefined)
+            .catch((e) => e);
+
+        assert(error instanceof Error);
+        assert.equal(
+            error.message,
+            'HTTP GET /somepath - 400 Bad Request - Error info'
+        );
+    });
 });
