@@ -126,16 +126,26 @@ describe('vdr', () => {
             pre: 'ECJIoBpEcCWMzvquk861dXP8JJZ-vbmJczlDR-NYcE3g',
             nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
             baks: ['a backer'],
+            toad: 1,
         });
 
-        assert.equal(
-            actual.pre,
-            'ELdKGV_ojDYC47GVHBRakgib5LJQLKcA72oAMUF5Jsou'
-        );
+        const expectedPrefix = 'ENlghG6_krj9YMzy5-E3j5sEjsd6FR1nskBtbtSQGOFL';
+        assert.equal(actual.pre, expectedPrefix);
         assert.equal(actual.code, 'E');
         assert.equal(
             actual.raw,
-            '{"v":"KERI10JSON000119_","t":"vcp","d":"ELdKGV_ojDYC47GVHBRakgib5LJQLKcA72oAMUF5Jsou","i":"ELdKGV_ojDYC47GVHBRakgib5LJQLKcA72oAMUF5Jsou","ii":"ECJIoBpEcCWMzvquk861dXP8JJZ-vbmJczlDR-NYcE3g","s":"0","c":[],"bt":"0","b":["a backer"],"n":"AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s"}'
+            JSON.stringify({
+                v: 'KERI10JSON000119_',
+                t: 'vcp',
+                d: expectedPrefix,
+                i: expectedPrefix,
+                ii: 'ECJIoBpEcCWMzvquk861dXP8JJZ-vbmJczlDR-NYcE3g',
+                s: '0',
+                c: [],
+                bt: '1',
+                b: ['a backer'],
+                n: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
+            })
         );
         assert.equal(actual.size, 281);
     });

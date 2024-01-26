@@ -16,7 +16,7 @@ import { Serder } from './serder';
 namespace vdr {
     export interface VDRInceptArgs {
         pre: string;
-        toad?: string | number | undefined;
+        toad?: number | string;
         nonce?: string;
         baks?: string[];
         cnfg?: string[];
@@ -78,7 +78,7 @@ namespace vdr {
             ii: pre,
             s: '' + isn,
             c: cnfg,
-            bt: '0',
+            bt: _toad.toString(16),
             b: baks,
             n: nonce,
         };
