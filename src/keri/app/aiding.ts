@@ -51,14 +51,23 @@ export interface RotateIdentifierArgs {
     rstates?: any[];
 }
 
+/**
+ * Reducing the SignifyClient dependencies used by Identifier class
+ */
+export type IdentifierSignifyClient = Pick<
+    SignifyClient,
+    'fetch' | 'pidx' | 'manager'
+>;
+
 /** Identifier */
 export class Identifier {
-    public client: SignifyClient;
+    public client: IdentifierSignifyClient;
+
     /**
      * Identifier
-     * @param {SignifyClient} client
+     * @param {IdentifierSignifyClient} client
      */
-    constructor(client: SignifyClient) {
+    constructor(client: IdentifierSignifyClient) {
         this.client = client;
     }
 
@@ -263,7 +272,7 @@ export class Identifier {
         };
         jsondata[keeper.algo] = keeper.params();
 
-        const res = this.client.fetch(
+        const res = await this.client.fetch(
             '/identifiers/' + name + '?type=ixn',
             'PUT',
             jsondata
@@ -294,7 +303,7 @@ export class Identifier {
         const dig = state.d;
         const ridx = Number(state.s) + 1;
         const wits = state.b;
-        let isith = state.kt;
+        let isith = state.nt;
 
         let nsith = kargs.nsith ?? isith;
 
@@ -361,7 +370,11 @@ export class Identifier {
         };
         jsondata[keeper.algo] = keeper.params();
 
-        const res = this.client.fetch('/identifiers/' + name, 'PUT', jsondata);
+        const res = await this.client.fetch(
+            '/identifiers/' + name,
+            'PUT',
+            jsondata
+        );
         return new EventResult(serder, sigs, res);
     }
 
@@ -447,9 +460,13 @@ export class Identifier {
 export class EventResult {
     private readonly _serder: Serder;
     private readonly _sigs: string[];
-    private readonly promise: Promise<Response>;
+    private readonly promise: Promise<Response> | Response;
 
-    constructor(serder: Serder, sigs: string[], promise: Promise<Response>) {
+    constructor(
+        serder: Serder,
+        sigs: string[],
+        promise: Promise<Response> | Response
+    ) {
         this._serder = serder;
         this._sigs = sigs;
         this.promise = promise;
