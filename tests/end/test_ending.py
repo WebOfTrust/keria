@@ -61,6 +61,10 @@ def test_oobi_end(helpers):
         assert res.status_code == 404
         assert res.json == {'description': 'no blind oobi for this node', 'title': '404 Not Found'}
 
+        res = client.simulate_get(path=f"/oobi/")
+        assert res.status_code == 404
+        assert res.json == {'description': 'no blind oobi for this node', 'title': '404 Not Found'}
+
         # Use a bad AID
         res = client.simulate_get(path=f"/oobi/EHXXXXXT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSys")
         assert res.status_code == 404
