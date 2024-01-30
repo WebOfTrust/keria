@@ -315,6 +315,10 @@ def test_identifier_collection_end(helpers):
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
         assert res.status_code == 202
 
+        res = client.simulate_get(path="/identifiers/")
+        assert res.status_code == 400
+        assert res.json == {'description': 'name is required', 'title': '400 Bad Request'}
+
         res = client.simulate_get(path="/identifiers")
         assert res.status_code == 200
         assert len(res.json) == 2
@@ -1227,6 +1231,11 @@ def test_oobi_ends(helpers):
         op = helpers.createAid(client, "pal", salt)
         iserder = serdering.SerderKERI(sad=op["response"])
         assert iserder.pre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+
+        # Test empty
+        res = client.simulate_get("/identifiers//oobis?role=agent")
+        assert res.status_code == 400
+        assert res.json == {'description': 'name is required', 'title': '400 Bad Request'}
 
         # Test before endroles are added
         res = client.simulate_get("/identifiers/pal/oobis?role=agent")

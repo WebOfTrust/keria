@@ -442,6 +442,9 @@ class IdentifierResourceEnd:
             name (str): human readable name for Hab to GET
 
         """
+        if not name:
+            raise falcon.HTTPBadRequest(description="name is required")
+
         agent = req.context.agent
         hab = agent.hby.habByName(name)
         if hab is None:
@@ -630,6 +633,9 @@ class IdentifierOOBICollectionEnd:
 
         """
         agent = req.context.agent
+        if not name:
+            raise falcon.HTTPBadRequest(description="name is required")
+
         hab = agent.hby.habByName(name)
         if not hab:
             raise falcon.HTTPNotFound(description="invalid alias {name}")

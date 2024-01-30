@@ -48,7 +48,7 @@ class OOBIEnd:
             eid: qb64 identifier prefix of participant in role
 
         """
-        if aid is None:
+        if not aid:
             if self.default is None:
                 raise falcon.HTTPNotFound(description="no blind oobi for this node")
 
