@@ -856,7 +856,7 @@ def test_challenge_ends(helpers):
         chaResEnd = aiding.ChallengeResourceEnd()
         app.add_route("/challenges/{name}", chaResEnd)
         chaVerResEnd = aiding.ChallengeVerifyResourceEnd()
-        app.add_route("/challenges/{name}/verify/{source}", chaVerResEnd)
+        app.add_route("/challenges-verify/{source}", chaVerResEnd)
 
         client = testing.TestClient(app)
 
@@ -906,16 +906,16 @@ def test_challenge_ends(helpers):
         assert result.status == falcon.HTTP_404  # Missing recipient
 
         b = json.dumps(data).encode("utf-8")
-        result = client.simulate_put(path=f"/challenges/pal/verify/{aid['i']}", body=b)
+        result = client.simulate_put(path=f"/challenges-verify/{aid['i']}", body=b)
         assert result.status == falcon.HTTP_400  # Missing said
 
         data["said"] = exn.said
         b = json.dumps(data).encode("utf-8")
-        result = client.simulate_put(path=f"/challenges/pal/verify/EFt8G8gkCJ71e4amQaRUYss0BDK4pUpzKelEIr3yZ1D0",
+        result = client.simulate_put(path=f"/challenges-verify/EFt8G8gkCJ71e4amQaRUYss0BDK4pUpzKelEIr3yZ1D0",
                                      body=b)
         assert result.status == falcon.HTTP_404  # Missing said
 
-        result = client.simulate_put(path=f"/challenges/pal/verify/{aid['i']}", body=b)
+        result = client.simulate_put(path=f"/challenges-verify/{aid['i']}", body=b)
         assert result.status == falcon.HTTP_202
 
         data = dict(
@@ -927,12 +927,12 @@ def test_challenge_ends(helpers):
         assert result.status_code == 404
 
         b = json.dumps(data).encode("utf-8")
-        result = client.simulate_post(path=f"/challenges/pal/verify/EFt8G8gkCJ71e4amQaRUYss0BDK4pUpzKelEIr3yZ1D0",
+        result = client.simulate_post(path=f"/challenges-verify/EFt8G8gkCJ71e4amQaRUYss0BDK4pUpzKelEIr3yZ1D0",
                                       body=b)
         assert result.status_code == 404
 
         b = json.dumps(data).encode("utf-8")
-        result = client.simulate_post(path=f"/challenges/pal/verify/{aid['i']}", body=b)
+        result = client.simulate_post(path=f"/challenges-verify/{aid['i']}", body=b)
         assert result.status == falcon.HTTP_202
         op = result.json
         assert op["done"] is False
@@ -941,7 +941,7 @@ def test_challenge_ends(helpers):
         agent.hby.db.reps.add(keys=(aid['i'],), val=coring.Saider(qb64=exn.said))
         agent.hby.db.exns.pin(keys=(exn.said,), val=exn)
 
-        result = client.simulate_post(path=f"/challenges/pal/verify/{aid['i']}", body=b)
+        result = client.simulate_post(path=f"/challenges-verify/{aid['i']}", body=b)
         assert result.status == falcon.HTTP_202
         op = result.json
         assert op["done"] is True

@@ -33,8 +33,10 @@ def loadEnds(app, identifierResource):
     credentialCollectionEnd = CredentialCollectionEnd(identifierResource)
     app.add_route("/identifiers/{name}/credentials", credentialCollectionEnd)
     
-    credentialResourceEnd = CredentialResourceEnd(identifierResource)
-    app.add_route("/identifiers/{name}/credentials/{said}", credentialResourceEnd)
+    credentialResourceEnd = CredentialResourceEnd()
+    app.add_route("/credentials/{said}", credentialResourceEnd)
+    credentialResourceDelEnd = CredentialResourceDeleteEnd(identifierResource)
+    app.add_route("/identifiers/{name}/credentials/{said}", credentialResourceDelEnd)
 
     queryCollectionEnd = CredentialQueryCollectionEnd()
     app.add_route("/credentials/query", queryCollectionEnd)
@@ -506,23 +508,18 @@ class CredentialCollectionEnd:
 
 
 class CredentialResourceEnd:
-    def __init__(self, identifierResource):
+    def __init__(self):
         """
 
-        Parameters:
-            identifierResource (IdentifierResourceEnd): endpoint class for creating rotation and interaction events
-
         """
-        self.identifierResource = identifierResource
 
     @staticmethod
-    def on_get(req, rep, name, said):
+    def on_get(req, rep, said):
         """ Credentials GET endpoint
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable alias for AID to use as issuer
             said (str): SAID of credential to export
 
         ---
@@ -554,11 +551,6 @@ class CredentialResourceEnd:
 
         """
         agent = req.context.agent
-
-        hab = agent.hby.habByName(name)
-        if hab is None:
-            raise falcon.HTTPNotFound(description="name is not a valid reference to an identifier")
-
         accept = req.get_header("accept")
         if accept == "application/json+cesr":
             rep.content_type = "application/json+cesr"
@@ -623,7 +615,18 @@ class CredentialResourceEnd:
         out.extend(signing.serialize(creder, prefixer, seqner, saider))
 
         return out
-    
+
+
+class CredentialResourceDeleteEnd:
+    def __init__(self, identifierResource):
+            """
+
+            Parameters:
+                identifierResource (IdentifierResourceEnd): endpoint class for creating rotation and interaction events
+
+            """
+            self.identifierResource = identifierResource
+
     def on_delete(self, req, rep, name, said):
         """ Initiate a credential revocation
 
@@ -655,7 +658,7 @@ class CredentialResourceEnd:
         regk = rserder.ked['ri']
         if regk not in agent.rgy.tevers:
             raise falcon.HTTPNotFound(description=f"revocation against invalid registry SAID {regk}")
-        
+
         try:
             agent.rgy.reger.cloneCreds([coring.Saider(qb64=said)], db=agent.hby.db)
         except:
