@@ -104,7 +104,7 @@ test('challenge', async () => {
         client1,
         await client1
             .challenges()
-            .verify('alice', aid2.i, challenge1_small.words)
+            .verify(aid2.i, challenge1_small.words)
     );
     console.log('Alice verified challenge response');
 
@@ -114,7 +114,7 @@ test('challenge', async () => {
     };
     const exn = new Serder(verifyResponse.exn);
 
-    await client1.challenges().responded('alice', aid2.i, exn.ked.d);
+    await client1.challenges().responded(aid2.i, exn.ked.d);
     console.log('Alice marked challenge response as accepted');
 
     // Check Bob's challenge in conctats

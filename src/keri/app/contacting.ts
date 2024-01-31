@@ -155,17 +155,15 @@ export class Challenges {
 
     /**
      * Ask Agent to verify a given sender signed the provided words
-     * @param {string} name Name or alias of the identifier
      * @param {string} source Prefix of the identifier that was challenged
      * @param {Array<string>} words List of challenge words to check for
      * @returns A promise to the long running operation
      */
     async verify(
-        name: string,
         source: string,
         words: string[]
     ): Promise<Operation<unknown>> {
-        const path = `/challenges/${name}/verify/${source}`;
+        const path = `/challenges_verify/${source}`;
         const method = 'POST';
         const data = {
             words: words,
@@ -177,17 +175,15 @@ export class Challenges {
 
     /**
      * Mark challenge response as signed and accepted
-     * @param {string} name Name or alias of the identifier
      * @param {string} source Prefix of the identifier that was challenged
      * @param {string} said qb64 AID of exn message representing the signed response
      * @returns {Promise<Response>} A promise to the result
      */
     async responded(
-        name: string,
         source: string,
         said: string
     ): Promise<Response> {
-        const path = `/challenges/${name}/verify/${source}`;
+        const path = `/challenges_verify/${source}`;
         const method = 'PUT';
         const data = {
             said: said,

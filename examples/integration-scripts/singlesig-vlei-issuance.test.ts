@@ -515,7 +515,7 @@ async function getOrIssueCredential(
     await waitOperation(issuerClient, issResult.op);
     const credential = await issuerClient
         .credentials()
-        .get(issuerAid.name, issResult.acdc.ked.d);
+        .get(issResult.acdc.ked.d);
 
     return credential;
 }

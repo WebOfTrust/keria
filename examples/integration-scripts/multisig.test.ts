@@ -99,22 +99,22 @@ test('multisig', async function run() {
     await client3.challenges().respond('member3', aid1.prefix, words);
     console.log('Member3 responded challenge with signed words');
 
-    op1 = await client1.challenges().verify('member1', aid2.prefix, words);
+    op1 = await client1.challenges().verify(aid2.prefix, words);
     op1 = await waitOperation(client1, op1);
     console.log('Member1 verified challenge response from member2');
     let exnwords = new Serder(op1.response.exn);
     op1 = await client1
         .challenges()
-        .responded('member1', aid2.prefix, exnwords.ked.d);
+        .responded(aid2.prefix, exnwords.ked.d);
     console.log('Member1 marked challenge response as accepted');
 
-    op1 = await client1.challenges().verify('member1', aid3.prefix, words);
+    op1 = await client1.challenges().verify(aid3.prefix, words);
     op1 = await waitOperation(client1, op1);
     console.log('Member1 verified challenge response from member3');
     exnwords = new Serder(op1.response.exn);
     op1 = await client1
         .challenges()
-        .responded('member1', aid3.prefix, exnwords.ked.d);
+        .responded(aid3.prefix, exnwords.ked.d);
     console.log('Member1 marked challenge response as accepted');
 
     // First member start the creation of a multisig identifier
