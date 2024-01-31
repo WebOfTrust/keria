@@ -422,9 +422,7 @@ test('single signature credentials', async () => {
 
     await step('Legal Entity has chained credential', async () => {
         const legalEntityCredential = await retry(async () =>
-            legalEntityClient
-                .credentials()
-                .get(leCredentialId)
+            legalEntityClient.credentials().get(leCredentialId)
         );
 
         assert.equal(legalEntityCredential.sad.s, LE_SCHEMA_SAID);

@@ -102,9 +102,7 @@ test('challenge', async () => {
     // Alice verifies Bob's response
     const verifyOperation = await waitOperation(
         client1,
-        await client1
-            .challenges()
-            .verify(aid2.i, challenge1_small.words)
+        await client1.challenges().verify(aid2.i, challenge1_small.words)
     );
     console.log('Alice verified challenge response');
 

@@ -159,10 +159,7 @@ export class Challenges {
      * @param {Array<string>} words List of challenge words to check for
      * @returns A promise to the long running operation
      */
-    async verify(
-        source: string,
-        words: string[]
-    ): Promise<Operation<unknown>> {
+    async verify(source: string, words: string[]): Promise<Operation<unknown>> {
         const path = `/challenges_verify/${source}`;
         const method = 'POST';
         const data = {
@@ -179,10 +176,7 @@ export class Challenges {
      * @param {string} said qb64 AID of exn message representing the signed response
      * @returns {Promise<Response>} A promise to the result
      */
-    async responded(
-        source: string,
-        said: string
-    ): Promise<Response> {
+    async responded(source: string, said: string): Promise<Response> {
         const path = `/challenges_verify/${source}`;
         const method = 'PUT';
         const data = {

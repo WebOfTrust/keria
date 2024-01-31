@@ -164,10 +164,7 @@ export class Credentials {
      * @param {boolean} [includeCESR=false] - Optional flag export the credential in CESR format
      * @returns {Promise<any>} A promise to the credential
      */
-    async get(
-        said: string,
-        includeCESR: boolean = false
-    ): Promise<any> {
+    async get(said: string, includeCESR: boolean = false): Promise<any> {
         const path = `/credentials/${said}`;
         const method = 'GET';
         const headers = includeCESR
