@@ -9,7 +9,7 @@ import { randomUUID } from 'crypto';
 import {
     Controller,
     Identifier,
-    IdentifierSignifyClient,
+    IdentifierDeps,
     KeyManager,
     Tier,
     randomPasscode,
@@ -18,7 +18,7 @@ import { createMockIdentifierState } from './test-utils';
 
 const bran = '0123456789abcdefghijk';
 
-export class MockClient implements IdentifierSignifyClient {
+export class MockClient implements IdentifierDeps {
     manager: KeyManager;
     controller: Controller;
     pidx = 0;
