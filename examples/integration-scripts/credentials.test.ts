@@ -188,7 +188,7 @@ test('single signature credentials', async () => {
     await step('issuer get credential by id', async () => {
         const issuerCredential = await issuerClient
             .credentials()
-            .get(issuerAid.name, qviCredentialId);
+            .get(qviCredentialId);
         assert.equal(issuerCredential.sad.s, QVI_SCHEMA_SAID);
         assert.equal(issuerCredential.sad.i, issuerAid.prefix);
         assert.equal(issuerCredential.status.s, '0');
@@ -198,7 +198,7 @@ test('single signature credentials', async () => {
         const dt = createTimestamp();
         const issuerCredential = await issuerClient
             .credentials()
-            .get(issuerAid.name, qviCredentialId);
+            .get(qviCredentialId);
         assert(issuerCredential !== undefined);
 
         const [grant, gsigs, gend] = await issuerClient.ipex().grant({
@@ -244,7 +244,7 @@ test('single signature credentials', async () => {
         const holderCredential = await retry(async () => {
             const result = await holderClient
                 .credentials()
-                .get(holderAid.name, qviCredentialId);
+                .get(qviCredentialId);
             assert(result !== undefined);
             return result;
         });
@@ -257,7 +257,7 @@ test('single signature credentials', async () => {
     await step('holder IPEX present', async () => {
         const holderCredential = await holderClient
             .credentials()
-            .get(holderAid.name, qviCredentialId);
+            .get(qviCredentialId);
 
         const [grant2, gsigs2, gend2] = await holderClient.ipex().grant({
             senderName: holderAid.name,
@@ -308,7 +308,7 @@ test('single signature credentials', async () => {
         await verifierClient.notifications().mark(verifierGrantNote.i);
 
         const verifierCredential = await retry(async () =>
-            verifierClient.credentials().get(verifierAid.name, qviCredentialId)
+            verifierClient.credentials().get(qviCredentialId)
         );
 
         assert.equal(verifierCredential.sad.s, QVI_SCHEMA_SAID);
@@ -338,7 +338,7 @@ test('single signature credentials', async () => {
         async () => {
             const qviCredential = await holderClient
                 .credentials()
-                .get(holderAid.name, qviCredentialId);
+                .get(qviCredentialId);
 
             const result = await holderClient.credentials().issue({
                 issuerName: holderAid.name,
@@ -375,7 +375,7 @@ test('single signature credentials', async () => {
         const dt = createTimestamp();
         const leCredential = await holderClient
             .credentials()
-            .get(holderAid.name, leCredentialId);
+            .get(leCredentialId);
         assert(leCredential !== undefined);
 
         const [grant, gsigs, gend] = await holderClient.ipex().grant({
@@ -422,9 +422,7 @@ test('single signature credentials', async () => {
 
     await step('Legal Entity has chained credential', async () => {
         const legalEntityCredential = await retry(async () =>
-            legalEntityClient
-                .credentials()
-                .get(legalEntityAid.name, leCredentialId)
+            legalEntityClient.credentials().get(leCredentialId)
         );
 
         assert.equal(legalEntityCredential.sad.s, LE_SCHEMA_SAID);
@@ -443,7 +441,7 @@ test('single signature credentials', async () => {
         await waitOperation(issuerClient, revokeOperation);
         const issuerCredential = await issuerClient
             .credentials()
-            .get(issuerAid.name, qviCredentialId);
+            .get(qviCredentialId);
 
         assert.equal(issuerCredential.status.s, '1');
     });

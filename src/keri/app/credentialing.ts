@@ -160,17 +160,12 @@ export class Credentials {
     /**
      * Get a credential
      * @async
-     * @param {string} name - Name or alias of the identifier
      * @param {string} said - SAID of the credential
      * @param {boolean} [includeCESR=false] - Optional flag export the credential in CESR format
      * @returns {Promise<any>} A promise to the credential
      */
-    async get(
-        name: string,
-        said: string,
-        includeCESR: boolean = false
-    ): Promise<any> {
-        const path = `/identifiers/${name}/credentials/${said}`;
+    async get(said: string, includeCESR: boolean = false): Promise<any> {
+        const path = `/credentials/${said}`;
         const method = 'GET';
         const headers = includeCESR
             ? new Headers({ Accept: 'application/json+cesr' })
@@ -286,7 +281,7 @@ export class Credentials {
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0);
         const dt = new Date().toISOString().replace('Z', '000+00:00');
 
-        const cred = await this.get(name, said);
+        const cred = await this.get(said);
 
         // Create rev
         const _rev = {
@@ -373,7 +368,7 @@ export class Credentials {
         const hab = await this.client.identifiers().get(name);
         const pre: string = hab.prefix;
 
-        const cred = await this.get(name, said);
+        const cred = await this.get(said);
         const data = {
             i: cred.sad.i,
             s: cred.sad.s,

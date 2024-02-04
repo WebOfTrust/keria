@@ -157,7 +157,7 @@ fetchMock.mockResponse((req) => {
             req.method,
             requrl.pathname.split('?')[0]
         );
-        const body = req.url.startsWith(url + '/identifiers/aid1/credentials')
+        const body = req.url.startsWith(url + '/credentials')
             ? mockCredential
             : mockGetAID;
 
@@ -196,15 +196,13 @@ describe('Credentialing', () => {
         assert.deepEqual(lastBody, kargs);
 
         await credentials.get(
-            'aid1',
             'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao',
             true
         );
         lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
         assert.equal(
             lastCall[0]!,
-            url +
-                '/identifiers/aid1/credentials/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao'
+            url + '/credentials/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao'
         );
         assert.equal(lastCall[1]!.method, 'GET');
 

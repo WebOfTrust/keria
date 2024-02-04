@@ -272,7 +272,6 @@ describe('Contacting', () => {
         assert.equal(lastBody.sigs[0].length, 88);
 
         await challenges.verify(
-            'aid1',
             'EG2XjQN-3jPN5rcR4spLjaJyM4zA6Lgg-Hd5vSMymu5p',
             words
         );
@@ -280,14 +279,13 @@ describe('Contacting', () => {
         assert.equal(
             lastCall[0]!,
             url +
-                '/challenges/aid1/verify/EG2XjQN-3jPN5rcR4spLjaJyM4zA6Lgg-Hd5vSMymu5p'
+                '/challenges_verify/EG2XjQN-3jPN5rcR4spLjaJyM4zA6Lgg-Hd5vSMymu5p'
         );
         assert.equal(lastCall[1]!.method, 'POST');
         lastBody = JSON.parse(lastCall[1]!.body!.toString());
         assert.deepEqual(lastBody.words, words);
 
         await challenges.responded(
-            'aid1',
             'EG2XjQN-3jPN5rcR4spLjaJyM4zA6Lgg-Hd5vSMymu5p',
             'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao'
         );
@@ -295,7 +293,7 @@ describe('Contacting', () => {
         assert.equal(
             lastCall[0]!,
             url +
-                '/challenges/aid1/verify/EG2XjQN-3jPN5rcR4spLjaJyM4zA6Lgg-Hd5vSMymu5p'
+                '/challenges_verify/EG2XjQN-3jPN5rcR4spLjaJyM4zA6Lgg-Hd5vSMymu5p'
         );
         assert.equal(lastCall[1]!.method, 'PUT');
         lastBody = JSON.parse(lastCall[1]!.body!.toString());
