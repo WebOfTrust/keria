@@ -241,6 +241,7 @@ class Seeker(dbing.LMDBer):
         # Assign single field Schema and ISSUER index and ISSUER/SCHEMA:
         self.schIdx.add(keys=(said,), val=SCHEMA_FIELD.qb64b)
         self.schIdx.add(keys=(said,), val=ISSUER_FIELD.qb64b)
+        self.schIdx.add(keys=(said,), val=REGISTRY_FIELD.qb64b)
         subkey = f"{ISSUER_FIELD.qb64}.{SCHEMA_FIELD.qb64}"
         self.schIdx.add(keys=(said,), val=subkey.encode("UTF-8"))
 
