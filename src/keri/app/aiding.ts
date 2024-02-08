@@ -1,4 +1,3 @@
-import { SignifyClient } from './clienting';
 import { Tier } from '../core/salter';
 import { Algos } from '../core/manager';
 import { incept, interact, reply, rotate } from '../core/eventing';
@@ -7,6 +6,7 @@ import { Tholder } from '../core/tholder';
 import { MtrDex } from '../core/matter';
 import { Serder } from '../core/serder';
 import { parseRangeHeaders } from '../core/httping';
+import { KeyManager } from '../core/keeping';
 
 /** Arguments required to create an identfier */
 export interface CreateIdentiferArgs {
@@ -51,14 +51,29 @@ export interface RotateIdentifierArgs {
     rstates?: any[];
 }
 
+/**
+ * Reducing the SignifyClient dependencies used by Identifier class
+ */
+export interface IdentifierDeps {
+    fetch(
+        pathname: string,
+        method: string,
+        body: unknown,
+        headers?: Headers
+    ): Promise<Response>;
+    pidx: number;
+    manager: KeyManager | null;
+}
+
 /** Identifier */
 export class Identifier {
-    public client: SignifyClient;
+    public client: IdentifierDeps;
+
     /**
      * Identifier
-     * @param {SignifyClient} client
+     * @param {IdentifierDeps} client
      */
-    constructor(client: SignifyClient) {
+    constructor(client: IdentifierDeps) {
         this.client = client;
     }
 
@@ -263,7 +278,7 @@ export class Identifier {
         };
         jsondata[keeper.algo] = keeper.params();
 
-        const res = this.client.fetch(
+        const res = await this.client.fetch(
             '/identifiers/' + name + '?type=ixn',
             'PUT',
             jsondata
@@ -294,7 +309,7 @@ export class Identifier {
         const dig = state.d;
         const ridx = Number(state.s) + 1;
         const wits = state.b;
-        let isith = state.kt;
+        let isith = state.nt;
 
         let nsith = kargs.nsith ?? isith;
 
@@ -361,7 +376,11 @@ export class Identifier {
         };
         jsondata[keeper.algo] = keeper.params();
 
-        const res = this.client.fetch('/identifiers/' + name, 'PUT', jsondata);
+        const res = await this.client.fetch(
+            '/identifiers/' + name,
+            'PUT',
+            jsondata
+        );
         return new EventResult(serder, sigs, res);
     }
 
@@ -447,9 +466,13 @@ export class Identifier {
 export class EventResult {
     private readonly _serder: Serder;
     private readonly _sigs: string[];
-    private readonly promise: Promise<Response>;
+    private readonly promise: Promise<Response> | Response;
 
-    constructor(serder: Serder, sigs: string[], promise: Promise<Response>) {
+    constructor(
+        serder: Serder,
+        sigs: string[],
+        promise: Promise<Response> | Response
+    ) {
         this._serder = serder;
         this._sigs = sigs;
         this.promise = promise;

@@ -282,8 +282,6 @@ export class Controller {
         for (const aid of aids) {
             const pre: string = aid['prefix'] as string;
             if ('salty' in aid) {
-                console.log('salty aid to rotate');
-                console.log(aid);
                 const salty: any = aid['salty'];
                 const cipher = new Cipher({ qb64: salty['sxlt'] });
                 const dnxt = decrypter.decrypt(null, cipher).qb64;
