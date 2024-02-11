@@ -1,11 +1,14 @@
 import { strict as assert } from 'assert';
 import signify from 'signify-ts';
 import {
+    assertOperations,
+    markAndRemoveNotification,
     resolveOobi,
     waitForNotifications,
     waitOperation,
+    warnNotifications,
 } from './utils/test-util';
-import { getOrCreateClient } from './utils/test-setup';
+import { getOrCreateClient, getOrCreateIdentifier } from './utils/test-setup';
 
 test('delegation-multisig', async () => {
     await signify.ready();
@@ -85,14 +88,16 @@ test('delegation-multisig', async () => {
 
     // Second member check notifications and join the multisig
     const notifications = await waitForNotifications(client2, '/multisig/icp');
-    await Promise.all(
-        notifications.map((note) => client2.notifications().mark(note.i))
-    );
     const msgSaid = notifications[notifications.length - 1].a.d;
     assert(msgSaid !== undefined);
     console.log('Member2 received exchange message to join multisig');
 
     const res = await client2.groups().getRequest(msgSaid);
+
+    await Promise.all(
+        notifications.map((note) => markAndRemoveNotification(client2, note))
+    );
+
     const exn = res[0].exn;
     const icp = exn.e.icp;
 
@@ -145,7 +150,8 @@ test('delegation-multisig', async () => {
         s: '0',
         d: delegatePrefix,
     };
-    await client0.identifiers().interact('delegator', anchor);
+    let ixnResult = await client0.identifiers().interact('delegator', anchor);
+    await waitOperation(client0, await ixnResult.op());
     console.log('Delegator approved delegation');
 
     let op3 = await client1.keyStates().query(aid0.prefix, '1');
@@ -162,20 +168,14 @@ test('delegation-multisig', async () => {
 
     const aid_delegate = await client1.identifiers().get('multisig');
     assert.equal(aid_delegate.prefix, delegatePrefix);
+
+    await assertOperations(client0, client1, client2);
+    await warnNotifications(client0, client1, client2);
 }, 30000);
 
 async function createAID(client: signify.SignifyClient, name: string) {
-    const icpResult1 = await client.identifiers().create(name, {
-        toad: 3,
-        wits: [
-            'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha',
-            'BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM',
-            'BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX',
-        ],
-    });
-    await waitOperation(client, await icpResult1.op());
+    await getOrCreateIdentifier(client, name);
     const aid = await client.identifiers().get(name);
-    await client.identifiers().addEndRole(name, 'agent', client!.agent!.pre);
     console.log(name, 'AID:', aid.prefix);
     return aid;
 }

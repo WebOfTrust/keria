@@ -61,10 +61,9 @@ export class Notifications {
      * @param {string} said SAID of the notification
      * @returns {Promise<any>} A promise to the result of the deletion
      */
-    async delete(said: string): Promise<any> {
+    async delete(said: string): Promise<void> {
         const path = `/notifications/` + said;
         const method = 'DELETE';
-        const res = await this.client.fetch(path, method, null);
-        return await res.json();
+        await this.client.fetch(path, method, null);
     }
 }

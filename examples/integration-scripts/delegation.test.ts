@@ -1,7 +1,11 @@
 import { strict as assert } from 'assert';
 import signify from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
-import { resolveOobi, waitOperation } from './utils/test-util';
+import {
+    assertOperations,
+    resolveOobi,
+    waitOperation,
+} from './utils/test-util';
 
 const { url, bootUrl } = resolveEnvironment();
 
@@ -52,9 +56,10 @@ test('delegation', async () => {
     });
     await waitOperation(client1, await icpResult1.op());
     const aid1 = await client1.identifiers().get('delegator');
-    await client1
+    const rpyResult1 = await client1
         .identifiers()
         .addEndRole('delegator', 'agent', client1!.agent!.pre);
+    await waitOperation(client1, await rpyResult1.op());
     console.log("Delegator's AID:", aid1.prefix);
 
     // Client 2 resolves delegator OOBI
@@ -78,7 +83,10 @@ test('delegation', async () => {
         s: '0',
         d: delegatePrefix,
     };
-    await client1.identifiers().interact('delegator', anchor);
+    const ixnResult1 = await client1
+        .identifiers()
+        .interact('delegator', anchor);
+    await waitOperation(client1, await ixnResult1.op());
     console.log('Delegator approved delegation');
 
     let op3 = await client2.keyStates().query(aid1.prefix, '1');
@@ -89,4 +97,6 @@ test('delegation', async () => {
     const aid2 = await client2.identifiers().get('delegate');
     assert.equal(aid2.prefix, delegatePrefix);
     console.log('Delegation approved for aid:', aid2.prefix);
+
+    await assertOperations(client1, client2);
 }, 60000);

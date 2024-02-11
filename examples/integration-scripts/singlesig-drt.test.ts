@@ -4,7 +4,7 @@ import {
     getOrCreateContact,
     getOrCreateIdentifier,
 } from './utils/test-setup';
-import { waitOperation } from './utils/test-util';
+import { assertOperations, waitOperation } from './utils/test-util';
 
 let delegator: SignifyClient, delegate: SignifyClient;
 let name1_id: string, name1_oobi: string;
@@ -18,6 +18,9 @@ beforeAll(async () => {
 });
 beforeAll(async () => {
     contact1_id = await getOrCreateContact(delegate, 'contact1', name1_oobi);
+});
+afterAll(async () => {
+    await assertOperations(delegator, delegate);
 });
 
 describe('singlesig-drt', () => {

@@ -1,7 +1,7 @@
 import { strict as assert } from 'assert';
 import signify from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
-import { waitOperation } from './utils/test-util';
+import { assertOperations, waitOperation } from './utils/test-util';
 
 const { url, bootUrl } = resolveEnvironment();
 
@@ -102,7 +102,8 @@ test('salty', async () => {
     assert.equal(salt.stem, 'signify:aid');
     assert.equal(aid.prefix, icp2.pre);
 
-    await client1.identifiers().create('aid3');
+    icpResult = await client1.identifiers().create('aid3');
+    await waitOperation(client1, await icpResult.op());
     aids = await client1.identifiers().list();
     assert.equal(aids.aids.length, 3);
     aid = aids.aids[0];
@@ -164,5 +165,8 @@ test('salty', async () => {
     serder = new signify.Serder(log[2]);
     assert.equal(serder.pre, ixn.pre);
     assert.equal(serder.ked['d'], ixn.ked['d']);
+
+    await assertOperations(client1);
+
     console.log('Salty test passed');
 }, 30000);

@@ -1,7 +1,11 @@
 import { strict as assert } from 'assert';
 import signify, { Serder } from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
-import { resolveOobi, waitOperation } from './utils/test-util';
+import {
+    assertOperations,
+    resolveOobi,
+    waitOperation,
+} from './utils/test-util';
 
 const { url, bootUrl } = resolveEnvironment();
 
@@ -59,9 +63,10 @@ test('challenge', async () => {
         client1,
         await icpResult1.op()
     );
-    await client1
+    let rpyResult1 = await client1
         .identifiers()
         .addEndRole('alice', 'agent', client1!.agent!.pre);
+    await waitOperation(client1, await rpyResult1.op());
     console.log("Alice's AID:", aid1.i);
 
     const icpResult2 = await client2.identifiers().create('bob', {
@@ -76,7 +81,10 @@ test('challenge', async () => {
         client2,
         await icpResult2.op()
     );
-    await client2.identifiers().addEndRole('bob', 'agent', client2!.agent!.pre);
+    let rpyResult2 = await client2
+        .identifiers()
+        .addEndRole('bob', 'agent', client2!.agent!.pre);
+    await waitOperation(client2, await rpyResult2.op());
 
     // Exchenge OOBIs
     const oobi1 = await client1.oobis().get('alice', 'agent');
@@ -121,4 +129,6 @@ test('challenge', async () => {
         (contact: { alias: string }) => contact.alias === 'bob'
     );
     expect(bobContact.challenges[0].authenticated).toEqual(true);
+
+    await assertOperations(client1, client2);
 }, 30000);

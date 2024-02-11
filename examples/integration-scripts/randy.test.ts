@@ -1,7 +1,7 @@
 import { strict as assert } from 'assert';
 import signify from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
-import { waitOperation } from './utils/test-util';
+import { assertOperations, waitOperation } from './utils/test-util';
 
 const { url, bootUrl } = resolveEnvironment();
 
@@ -68,4 +68,6 @@ test('randy', async () => {
     assert.equal(dig.qb64, icp.digers[0].qb64);
     log = await events.get(aid['prefix']);
     assert.equal(log.length, 3);
+
+    await assertOperations(client1);
 }, 30000);

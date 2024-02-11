@@ -61,9 +61,14 @@ export class Oobis {
 }
 
 export interface Operation<T = unknown> {
-    done: boolean;
     name: string;
-    response: T;
+    metadata?: {
+        depends?: Operation;
+        [property: string]: any;
+    };
+    done?: boolean;
+    error?: any;
+    response?: T;
 }
 
 /**
@@ -93,6 +98,34 @@ export class Operations {
         const method = 'GET';
         const res = await this.client.fetch(path, method, data);
         return await res.json();
+    }
+    /**
+     * List operations
+     * @async
+     * @param {string} type Select operations by type
+     * @returns {Promise<Operation[]>} A list of operations
+     */
+    async list(type?: string): Promise<Operation<any>[]> {
+        const params = new URLSearchParams();
+        if (type !== undefined) {
+            params.append('type', type);
+        }
+        const path = `/operations?${params.toString()}`;
+        const data = null;
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, data);
+        return await res.json();
+    }
+    /**
+     * Delete operation
+     * @async
+     * @param {string} name Name of the operation
+     */
+    async delete(name: string): Promise<void> {
+        const path = `/operations/${name}`;
+        const data = null;
+        const method = 'DELETE';
+        await this.client.fetch(path, method, data);
     }
 }
 

@@ -400,7 +400,7 @@ export class Identifier {
         role: string,
         eid?: string,
         stamp?: string
-    ): Promise<any> {
+    ): Promise<EventResult> {
         const hab = await this.get(name);
         const pre = hab.prefix;
 

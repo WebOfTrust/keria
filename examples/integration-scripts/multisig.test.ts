@@ -5,8 +5,14 @@ import signify, {
     IssueCredentialResult,
 } from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
-import { waitForNotifications, waitOperation } from './utils/test-util';
-import { getOrCreateClient } from './utils/test-setup';
+import {
+    assertOperations,
+    markNotification,
+    waitForNotifications,
+    waitOperation,
+    warnNotifications,
+} from './utils/test-util';
+import { getOrCreateClient, getOrCreateIdentifier } from './utils/test-setup';
 
 const { vleiServerUrl } = resolveEnvironment();
 const WITNESS_AIDS = [
@@ -963,9 +969,9 @@ test('multisig', async function run() {
         datetime: stamp,
     });
 
-    await client1
-        .exchanges()
-        .sendFromEvents('multisig', 'credential', grant, gsigs, end, [holder]);
+    op1 = await client1
+        .ipex()
+        .submitGrant('multisig', grant, gsigs, end, [holder]);
 
     mstate = m['state'];
     seal = [
@@ -1011,11 +1017,9 @@ test('multisig', async function run() {
         datetime: stamp,
     });
 
-    await client2
-        .exchanges()
-        .sendFromEvents('multisig', 'credential', grant2, gsigs2, end2, [
-            holder,
-        ]);
+    op2 = await client2
+        .ipex()
+        .submitGrant('multisig', grant2, gsigs2, end2, [holder]);
 
     sigers = gsigs2.map((sig) => new signify.Siger({ qb64: sig }));
 
@@ -1055,11 +1059,9 @@ test('multisig', async function run() {
         datetime: stamp,
     });
 
-    await client3
-        .exchanges()
-        .sendFromEvents('multisig', 'credential', grant3, gsigs3, end3, [
-            holder,
-        ]);
+    op3 = await client3
+        .ipex()
+        .submitGrant('multisig', grant3, gsigs3, end3, [holder]);
 
     sigers = gsigs3.map((sig) => new signify.Siger({ qb64: sig }));
 
@@ -1093,9 +1095,16 @@ test('multisig', async function run() {
         .ipex()
         .admit('holder', '', res.exn.d);
 
-    res = await client4
+    op4 = await client4
         .ipex()
         .submitAdmit('holder', admit, asigs, aend, [m['prefix']]);
+
+    await Promise.all([
+        waitOperation(client1, op1),
+        waitOperation(client2, op2),
+        waitOperation(client3, op3),
+        waitOperation(client4, op4),
+    ]);
 
     console.log('Holder creates and sends admit message');
 
@@ -1103,6 +1112,9 @@ test('multisig', async function run() {
     console.log('Member1 received exchange message with the admit response');
     const creds = await client4.credentials().list();
     console.log(`Holder holds ${creds.length} credential`);
+
+    await assertOperations(client1, client2, client3, client4);
+    await warnNotifications(client1, client2, client3, client4);
 }, 360000);
 
 async function waitAndMarkNotification(client: SignifyClient, route: string) {
@@ -1110,7 +1122,7 @@ async function waitAndMarkNotification(client: SignifyClient, route: string) {
 
     await Promise.all(
         notes.map(async (note) => {
-            await client.notifications().mark(note.i);
+            await markNotification(client, note);
         })
     );
 
@@ -1118,15 +1130,11 @@ async function waitAndMarkNotification(client: SignifyClient, route: string) {
 }
 
 async function createAID(client: SignifyClient, name: string, wits: string[]) {
-    const icpResult1 = await client.identifiers().create(name, {
-        toad: wits.length,
+    await getOrCreateIdentifier(client, name, {
         wits: wits,
+        toad: wits.length,
     });
-    await waitOperation(client, await icpResult1.op());
-    const aid = await client.identifiers().get(name);
-    await client.identifiers().addEndRole(name, 'agent', client!.agent!.pre);
-    console.log(name, 'AID:', aid.prefix);
-    return aid;
+    return await client.identifiers().get(name);
 }
 
 async function multisigIssue(

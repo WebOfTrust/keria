@@ -214,9 +214,24 @@ describe('Coring', () => {
         const ops = client.operations();
 
         await ops.get('operationName');
-        const lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
+        let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
         assert.equal(lastCall[0]!, url + '/operations/operationName');
         assert.equal(lastCall[1]!.method, 'GET');
+
+        await ops.list();
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
+        assert.equal(lastCall[0]!, url + '/operations?');
+        assert.equal(lastCall[1]!.method, 'GET');
+
+        await ops.list('witness');
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
+        assert.equal(lastCall[0]!, url + '/operations?type=witness');
+        assert.equal(lastCall[1]!.method, 'GET');
+
+        await ops.delete('operationName');
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
+        assert.equal(lastCall[0]!, url + '/operations/operationName');
+        assert.equal(lastCall[1]!.method, 'DELETE');
     });
 
     it('Events and states', async () => {

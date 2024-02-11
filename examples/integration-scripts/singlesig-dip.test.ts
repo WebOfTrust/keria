@@ -4,7 +4,7 @@ import {
     getOrCreateContact,
     getOrCreateIdentifier,
 } from './utils/test-setup';
-import { waitOperation } from './utils/test-util';
+import { assertOperations, waitOperation } from './utils/test-util';
 import { resolveEnvironment } from './utils/resolve-env';
 
 let client1: SignifyClient, client2: SignifyClient;
@@ -19,6 +19,9 @@ beforeAll(async () => {
 });
 beforeAll(async () => {
     contact1_id = await getOrCreateContact(client2, 'contact1', name1_oobi);
+});
+afterAll(async () => {
+    await assertOperations(client1, client2);
 });
 
 describe('singlesig-dip', () => {

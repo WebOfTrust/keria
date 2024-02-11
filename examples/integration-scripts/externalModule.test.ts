@@ -2,6 +2,7 @@ import { strict as assert } from 'assert';
 import signify from 'signify-ts';
 import { BIP39Shim } from './modules/bip39_shim';
 import { resolveEnvironment } from './utils/resolve-env';
+import { assertOperations, waitOperation } from './utils/test-util';
 
 const { url, bootUrl } = resolveEnvironment();
 
@@ -35,6 +36,8 @@ test('bip39_shim', async () => {
         extern_type: 'bip39_shim',
         extern: { mnemonics: words },
     });
-    const op = await icpResult.op();
+    const op = await waitOperation(client1, await icpResult.op());
     assert.equal(op['done'], true);
+
+    await assertOperations(client1);
 }, 30000);
