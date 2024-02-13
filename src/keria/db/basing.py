@@ -161,7 +161,8 @@ class Seeker(dbing.LMDBer):
                                    schema=IndexRecord, )
 
         for name, idx in self.dynIdx.getItemIter():
-            self.indexes[name] = subing.CesrDupSuber(db=self, subkey=idx.subkey, klas=coring.Saider)
+            key = ".".join(name)
+            self.indexes[key] = subing.CesrDupSuber(db=self, subkey=idx.subkey, klas=coring.Saider)
 
         # Create persistent Indexes if they don't already exist
         self.createIndex(SCHEMA_FIELD.qb64)
@@ -173,13 +174,24 @@ class Seeker(dbing.LMDBer):
             subkey = f"{field.qb64}.{SCHEMA_FIELD.qb64}"
             self.createIndex(subkey)
 
+    @property
+    def table(self):
+        return self.reger.saved
+
+    def value(self, said):
+        saider = self.reger.saved.get(keys=(said,))
+        creder = self.reger.creds.get(keys=(saider.qb64,))
+        return creder.sad
+
+    def saidIter(self):
+        return self.reger.saved.getItemIter()
+
     def createIndex(self, key):
         if self.dynIdx.get(keys=(key,)) is None:
             self.indexes[key] = subing.CesrDupSuber(db=self, subkey=key, klas=coring.Saider)
             self.dynIdx.pin(keys=(key,), val=IndexRecord(subkey=key, paths=[key]))
 
     def index(self, said):
-
         if (saider := self.reger.saved.get(keys=(said,))) is None:
             raise ValueError(f"{said} is not a verified credential")
 
@@ -197,7 +209,7 @@ class Seeker(dbing.LMDBer):
             values = []
             for path in idx.paths:
                 pather = coring.Pather(qb64=path)
-                values.append(pather.resolve(creder.crd))
+                values.append(pather.resolve(creder.sad))
 
             value = "".join(values)
             db.add(keys=(value,), val=saider)
@@ -229,6 +241,7 @@ class Seeker(dbing.LMDBer):
         # Assign single field Schema and ISSUER index and ISSUER/SCHEMA:
         self.schIdx.add(keys=(said,), val=SCHEMA_FIELD.qb64b)
         self.schIdx.add(keys=(said,), val=ISSUER_FIELD.qb64b)
+        self.schIdx.add(keys=(said,), val=REGISTRY_FIELD.qb64b)
         subkey = f"{ISSUER_FIELD.qb64}.{SCHEMA_FIELD.qb64}"
         self.schIdx.add(keys=(said,), val=subkey.encode("UTF-8"))
 
@@ -274,6 +287,114 @@ class Seeker(dbing.LMDBer):
                 self.schIdx.add(keys=(said,), val=subkey)
 
         return [index for index in self.schIdx.get(keys=(said,))]
+
+    def find(self, filtr, sort=None, skip=None, limit=None):
+        return Cursor(seeker=self, filtr=filtr, sort=sort, skip=skip, limit=limit)
+
+
+class ExnSeeker(dbing.LMDBer):
+    """
+    Seeker indexes all credentials in the KERIpy `saved` Creder database.
+
+    Static indexes are created for issued by/schema and issued to/schema and dynamic indexes are
+    created for all top level scalar valued fields in the credential payload ('a' field).  The Seeker
+    uses the schema of each credential to determine the payload fields to index by.
+
+    """
+
+    TailDirPath = "keri/exndb"
+    AltTailDirPath = ".keri/exndb"
+    TempPrefix = "keri_exndb_"
+    MaxNamedDBs = 36
+
+    DATE_FIELD = coring.Pather(path=['dt'])
+    SENDER_FIELD = coring.Pather(path=['i'])
+    RECIPIENT_FIELD = coring.Pather(path=['a', 'i'])
+    ROUTE_FIELD = coring.Pather(path=['r'])
+
+    # Special field for IPEX messages... consider moving to IpexSeeker if needed
+    SCHEMA = coring.Pather(path=['e', 'acdc', 's'])
+
+    def __init__(self, db, headDirPath=None, perm=None, reopen=False, **kwa):
+        """
+        Setup named sub databases.
+
+        Inherited Parameters:
+            name is str directory path name differentiator for main database
+                When system employs more than one keri database, name allows
+                differentiating each instance by name
+                default name='main'
+            temp is boolean, assign to .temp
+                True then open in temporary directory, clear on close
+                Othewise then open persistent directory, do not clear on close
+                default temp=False
+            headDirPath is optional str head directory pathname for main database
+                If not provided use default .HeadDirpath
+                default headDirPath=None so uses self.HeadDirPath
+            perm is numeric optional os dir permissions mode
+                default perm=None so do not set mode
+            reopen is boolean, IF True then database will be reopened by this init
+                default reopen=True
+
+
+        """
+        self.db = db
+        self.indexes = dict()
+
+        super(ExnSeeker, self).__init__(headDirPath=headDirPath, perm=perm,
+                                        reopen=reopen, **kwa)
+
+    def reopen(self, **kwa):
+        super(ExnSeeker, self).reopen(**kwa)
+
+        # List of dynamically created indexes to be recreated at load
+        # Create persistent Indexes if they don't already exist
+        fields = (self.ROUTE_FIELD, self.SENDER_FIELD, self.RECIPIENT_FIELD, self.DATE_FIELD, self.SCHEMA)
+        # Index of credentials by issuer/issuee.
+        for field in fields:
+            self.createIndex(field.qb64)
+            for subfield in fields:
+                if field == subfield:
+                    continue
+                subkey = f"{field.qb64}.{subfield.qb64}"
+                self.createIndex(subkey)
+
+    @property
+    def table(self):
+        return self.db.exns
+
+    def value(self, said):
+        serder = self.db.exns.get(keys=(said,))
+        return serder.ked
+
+    def saidIter(self):
+        for (said,), _ in self.db.exns.getItemIter():
+            yield said
+
+    def createIndex(self, key):
+        self.indexes[key] = subing.CesrDupSuber(db=self, subkey=key, klas=coring.Saider)
+
+    def index(self, said):
+        if (serder := self.db.exns.get(keys=(said,))) is None:
+            raise ValueError(f"{said} is not a valid exn")
+
+        saider = coring.Saider(qb64b=serder.saidb)
+
+        # Load schema index and if not indexed in schIdx, index it.
+        for index, db in self.indexes.items():
+            pathers = [coring.Pather(qb64=path) for path in index.split(".")]
+            values = []
+            for pather in pathers:
+                try:
+                    values.append(pather.resolve(serder.ked))
+                except KeyError:
+                    pass
+
+            value = "".join(values)
+            if not value:
+                continue
+
+            db.add(keys=(value,), val=saider)
 
     def find(self, filtr, sort=None, skip=None, limit=None):
         return Cursor(seeker=self, filtr=filtr, sort=sort, skip=skip, limit=limit)
@@ -325,7 +446,7 @@ class Cursor:
     def _query(self):
         self.cur = 0
         if len(self.filtr) == 0:
-            self.saids = self.order([said for (said,), _ in self.seeker.reger.saved.getItemIter()])
+            self.saids = self.order([said for (said,), _ in self.seeker.table.getItemIter()])
         elif (saids := self.indexSearch()) is not None:
             self.saids = self.order(saids)
         elif (saids := self.indexScan()) is not None:
@@ -377,15 +498,15 @@ class Cursor:
             return self.tableScan(list(saids), scan)
 
     def fullTableScan(self):
-        saids = [saider.qb64 for _, saider in self.seeker.reger.saved.getItemIter()]
+        saids = [saider.qb64 for _, saider in self.seeker.saidIter()]
         return self.tableScan(saids, ops=self.operators)
 
     def tableScan(self, saids, ops):
         res = []
         for said in saids:
-            creder = self.seeker.reger.creds.get(keys=(said,))
+            val = self.seeker.value(said)
             for op in ops:
-                if op(creder):
+                if op(val):
                     res.append(said)
 
         return res
@@ -479,7 +600,7 @@ class Eq:
         if len(args) != 1:
             raise ValueError(f"invalid argument length={len(args)} for equals operator, must be 2")
 
-        val = self.pather.resolve(args[0].crd)
+        val = self.pather.resolve(args[0])
         return val == self.value
 
     @property
@@ -503,7 +624,7 @@ class Begins:
         if len(args) != 1:
             raise ValueError(f"invalid argument length={len(args)} for begins operator, must be 2")
 
-        val = self.pather.resolve(args[0].crd)
+        val = self.pather.resolve(args[0])
         if not isinstance(val, str):
             raise ValueError(f"invalid type={type(args[0])} for begins, must be `str`")
 

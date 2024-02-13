@@ -12,13 +12,16 @@ from dataclasses import asdict
 
 import falcon
 from falcon import testing
-from keri import kering
-from keri.app import habbing, keeping
+from keri.app import habbing, keeping, configing
 from keri.app.keeping import Algos
-from keri.core import coring, eventing, parsing
+from keri.core import coring, eventing, parsing, serdering
 from keri.core.coring import MtrDex
 from keri.db.basing import LocationRecord
 from keri.peer import exchanging
+from keri.db import basing
+from keri import kering
+from keri.vdr import credentialing
+from hio.base import doing
 
 from keria.app import aiding, agenting
 from keria.app.aiding import IdentifierOOBICollectionEnd, RpyEscrowCollectionEnd
@@ -83,7 +86,7 @@ def test_endrole_ends(helpers):
         res = client.simulate_post(path=f"/identifiers/user1/endroles", json=body)
         op = res.json
         ked = op["response"]
-        serder = coring.Serder(ked=ked)
+        serder = serdering.SerderKERI(sad=ked)
         assert serder.raw == rpy.raw
 
         keys = (recp, 'agent', agent.agentHab.pre)
@@ -127,12 +130,6 @@ def test_endrole_ends(helpers):
         assert ends[0] == {'cid': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
                            'role': 'agent',
                            'eid': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9'}
-
-
-
-
-
-
 
 
 def test_agent_resource(helpers, mockHelpingNowUTC):
@@ -202,6 +199,46 @@ def test_agent_resource(helpers, mockHelpingNowUTC):
                                                     'vn': [1, 0]}}
         assert res.json["pidx"] == 0
 
+        # Test rotation
+        body = {
+        }
+        res = client.simulate_put(path=f"/agent/bad_pre", body=json.dumps(body))
+        assert res.status_code == 404
+        assert res.json == {'description': "no agent for bad_pre",
+                            'title': '404 Not Found'}
+
+        res = client.simulate_put(path=f"/agent/{agent.caid}", body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'description': "required field 'rot' missing from body",
+                            'title': '400 Bad Request'}
+
+        body = {
+            "rot": "fake_rot"
+        }
+        res = client.simulate_put(path=f"/agent/{agent.caid}", body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'description': "required field 'sigs' missing from body",
+                            'title': '400 Bad Request'}
+
+        body = {
+            "rot": "fake_rot",
+            "sigs": "fake_sigs"
+        }
+        res = client.simulate_put(path=f"/agent/{agent.caid}", body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'description': "required field 'sxlt' missing from body",
+                            'title': '400 Bad Request'}
+
+        body = {
+            "rot": "fake_rot",
+            "sigs": "fake_sigs",
+            "sxlt": "fake_sxlt"
+        }
+        res = client.simulate_put(path=f"/agent/{agent.caid}", body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'description': "required field 'keys' missing from body",
+                            'title': '400 Bad Request'}
+
 
 def test_identifier_collection_end(helpers):
     with helpers.openKeria() as (agency, agent, app, client), \
@@ -226,7 +263,7 @@ def test_identifier_collection_end(helpers):
         serder, signers = helpers.incept(salt, "signify:aid", pidx=0)
         assert len(signers) == 1
         signer0 = signers[0]
-        diger0 = serder.digers[0]
+        diger0 = serder.ndigers[0]
 
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
         body = {'name': 'aid1',
@@ -248,7 +285,7 @@ def test_identifier_collection_end(helpers):
                 'icp': serder.ked,
                 'sigs': sigers,
                 "salty": {
-                    'stem': 'signify:aid', 'pidx': 0, 'tier': 'low', 'sxlt': sxlt,
+                    'stem': 'signify:aid', 'pidx': 0, 'tier': 'low', 'sxlt': sxlt, 'transferable': True, 'kidx': 0,
                     'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}
                 }
 
@@ -257,10 +294,8 @@ def test_identifier_collection_end(helpers):
 
         # Try to resubmit and get an error
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
-        assert res.status_code == 500
-        assert res.json == {'description': 'Already incepted '
-                                           'pre=EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY.',
-                            'title': '500 Internal Server Error'}
+        assert res.status_code == 400
+        assert res.json == {'title': 'AID with name aid1 already incepted'}
 
         res = client.simulate_get(path="/identifiers")
         assert res.status_code == 200
@@ -280,6 +315,10 @@ def test_identifier_collection_end(helpers):
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
         assert res.status_code == 202
 
+        res = client.simulate_get(path="/identifiers/")
+        assert res.status_code == 400
+        assert res.json == {'description': 'name is required', 'title': '400 Bad Request'}
+
         res = client.simulate_get(path="/identifiers")
         assert res.status_code == 200
         assert len(res.json) == 2
@@ -295,7 +334,49 @@ def test_identifier_collection_end(helpers):
         ss = aid[Algos.salty]
         assert ss["pidx"] == 1
 
+        # Rotate aid1
+        salter = coring.Salter(raw=salt)
+        creator = keeping.SaltyCreator(salt=salter.qb64, stem="signify:aid", tier=coring.Tiers.low)
+
+        signers = creator.create(pidx=0, ridx=1, tier=coring.Tiers.low, temp=False, count=1)
+        nsigners = creator.create(pidx=0, ridx=2, tier=coring.Tiers.low, temp=False, count=1)
+
+        keys = [signer.verfer.qb64 for signer in signers]
+        ndigs = [coring.Diger(ser=nsigner.verfer.qb64b) for nsigner in nsigners]
+
+        serder = eventing.rotate(pre=res.json[0]["prefix"],
+                                 keys=keys,
+                                 dig=res.json[0]["prefix"],
+                                 ndigs=[diger.qb64 for diger in ndigs],
+                                 )
+        sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
+        body = {
+            'rot': serder.ked,
+            'sigs': sigers,
+            'salty': {'stem': 'signify:aid', 'pidx': 0, 'tier': 'low', 'sxlt': sxlt, 'transferable': True, 'kidx': 1,
+                      'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}
+        }
+        res = client.simulate_put(path="/identifiers/aid1", body=json.dumps(body))
+        assert res.status_code == 200
+
+        # Try with missing arguments
+        body = {
+            'rot': serder.ked,
+            'sigs': sigers,
+            'salty': {'stem': 'signify:aid', 'pidx': 0, 'tier': 'low', 'sxlt': sxlt,
+                      'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}
+        }
+        res = client.simulate_put(path="/identifiers/aid1", body=json.dumps(body))
+        assert res.status_code == 500
+
         # Test with witnesses
+        url = "http://127.0.0.1:9999"
+        agent.hby.db.locs.put(keys=("BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha", kering.Schemes.http),
+                              val=basing.LocationRecord(url=url))
+        agent.hby.db.locs.put(keys=("BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM", kering.Schemes.http),
+                              val=basing.LocationRecord(url=url))
+        agent.hby.db.locs.put(keys=("BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX", kering.Schemes.http),
+                              val=basing.LocationRecord(url=url))
         serder, signers = helpers.incept(salt, "signify:aid", pidx=3,
                                          wits=["BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
                                                "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
@@ -326,6 +407,35 @@ def test_identifier_collection_end(helpers):
         mhab = res.json
         agent0 = mhab["state"]
 
+        # rotate aid3
+        salter = coring.Salter(raw=salt)
+        creator = keeping.SaltyCreator(salt=salter.qb64, stem="signify:aid", tier=coring.Tiers.low)
+
+        signers = creator.create(pidx=3, ridx=1, tier=coring.Tiers.low, temp=False, count=1)
+        nsigners = creator.create(pidx=3, ridx=2, tier=coring.Tiers.low, temp=False, count=1)
+
+        keys = [signer.verfer.qb64 for signer in signers]
+        ndigs = [coring.Diger(ser=nsigner.verfer.qb64b) for nsigner in nsigners]
+
+        serder = eventing.rotate(pre=aid["prefix"],
+                                 keys=keys,
+                                 dig=aid["prefix"],
+                                 ndigs=[diger.qb64 for diger in ndigs],
+                                 wits=["BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
+                                       "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
+                                       "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX", ],
+                                 toad="2"
+                                 )
+        sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
+        body = {
+            'rot': serder.ked,
+            'sigs': sigers,
+            'salty': {'stem': 'signify:aid', 'pidx': 0, 'tier': 'low', 'sxlt': sxlt, 'transferable': True, 'kidx': 3,
+                      'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}
+        }
+        res = client.simulate_put(path="/identifiers/aid3", body=json.dumps(body))
+        assert res.status_code == 200
+
         # create member habs for group AID
         p1 = p1hby.makeHab(name="p1")
         assert p1.pre == "EBPtjiAY9ITdvScWFGeeCu3Pf6_CFFr57siQqffVt9Of"
@@ -342,7 +452,7 @@ def test_identifier_collection_end(helpers):
 
         # Test Group Multisig
         keys = [signer0.verfer.qb64, p1.kever.verfers[0].qb64, p2.kever.verfers[0].qb64, ]
-        ndigs = [diger0.qb64, p1.kever.digers[0].qb64, p2.kever.digers[0].qb64]
+        ndigs = [diger0.qb64, p1.kever.ndigers[0].qb64, p2.kever.ndigers[0].qb64]
 
         serder = eventing.incept(keys=keys,
                                  isith="2",
@@ -447,10 +557,8 @@ def test_identifier_collection_end(helpers):
 
         # Resubmit to get an error
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
-        assert res.status_code == 500
-        assert res.json == {'description': 'Already incepted '
-                                           'pre=EGOSjnzaVz4nZ55wk3-SV78WgdaTJZddhom9ZLeNFEd3.',
-                            'title': '500 Internal Server Error'}
+        assert res.status_code == 400
+        assert res.json == {'title': 'AID with name multisig already incepted'}
 
         res = client.simulate_get(path="/identifiers")
         assert res.status_code == 200
@@ -486,6 +594,23 @@ def test_identifier_collection_end(helpers):
         rotation = res.json["rotation"]
         assert len(rotation) == 5  # this number is a little janky because we reuse rotation keys above, leaving for now
 
+        # Try unknown witness
+        serder, signers = helpers.incept(salt, "signify:aid", pidx=3,
+                                         wits=["BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkunkn"],
+                                         toad="1")
+        sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
+
+        body = {'name': 'aid4',
+                'icp': serder.ked,
+                'sigs': sigers,
+                'salty': {'stem': 'signify:aid', 'pidx': 3, 'tier': 'low', 'sxlt': sxlt,
+                          'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}}
+
+        res = client.simulate_post(path="/identifiers", body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'title': '400 Bad Request',
+                            'description': 'unknown witness BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkunkn'}
+
     # Lets test randy with some key rotations and interaction events
     with helpers.openKeria() as (agency, agent, app, client):
         end = aiding.IdentifierCollectionEnd()
@@ -516,8 +641,8 @@ def test_identifier_collection_end(helpers):
 
         # Resubmit and get an error
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
-        assert res.status_code == 500
-        assert res.json['title'] == '500 Internal Server Error'
+        assert res.status_code == 400
+        assert res.json == {'title': 'AID with name randy1 already incepted'}
 
         res = client.simulate_get(path="/identifiers")
         assert res.status_code == 200
@@ -588,6 +713,73 @@ def test_identifier_collection_end(helpers):
         assert len(events) == 3
         assert events[2] == serder.ked
 
+        # Bad interactions
+        res = client.simulate_put(path="/identifiers/badrandy?type=ixn", body=json.dumps(body))
+        assert res.status_code == 404
+        assert res.json == {'title': 'No AID badrandy found'}
+
+        body = {'sigs': sigers}
+        res = client.simulate_put(path="/identifiers/randy1?type=ixn", body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'description': "required field 'ixn' missing from request", 'title': 'invalid interaction'}
+
+        body = {'ixn': serder.ked}
+        res = client.simulate_put(path="/identifiers/randy1?type=ixn", body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'description': "required field 'sigs' missing from request", 'title': 'invalid interaction'}
+
+        # Bad rotation
+        body = {'rot': serder.ked,
+                'sigs': sigers,
+                'randy': {
+                    "prxs": prxs,
+                    "nxts": nxts,
+                    "transferable": True,
+                }
+                }
+        res = client.simulate_put(path="/identifiers/randybad?type=rot", body=json.dumps(body))
+        assert res.status_code == 404
+        assert res.json == {'title': 'No AID with name randybad found'}
+
+        body = {
+            'sigs': sigers,
+            'randy': {
+                "prxs": prxs,
+                "nxts": nxts,
+                "transferable": True,
+            }
+        }
+        res = client.simulate_put(path="/identifiers/randy1", body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'description': "required field 'rot' missing from request", 'title': 'invalid rotation'}
+
+        # rotate to unknown witness
+        serder = eventing.rotate(keys=keys,
+                                 pre=pre,
+                                 dig=pre,
+                                 isith="1",
+                                 nsith="1",
+                                 ndigs=[diger.qb64 for diger in ndigs],
+                                 adds=["EJJR2nmwyYAZAoTNZH3ULvaU6Z-i0d8fSVPzhzS6b5CM"]
+                                 )
+
+        sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
+        prxs = [encrypter.encrypt(matter=signer).qb64 for signer in signers]
+        nxts = [encrypter.encrypt(matter=signer).qb64 for signer in nsigners]
+
+        body = {'rot': serder.ked,
+                'sigs': sigers,
+                'randy': {
+                    "prxs": prxs,
+                    "nxts": nxts,
+                    "transferable": True,
+                }
+                }
+        res = client.simulate_put(path="/identifiers/randy1", body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'description': "unknown witness EJJR2nmwyYAZAoTNZH3ULvaU6Z-i0d8fSVPzhzS6b5CM",
+                            'title': '400 Bad Request'}
+
     # Lets test delegated AID
     with helpers.openKeria() as (agency, agent, app, client):
         end = aiding.IdentifierCollectionEnd()
@@ -605,6 +797,29 @@ def test_identifier_collection_end(helpers):
         assert delpre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
         op = helpers.createAid(client, "delegatee", salt, delpre=delpre)
         assert op['name'] == "delegation.EFt8G8gkCJ71e4amQaRUYss0BDK4pUpzKelEIr3yZ1D0"
+
+        # try unknown delegator
+        delpre = "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHUNKNx"
+        serder, signers = helpers.incept(salt, "signify:aid", pidx=0, delpre=delpre)
+
+        salter = coring.Salter(raw=salt)
+        encrypter = coring.Encrypter(verkey=signers[0].verfer.qb64)
+        sxlt = encrypter.encrypt(salter.qb64).qb64
+
+        sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
+
+        body = {'name': "aid",
+                'icp': serder.ked,
+                'sigs': sigers,
+                "salty": {
+                    'stem': 'signify:aid', 'pidx': 0, 'tier': 'low', 'sxlt': sxlt,
+                    'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}
+                }
+
+        res = client.simulate_post(path="/identifiers", body=json.dumps(body))
+        assert res.status_code == 400
+        assert res.json == {'title': '400 Bad Request',
+                            'description': "unknown delegator EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHUNKNx"}
 
     # Test extern keys for HSM integration, only initial tests, work still needed
     with helpers.openKeria() as (agency, agent, app, client):
@@ -640,6 +855,8 @@ def test_challenge_ends(helpers):
         app.add_route("/challenges", chaEnd)
         chaResEnd = aiding.ChallengeResourceEnd()
         app.add_route("/challenges/{name}", chaResEnd)
+        chaVerResEnd = aiding.ChallengeVerifyResourceEnd()
+        app.add_route("/challenges-verify/{source}", chaVerResEnd)
 
         client = testing.TestClient(app)
 
@@ -668,8 +885,8 @@ def test_challenge_ends(helpers):
         aid = op["response"]
 
         payload = dict(i=aid['i'], words=words)
-        exn = exchanging.exchange(route="/challenge/response", payload=payload)
-        ims = agent.agentHab.endorse(serder=exn, last=True, pipelined=False)
+        exn, _ = exchanging.exchange(route="/challenge/response", payload=payload, sender=agent.agentHab.pre)
+        ims = agent.agentHab.endorse(serder=exn, last=False, pipelined=False)
         del ims[:exn.size]
 
         data["exn"] = exn.ked
@@ -684,19 +901,50 @@ def test_challenge_ends(helpers):
         assert result.status == falcon.HTTP_202
 
         data = dict()
-        data["aid"] = "Eo6MekLECO_ZprzHwfi7wG2ubOt2DWKZQcMZvTbenBNU"
         b = json.dumps(data).encode("utf-8")
-        result = client.simulate_put(path="/challenges/henk", body=b)
-        assert result.status == falcon.HTTP_400  # Missing recipient
+        result = client.simulate_put(path="/challenges/henk/verify/Eo6MekLECO_ZprzHwfi7wG2ubOt2DWKZQcMZvTbenBNU", body=b)
+        assert result.status == falcon.HTTP_404  # Missing recipient
 
         b = json.dumps(data).encode("utf-8")
-        result = client.simulate_put(path="/challenges/pal", body=b)
+        result = client.simulate_put(path=f"/challenges-verify/{aid['i']}", body=b)
         assert result.status == falcon.HTTP_400  # Missing said
 
         data["said"] = exn.said
         b = json.dumps(data).encode("utf-8")
-        result = client.simulate_put(path="/challenges/pal", body=b)
+        result = client.simulate_put(path=f"/challenges-verify/EFt8G8gkCJ71e4amQaRUYss0BDK4pUpzKelEIr3yZ1D0",
+                                     body=b)
+        assert result.status == falcon.HTTP_404  # Missing said
+
+        result = client.simulate_put(path=f"/challenges-verify/{aid['i']}", body=b)
         assert result.status == falcon.HTTP_202
+
+        data = dict(
+            words=words,
+            said=exn.said
+        )
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path=f"/challenges/henk/verify/{aid['i']}", body=b)
+        assert result.status_code == 404
+
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path=f"/challenges-verify/EFt8G8gkCJ71e4amQaRUYss0BDK4pUpzKelEIr3yZ1D0",
+                                      body=b)
+        assert result.status_code == 404
+
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path=f"/challenges-verify/{aid['i']}", body=b)
+        assert result.status == falcon.HTTP_202
+        op = result.json
+        assert op["done"] is False
+
+        # Set the signed result to True so it verifies
+        agent.hby.db.reps.add(keys=(aid['i'],), val=coring.Saider(qb64=exn.said))
+        agent.hby.db.exns.pin(keys=(exn.said,), val=exn)
+
+        result = client.simulate_post(path=f"/challenges-verify/{aid['i']}", body=b)
+        assert result.status == falcon.HTTP_202
+        op = result.json
+        assert op["done"] is True
 
 
 def test_contact_ends(helpers):
@@ -746,6 +994,10 @@ def test_contact_ends(helpers):
         response = client.simulate_post(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo/pal", body=b)
         assert response.status == falcon.HTTP_404
 
+        # Bad prefix
+        response = client.simulate_post(f"/contacts/bad_prefix", body=b)
+        assert response.status == falcon.HTTP_404
+
         # POST to a local identifier
         response = client.simulate_post(f"/contacts/{palPre}", body=b)
         assert response.status == falcon.HTTP_400
@@ -758,9 +1010,19 @@ def test_contact_ends(helpers):
                 company="GLEIF"
             )
             b = json.dumps(data).encode("utf-8")
-            # POST to an identifier that is not in the Kever
             response = client.simulate_post(f"/contacts/{aids[i]}", body=b)
             assert response.status == falcon.HTTP_200
+
+        # Dupplicate
+        data = dict(
+            id=aid[0],
+            first=f"Ken{0}",
+            last=f"Burns{0}",
+            company="GLEIF"
+        )
+        b = json.dumps(data).encode("utf-8")
+        response = client.simulate_post(f"/contacts/{aids[i]}", body=b)
+        assert response.status == falcon.HTTP_400
 
         response = client.simulate_get(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
         assert response.status == falcon.HTTP_404
@@ -967,12 +1229,18 @@ def test_oobi_ends(helpers):
         # Create an AID to test against
         salt = b'0123456789abcdef'
         op = helpers.createAid(client, "pal", salt)
-        iserder = coring.Serder(ked=op["response"])
+        iserder = serdering.SerderKERI(sad=op["response"])
         assert iserder.pre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+
+        # Test empty
+        res = client.simulate_get("/identifiers//oobis?role=agent")
+        assert res.status_code == 400
+        assert res.json == {'description': 'name is required', 'title': '400 Bad Request'}
 
         # Test before endroles are added
         res = client.simulate_get("/identifiers/pal/oobis?role=agent")
-        assert res.status_code == 404
+        assert res.status_code == 200
+        assert res.json == {'oobis': [], 'role': 'agent'}
 
         rpy = helpers.endrole(iserder.pre, agent.agentHab.pre)
         sigs = helpers.sign(salt, 0, 0, rpy.raw)
@@ -981,8 +1249,15 @@ def test_oobi_ends(helpers):
         res = client.simulate_post(path=f"/identifiers/pal/endroles", json=body)
         op = res.json
         ked = op["response"]
-        serder = coring.Serder(ked=ked)
+        serder = serdering.SerderKERI(sad=ked)
         assert serder.raw == rpy.raw
+
+        # not valid calls
+        res = client.simulate_post(path=f"/identifiers/pal/endroles/agent", json=body)
+        assert res.status_code == 404
+
+        res = client.simulate_post(path=f"/endroles/pal", json=body)
+        assert res.status_code == 404
 
         # must be a valid aid alias
         res = client.simulate_get("/identifiers/bad/oobis")
@@ -1003,6 +1278,9 @@ def test_oobi_ends(helpers):
         assert res.status_code == 200
         role = res.json['role']
         oobis = res.json['oobis']
+
+        res = client.simulate_get("/identifiers/pal/oobis?role=witness")
+        assert res.status_code == 200
 
         assert role == "agent"
         assert len(oobis) == 1
@@ -1033,26 +1311,47 @@ def test_oobi_ends(helpers):
         assert oobis[0] == "http://localhost:1234/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/controller"
 
 
+        rpy = helpers.endrole(iserder.pre, agent.agentHab.pre, role="mailbox")
+        sigs = helpers.sign(salt, 0, 0, rpy.raw)
+        body = dict(rpy=rpy.ked, sigs=sigs)
+
+        res = client.simulate_post(path=f"/identifiers/pal/endroles", json=body)
+        op = res.json
+        ked = op["response"]
+        serder = serdering.SerderKERI(sad=ked)
+        assert serder.raw == rpy.raw
+
+        res = client.simulate_get("/identifiers/pal/oobis?role=mailbox")
+        assert res.status_code == 200
+        role = res.json['role']
+        oobis = res.json['oobis']
+
+        assert role == "mailbox"
+        assert len(oobis) == 1
+        assert oobis[0] == "http://127.0.0.1:3902/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/mailbox/EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
+
+
+
 def test_rpy_escow_end(helpers):
     with helpers.openKeria() as (agency, agent, app, client):
         rpyEscrowEnd = RpyEscrowCollectionEnd()
         app.add_route("/escrows/rpy", rpyEscrowEnd)
 
         rpy1 = helpers.endrole("EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY",
-                              "ECL8abFVW_0RTZXFhiiA4rkRobNvjTfJ6t-T8UdBRV1e")
-        agent.hby.db.rpes.add(keys=("/end/role",), val=rpy1.saider)
+                               "ECL8abFVW_0RTZXFhiiA4rkRobNvjTfJ6t-T8UdBRV1e")
+        agent.hby.db.rpes.add(keys=("/end/role",), val=coring.Saider(qb64=rpy1.said))
         agent.hby.db.rpys.put(keys=(rpy1.said,), val=rpy1)
 
         rpy2 = helpers.endrole("EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY",
-                              "ECL8abFVW_0RTZXFhiiA4rkRobNvjTfJ6t-T8UdBRV1e",
-                              role=kering.Roles.controller)
-        agent.hby.db.rpes.add(keys=("/end/role",), val=rpy2.saider)
+                               "ECL8abFVW_0RTZXFhiiA4rkRobNvjTfJ6t-T8UdBRV1e",
+                               role=kering.Roles.controller)
+        agent.hby.db.rpes.add(keys=("/end/role",), val=coring.Saider(qb64=rpy2.said))
         agent.hby.db.rpys.put(keys=(rpy2.said,), val=rpy2)
 
         rpy3 = helpers.endrole("EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY",
-                              "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
-                              role=kering.Roles.witness)
-        agent.hby.db.rpes.add(keys=("/end/role",), val=rpy3.saider)
+                               "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
+                               role=kering.Roles.witness)
+        agent.hby.db.rpes.add(keys=("/end/role",), val=coring.Saider(qb64=rpy3.said))
         agent.hby.db.rpys.put(keys=(rpy3.said,), val=rpy3)
 
         res = client.simulate_get(path="/escrows/rpy?route=/end/role")
@@ -1065,3 +1364,146 @@ def test_rpy_escow_end(helpers):
         assert esc[2] == rpy3.ked
 
 
+def test_approve_delegation(helpers):
+    caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
+    salt = b'0123456789abcdef'
+    salter = coring.Salter(raw=salt)
+    cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
+
+    with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
+        hab = hby.makeHab(name="test")
+        agency = agenting.Agency(name="agency", bran=None, temp=True)
+        agentHab = hby.makeHab(caid, ns="agent", transferable=True, data=[caid])
+
+        rgy = credentialing.Regery(hby=hby, name=agentHab.name, base=hby.base, temp=True)
+        agent = agenting.Agent(hby=hby, rgy=rgy, agentHab=agentHab, agency=agency, caid=caid)
+
+        doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+        doist.enter(doers=[agency])
+
+        end = agenting.KeyStateCollectionEnd()
+
+        app = falcon.App()
+        app.add_middleware(helpers.middleware(agent))
+        app.add_route("/states", end)
+
+        client = testing.TestClient(app)
+
+        serder, signers = helpers.incept(bran=b'abcdefghijk0123456789', stem="signify:controller", pidx=0)
+        sigers = [signers[0].sign(ser=serder.raw, index=0)]
+        controllerAID = "EEnUbC_nMt-2uGQMp7jq_xUS9nc8SQ0q7eX_w49CG7jb"
+        assert serder.pre == controllerAID
+
+        bootEnd = agenting.BootEnd(agency)
+        app.add_route("/boot", bootEnd)
+        agentEnd = aiding.AgentResourceEnd(agency=agency, authn=None)
+        app.add_route("/agent/{caid}", agentEnd)
+
+        body = dict(
+            icp=serder.ked,
+            sig=sigers[0].qb64,
+            salty=dict(
+                stem='signify:aid', pidx=0, tier='low', sxlt='OBXYZ',
+                icodes=[MtrDex.Ed25519_Seed], ncodes=[MtrDex.Ed25519_Seed]
+            )
+        )
+
+        rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"))
+        assert rep.status_code == 202
+
+        res = client.simulate_get(path=f"/agent/{serder.pre}")
+        assert res.status_code == 200
+        agt = res.json["agent"]
+        ctrl = res.json["controller"]
+        assert agt["i"] == "EHyaw-1bCenigGQCZRs_hXNdndHw0fSf-Q5-LpUwOR8r"
+        assert ctrl["state"]["i"] == controllerAID
+
+        anchor = dict(i=agt["i"], s="0", d=agt["d"])
+        serder = eventing.interact(pre=ctrl["state"]["i"], sn="1", dig=ctrl["state"]["d"], data=[anchor])
+        body = {
+            "ixn": serder.ked,
+            "sigs": [signers[0].sign(ser=serder.raw, index=0).qb64],
+        }
+        res = client.simulate_put(path=f"/agent/{controllerAID}?type=ixn", body=json.dumps(body))
+        assert res.status_code == 204
+
+        body = {
+        }
+        res = client.simulate_put(path=f"/agent/{controllerAID}?type=ixn", body=json.dumps(body))
+        assert res.status_code == 400
+
+        body = {
+            "sigs": "fake_sigs"
+        }
+        res = client.simulate_put(path=f"/agent/{controllerAID}?type=ixn", body=json.dumps(body))
+        assert res.status_code == 400
+
+        body = {
+            "ixn": "fake_ixn"
+        }
+        res = client.simulate_put(path=f"/agent/{controllerAID}?type=ixn", body=json.dumps(body))
+        assert res.status_code == 400
+
+
+def test_rotation(helpers):
+    caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
+    salt = b'0123456789abcdef'
+    salter = coring.Salter(raw=salt)
+    cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
+
+    with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
+        hab = hby.makeHab(name="test")
+        agency = agenting.Agency(name="agency", bran=None, temp=True)
+        agentHab = hby.makeHab(caid, ns="agent", transferable=True, data=[caid])
+
+        rgy = credentialing.Regery(hby=hby, name=agentHab.name, base=hby.base, temp=True)
+        agent = agenting.Agent(hby=hby, rgy=rgy, agentHab=agentHab, agency=agency, caid=caid)
+
+        doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+        doist.enter(doers=[agency])
+
+        end = agenting.KeyStateCollectionEnd()
+
+        app = falcon.App()
+        app.add_middleware(helpers.middleware(agent))
+        app.add_route("/states", end)
+
+        client = testing.TestClient(app)
+
+        bran = b'abcdefghijk0123456789'
+        serder, signers = helpers.incept(bran=bran, stem="signify:controller", pidx=0)
+        sigers = [signers[0].sign(ser=serder.raw, index=0)]
+        controllerAID = "EEnUbC_nMt-2uGQMp7jq_xUS9nc8SQ0q7eX_w49CG7jb"
+        assert serder.pre == controllerAID
+
+        bootEnd = agenting.BootEnd(agency)
+        app.add_route("/boot", bootEnd)
+        agentEnd = aiding.AgentResourceEnd(agency=agency, authn=None)
+        app.add_route("/agent/{caid}", agentEnd)
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+        idResEnd = aiding.IdentifierResourceEnd()
+        app.add_route("/identifiers/{name}", idResEnd)
+
+        body = dict(
+            icp=serder.ked,
+            sig=sigers[0].qb64,
+            salty=dict(
+                stem='signify:aid', pidx=0, tier='low', sxlt='OBXYZ',
+                icodes=[MtrDex.Ed25519_Seed], ncodes=[MtrDex.Ed25519_Seed]
+            )
+        )
+
+        rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"))
+        assert rep.status_code == 202
+
+        res = client.simulate_get(path=f"/agent/{serder.pre}")
+        assert res.status_code == 200
+        agt = res.json["agent"]
+        ctrl = res.json["controller"]
+        assert agt["i"] == "EHyaw-1bCenigGQCZRs_hXNdndHw0fSf-Q5-LpUwOR8r"
+        assert ctrl["state"]["i"] == controllerAID
+
+        op = helpers.createAid(client, name="salty_aid", salt=bran)
+        aid = op["response"]
+        assert aid['i'] == "EKYCAqyMMllSeGowQJUGMbRJpvLnhNMbF1qEIPCSpmOM"

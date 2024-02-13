@@ -9,18 +9,21 @@ from collections import namedtuple
 from dataclasses import dataclass, asdict
 
 import falcon
+import json
 from dataclasses_json import dataclass_json
 from keri import kering
 from keri.app.oobiing import Result
-from keri.core import eventing, coring
+from keri.core import eventing, coring, serdering
 from keri.db import dbing, koming
 from keri.help import helping
 
 # long running operationt types
-Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole done')
+Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole challenge exchange '
+                                'done')
 
 OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation', group='group', query='query',
-                  registry='registry', credential='credential', endrole='endrole', done='done')
+                  registry='registry', credential='credential', endrole='endrole', challenge='challenge',
+                  exchange='exchange', done='done')
 
 
 @dataclass_json
@@ -85,16 +88,17 @@ class Monitor:
     Attributes:
         hby (Habery): identifier database environment
         opr(Operator): long running operations database
-        swain(Boatswain): Delegation processes tracker
+        swain(Sealer): Delegation processes tracker
 
     """
 
-    def __init__(self, hby, swain, counselor=None, registrar=None, credentialer=None, opr=None, temp=False):
+    def __init__(self, hby, swain, counselor=None, registrar=None, exchanger=None, credentialer=None, opr=None,
+                 temp=False):
         """ Create long running operation monitor
 
         Parameters:
             hby (Habery): identifier database environment
-            swain(Boatswain): Delegation processes tracker
+            swain(Sealer): Delegation processes tracker
             opr (Operator): long running operations database
 
         """
@@ -102,6 +106,7 @@ class Monitor:
         self.swain = swain
         self.counselor = counselor
         self.registrar = registrar
+        self.exchanger = exchanger
         self.credentialer = credentialer
         self.opr = opr if opr is not None else Operator(name=hby.name, temp=temp)
 
@@ -138,6 +143,26 @@ class Monitor:
 
         return operation
 
+    def getOperations(self, type=None):
+        """ Return list of long running opterations, optionally filtered by type """
+        ops = self.opr.ops.getItemIter()
+        if type != None:
+            ops = filter(lambda i: i[1].type == type, ops)
+
+        def get_status(op):
+            try:
+                return self.status(op)
+            except Exception as err:
+                # self.status may throw an exception.
+                # Handling error by returning an operation with error status
+                return Operation(
+                    name=f"{op.type}.{op.oid}",
+                    metadata=op.metadata,
+                    done=True,
+                    error=Status(code=500, message=f"{err}"))
+
+        return [get_status(op) for (_, op) in ops]
+
     def rem(self, name):
         """ Remove tracking of the long running operation represented by name """
         return self.opr.ops.rem(keys=(name,))
@@ -167,7 +192,7 @@ class Monitor:
                 raise kering.ValidationError(f"long running {op.type} operation identifier {op.oid} not found")
 
             if "sn" not in op.metadata:
-                raise kering.ValidationError(f"invalid long running {op.type} operaiton, metadata missing 'sn' field")
+                raise kering.ValidationError(f"invalid long running {op.type} operation, metadata missing 'sn' field")
 
             sn = op.metadata["sn"]
             kever = self.hby.kevers[op.oid]
@@ -178,7 +203,7 @@ class Monitor:
 
             if len(wigs) >= kever.toader.num:
                 evt = self.hby.db.getEvt(dbing.dgKey(pre=kever.prefixer.qb64, dig=bytes(sdig)))
-                serder = coring.Serder(raw=bytes(evt))
+                serder = serdering.SerderKERI(raw=bytes(evt))
                 operation.done = True
                 operation.response = serder.ked
 
@@ -221,7 +246,7 @@ class Monitor:
                 raise kering.ValidationError(f"long running {op.type} operation identifier {op.oid} not found")
 
             if "sn" not in op.metadata:
-                raise kering.ValidationError(f"invalid long running {op.type} operaiton, metadata missing 'sn' field")
+                raise kering.ValidationError(f"invalid long running {op.type} operation, metadata missing 'sn' field")
 
             kever = self.hby.kevers[op.oid]
             sn = op.metadata["sn"]
@@ -230,7 +255,7 @@ class Monitor:
 
             if self.swain.complete(kever.prefixer, seqner):
                 evt = self.hby.db.getEvt(dbing.dgKey(pre=kever.prefixer.qb64, dig=bytes(sdig)))
-                serder = coring.Serder(raw=bytes(evt))
+                serder = serdering.SerderKERI(raw=bytes(evt))
 
                 operation.done = True
                 operation.response = serder.ked
@@ -239,7 +264,7 @@ class Monitor:
 
         elif op.type in (OpTypes.group, ):
             if "sn" not in op.metadata:
-                raise kering.ValidationError(f"invalid long running {op.type} operaiton, metadata missing 'sn' field")
+                raise kering.ValidationError(f"invalid long running {op.type} operation, metadata missing 'sn' field")
 
             prefixer = coring.Prefixer(qb64=op.oid)
             seqner = coring.Seqner(sn=op.metadata["sn"])
@@ -247,7 +272,7 @@ class Monitor:
             if self.counselor.complete(prefixer, seqner):
                 sdig = self.hby.db.getKeLast(key=dbing.snKey(pre=op.oid, sn=seqner.sn))
                 evt = self.hby.db.getEvt(dbing.dgKey(pre=prefixer.qb64, dig=bytes(sdig)))
-                serder = coring.Serder(raw=bytes(evt))
+                serder = serdering.SerderKERI(raw=bytes(evt))
 
                 operation.done = True
                 operation.response = serder.ked
@@ -261,14 +286,15 @@ class Monitor:
             else:
                 kever = self.hby.kevers[op.oid]
                 if "sn" in op.metadata:
-                    if kever.sn >= op.metadata["sn"]:
+                    sn = int(op.metadata['sn'], 16)
+                    if kever.sn >= sn:
                         operation.done = True
                         operation.response = asdict(kever.state())
                     else:
                         operation.done = False
                 elif "anchor" in op.metadata:
                     anchor = op.metadata["anchor"]
-                    if self.hby.db.findAnchoringEvent(op.oid, anchor=anchor) is not None:
+                    if self.hby.db.findAnchoringSealEvent(op.oid, seal=anchor) is not None:
                         operation.done = True
                         operation.response = asdict(kever.state())
                     else:
@@ -279,7 +305,7 @@ class Monitor:
                         ksn = self.hby.db.ksns.get(keys=(saider.qb64,))
                         break
 
-                    if ksn and ksn.ked['d'] == kever.serder.said:
+                    if ksn and ksn.d == kever.serder.said:
                         operation.done = True
                         operation.response = asdict(kever.state())
                     else:
@@ -291,10 +317,10 @@ class Monitor:
                     f"long running {op.type} operation identifier {op.oid} not found")
             if "anchor" not in op.metadata:
                 raise kering.ValidationError(
-                    f"invalid long running {op.type} operaiton, metadata missing 'anchor' field")
+                    f"invalid long running {op.type} operation, metadata missing 'anchor' field")
 
             anchor = op.metadata["anchor"]
-            if self.hby.db.findAnchoringEvent(op.oid, anchor=anchor) is not None:
+            if self.hby.db.findAnchoringSealEvent(op.oid, seal=anchor) is not None:
                 operation.done = True
                 operation.response = dict(anchor=anchor)
             else:
@@ -303,7 +329,7 @@ class Monitor:
         elif op.type in (OpTypes.credential,):
             if "ced" not in op.metadata:
                 raise kering.ValidationError(
-                    f"invalid long running {op.type} operaiton, metadata missing 'ced' field")
+                    f"invalid long running {op.type} operation, metadata missing 'ced' field")
 
             ced = op.metadata["ced"]
             if self.credentialer.complete(ced['d']):
@@ -312,10 +338,22 @@ class Monitor:
             else:
                 operation.done = False
 
+        elif op.type in (OpTypes.exchange,):
+            if "said" not in op.metadata:
+                raise kering.ValidationError(
+                    f"invalid long running {op.type} operation, metadata missing 'said' field")
+
+            said = op.metadata["said"]
+            if self.exchanger.complete(said):
+                operation.done = True
+                operation.response = dict(said=said)
+            else:
+                operation.done = False
+
         elif op.type in (OpTypes.endrole, ):
             if "cid" not in op.metadata or "role" not in op.metadata or "eid" not in op.metadata:
                 raise kering.ValidationError(
-                    f"invalid long running {op.type} operaiton, metadata missing 'ced' field")
+                    f"invalid long running {op.type} operation, metadata missing 'ced' field")
 
             cid = op.metadata['cid']
             role = op.metadata['role']
@@ -327,6 +365,29 @@ class Monitor:
                 serder = self.hby.db.rpys.get(keys=(saider.qb64,))
                 operation.done = True
                 operation.response = serder.ked
+            else:
+                operation.done = False
+
+        elif op.type in (OpTypes.challenge,):
+            if op.oid not in self.hby.kevers:
+                operation.done = False
+
+            if "words" not in op.metadata:
+                raise kering.ValidationError(
+                    f"invalid long running {op.type} operation, metadata missing 'ced' field")
+
+            found = False
+            words = op.metadata["words"]
+            saiders = self.hby.db.reps.get(keys=(op.oid,))
+            for saider in saiders:
+                exn = self.hby.db.exns.get(keys=(saider.qb64,))
+                if words == exn.ked['a']['words']:
+                    found = True
+                    break
+
+            if found:
+                operation.done = True
+                operation.response = dict(exn=exn.ked)
             else:
                 operation.done = False
 
@@ -342,11 +403,42 @@ class Monitor:
         return operation
 
 
+class OperationCollectionEnd:
+    @staticmethod
+    def on_get(req, rep):
+        """ Get list of long running operations 
+        
+        Parameters:
+            req (Request):  Falcon HTTP Request object
+            rep (Response): Falcon HTTP Response object
+
+        ---
+        summary: Get list of long running operations
+        parameters:
+          - in: query
+            name: type
+            schema:
+              type: string
+            required: false
+            description: filter list of long running operations by type
+        responses:
+            200:
+              content:
+                  application/json:
+                    schema:
+                        type: array
+
+        """
+        agent = req.context.agent
+        type = req.params.get("type")
+        ops = agent.monitor.getOperations(type=type)
+        rep.data = json.dumps(ops, default=lambda o: o.to_dict()).encode("utf-8")
+        rep.content_type = "application/json"
+        rep.status = falcon.HTTP_200
+
+
 class OperationResourceEnd:
     """ Single Resource REST endpoint for long running operations
-
-    Attributes:
-        monitor(Monitor): long running operation monitor
 
     """
 

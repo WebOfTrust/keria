@@ -5,6 +5,9 @@ keria.app.httping module
 
 Testing the Mark II Agent
 """
+import json
+
+from keria.app.agenting import HealthEnd
 from keria.core.httping import parseRangeHeader
 
 
@@ -66,8 +69,17 @@ def test_parse_range_header():
     assert end == 9
 
 
+def test_healthcheck_end(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        healthEnd = HealthEnd()
+        app.add_route("/health", healthEnd)
 
+        res = client.simulate_get(path="/health")
+        health = json.loads(res.content)
 
+        assert res.status_code == 200
+        assert 'message' in health
+        assert health['message'].startswith('Health is okay')
 
 
 

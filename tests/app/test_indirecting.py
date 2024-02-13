@@ -8,9 +8,10 @@ Testing the Mark II Agent
 import falcon.testing
 from hio.help import Hict
 from keri.app import habbing, httping
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.core.coring import randomNonce, MtrDex
 from keri.vdr import eventing
+from keria.end import ending
 
 from keria.app import indirecting, aiding
 
@@ -33,7 +34,7 @@ def test_indirecting(helpers):
 
         hab = hby.makeHab("test")
         icp = hab.makeOwnInception()
-        serder = coring.Serder(raw=icp)
+        serder = serdering.SerderKERI(raw=icp)
         atc = icp[:serder.size]
 
         client = falcon.testing.TestClient(app)
@@ -68,7 +69,7 @@ def test_indirecting(helpers):
 
         # Regular (non-mbx) query messages accepted
         msg = hab.query(pre=hab.pre, src=hab.pre, route="ksn")
-        serder = coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg)
         atc = msg[:serder.size]
 
         headers = Hict([
@@ -84,7 +85,7 @@ def test_indirecting(helpers):
 
         # Mailbox query not found
         msg = hab.query(pre=hab.pre, src=hab.pre, route="mbx")
-        serder = coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg)
         atc = msg[:serder.size]
 
         headers = Hict([
@@ -117,8 +118,45 @@ def test_indirecting(helpers):
         res = client.post("/", body=regser.raw, headers=dict(headers))
         assert res.status_code == 204
 
+        # Test PUT method
+        res = client.put("/", body=serder.raw)
+        assert res.status_code == 400
+        assert res.json == {'title': 'CESR request destination header missing'}
 
+        badaid = "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
+        headers = Hict([
+            ("Content-Type", httping.CESR_CONTENT_TYPE),
+            ("Content-Length", f"{serder.size}"),
+            ("connection", "close"),
+            (httping.CESR_DESTINATION_HEADER, badaid)
+        ])
 
+        body = serder.raw + atc
+        res = client.put("/", body=body, headers=dict(headers))
+        assert res.status_code == 404
+        assert res.json == {'title': 'unknown destination AID EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'}
 
+        headers = Hict([
+            ("Content-Type", httping.CESR_CONTENT_TYPE),
+            ("Content-Length", f"{serder.size}"),
+            ("connection", "close"),
+            (httping.CESR_ATTACHMENT_HEADER, bytearray(atc).decode("utf-8")),
+            (httping.CESR_DESTINATION_HEADER, aid["i"])
+        ])
 
+        res = client.put("/", body=serder.raw, headers=dict(headers))
+        assert res.status_code == 204
+
+        # Test ending
+        oobiEnd = ending.OOBIEnd(agency)
+        app.add_route("/oobi", oobiEnd)
+        app.add_route("/oobi/{aid}", oobiEnd)
+        app.add_route("/oobi/{aid}/{role}", oobiEnd)
+        app.add_route("/oobi/{aid}/{role}/{eid}", oobiEnd)
+
+        result = client.simulate_get(path="/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/role")
+        assert result.status == falcon.HTTP_200 
+
+        result = client.simulate_get(path="/oobi/EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3")
+        assert result.status == falcon.HTTP_404 
 

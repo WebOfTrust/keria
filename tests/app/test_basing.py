@@ -8,7 +8,10 @@ Testing the database classes
 import random
 
 import pytest
-from keri.app import habbing
+from keri.app import habbing, signing
+from keri.core import parsing
+from keri.peer import exchanging
+from keri.vc import protocoling
 
 from keria.db import basing
 
@@ -22,7 +25,6 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
     with habbing.openHab(name="hal", salt=salt, temp=True) as (issueeHby, issueeHab), \
             habbing.openHab(name="issuer", salt=salt, temp=True) as (issuerHby, issuerHab), \
             helpers.withIssuer(name="issuer", hby=issuerHby) as issuer:
-
         seeker = basing.Seeker(db=issuerHby.db, reger=issuer.rgy.reger, reopen=True, temp=True)
 
         seeder.seedSchema(issueeHby.db)
@@ -36,6 +38,7 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
         # Verify the indexes created for the QVI schema
         assert indexes == ['5AABAA-s',
                            '5AABAA-i',
+                           '4AABA-ri',
                            '5AABAA-i.5AABAA-s',
                            '4AAB-a-i',
                            '4AAB-a-i.5AABAA-s',
@@ -71,6 +74,7 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
         # Test the indexes assigned to the LE schema
         assert indexes == ['5AABAA-s',
                            '5AABAA-i',
+                           '4AABA-ri',
                            '5AABAA-i.5AABAA-s',
                            '4AAB-a-i',
                            '4AAB-a-i.5AABAA-s',
@@ -101,6 +105,10 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
         # Assure that no knew index tables needed to be created
         assert len(seeker.indexes) == 29
 
+        # Test with a bad credential SAID
+        with pytest.raises(ValueError):
+            seeker.index("EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM")
+
         # test credemtial with "oneOf"
         seeker.generateIndexes(said="EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
 
@@ -115,6 +123,12 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
 
         saids = seeker.find({}).limit(50)
         assert len(list(saids)) == 50
+
+        saids = seeker.find({ '-ri': "EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4" })
+        assert len(list(saids)) == 25
+
+        saids = seeker.find({ '-ri': "EAzc9zFLaK22zbrKDGIgKtrpDBNKWKvl8B0FKYAo19z_" })
+        assert len(list(saids)) == 0
 
         saids = seeker.find({'-d': "EAzc9zFLaK22zbrKDGIgKtrpDBNKWKvl8B0FKYAo19z_"})
         assert list(saids) == ['EAzc9zFLaK22zbrKDGIgKtrpDBNKWKvl8B0FKYAo19z_']
@@ -215,3 +229,93 @@ LEIs = [
     "ZUCD1UCNH83634ZIM8TC",
     "ZUQA6QTJDNYPF3DLP9NH",
 ]
+
+
+def test_exnseeker(helpers, seeder, mockHelpingNowUTC):
+    salt = b'0123456789abcdef'
+
+    with habbing.openHab(name="hal", salt=salt, temp=True) as (issueeHby, issueeHab), \
+            habbing.openHab(name="issuer", salt=salt, temp=True) as (issuerHby, issuerHab), \
+            helpers.withIssuer(name="issuer", hby=issuerHby) as issuer:
+        seeder.seedSchema(issueeHby.db)
+        seeder.seedSchema(issuerHby.db)
+
+        exc = exchanging.Exchanger(hby=issuerHby, handlers=[])
+
+        seeker = basing.ExnSeeker(db=issuerHby.db, reopen=True, temp=True)
+
+        assert list(seeker.indexes.keys()) == ['5AABAA-r',
+                                               '5AABAA-r.5AABAA-i',
+                                               '5AABAA-r.4AAB-a-i',
+                                               '5AABAA-r.4AABA-dt',
+                                               '5AABAA-r.6AADAAA-e-acdc-s',
+                                               '5AABAA-i',
+                                               '5AABAA-i.5AABAA-r',
+                                               '5AABAA-i.4AAB-a-i',
+                                               '5AABAA-i.4AABA-dt',
+                                               '5AABAA-i.6AADAAA-e-acdc-s',
+                                               '4AAB-a-i',
+                                               '4AAB-a-i.5AABAA-r',
+                                               '4AAB-a-i.5AABAA-i',
+                                               '4AAB-a-i.4AABA-dt',
+                                               '4AAB-a-i.6AADAAA-e-acdc-s',
+                                               '4AABA-dt',
+                                               '4AABA-dt.5AABAA-r',
+                                               '4AABA-dt.5AABAA-i',
+                                               '4AABA-dt.4AAB-a-i',
+                                               '4AABA-dt.6AADAAA-e-acdc-s',
+                                               '6AADAAA-e-acdc-s',
+                                               '6AADAAA-e-acdc-s.5AABAA-r',
+                                               '6AADAAA-e-acdc-s.5AABAA-i',
+                                               '6AADAAA-e-acdc-s.4AAB-a-i',
+                                               '6AADAAA-e-acdc-s.4AABA-dt']
+
+        issuer.createRegistry(issuerHab.pre, name="issuer")
+        issuer.issueQVIvLEI("issuer", issuerHab, issueeHab.pre, "LEYGGPUNV3LJY3KPFDHP")
+        issuer.issueQVIvLEI("issuer", issuerHab, issueeHab.pre, "LRK3QNUZJNJY1VD08MV2")
+        qvisaid = issuer.issueQVIvLEI("issuer", issuerHab, issueeHab.pre, "MNUHRN28GQN7VM0G0AKE")
+
+        apply, atc = protocoling.ipexApplyExn(issuerHab, issueeHab.pre, "Please give me credential", QVI_SAID, dict())
+
+        msg = bytearray(apply.raw)
+        msg.extend(atc)
+        parsing.Parser().parseOne(ims=msg, exc=exc)
+        seeker.index(apply.said)
+
+        saids = seeker.find({})
+        assert list(saids) == [apply.said]
+
+        saids = seeker.find({'-i': {'$eq': issuerHab.pre}})
+        assert list(saids) == [apply.said]
+
+        saids = seeker.find({'-a-i': {'$eq': issueeHab.pre}})
+        assert list(saids) == [apply.said]
+
+        saids = seeker.find({'-i': {'$eq': issuerHab.pre}, '-a-i': {'$eq': issueeHab.pre}})
+        assert list(saids) == [apply.said]
+
+        saids = seeker.find({'-i': {'$eq': issueeHab.pre}, '-a-i': {'$eq': issuerHab.pre}})
+        assert list(saids) == []
+
+        msg = signing.serialize(*issuer.rgy.reger.cloneCred(qvisaid))
+        iss = issuer.rgy.reger.cloneTvtAt(qvisaid)
+        anc = issuerHab.makeOwnEvent(sn=issuerHab.kever.sn)
+
+        grant, atc = protocoling.ipexGrantExn(issuerHab, message="Here's a credential", recp=issueeHab.pre,
+                                              acdc=msg, iss=iss, anc=anc)
+
+        gmsg = bytearray(grant.raw)
+        gmsg.extend(atc)
+        parsing.Parser().parseOne(ims=gmsg, exc=exc)
+        seeker.index(grant.said)
+
+        saids = seeker.find({'-e-acdc-s': {'$eq': QVI_SAID}})
+        assert list(saids) == [grant.said]
+
+        saids = seeker.find({'-i': {'$eq': issuerHab.pre}})
+        assert list(saids) == [grant.said, apply.said]
+
+        saids = seeker.find({'-a-i': {'$eq': issueeHab.pre}})
+        assert list(saids) == [grant.said, apply.said]
+
+

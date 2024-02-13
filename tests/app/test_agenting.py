@@ -10,26 +10,30 @@ import os
 import shutil
 
 import falcon
+import hio
 from falcon import testing
 from hio.base import doing
+from hio.core import http, tcp
 from hio.help import decking
 from keri import kering
-from keri.app import habbing, configing, oobiing
+from keri.app import habbing, configing, oobiing, querying
 from keri.app.agenting import Receiptor
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.core.coring import MtrDex
 from keri.db import basing
+from keri.vc import proving
 from keri.vdr import credentialing
 
 from keria.app import agenting, aiding
 from keria.core import longrunning
 
 
-def test_setup():
+def test_setup_no_http():
     doers = agenting.setup(name="test", bran=None, adminPort=1234, bootPort=5678)
     assert len(doers) == 3
     assert isinstance(doers[0], agenting.Agency) is True
 
+def test_setup():
     doers = agenting.setup("test", bran=None, adminPort=1234, bootPort=5678, httpPort=9999)
     assert len(doers) == 4
 
@@ -234,6 +238,13 @@ def test_oobi_ends(seeder, helpers):
             habbing.openHby(name="wes", salt=coring.Salter(raw=b'wess-the-witness').qb64) as wesHby:
         wesHab = wesHby.makeHab(name="wes", transferable=False)
 
+        result = client.simulate_get(path="/oobi/pal?role=witness")
+        assert result.status == falcon.HTTP_404  # Missing OOBI endpoints for witness
+
+        # Add witness endpoints
+        url = "http://127.0.0.1:9999"
+        agent.hby.db.locs.put(keys=(wesHab.pre, kering.Schemes.http), val=basing.LocationRecord(url=url))
+
         # Register the identifier endpoint so we can create an AID for the test
         end = aiding.IdentifierCollectionEnd()
         app.add_route("/identifiers", end)
@@ -255,7 +266,7 @@ def test_oobi_ends(seeder, helpers):
         assert result.status == falcon.HTTP_404  # Bad role, watcher not supported yet
 
         result = client.simulate_get(path="/oobi/pal?role=witness")
-        assert result.status == falcon.HTTP_404  # Missing OOBI endpoints for witness
+        assert result.status == falcon.HTTP_200
 
         result = client.simulate_get(path="/oobi/pal?role=controller")
         assert result.status == falcon.HTTP_404  # Missing OOBI controller endpoints
@@ -347,3 +358,94 @@ def test_oobi_ends(seeder, helpers):
         assert result.json == {'oobis': ['http://127.0.0.1:3902/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/agent'
                                          '/EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9'],
                                'role': 'agent'}
+
+
+
+def test_querier(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        qry = agenting.Querier(hby=agent.hby, agentHab=agent.agentHab, queries=decking.Deck(), kvy=agent.kvy)
+        doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+        deeds = doist.enter(doers=[qry])
+
+        qry.queries.append(dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9", sn="1"))
+        qry.recur(1.0, deeds=deeds)
+
+        assert len(qry.doers) == 1
+        seqNoDoer = qry.doers[0]
+        assert isinstance(seqNoDoer, querying.SeqNoQuerier) is True
+        assert seqNoDoer.pre == "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
+        assert seqNoDoer.sn == 1
+
+        qry.doers.remove(seqNoDoer)
+
+        # Anchor not implemented yet
+        qry.queries.append(dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9", anchor={}))
+        qry.recur(1.0, deeds=deeds)
+        assert len(qry.doers) == 1
+        anchorDoer = qry.doers[0]
+        assert isinstance(anchorDoer, querying.AnchorQuerier) is True
+        assert anchorDoer.pre == "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
+        assert anchorDoer.anchor == {}
+        qry.doers.remove(anchorDoer)
+
+        qry.queries.append(dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"))
+        qry.recur(1.0, deeds=deeds)
+
+        assert len(qry.doers) == 1
+        qryDoer = qry.doers[0]
+        assert isinstance(qryDoer, querying.QueryDoer) is True
+        assert qryDoer.pre == "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
+
+
+class MockServerTls:
+    def __init__(self,  certify, keypath, certpath, cafilepath, port):
+        pass
+
+
+class MockHttpServer:
+    def __init__(self, port, app, servant=None):
+        self.servant = servant
+
+
+def test_createHttpServer(monkeypatch):
+    port = 5632
+    app = falcon.App()
+    server = agenting.createHttpServer(port, app)
+    assert isinstance(server, http.Server)
+
+    monkeypatch.setattr(hio.core.tcp, 'ServerTls', MockServerTls)
+    monkeypatch.setattr(hio.core.http, 'Server', MockHttpServer)
+
+    server = agenting.createHttpServer(port, app, keypath='keypath', certpath='certpath',
+                                          cafilepath='cafilepath')
+
+    assert isinstance(server, MockHttpServer)
+    assert isinstance(server.servant, MockServerTls)
+
+
+def test_seeker_doer(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        cues = decking.Deck()
+        seeker = agenting.SeekerDoer(agent.seeker, cues)
+
+        creder = serdering.SerderACDC(sad={
+            "v": "ACDC10JSON000197_",
+            "d": "EG7ZlUq0Z6a1EUPTM_Qg1LGEg1BWiypHLAekxo8crGzK",
+            "i": "EPbOCiPM7IItIMzMwslKWfPM4tqNIKUCyVVuYJNQHwMB",
+            "ri": "EE5upBEf9JlH0ZCkZwLcNOOQYkiowcF7QBa-SDZg3GLo",
+            "s": "EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao",
+            "a": {
+                "d": "EH8sB2FZuSYBi6dj8edmPMxS-ZoikR2ova3LAVJvelMe",
+                "i": "ECfRBXooQPoNNQC4i0bkwNfKm-VwV3QsUce14uFfejyj",
+                "dt": "2023-11-07T23:38:05.508152+00:00",
+                "LEI": "5493001KJTIIGC8Y1R17"
+            }
+        })
+
+        assert creder.said == "EG7ZlUq0Z6a1EUPTM_Qg1LGEg1BWiypHLAekxo8crGzK"
+
+        cues.append(dict(kin="saved", creder=creder))
+
+        result = seeker.recur()
+        assert result is False
+        assert len(cues) == 1
