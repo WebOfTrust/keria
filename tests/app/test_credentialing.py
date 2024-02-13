@@ -270,8 +270,8 @@ def test_credentialing_ends(helpers, seeder):
         app.add_route("/identifiers/{name}/credentials", credEnd)
         credResEnd = credentialing.CredentialQueryCollectionEnd()
         app.add_route("/credentials/query", credResEnd)
-        credResEnd = credentialing.CredentialResourceEnd(idResEnd)
-        app.add_route("/identifiers/{name}/credentials/{said}", credResEnd)
+        credResEnd = credentialing.CredentialResourceEnd()
+        app.add_route("/credentials/{said}", credResEnd)
 
         assert hab.pre == "EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze"
 
@@ -375,22 +375,16 @@ def test_credentialing_ends(helpers, seeder):
         assert res.status_code == 200
         assert len(res.json) == 4
 
-        res = client.simulate_get(f"/identifiers/test/credentials/{saids[0]}")
+        res = client.simulate_get(f"/credentials/{saids[0]}")
         assert res.status_code == 200
         assert res.headers['content-type'] == "application/json"
         assert res.json['sad']['d'] == saids[0]
 
         headers = {"Accept": "application/json+cesr"}
-        res = client.simulate_get(f"/identifiers/{hab.name}/credentials/{saids[0]}", headers=headers)
-        assert res.status_code == 404
-
-        res = client.simulate_get(f"/identifiers/test/credentials/{saids[0]}", headers=headers)
+        res = client.simulate_get(f"/credentials/{saids[0]}", headers=headers)
         assert res.status_code == 200
         assert res.headers['content-type'] == "application/json+cesr"
 
-        res = client.simulate_get(f"/identifiers/bad_test/credentials/{saids[0]}", headers=headers)
-        assert res.status_code == 404
-        
 
 def test_revoke_credential(helpers, seeder):
     with helpers.openKeria() as (agency, agent, app, client):
@@ -406,8 +400,10 @@ def test_revoke_credential(helpers, seeder):
         app.add_route("/identifiers", end)
         endRolesEnd = aiding.EndRoleCollectionEnd()
         app.add_route("/identifiers/{name}/endroles", endRolesEnd)
-        credResEnd = credentialing.CredentialResourceEnd(idResEnd)
-        app.add_route("/identifiers/{name}/credentials/{said}", credResEnd)
+        credResEnd = credentialing.CredentialResourceEnd()
+        app.add_route("/credentials/{said}", credResEnd)
+        credResDelEnd = credentialing.CredentialResourceDeleteEnd(idResEnd)
+        app.add_route("/identifiers/{name}/credentials/{said}", credResDelEnd)
         credResEnd = credentialing.CredentialQueryCollectionEnd()
         app.add_route("/credentials/query", credResEnd)
 

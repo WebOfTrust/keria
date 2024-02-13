@@ -52,7 +52,7 @@ def loadEnds(app, agency, authn):
     chaResEnd = ChallengeResourceEnd()
     app.add_route("/challenges/{name}", chaResEnd)
     chaVerResEnd = ChallengeVerifyResourceEnd()
-    app.add_route("/challenges/{name}/verify/{source}", chaVerResEnd)
+    app.add_route("/challenges_verify/{source}", chaVerResEnd)
 
     contactColEnd = ContactCollectionEnd()
     app.add_route("/contacts", contactColEnd)
@@ -442,6 +442,9 @@ class IdentifierResourceEnd:
             name (str): human readable name for Hab to GET
 
         """
+        if not name:
+            raise falcon.HTTPBadRequest(description="name is required")
+
         agent = req.context.agent
         hab = agent.hby.habByName(name)
         if hab is None:
@@ -630,6 +633,9 @@ class IdentifierOOBICollectionEnd:
 
         """
         agent = req.context.agent
+        if not name:
+            raise falcon.HTTPBadRequest(description="name is required")
+
         hab = agent.hby.habByName(name)
         if not hab:
             raise falcon.HTTPNotFound(description="invalid alias {name}")
@@ -948,13 +954,12 @@ class ChallengeVerifyResourceEnd:
     """ Resource for Challenge/Response Verification Endpoints """
 
     @staticmethod
-    def on_post(req, rep, name, source):
+    def on_post(req, rep, source):
         """ Challenge POST endpoint
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name: human readable name of identifier to use to sign the challenge/response
             source: qb64 AID of of source of signed response to verify
 
         ---
@@ -990,9 +995,6 @@ class ChallengeVerifyResourceEnd:
               description: Success submission of signed challenge/response
         """
         agent = req.context.agent
-        hab = agent.hby.habByName(name)
-        if hab is None:
-            raise falcon.HTTPNotFound(description="no matching Hab for alias {name}")
 
         body = req.get_media()
         words = httping.getRequiredParam(body, "words")
@@ -1008,13 +1010,12 @@ class ChallengeVerifyResourceEnd:
         rep.status = falcon.HTTP_202
 
     @staticmethod
-    def on_put(req, rep, name, source):
+    def on_put(req, rep, source):
         """ Challenge PUT accept endpoint
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name: human readable name of identifier to use to sign the challenge/response
             source: qb64 AID of of source of signed response to verify
 
         ---
@@ -1049,10 +1050,6 @@ class ChallengeVerifyResourceEnd:
               description: Success submission of signed challenge/response
         """
         agent = req.context.agent
-        hab = agent.hby.habByName(name)
-        if hab is None:
-            raise falcon.HTTPNotFound(description="no matching Hab for alias {name}")
-
         body = req.get_media()
         if "said" not in body:
             raise falcon.HTTPBadRequest(description="challenge response acceptance requires 'aid' and 'said'")

@@ -38,6 +38,7 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
         # Verify the indexes created for the QVI schema
         assert indexes == ['5AABAA-s',
                            '5AABAA-i',
+                           '4AABA-ri',
                            '5AABAA-i.5AABAA-s',
                            '4AAB-a-i',
                            '4AAB-a-i.5AABAA-s',
@@ -73,6 +74,7 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
         # Test the indexes assigned to the LE schema
         assert indexes == ['5AABAA-s',
                            '5AABAA-i',
+                           '4AABA-ri',
                            '5AABAA-i.5AABAA-s',
                            '4AAB-a-i',
                            '4AAB-a-i.5AABAA-s',
@@ -121,6 +123,12 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
 
         saids = seeker.find({}).limit(50)
         assert len(list(saids)) == 50
+
+        saids = seeker.find({ '-ri': "EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4" })
+        assert len(list(saids)) == 25
+
+        saids = seeker.find({ '-ri': "EAzc9zFLaK22zbrKDGIgKtrpDBNKWKvl8B0FKYAo19z_" })
+        assert len(list(saids)) == 0
 
         saids = seeker.find({'-d': "EAzc9zFLaK22zbrKDGIgKtrpDBNKWKvl8B0FKYAo19z_"})
         assert list(saids) == ['EAzc9zFLaK22zbrKDGIgKtrpDBNKWKvl8B0FKYAo19z_']

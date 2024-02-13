@@ -34,12 +34,12 @@ from setuptools import setup
 
 setup(
     name='keria',
-    version='0.0.1',  # also change in src/keria/__init__.py
+    version='0.1.0',  # also change in src/keria/__init__.py
     license='Apache Software License 2.0',
     description='KERIA: KERI Agent in the cloud',
     long_description="KERIA: KERI Agent in the cloud.",
-    author='Samuel M. Smith',
-    author_email='sam@samuelsmith.org',
+    author='Philip S. Feairheller',
+    author_email='pfeairheller@gmail.com',
     url='https://github.com/WebOfTrust/keria',
     packages=find_packages('src'),
     package_dir={'': 'src'},
@@ -76,7 +76,7 @@ setup(
     python_requires='>=3.10.4',
     install_requires=[
         'hio>=0.6.9',
-        'keri @ git+https://git@github.com/WebOfTrust/keripy.git',
+        'keri>=1.1.0',
         'mnemonic>=0.20',
         'multicommand>=1.0.0',
         'falcon>=3.1.0',
