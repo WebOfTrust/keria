@@ -1,7 +1,5 @@
-
-
-import {Matter, MatterArgs, MtrDex} from './matter';
-import { intToBytes, bytesToInt  } from './utils';
+import { Matter, MatterArgs, MtrDex } from './matter';
+import { intToBytes, bytesToInt } from './utils';
 /**
  * @description  Seqner: subclass of Matter, cryptographic material, for ordinal numbers
  * such as sequence numbers or first seen ordering numbers.
@@ -9,7 +7,16 @@ import { intToBytes, bytesToInt  } from './utils';
  * when provided as attached cryptographic material elements.
  */
 export class Seqner extends Matter {
-    constructor({raw, code=MtrDex.Salt_128, qb64, qb64b, qb2, sn, snh, ...kwa}: MatterArgs & {sn?: number, snh?: string}) {
+    constructor({
+        raw,
+        code = MtrDex.Salt_128,
+        qb64,
+        qb64b,
+        qb2,
+        sn,
+        snh,
+        ...kwa
+    }: MatterArgs & { sn?: number; snh?: string }) {
         if (!raw && !qb64b && !qb64 && !qb2) {
             if (sn === undefined) {
                 if (snh === undefined) {
@@ -19,10 +26,10 @@ export class Seqner extends Matter {
                 }
             }
 
-            raw = intToBytes(sn, Matter._rawSize(MtrDex.Salt_128))
+            raw = intToBytes(sn, Matter._rawSize(MtrDex.Salt_128));
         }
 
-        super({raw, code, qb64, qb64b, qb2, ...kwa});
+        super({ raw, code, qb64, qb64b, qb2, ...kwa });
 
         if (this.code !== MtrDex.Salt_128) {
             throw new Error(`Invalid code = ${this.code} for Seqner.`);
@@ -30,7 +37,7 @@ export class Seqner extends Matter {
     }
 
     get sn(): number {
-        return bytesToInt(this.raw)  //To check if other readUInt64 is needed
+        return bytesToInt(this.raw); //To check if other readUInt64 is needed
     }
 
     get snh(): string {

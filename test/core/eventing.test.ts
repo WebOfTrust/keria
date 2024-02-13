@@ -1,116 +1,193 @@
-import libsodium from "libsodium-wrappers-sumo";
-import {Signer} from "../../src/keri/core/signer";
-import {strict as assert} from "assert";
-import {MtrDex} from "../../src/keri/core/matter";
-import {incept, messagize} from "../../src/keri/core/eventing";
-import {Saider} from "../../src/keri/core/saider";
-import {Diger} from "../../src/keri/core/diger";
-import {b, d, Ilks} from "../../src/keri/core/core";
-import {Siger} from "../../src/keri/core/siger";
-
+import libsodium from 'libsodium-wrappers-sumo';
+import { Signer } from '../../src/keri/core/signer';
+import { strict as assert } from 'assert';
+import { MtrDex } from '../../src/keri/core/matter';
+import { incept, messagize } from '../../src/keri/core/eventing';
+import { Saider } from '../../src/keri/core/saider';
+import { Diger } from '../../src/keri/core/diger';
+import { b, d, Ilks } from '../../src/keri/core/core';
+import { Siger } from '../../src/keri/core/siger';
 
 describe('key event function', () => {
-    it("incept should create inception events", async () => {
+    it('incept should create inception events', async () => {
         await libsodium.ready;
 
-        let seed = new Uint8Array([159, 123, 168, 167, 168, 67, 57, 150, 38, 250, 177, 153, 235, 170, 32, 196, 27, 71, 17, 196, 174, 83, 65, 82, 201, 189, 4, 157, 133, 41, 126, 147])
-        let signer0 = new Signer({raw: seed, transferable: false})  // original signing keypair non transferable
-        assert.equal(signer0.code, MtrDex.Ed25519_Seed)
-        assert.equal(signer0.verfer.code, MtrDex.Ed25519N)
-        let keys0 = [signer0.verfer.qb64]
-        let serder = incept({keys: keys0})  // default nxt is empty so abandoned
-        assert.equal(serder.ked["i"], 'BFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH')
-        assert.deepStrictEqual(serder.ked["n"], [])
-        assert.equal(serder.raw,
+        const seed = new Uint8Array([
+            159, 123, 168, 167, 168, 67, 57, 150, 38, 250, 177, 153, 235, 170,
+            32, 196, 27, 71, 17, 196, 174, 83, 65, 82, 201, 189, 4, 157, 133,
+            41, 126, 147,
+        ]);
+        let signer0 = new Signer({ raw: seed, transferable: false }); // original signing keypair non transferable
+        assert.equal(signer0.code, MtrDex.Ed25519_Seed);
+        assert.equal(signer0.verfer.code, MtrDex.Ed25519N);
+        let keys0 = [signer0.verfer.qb64];
+        let serder = incept({ keys: keys0 }); // default nxt is empty so abandoned
+        assert.equal(
+            serder.ked['i'],
+            'BFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
+        );
+        assert.deepStrictEqual(serder.ked['n'], []);
+        assert.equal(
+            serder.raw,
             '{"v":"KERI10JSON0000fd_","t":"icp","d":"EMW0zK3bagYPO6gx3w7Ua90f-I7x5kGIaI4X' +
-            'eq9W8_As","i":"BFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"0","kt":"1' +
-            '","k":["BFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"0","n":[],"bt":' +
-            '"0","b":[],"c":[],"a":[]}'
-        )
-        let saider = new Saider({code: MtrDex.Blake3_256}, serder.ked)
-        assert.equal(saider.verify(serder.ked), true)
+                'eq9W8_As","i":"BFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"0","kt":"1' +
+                '","k":["BFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"0","n":[],"bt":' +
+                '"0","b":[],"c":[],"a":[]}'
+        );
+        let saider = new Saider({ code: MtrDex.Blake3_256 }, serder.ked);
+        assert.equal(saider.verify(serder.ked), true);
 
         assert.throws(() => {
-            serder = incept({keys: keys0, code: MtrDex.Ed25519N, ndigs: ["ABCDE"]})
-        })
+            serder = incept({
+                keys: keys0,
+                code: MtrDex.Ed25519N,
+                ndigs: ['ABCDE'],
+            });
+        });
 
         assert.throws(() => {
-            serder = incept({keys: keys0, code: MtrDex.Ed25519N, wits: ["ABCDE"]})
-        })
+            serder = incept({
+                keys: keys0,
+                code: MtrDex.Ed25519N,
+                wits: ['ABCDE'],
+            });
+        });
 
         assert.throws(() => {
-            serder = incept({keys: keys0, code: MtrDex.Ed25519N, data: [{"i": "ABCDE"}]})
-        })
+            serder = incept({
+                keys: keys0,
+                code: MtrDex.Ed25519N,
+                data: [{ i: 'ABCDE' }],
+            });
+        });
 
-        signer0 = new Signer({raw: seed})  // original signing keypair transferable default
-        assert.equal(signer0.code, MtrDex.Ed25519_Seed)
-        assert.equal(signer0.verfer.code, MtrDex.Ed25519)
-        keys0 = [signer0.verfer.qb64]
-        serder = incept({keys: keys0})  // default nxt is empty so abandoned
-        assert.equal(serder.ked["i"], 'DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH')
-        assert.deepStrictEqual(serder.ked["n"], [])
-        assert.equal(serder.raw,
+        signer0 = new Signer({ raw: seed }); // original signing keypair transferable default
+        assert.equal(signer0.code, MtrDex.Ed25519_Seed);
+        assert.equal(signer0.verfer.code, MtrDex.Ed25519);
+        keys0 = [signer0.verfer.qb64];
+        serder = incept({ keys: keys0 }); // default nxt is empty so abandoned
+        assert.equal(
+            serder.ked['i'],
+            'DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
+        );
+        assert.deepStrictEqual(serder.ked['n'], []);
+        assert.equal(
+            serder.raw,
             '{"v":"KERI10JSON0000fd_","t":"icp","d":"EPLRRJFe2FHdXKVTkSEX4xb4x-YaPFJ2Xds1' +
-            'vhtNTd4n","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"0","kt":"1' +
-            '","k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"0","n":[],"bt":' +
-            '"0","b":[],"c":[],"a":[]}')
-        saider = new Saider({code: MtrDex.Blake3_256}, serder.ked)
-        assert.equal(saider.verify(serder.ked), true)
+                'vhtNTd4n","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"0","kt":"1' +
+                '","k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"0","n":[],"bt":' +
+                '"0","b":[],"c":[],"a":[]}'
+        );
+        saider = new Saider({ code: MtrDex.Blake3_256 }, serder.ked);
+        assert.equal(saider.verify(serder.ked), true);
 
         // (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015\x98Y\xdd\xe8')
-        let seed1 = new Uint8Array([131, 66, 126, 4, 148, 227, 206, 85, 81, 121, 17, 102, 12, 147, 93, 30, 191, 172, 81, 181, 214, 89, 94, 162, 69, 250, 1, 53, 152, 89, 221, 232])
-        let signer1 = new Signer({raw: seed1})  // next signing keypair transferable is default
-        assert.equal(signer1.code, MtrDex.Ed25519_Seed)
-        assert.equal(signer1.verfer.code, MtrDex.Ed25519)
+        let seed1 = new Uint8Array([
+            131, 66, 126, 4, 148, 227, 206, 85, 81, 121, 17, 102, 12, 147, 93,
+            30, 191, 172, 81, 181, 214, 89, 94, 162, 69, 250, 1, 53, 152, 89,
+            221, 232,
+        ]);
+        let signer1 = new Signer({ raw: seed1 }); // next signing keypair transferable is default
+        assert.equal(signer1.code, MtrDex.Ed25519_Seed);
+        assert.equal(signer1.verfer.code, MtrDex.Ed25519);
         // compute nxt digest
-        let nxt1 = [new Diger({}, signer1.verfer.qb64b).qb64]  // dfault sith is 1
-        assert.deepStrictEqual(nxt1, ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W'])
-        let serder0 = incept({keys: keys0, ndigs: nxt1, code: MtrDex.Blake3_256})  // intive false
-        assert.equal(serder0.ked["t"], Ilks.icp)
-        assert.equal(serder0.ked['d'], 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C')
-        assert.equal(serder0.ked['d'], serder0.ked["i"])
-        assert.equal(serder0.ked["s"], '0')
-        assert.equal(serder0.ked["kt"], "1")
-        assert.equal(serder0.ked["nt"], "1")
-        assert.deepStrictEqual(serder0.ked["n"], nxt1)
-        assert.equal(serder0.ked["bt"], '0')  // hex str
-        assert.equal(serder0.raw,
+        let nxt1 = [new Diger({}, signer1.verfer.qb64b).qb64]; // dfault sith is 1
+        assert.deepStrictEqual(nxt1, [
+            'EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W',
+        ]);
+        let serder0 = incept({
+            keys: keys0,
+            ndigs: nxt1,
+            code: MtrDex.Blake3_256,
+        }); // intive false
+        assert.equal(serder0.ked['t'], Ilks.icp);
+        assert.equal(
+            serder0.ked['d'],
+            'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'
+        );
+        assert.equal(serder0.ked['d'], serder0.ked['i']);
+        assert.equal(serder0.ked['s'], '0');
+        assert.equal(serder0.ked['kt'], '1');
+        assert.equal(serder0.ked['nt'], '1');
+        assert.deepStrictEqual(serder0.ked['n'], nxt1);
+        assert.equal(serder0.ked['bt'], '0'); // hex str
+        assert.equal(
+            serder0.raw,
             '{"v":"KERI10JSON00012b_","t":"icp","d":"EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2' +
-            'QtV8BB0C","i":"EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C","s":"0","kt":"1' +
-            '","k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"1","n":["EIf-EN' +
-            'w7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":"0","b":[],"c":[],"a":[]}')
+                'QtV8BB0C","i":"EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C","s":"0","kt":"1' +
+                '","k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"1","n":["EIf-EN' +
+                'w7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":"0","b":[],"c":[],"a":[]}'
+        );
 
         // (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015\x98Y\xdd\xe8')
-        seed1 = new Uint8Array([131, 66, 126, 4, 148, 227, 206, 85, 81, 121, 17, 102, 12, 147, 93, 30, 191, 172, 81, 181, 214, 89, 94, 162, 69, 250, 1, 53, 152, 89, 221, 232])
-        signer1 = new Signer({raw: seed1})  // next signing keypair transferable is default
-        assert.equal(signer1.code, MtrDex.Ed25519_Seed)
-        assert.equal(signer1.verfer.code, MtrDex.Ed25519)
+        seed1 = new Uint8Array([
+            131, 66, 126, 4, 148, 227, 206, 85, 81, 121, 17, 102, 12, 147, 93,
+            30, 191, 172, 81, 181, 214, 89, 94, 162, 69, 250, 1, 53, 152, 89,
+            221, 232,
+        ]);
+        signer1 = new Signer({ raw: seed1 }); // next signing keypair transferable is default
+        assert.equal(signer1.code, MtrDex.Ed25519_Seed);
+        assert.equal(signer1.verfer.code, MtrDex.Ed25519);
         // compute nxt digest
-        nxt1 = [new Diger({}, signer1.verfer.qb64b).qb64]  // dfault sith is 1
-        assert.deepStrictEqual(nxt1, ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W'])
-        serder0 = incept({keys: keys0, ndigs: nxt1, code: MtrDex.Blake3_256, intive: true})  // intive true
-        assert.equal(serder0.ked["t"], Ilks.icp)
-        assert.equal(serder0.ked['d'], 'EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL')
-        assert.equal(serder0.ked['d'], serder0.ked["i"])
-        assert.equal(serder0.ked["s"], '0')
-        assert.equal(serder0.ked["kt"], 1)
-        assert.equal(serder0.ked["nt"], 1)
-        assert.deepStrictEqual(serder0.ked["n"], nxt1)
-        assert.equal(serder0.ked["bt"], 0)
-        assert.equal(serder0.raw,
+        nxt1 = [new Diger({}, signer1.verfer.qb64b).qb64]; // dfault sith is 1
+        assert.deepStrictEqual(nxt1, [
+            'EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W',
+        ]);
+        serder0 = incept({
+            keys: keys0,
+            ndigs: nxt1,
+            code: MtrDex.Blake3_256,
+            intive: true,
+        }); // intive true
+        assert.equal(serder0.ked['t'], Ilks.icp);
+        assert.equal(
+            serder0.ked['d'],
+            'EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL'
+        );
+        assert.equal(serder0.ked['d'], serder0.ked['i']);
+        assert.equal(serder0.ked['s'], '0');
+        assert.equal(serder0.ked['kt'], 1);
+        assert.equal(serder0.ked['nt'], 1);
+        assert.deepStrictEqual(serder0.ked['n'], nxt1);
+        assert.equal(serder0.ked['bt'], 0);
+        assert.equal(
+            serder0.raw,
             '{"v":"KERI10JSON000125_","t":"icp","d":"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5u' +
-            'k-WxvhsL","i":"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","s":"0","kt":1,' +
-            '"k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":1,"n":["EIf-ENw7Pr' +
-            'M52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":0,"b":[],"c":[],"a":[]}')
+                'k-WxvhsL","i":"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","s":"0","kt":1,' +
+                '"k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":1,"n":["EIf-ENw7Pr' +
+                'M52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":0,"b":[],"c":[],"a":[]}'
+        );
 
-        let siger = signer0.sign(b(serder0.raw), 0) as Siger
-        assert.equal(siger.qb64, "AABB3MJGmBXxSEryNHw3YwZZLRl_6Ws4Me2WFq8PrQ6WlluSOpPqbwXuiG9RvNWZkqeW8A_0VRjokGMVRZ3m-c0I")
+        const siger = signer0.sign(b(serder0.raw), 0) as Siger;
+        assert.equal(
+            siger.qb64,
+            'AABB3MJGmBXxSEryNHw3YwZZLRl_6Ws4Me2WFq8PrQ6WlluSOpPqbwXuiG9RvNWZkqeW8A_0VRjokGMVRZ3m-c0I'
+        );
 
-        let msg = messagize(serder0, [siger])
-        assert.equal(d(msg), '{"v":"KERI10JSON000125_","t":"icp","d":"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","i"' +
-            ':"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","s":"0","kt":1,"k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],' +
-            '"nt":1,"n":["EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":0,"b":[],"c":[],"a":[]}' +
-            '-AABAABB3MJGmBXxSEryNHw3YwZZLRl_6Ws4Me2WFq8PrQ6WlluSOpPqbwXuiG9RvNWZkqeW8A_0VRjokGMVRZ3m-c0I')
-
-    })
-})
+        const msg = messagize(serder0, [siger]);
+        assert.equal(
+            d(msg),
+            '{"v":"KERI10JSON000125_","t":"icp","d":"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","i"' +
+                ':"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","s":"0","kt":1,"k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],' +
+                '"nt":1,"n":["EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":0,"b":[],"c":[],"a":[]}' +
+                '-AABAABB3MJGmBXxSEryNHw3YwZZLRl_6Ws4Me2WFq8PrQ6WlluSOpPqbwXuiG9RvNWZkqeW8A_0VRjokGMVRZ3m-c0I'
+        );
+        const seal = [
+            'SealEvent',
+            {
+                i: 'EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL',
+                s: '0',
+                d: 'EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL',
+            },
+        ];
+        const msgseal = messagize(serder0, [siger], seal);
+        assert.equal(
+            d(msgseal),
+            '{"v":"KERI10JSON000125_","t":"icp","d":"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","i"' +
+                ':"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","s":"0","kt":1,"k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"]' +
+                ',"nt":1,"n":["EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":0,"b":[],"c":[],"a"' +
+                ':[]}-FABEIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL0AAAAAAAAAAAAAAAAAAAAAAAEIflL4H4134zYoRM6ls6Q086RLC_' +
+                'BhfNFh5uk-WxvhsL-AABAABB3MJGmBXxSEryNHw3YwZZLRl_6Ws4Me2WFq8PrQ6WlluSOpPqbwXuiG9RvNWZkqeW8A_0VRjokGMVRZ3m-c0I'
+        );
+    });
+});

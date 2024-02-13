@@ -1,0 +1,21 @@
+{
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "prettier"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "rules": {
+        "prefer-const": "warn",
+        "no-var": "warn",
+        "no-self-assign": "warn",
+        "no-case-declarations": "warn",
+        "no-constant-condition": "warn",
+        "no-empty": "warn",
+        "@typescript-eslint/no-non-null-asserted-optional-chain": "warn",
+        "@typescript-eslint/no-explicit-any": "warn",
+        "@typescript-eslint/no-namespace": "warn",
+        "@typescript-eslint/ban-types": "warn",
+        "@typescript-eslint/no-unused-vars": "warn"
+    }
+}

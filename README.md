@@ -39,6 +39,79 @@ The code is built using Typescript and running code locally requires a Mac or Li
     npm install
     ```
 
+Typescript source files needs to be transpiled before running scripts or integration tests
+
+-   Build:
+    ```bash
+    npm run build
+    ```
+
+### Unit testing
+
+To run unit tests
+
+```bash
+npm test
+```
+
+### Integration testing
+
+The integration tests depends on a local instance of KERIA, vLEI-Server and Witness Demo. These are specified in the [Docker Compose](./docker-compose.yaml) file. To start the dependencies, use docker compose:
+
+```bash
+docker compose up deps
+```
+
+If successful, it should print someting like this:
+
+```bash
+$ docker compose up deps
+[+] Running 5/4
+ ✔ Network signify-ts_default           Created                                           0.0s
+ ✔ Container signify-ts-vlei-server-1   Created                                           0.1s
+ ✔ Container signify-ts-keria-1         Created                                           0.1s
+ ✔ Container signify-ts-witness-demo-1  Created                                           0.1s
+ ✔ Container signify-ts-deps-1          Created                                           0.0s
+Attaching to signify-ts-deps-1
+signify-ts-deps-1  | Dependencies running
+signify-ts-deps-1 exited with code 0
+```
+
+**Important!** The integration tests runs on the build output in `dist/` directory. Make sure to run build before running the integration tests.
+
+```bash
+npm run build
+```
+
+Use the npm script "test:integration" to run all integration tests in sequence:
+
+```bash
+npm run test:integration
+```
+
+Or, use execute `jest` directly to run a specific integration test, for example:
+
+```bash
+npx jest examples/integration-scripts/credentials.test.ts
+```
+
+It is also possible to run the tests using local instances of vLEI, Keria, and witness network. Set the environment variable `TEST_ENVIRONMENT` to `local`, e.g:
+
+```
+TEST_ENVIRONMENT=local npx jest examples/integration-scripts/credentials.test.ts
+```
+
+This changes the discovery urls to use `localhost` instead of the hostnames inside the docker network.
+
+### Old integration scripts
+
+To run any of the old integration scripts that has not yet been converted to an integration test. Use `ts-node-esm`
+
+```bash
+npx ts-node-esm examples/integration-scripts/challenge.ts
+```
+
+# Diagrams
 
 Account Creation Workflow
 
