@@ -11,20 +11,21 @@ on:
   workflow_dispatch:
 jobs:
   build:
-    name: Build, lint, and test on Node 18.12.1 and ${{ matrix.os }}
+    name: Build, lint, and test on Node ${{ matrix.node-version }} and ${{ matrix.os }}
 
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [macOS-latest, ubuntu-latest]
+        node-version: ['18', '20']
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v4
         with:
-          node-version: '18.12.1'
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
       - name: Install dependencies
@@ -55,11 +56,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v4
         with:
-          node-version: '18.12.1'
+          node-version: '18'
           cache: 'npm'
       - name: install deps
         run: npm ci
@@ -78,11 +79,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v4
         with:
-          node-version: '18.12.1'
+          node-version: '20'
           cache: 'npm'
       - name: Run audit
         run: npm audit
