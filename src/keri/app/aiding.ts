@@ -259,8 +259,6 @@ export class Identifier {
 
         data = Array.isArray(data) ? data : [data];
 
-        data = Array.isArray(data) ? data : [data];
-
         const serder = interact({
             pre: pre,
             sn: sn + 1,
