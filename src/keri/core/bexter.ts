@@ -1,6 +1,7 @@
 import { BexDex, Matter, MatterArgs, MtrDex } from './matter';
 import { EmptyMaterialError } from './kering';
 import Base64 from 'urlsafe-base64';
+import { Buffer } from 'buffer';
 
 const B64REX = '^[A-Za-z0-9\\-_]*$';
 export const Reb64 = new RegExp(B64REX);
