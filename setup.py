@@ -73,7 +73,7 @@ setup(
         "resolver",
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
-    python_requires='>=3.10.4',
+    python_requires='>=3.12.1',
     install_requires=[
         'hio>=0.6.9',
         'keri>=1.1.0',
