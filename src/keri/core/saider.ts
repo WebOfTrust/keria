@@ -2,7 +2,7 @@ import { DigiDex, Matter, MatterArgs, MtrDex } from './matter';
 import { deversify, Dict, Serials } from './core';
 import { EmptyMaterialError } from './kering';
 import { dumps, sizeify } from './serder';
-
+import { Buffer } from 'buffer';
 import { blake3 } from '@noble/hashes/blake3';
 
 const Dummy = '#';
