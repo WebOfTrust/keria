@@ -191,6 +191,30 @@ describe('Aiding', () => {
         assert.deepEqual(lastCall.body.salty.transferable, true);
     });
 
+    it('Can rotate salty identifier with sn > 10', async () => {
+        const aid1 = await createMockIdentifierState('aid1', bran, {});
+        client.fetch.mockResolvedValueOnce(
+            Response.json({
+                ...aid1,
+                state: {
+                    ...aid1.state,
+                    s: 'a',
+                },
+            })
+        );
+        client.fetch.mockResolvedValueOnce(Response.json({}));
+
+        await client.identifiers().rotate('aid1');
+        const lastCall = client.getLastMockRequest();
+        assert.equal(lastCall.path, '/identifiers/aid1');
+        assert.equal(lastCall.method, 'PUT');
+        expect(lastCall.body.rot).toMatchObject({
+            v: 'KERI10JSON000160_',
+            t: 'rot',
+            s: 'b',
+        });
+    });
+
     it('Can create interact event', async () => {
         const data = [
             {
@@ -217,18 +241,45 @@ describe('Aiding', () => {
             i: 'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK',
             s: '1',
             p: 'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK',
-            a: [
-                {
-                    i: 'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK',
-                    s: 0,
-                    d: 'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK',
-                },
-            ],
+            a: data,
         });
 
         assert.deepEqual(lastCall.body.sigs, [
             'AADEzKk-5LT6vH-PWFb_1i1A8FW-KGHORtTOCZrKF4gtWkCr9vN1z_mDSVKRc6MKktpdeB3Ub1fWCGpnS50hRgoJ',
         ]);
+    });
+
+    it('Can create interact event when sequence number > 10', async () => {
+        const data = [
+            {
+                i: 'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK',
+                s: 0,
+                d: 'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK',
+            },
+        ];
+
+        const aid1 = await createMockIdentifierState('aid1', bran);
+        client.fetch.mockResolvedValueOnce(
+            Response.json({
+                ...aid1,
+                state: {
+                    ...aid1.state,
+                    s: 'a',
+                },
+            })
+        );
+        client.fetch.mockResolvedValueOnce(Response.json({}));
+
+        await client.identifiers().interact('aid1', data);
+
+        const lastCall = client.getLastMockRequest();
+
+        expect(lastCall.path).toEqual('/identifiers/aid1?type=ixn');
+        expect(lastCall.method).toEqual('PUT');
+        expect(lastCall.body.ixn).toMatchObject({
+            s: 'b',
+            a: data,
+        });
     });
 
     it('Can add end role', async () => {

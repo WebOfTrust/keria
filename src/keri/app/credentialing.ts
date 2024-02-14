@@ -224,7 +224,7 @@ export class Credentials {
             dt: dt,
         });
 
-        const sn = Number(hab.state.s);
+        const sn = parseInt(hab.state.s, 16);
         const anc = interact({
             pre: hab.prefix,
             sn: sn + 1,
@@ -308,7 +308,7 @@ export class Credentials {
             var estOnly = false;
         }
 
-        const sn = Number(state.s);
+        const sn = parseInt(state.s, 16);
         const dig = state.d;
 
         const data: any = [
@@ -583,7 +583,7 @@ export class Registries {
             throw new Error('establishment only not implemented');
         } else {
             const state = hab.state;
-            const sn = Number(state.s);
+            const sn = parseInt(state.s, 16);
             const dig = state.d;
 
             const data: any = [
