@@ -143,11 +143,15 @@ def test_registry_end(helpers, seeder):
 
         assert regser.pre in agent.tvy.tevers
 
+        result = client.simulate_post(path="/identifiers/test/registries", body=json.dumps(body).encode("utf-8"))
+        assert result.status == falcon.HTTP_400
+        assert result.json == {'description': 'registry name test already in use', 'title': '400 Bad Request'}
 
         body = dict(name="test", alias="test", vcp=regser.ked, ixn=serder.ked, sigs=sigers)
         result = client.simulate_post(path="/identifiers/bad_test/registries", body=json.dumps(body).encode("utf-8"))
         assert result.status == falcon.HTTP_404
-        assert result.json == {'description': 'alias is not a valid reference to an identifier', 'title': '404 Not Found'}
+        assert result.json == {'description': 'alias is not a valid reference to an identifier',
+                               'title': '404 Not Found'}
 
 
         result = client.simulate_get(path="/identifiers/not_test/registries")
