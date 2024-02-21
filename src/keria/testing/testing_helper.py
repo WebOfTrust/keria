@@ -473,7 +473,7 @@ class Helpers:
                                   baks=[],
                                   toad="0",
                                   nonce=nonce,
-                                  cnfg=[eventing.TraitCodex.NoBackers],
+                                  cnfg=[eventing.TraitCodex.NoRegistrarBackers],
                                   code=coring.MtrDex.Blake3_256)
         anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)
         serder, sigers = Helpers.interact(pre=pre, bran=salt, pidx=0, ridx=0, dig=aid['d'], sn='1', data=[anchor])

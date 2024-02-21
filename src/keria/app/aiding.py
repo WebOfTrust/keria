@@ -405,7 +405,7 @@ class IdentifierCollectionEnd:
                 # create Hab and incept the key store (if any)
                 # Generate response, either the serder or a long running operaton indicator for the type
                 rep.content_type = "application/json"
-                if hab.kever.delegator:
+                if hab.kever.delpre:
                     agent.anchors.append(dict(pre=hab.pre, sn=0))
                     op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
                                               metadata=dict(pre=hab.pre, sn=0))
@@ -537,7 +537,7 @@ class IdentifierResourceEnd:
 
             return op
 
-        if hab.kever.delegator:
+        if hab.kever.delpre:
             agent.anchors.append(dict(alias=name, pre=hab.pre, sn=serder.sn))
             op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
                                       metadata=dict(pre=hab.pre, sn=serder.sn))
