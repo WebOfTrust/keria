@@ -118,7 +118,7 @@ def test_registry_end(helpers, seeder):
                                  baks=[],
                                  toad="0",
                                  nonce=nonce,
-                                 cnfg=[TraitCodex.NoBackers],
+                                 cnfg=[TraitCodex.NoRegistrarBackers],
                                  code=coring.MtrDex.Blake3_256)
         anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)
         serder, sigers = helpers.interact(pre=pre, bran=salt, pidx=0, ridx=0, dig=aid['d'], sn='1', data=[anchor])
@@ -130,6 +130,10 @@ def test_registry_end(helpers, seeder):
         assert op2["done"] is True
         assert metadata["anchor"] == anchor
         assert result.status == falcon.HTTP_202
+
+        result = client.simulate_get(path="/identifiers/test/registries")
+        assert result.status == falcon.HTTP_200
+        assert result.json == []
 
         tock = 0.03125
         limit = 1.0
@@ -143,11 +147,19 @@ def test_registry_end(helpers, seeder):
 
         assert regser.pre in agent.tvy.tevers
 
+        result = client.simulate_get(path="/identifiers/test/registries")
+        assert result.status == falcon.HTTP_200
+        assert len(result.json) == 1
+
+        result = client.simulate_post(path="/identifiers/test/registries", body=json.dumps(body).encode("utf-8"))
+        assert result.status == falcon.HTTP_400
+        assert result.json == {'description': 'registry name test already in use', 'title': '400 Bad Request'}
 
         body = dict(name="test", alias="test", vcp=regser.ked, ixn=serder.ked, sigs=sigers)
         result = client.simulate_post(path="/identifiers/bad_test/registries", body=json.dumps(body).encode("utf-8"))
         assert result.status == falcon.HTTP_404
-        assert result.json == {'description': 'alias is not a valid reference to an identifier', 'title': '404 Not Found'}
+        assert result.json == {'description': 'alias is not a valid reference to an identifier',
+                               'title': '404 Not Found'}
 
 
         result = client.simulate_get(path="/identifiers/not_test/registries")

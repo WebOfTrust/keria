@@ -84,6 +84,9 @@ class RegistryCollectionEnd:
 
         res = []
         for name, registry in agent.rgy.regs.items():
+            if registry.regk not in registry.tevers:  # defensive programming for a registry not being fully committed
+                continue
+
             if registry.hab.pre == hab.pre:
                 rd = dict(
                     name=registry.name,
