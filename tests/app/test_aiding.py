@@ -25,6 +25,7 @@ from hio.base import doing
 
 from keria.app import aiding, agenting
 from keria.app.aiding import IdentifierOOBICollectionEnd, RpyEscrowCollectionEnd
+from keria.core import longrunning
 
 
 def test_load_ends(helpers):
@@ -252,6 +253,11 @@ def test_identifier_collection_end(helpers):
         groupEnd = aiding.GroupMemberCollectionEnd()
         app.add_route("/identifiers/{name}/members", groupEnd)
 
+        opColEnd = longrunning.OperationCollectionEnd()
+        app.add_route("/operations", opColEnd)
+        opResEnd = longrunning.OperationResourceEnd()
+        app.add_route("/operations/{name}", opResEnd)
+
         client = testing.TestClient(app)
 
         res = client.simulate_post(path="/identifiers", body=b'{}')
@@ -392,6 +398,12 @@ def test_identifier_collection_end(helpers):
 
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
         assert res.status_code == 202
+
+        op = res.json
+        name = op['name']
+
+        res = client.simulate_get(path=f"/operations/{name}")
+        assert res.status_code == 200
 
         assert len(agent.witners) == 1
         res = client.simulate_get(path="/identifiers")
