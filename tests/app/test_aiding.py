@@ -18,7 +18,7 @@ from keri.core import coring, eventing, parsing, serdering
 from keri.core.coring import MtrDex
 from keri.db.basing import LocationRecord
 from keri.peer import exchanging
-from keri.db import basing
+from keri.db import basing, dbing
 from keri import kering
 from keri.vdr import credentialing
 from hio.base import doing
@@ -425,6 +425,17 @@ def test_identifier_collection_end(helpers):
         assert aid["prefix"] == serder.pre
         ss = aid[Algos.salty]
         assert ss["pidx"] == 3
+
+        # Reset sn
+        op.metadata['sn'] = 0
+        agent.monitor.opr.ops.pin(keys=(name,), val=op)
+
+        # Add fake witness receipts to test satified witnessing
+        dgkey = dbing.dgKey(serder.preb, serder.preb)
+        agent.hby.db.putWigs(dgkey, vals=[b'A', b'B', b'C'])
+        res = client.simulate_get(path=f"/operations/{name}")
+        assert res.status_code == 200
+        assert res.json['done'] is True
 
         res = client.simulate_get(path=f"/identifiers/aid1")
         mhab = res.json
