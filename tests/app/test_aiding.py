@@ -404,6 +404,17 @@ def test_identifier_collection_end(helpers):
 
         res = client.simulate_get(path=f"/operations/{name}")
         assert res.status_code == 200
+        assert res.json['done'] is False
+
+        # Modify sequence number to test invalid sn
+        op = agent.monitor.opr.ops.get(keys=(name,))
+        op.metadata['sn'] = 4
+        agent.monitor.opr.ops.pin(keys=(name,), val=op)
+
+        res = client.simulate_get(path=f"/operations/{name}")
+        assert res.status_code == 200
+        assert res.json['done'] is False
+
 
         assert len(agent.witners) == 1
         res = client.simulate_get(path="/identifiers")
