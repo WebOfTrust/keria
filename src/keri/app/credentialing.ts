@@ -281,7 +281,11 @@ export class Credentials {
      * @param {string} datetime date time of revocation
      * @returns {Promise<any>} A promise to the long-running operation
      */
-    async revoke(name: string, said: string, datetime?:string): Promise<RevokeCredentialResult> {
+    async revoke(
+        name: string,
+        said: string,
+        datetime?: string
+    ): Promise<RevokeCredentialResult> {
         const hab = await this.client.identifiers().get(name);
         const pre: string = hab.prefix;
 
