@@ -90,6 +90,12 @@ export interface IssueCredentialResult {
     op: Operation;
 }
 
+export interface RevokeCredentialResult {
+    anc: Serder;
+    rev: Serder;
+    op: Operation;
+}
+
 export interface IpexGrantArgs {
     /**
      * Alias for the IPEX sender AID
@@ -272,14 +278,20 @@ export class Credentials {
      * @async
      * @param {string} name Name or alias of the identifier
      * @param {string} said SAID of the credential
+     * @param {string} datetime date time of revocation
      * @returns {Promise<any>} A promise to the long-running operation
      */
-    async revoke(name: string, said: string): Promise<any> {
+    async revoke(
+        name: string,
+        said: string,
+        datetime?: string
+    ): Promise<RevokeCredentialResult> {
         const hab = await this.client.identifiers().get(name);
         const pre: string = hab.prefix;
 
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0);
-        const dt = new Date().toISOString().replace('Z', '000+00:00');
+        const dt =
+            datetime ?? new Date().toISOString().replace('Z', '000+00:00');
 
         const cred = await this.get(said);
 
@@ -318,6 +330,9 @@ export class Credentials {
                 d: rev.d,
             },
         ];
+
+        const keeper = this.client!.manager!.get(hab);
+
         if (estOnly) {
             // TODO implement rotation event
             throw new Error('Establishment only not implemented');
@@ -330,7 +345,6 @@ export class Credentials {
                 version: undefined,
                 kind: undefined,
             });
-            const keeper = this.client!.manager!.get(hab);
             sigs = await keeper.sign(b(serder.raw));
             ixn = serder.ked;
         }
@@ -339,6 +353,7 @@ export class Credentials {
             rev: rev,
             ixn: ixn,
             sigs: sigs,
+            [keeper.algo]: keeper.params(),
         };
 
         const path = `/identifiers/${name}/credentials/${said}`;
@@ -347,7 +362,13 @@ export class Credentials {
             Accept: 'application/json+cesr',
         });
         const res = await this.client.fetch(path, method, body, headers);
-        return await res.json();
+        const op = await res.json();
+
+        return {
+            rev: new Serder(rev),
+            anc: new Serder(ixn),
+            op,
+        };
     }
 
     /**

@@ -482,7 +482,7 @@ test('single signature credentials', async () => {
             .credentials()
             .revoke(issuerAid.name, qviCredentialId);
 
-        await waitOperation(issuerClient, revokeOperation);
+        await waitOperation(issuerClient, revokeOperation.op);
         const issuerCredential = await issuerClient
             .credentials()
             .get(qviCredentialId);
