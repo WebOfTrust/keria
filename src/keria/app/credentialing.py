@@ -84,6 +84,9 @@ class RegistryCollectionEnd:
 
         res = []
         for name, registry in agent.rgy.regs.items():
+            if registry.regk not in registry.tevers:  # defensive programming for a registry not being fully committed
+                continue
+
             if registry.hab.pre == hab.pre:
                 rd = dict(
                     name=registry.name,
@@ -811,8 +814,9 @@ class Registrar:
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
             return vcid, rseq.sn
         else:
-            sn = anc.sn
-            said = anc.said
+            serder = serdering.SerderKERI(sad=anc)
+            sn = serder.sn
+            said = serder.said
 
             prefixer = coring.Prefixer(qb64=hab.pre)
             seqner = coring.Seqner(sn=sn)

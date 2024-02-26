@@ -197,26 +197,30 @@ class Monitor:
             sn = op.metadata["sn"]
             kever = self.hby.kevers[op.oid]
             sdig = self.hby.db.getKeLast(key=dbing.snKey(pre=kever.prefixer.qb64b, sn=sn))
+            if sdig is not None:
 
-            dgkey = dbing.dgKey(kever.prefixer.qb64b, bytes(sdig))
-            wigs = self.hby.db.getWigs(dgkey)
+                dgkey = dbing.dgKey(kever.prefixer.qb64b, bytes(sdig))
+                wigs = self.hby.db.getWigs(dgkey)
 
-            if len(wigs) >= kever.toader.num:
-                evt = self.hby.db.getEvt(dbing.dgKey(pre=kever.prefixer.qb64, dig=bytes(sdig)))
-                serder = serdering.SerderKERI(raw=bytes(evt))
-                operation.done = True
-                operation.response = serder.ked
+                if len(wigs) >= kever.toader.num:
+                    evt = self.hby.db.getEvt(dbing.dgKey(pre=kever.prefixer.qb64, dig=bytes(sdig)))
+                    serder = serdering.SerderKERI(raw=bytes(evt))
+                    operation.done = True
+                    operation.response = serder.ked
+
+                else:
+                    start = helping.fromIso8601(op.start)
+                    dtnow = helping.nowUTC()
+                    if (dtnow - start) > datetime.timedelta(seconds=eventing.Kevery.TimeoutPWE):
+                        operation.done = True
+                        operation.error = Status(code=408,  # Using HTTP error codes here for lack of a better alternative
+                                                 message=f"long running {op.type} for {op.oid} operation timed out before "
+                                                         f"receiving sufficient witness receipts")
+                    else:
+                        operation.done = False
 
             else:
-                start = helping.fromIso8601(op.start)
-                dtnow = helping.nowUTC()
-                if (dtnow - start) > datetime.timedelta(seconds=eventing.Kevery.TimeoutPWE):
-                    operation.done = True
-                    operation.error = Status(code=408,  # Using HTTP error codes here for lack of a better alternative
-                                             message=f"long running {op.type} for {op.oid} operation timed out before "
-                                                     f"receiving sufficient witness receipts")
-                else:
-                    operation.done = False
+                operation.done = False
 
         elif op.type in (OpTypes.oobi,):
             if "oobi" not in op.metadata:

@@ -368,6 +368,9 @@ def test_multisig_grant_admit(seeder, helpers):
             endRolesEnd = aiding.EndRoleCollectionEnd()
             app.add_route("/identifiers/{name}/endroles", endRolesEnd)
 
+            credentialResourceDelEnd = credentialing.CredentialResourceDeleteEnd(aidEnd)
+            app.add_route("/identifiers/{name}/credentials/{said}", credentialResourceDelEnd)
+
         # Create Issuer Participant 0
         ipsalt0 = b'0123456789abcM00'
         op = helpers.createAid(client0, "issuerParticipant0", ipsalt0)
@@ -851,6 +854,50 @@ def test_multisig_grant_admit(seeder, helpers):
 
         # Ensure that the credential has been persisted by both agents
         assert hagent1.rgy.reger.saved.get(keys=(creder.said,)) is not None
+
+        # Get latest state
+        ip0 = client0.simulate_get("/identifiers/issuerParticipant0").json
+        ip1 = client1.simulate_get("/identifiers/issuerParticipant1").json
+
+        # Create the revocation event from the credential SAID and the registry SAID
+        issueSaid = regser.said
+        regser = veventing.revoke(vcdig=creder.said, regk=regk, dt=dt, dig=issueSaid)
+
+        anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)
+        interact = eventing.interact(pre=issuerPre, dig=interact.said, sn=3, data=[anchor])
+        sigs = [issuerSigner0.sign(ser=interact.raw, index=0).qb64, issuerSigner1.sign(ser=interact.raw, index=1).qb64]
+
+        # Submit the Revocation to Agent 0
+        body = dict(
+            rev=regser.ked,
+            ixn=interact.ked,
+            sigs=sigs,
+            group={
+                "mhab": ip0,
+                "keys": ikeys
+            }
+        )
+
+        result = client0.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}",
+                                         body=json.dumps(body).encode("utf-8"))
+
+        assert result.status == falcon.HTTP_200
+
+        # Submit the Revocation to Agent 1
+        body = dict(
+            rev=regser.ked,
+            ixn=interact.ked,
+            sigs=sigs,
+            group={
+                "mhab": ip1,
+                "keys": ikeys
+            }
+        )
+
+        result = client1.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}",
+                                         body=json.dumps(body).encode("utf-8"))
+
+        assert result.status == falcon.HTTP_200
 
 
 def test_granter(helpers):
