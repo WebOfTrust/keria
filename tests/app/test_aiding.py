@@ -18,13 +18,14 @@ from keri.core import coring, eventing, parsing, serdering
 from keri.core.coring import MtrDex
 from keri.db.basing import LocationRecord
 from keri.peer import exchanging
-from keri.db import basing
+from keri.db import basing, dbing
 from keri import kering
 from keri.vdr import credentialing
 from hio.base import doing
 
 from keria.app import aiding, agenting
 from keria.app.aiding import IdentifierOOBICollectionEnd, RpyEscrowCollectionEnd
+from keria.core import longrunning
 
 
 def test_load_ends(helpers):
@@ -252,6 +253,11 @@ def test_identifier_collection_end(helpers):
         groupEnd = aiding.GroupMemberCollectionEnd()
         app.add_route("/identifiers/{name}/members", groupEnd)
 
+        opColEnd = longrunning.OperationCollectionEnd()
+        app.add_route("/operations", opColEnd)
+        opResEnd = longrunning.OperationResourceEnd()
+        app.add_route("/operations/{name}", opResEnd)
+
         client = testing.TestClient(app)
 
         res = client.simulate_post(path="/identifiers", body=b'{}')
@@ -393,6 +399,23 @@ def test_identifier_collection_end(helpers):
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
         assert res.status_code == 202
 
+        op = res.json
+        name = op['name']
+
+        res = client.simulate_get(path=f"/operations/{name}")
+        assert res.status_code == 200
+        assert res.json['done'] is False
+
+        # Modify sequence number to test invalid sn
+        op = agent.monitor.opr.ops.get(keys=(name,))
+        op.metadata['sn'] = 4
+        agent.monitor.opr.ops.pin(keys=(name,), val=op)
+
+        res = client.simulate_get(path=f"/operations/{name}")
+        assert res.status_code == 200
+        assert res.json['done'] is False
+
+
         assert len(agent.witners) == 1
         res = client.simulate_get(path="/identifiers")
         assert res.status_code == 200
@@ -402,6 +425,17 @@ def test_identifier_collection_end(helpers):
         assert aid["prefix"] == serder.pre
         ss = aid[Algos.salty]
         assert ss["pidx"] == 3
+
+        # Reset sn
+        op.metadata['sn'] = 0
+        agent.monitor.opr.ops.pin(keys=(name,), val=op)
+
+        # Add fake witness receipts to test satified witnessing
+        dgkey = dbing.dgKey(serder.preb, serder.preb)
+        agent.hby.db.putWigs(dgkey, vals=[b'A', b'B', b'C'])
+        res = client.simulate_get(path=f"/operations/{name}")
+        assert res.status_code == 200
+        assert res.json['done'] is True
 
         res = client.simulate_get(path=f"/identifiers/aid1")
         mhab = res.json

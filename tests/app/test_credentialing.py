@@ -131,6 +131,10 @@ def test_registry_end(helpers, seeder):
         assert metadata["anchor"] == anchor
         assert result.status == falcon.HTTP_202
 
+        result = client.simulate_get(path="/identifiers/test/registries")
+        assert result.status == falcon.HTTP_200
+        assert result.json == []
+
         tock = 0.03125
         limit = 1.0
         doist = doing.Doist(limit=limit, tock=tock, real=True)
@@ -143,11 +147,15 @@ def test_registry_end(helpers, seeder):
 
         assert regser.pre in agent.tvy.tevers
 
+        result = client.simulate_get(path="/identifiers/test/registries")
+        assert result.status == falcon.HTTP_200
+        assert len(result.json) == 1
 
         body = dict(name="test", alias="test", vcp=regser.ked, ixn=serder.ked, sigs=sigers)
         result = client.simulate_post(path="/identifiers/bad_test/registries", body=json.dumps(body).encode("utf-8"))
         assert result.status == falcon.HTTP_404
-        assert result.json == {'description': 'alias is not a valid reference to an identifier', 'title': '404 Not Found'}
+        assert result.json == {'description': 'alias is not a valid reference to an identifier',
+                               'title': '404 Not Found'}
 
 
         result = client.simulate_get(path="/identifiers/not_test/registries")
@@ -513,7 +521,8 @@ def test_revoke_credential(helpers, seeder):
             rev=sad,
             ixn=serder.ked,
             sigs=sigers)
-        res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}", body=json.dumps(badbody).encode("utf-8"))
+        res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}",
+                                     body=json.dumps(badbody).encode("utf-8"))
         assert res.status_code == 404
         assert res.json == {'description': 'revocation against invalid registry SAID '
                                            'EIVtei3pGKGUw8H2Ri0h1uOevtSA6QGAq5wifbtHIaNI',
@@ -527,12 +536,14 @@ def test_revoke_credential(helpers, seeder):
             rev=sad,
             ixn=serder.ked,
             sigs=sigers)
-        res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}", body=json.dumps(badbody).encode("utf-8"))
+        res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}",
+                                     body=json.dumps(badbody).encode("utf-8"))
         assert res.status_code == 400
         assert res.json == {'description': "invalid revocation event.",
                             'title': '400 Bad Request'}
 
-        res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}", body=json.dumps(body).encode("utf-8"))        
+        res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}",
+                                     body=json.dumps(body).encode("utf-8"))
         assert res.status_code == 200
         
         while not agent.registrar.complete(creder.said, sn=1):

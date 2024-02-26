@@ -185,6 +185,8 @@ def test_error(helpers):
         except ValidationError as e:
             err = e
 
+        assert err is not None
+
         res = client.simulate_get(path="/operations")
         assert isinstance(res.json, list)
         assert len(res.json) == 1
