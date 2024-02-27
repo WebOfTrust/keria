@@ -20,13 +20,19 @@ def loadEnds(app):
     app.add_route("/identifiers/{name}/ipex/admit", admitColEnd)
     grantColEnd = IpexGrantCollectionEnd()
     app.add_route("/identifiers/{name}/ipex/grant", grantColEnd)
+    applyColEnd = IpexApplyCollectionEnd()
+    app.add_route("/identifiers/{name}/ipex/apply", applyColEnd)
+    offerColEnd = IpexOfferCollectionEnd()
+    app.add_route("/identifiers/{name}/ipex/offer", offerColEnd)
+    agreeColEnd = IpexAgreeCollectionEnd()
+    app.add_route("/identifiers/{name}/ipex/agree", agreeColEnd)
 
 
 class IpexAdmitCollectionEnd:
 
     @staticmethod
     def on_post(req, rep, name):
-        """  Registries GET endpoint
+        """ IPEX Admit POST endpoint
 
         Parameters:
             req: falcon.Request HTTP request
@@ -34,13 +40,13 @@ class IpexAdmitCollectionEnd:
             name (str): human readable name for AID
 
         ---
-        summary: List credential issuance and revocation registies
-        description: List credential issuance and revocation registies
+        summary: Accept a credential being issued or presented in response to an IPEX grant
+        description: Accept a credential being issued or presented in response to an IPEX grant
         tags:
            - Registries
         responses:
            200:
-              description:  array of current credential issuance and revocation registies
+              description: long running operation of IPEX admit 
 
         """
         agent = req.context.agent
@@ -154,7 +160,7 @@ class IpexGrantCollectionEnd:
 
     @staticmethod
     def on_post(req, rep, name):
-        """  Registries GET endpoint
+        """ IPEX Grant POST endpoint
 
         Parameters:
             req: falcon.Request HTTP request
@@ -162,13 +168,13 @@ class IpexGrantCollectionEnd:
             name (str): human readable name for AID
 
         ---
-        summary: List credential issuance and revocation registies
-        description: List credential issuance and revocation registies
+        summary: Reply to IPEX agree message or initiate an IPEX exchange with a credential issuance or presentation
+        description: Reply to IPEX agree message or initiate an IPEX exchange with a credential issuance or presentation
         tags:
-           - Registries
+           - Credentials
         responses:
            200:
-              description:  array of current credential issuance and revocation registies
+              description: long running operation of IPEX grant
 
         """
         agent = req.context.agent
@@ -265,4 +271,204 @@ class IpexGrantCollectionEnd:
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=[holder], topic="credential"))
         agent.grants.append(dict(said=grant['d'], pre=hab.pre, rec=[holder]))
 
+        return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
+
+
+class IpexApplyCollectionEnd:
+
+    @staticmethod
+    def on_post(req, rep, name):
+        """ IPEX Apply POST endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            name (str): human readable name for AID
+
+        ---
+        summary: Request a credential from another party by initiating an IPEX exchange
+        description: Request a credential from another party by initiating an IPEX exchange
+        tags:
+           - Credentials
+        responses:
+           200:
+              description: long running operation of IPEX apply
+        
+        """
+        agent = req.context.agent
+        # Get the hab
+        hab = agent.hby.habByName(name)
+        if hab is None:
+            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
+
+        body = req.get_media()
+
+        ked = httping.getRequiredParam(body, "exn")
+        sigs = httping.getRequiredParam(body, "sigs")
+        rec = httping.getRequiredParam(body, "rec")
+
+        route = ked['r']
+
+        match route:
+            case "/ipex/apply":
+                op = IpexApplyCollectionEnd.sendApply(agent, hab, ked, sigs, rec)
+            case _:
+                raise falcon.HTTPBadRequest(description=f"invalid message route {route}")
+
+        rep.status = falcon.HTTP_200
+        rep.data = op.to_json().encode("utf-8")
+
+    @staticmethod
+    def sendApply(agent, hab, ked, sigs, rec):
+        for recp in rec:  # Have to verify we already know all the recipients.
+            if recp not in agent.hby.kevers:
+                raise falcon.HTTPBadRequest(description=f"attempt to send to unknown AID={recp}")
+
+        # use that data to create th Serder and Sigers for the exn
+        serder = serdering.SerderKERI(sad=ked)
+        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+
+        # Now create the stream to send, need the signer seal
+        kever = hab.kever
+        seal = eventing.SealEvent(i=hab.pre, s="{:x}".format(kever.lastEst.s), d=kever.lastEst.d)
+
+        # in this case, ims is a message is a sealed and signed message - signed by Signify (KERIA can't sign anything here...)
+        ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
+
+        # make a copy and parse
+        agent.hby.psr.parseOne(ims=bytearray(ims))
+
+        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=rec, topic='credential'))
+        return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
+
+class IpexOfferCollectionEnd:
+    
+    @staticmethod
+    def on_post(req, rep, name):
+        """ IPEX Offer POST endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            name (str): human readable name for AID
+
+        ---
+        summary: Reply to IPEX apply message or initiate an IPEX exchange with an offer for a credential with certain characteristics
+        description: Reply to IPEX apply message or initiate an IPEX exchange with an offer for a credential with certain characteristics
+        tags:
+           - Credentials
+        responses:
+           200:
+              description: long running operation of IPEX offer
+        
+        """
+        agent = req.context.agent
+        hab = agent.hby.habByName(name)
+        if hab is None:
+            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
+
+        body = req.get_media()
+
+        ked = httping.getRequiredParam(body, "exn")
+        sigs = httping.getRequiredParam(body, "sigs")
+        atc = httping.getRequiredParam(body, "atc")
+        rec = httping.getRequiredParam(body, "rec")
+
+        route = ked['r']
+
+        match route:
+            case "/ipex/offer":
+                op = IpexOfferCollectionEnd.sendOffer(agent, hab, ked, sigs, atc, rec)
+            case _:
+                raise falcon.HTTPBadRequest(description=f"invalid route {route}")
+
+        rep.status = falcon.HTTP_200
+        rep.data = op.to_json().encode("utf-8")
+
+    @staticmethod
+    def sendOffer(agent, hab, ked, sigs, atc, rec):
+        for recp in rec:  # Have to verify we already know all the recipients.
+            if recp not in agent.hby.kevers:
+                raise falcon.HTTPBadRequest(description=f"attempt to send to unknown AID={recp}")
+
+        # use that data to create th Serder and Sigers for the exn
+        serder = serdering.SerderKERI(sad=ked)
+        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+
+        # Now create the stream to send, need the signer seal
+        kever = hab.kever
+        seal = eventing.SealEvent(i=hab.pre, s="{:x}".format(kever.lastEst.s), d=kever.lastEst.d)
+
+        ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
+        ims = ims + atc.encode("utf-8")
+
+        # make a copy and parse
+        agent.hby.psr.parseOne(ims=bytearray(ims))
+
+        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=rec, topic='credential'))
+        return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
+    
+class IpexAgreeCollectionEnd:
+    
+    @staticmethod
+    def on_post(req, rep, name):
+        """ IPEX Agree POST endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            name (str): human readable name for AID
+
+        ---
+        summary: Reply to IPEX offer message acknowledged willingness to accept offered credential
+        description: Reply to IPEX offer message acknowledged willingness to accept offered credential
+        tags:
+           - Credentials
+        responses:
+           200:
+              description: long running operation of IPEX agree
+        
+        """
+        agent = req.context.agent
+        hab = agent.hby.habByName(name)
+        if hab is None:
+            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
+
+        body = req.get_media()
+
+        ked = httping.getRequiredParam(body, "exn")
+        sigs = httping.getRequiredParam(body, "sigs")
+        rec = httping.getRequiredParam(body, "rec")
+
+        route = ked['r']
+
+        match route:
+            case "/ipex/agree":
+                op = IpexAgreeCollectionEnd.sendAgree(agent, hab, ked, sigs, rec)
+            case _:
+                raise falcon.HTTPBadRequest(description=f"invalid route {route}")
+
+        rep.status = falcon.HTTP_200
+        rep.data = op.to_json().encode("utf-8")
+
+    @staticmethod
+    def sendAgree(agent, hab, ked, sigs, rec):
+        for recp in rec:  # Have to verify we already know all the recipients.
+            if recp not in agent.hby.kevers:
+                raise falcon.HTTPBadRequest(description=f"attempt to send to unknown AID={recp}")
+
+        # use that data to create th Serder and Sigers for the exn
+        serder = serdering.SerderKERI(sad=ked)
+        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+
+        # Now create the stream to send, need the signer seal
+        kever = hab.kever
+        seal = eventing.SealEvent(i=hab.pre, s="{:x}".format(kever.lastEst.s), d=kever.lastEst.d)
+
+        ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
+
+        # make a copy and parse
+        agent.hby.psr.parseOne(ims=bytearray(ims))
+
+        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=rec, topic='credential'))
         return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
