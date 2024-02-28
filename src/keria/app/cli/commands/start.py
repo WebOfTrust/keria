@@ -60,10 +60,12 @@ parser.add_argument("--certpath", action="store", required=False, default=None,
                     help="TLS server signed certificate (public key) file")
 parser.add_argument("--cafilepath", action="store", required=False, default=None,
                     help="TLS server CA certificate chain")
+parser.add_argument("--loglevel", action="store", required=False, default="CRITICAL",
+                    help="Set log level to DEBUG | INFO | WARNING | ERROR | CRITICAL. Default is CRITICAL")
 
 
 def launch(args):
-    help.ogler.level = logging.CRITICAL
+    help.ogler.level = logging.getLevelName(args.loglevel)
     help.ogler.reopen(name=args.name, temp=True, clear=True)
 
     logger = help.ogler.getLogger()
