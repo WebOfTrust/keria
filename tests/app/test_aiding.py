@@ -626,10 +626,10 @@ def test_identifier_collection_end(helpers):
         assert res.status_code == 200
         assert "signing" in res.json
         signing = res.json["signing"]
-        assert len(signing) == 5  # this number is a little janky because we reuse public keys above, leaving for now
+        assert len(signing) == 3
         assert "rotation" in res.json
         rotation = res.json["rotation"]
-        assert len(rotation) == 5  # this number is a little janky because we reuse rotation keys above, leaving for now
+        assert len(rotation) == 3
 
         # Try unknown witness
         serder, signers = helpers.incept(salt, "signify:aid", pidx=3,
