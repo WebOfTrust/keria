@@ -25,8 +25,8 @@
     "lint": "npx eslint src test examples/integration-scripts",
     "prepare": "npm run build",
     "generate-docs": "node_modules/.bin/jsdoc --configure .jsdoc.json --verbose",
-    "pretty": "prettier --config .prettierrc 'src/**/*.ts' 'test/**/*.ts' 'examples/**/*.ts' --write",
-    "pretty:check": "prettier --config .prettierrc 'src/**/*.ts' 'test/**/*.ts' 'examples/**/*.ts' --check"
+    "pretty": "prettier --write .",
+    "pretty:check": "prettier --check ."
   },
   "name": "signify-ts",
   "author": "Phil Feairheller",
