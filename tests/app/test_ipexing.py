@@ -12,7 +12,7 @@ from falcon import testing
 from hio.base import doing
 from hio.help import decking
 from keri.app import habbing, signing
-from keri.core import eventing, coring, parsing, serdering
+from keri.core import eventing, coring, serdering
 from keri.help import helping
 from keri.kering import Roles
 from keri.peer import exchanging

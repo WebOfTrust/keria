@@ -1153,6 +1153,10 @@ class ContactCollectionEnd:
     def authn(agent, contacts):
         for contact in contacts:
             aid = contact['id']
+
+            ends = agent.agentHab.endsFor(aid)
+            contact['ends'] = ends
+
             accepted = [saider.qb64 for saider in agent.hby.db.chas.get(keys=(aid,))]
             received = [saider.qb64 for saider in agent.hby.db.reps.get(keys=(aid,))]
 
