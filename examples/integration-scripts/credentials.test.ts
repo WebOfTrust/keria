@@ -109,16 +109,27 @@ test('single signature credentials', async () => {
 
     const registry = await step('Create registry', async () => {
         const registryName = 'vLEI-test-registry';
+        const updatedRegistryName = 'vLEI-test-registry-1';
         const regResult = await issuerClient
             .registries()
             .create({ name: issuerAid.name, registryName: registryName });
 
         await waitOperation(issuerClient, await regResult.op());
-        const registries = await issuerClient.registries().list(issuerAid.name);
+        let registries = await issuerClient.registries().list(issuerAid.name);
         const registry: { name: string; regk: string } = registries[0];
         assert.equal(registries.length, 1);
         assert.equal(registry.name, registryName);
-        return registry;
+
+        await issuerClient
+            .registries()
+            .rename(issuerAid.name, registryName, updatedRegistryName);
+
+        registries = await issuerClient.registries().list(issuerAid.name);
+        let updateRegistry: { name: string; regk: string } = registries[0];
+        assert.equal(registries.length, 1);
+        assert.equal(updateRegistry.name, updatedRegistryName);
+
+        return updateRegistry;
     });
 
     await step('issuer can get schemas', async () => {

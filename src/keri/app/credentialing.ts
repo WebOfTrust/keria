@@ -659,6 +659,28 @@ export class Registries {
 
         return this.client.fetch(path, method, data);
     }
+
+    /**
+     * Rename a registry
+     * @async
+     * @param {string} name Name or alias of the identifier
+     * @param {string} registryName Current registry name
+     * @param {string} newName New registry name
+     * @returns {Promise<any>} A promise to the registry record
+     */
+    async rename(
+        name: string,
+        registryName: string,
+        newName: string
+    ): Promise<any> {
+        const path = `/identifiers/${name}/registries/${registryName}`;
+        const method = 'PUT';
+        const data = {
+            name: newName,
+        };
+        const res = await this.client.fetch(path, method, data);
+        return await res.json();
+    }
 }
 /**
  * Schemas
