@@ -79,7 +79,7 @@ setup(
         'keri @ git+https://git@github.com/weboftrust/keripy.git@development',
         'mnemonic>=0.20',
         'multicommand>=1.0.0',
-        'falcon>=3.1.0',
+        'falcon>=3.1.3',
         'http_sfv>=0.9.8',
         'dataclasses_json>=0.5.7',
         'apispec>=6.3.0',

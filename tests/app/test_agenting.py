@@ -79,7 +79,7 @@ def test_agency():
         doist.enter(doers=[agency])
 
         caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
-        agent = agency.create(caid)
+        agent = agency.create(caid, salt=salter.qb64)
         assert agent.pre == "EIAEKYpTygdBtFHBrHKWeh0aYCdx0ZJqZtzQLFnaDB2b"
 
         badcaid = "E987eerAdhmvrjDeam2eAO2SR5niCgnjAJXJHtJoe"
@@ -121,7 +121,7 @@ def test_agency():
         doist.enter(doers=[agency])
 
         caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
-        agent = agency.create(caid)
+        agent = agency.create(caid, salt=salter.qb64)
         assert agent.pre == "EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei"
 
         # Rcreate the agency to see if agent is reloaded from disk

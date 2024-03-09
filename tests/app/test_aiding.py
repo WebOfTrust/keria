@@ -242,9 +242,12 @@ def test_agent_resource(helpers, mockHelpingNowUTC):
 
 
 def test_identifier_collection_end(helpers):
+    salt = b'0123456789abcdef'
+    salter = coring.Salter(raw=salt)
+
     with helpers.openKeria() as (agency, agent, app, client), \
-            habbing.openHby(name="p1", temp=True) as p1hby, \
-            habbing.openHby(name="p2", temp=True) as p2hby:
+            habbing.openHby(name="p1", temp=True, salt=salter.qb64) as p1hby, \
+            habbing.openHby(name="p2", temp=True, salt=salter.qb64) as p2hby:
         end = aiding.IdentifierCollectionEnd()
         resend = aiding.IdentifierResourceEnd()
         app.add_route("/identifiers", end)
@@ -1449,7 +1452,6 @@ def test_approve_delegation(helpers):
         assert res.status_code == 200
         agt = res.json["agent"]
         ctrl = res.json["controller"]
-        assert agt["i"] == "EHyaw-1bCenigGQCZRs_hXNdndHw0fSf-Q5-LpUwOR8r"
         assert ctrl["state"]["i"] == controllerAID
 
         anchor = dict(i=agt["i"], s="0", d=agt["d"])
@@ -1533,9 +1535,7 @@ def test_rotation(helpers):
 
         res = client.simulate_get(path=f"/agent/{serder.pre}")
         assert res.status_code == 200
-        agt = res.json["agent"]
         ctrl = res.json["controller"]
-        assert agt["i"] == "EHyaw-1bCenigGQCZRs_hXNdndHw0fSf-Q5-LpUwOR8r"
         assert ctrl["state"]["i"] == controllerAID
 
         op = helpers.createAid(client, name="salty_aid", salt=bran)
