@@ -36,6 +36,12 @@ def test_load_ends(helpers):
         assert isinstance(end, ipexing.IpexAdmitCollectionEnd)
         (end, *_) = app._router.find("/identifiers/NAME/ipex/grant")
         assert isinstance(end, ipexing.IpexGrantCollectionEnd)
+        (end, *_) = app._router.find("/identifiers/NAME/ipex/apply")
+        assert isinstance(end, ipexing.IpexApplyCollectionEnd)
+        (end, *_) = app._router.find("/identifiers/NAME/ipex/offer")
+        assert isinstance(end, ipexing.IpexOfferCollectionEnd)
+        (end, *_) = app._router.find("/identifiers/NAME/ipex/agree")
+        assert isinstance(end, ipexing.IpexAgreeCollectionEnd)
 
 
 def test_ipex_admit(helpers, mockHelpingNowIso8601):
@@ -919,3 +925,314 @@ def test_granter(helpers):
         doist.recur(deeds=deeds)
 
         assert len(grants) == 1
+
+
+def test_ipex_apply(helpers, mockHelpingNowIso8601):
+    with helpers.openKeria() as (_, agent, app, client):
+        applyEnd = ipexing.IpexApplyCollectionEnd()
+        app.add_route("/identifiers/{name}/ipex/apply", applyEnd)
+
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+        aidEnd = aiding.IdentifierResourceEnd()
+        app.add_route("/identifiers/{name}", aidEnd)
+
+        salt = b'0123456789abcdef'
+        op = helpers.createAid(client, "test", salt)
+        aid = op["response"]
+        pre = aid['i']
+        assert pre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+
+        salt2 = b'0123456789abcdeg'
+        op = helpers.createAid(client, "recp", salt2)
+        aid1 = op["response"]
+        pre1 = aid1['i']
+        assert pre1 == "EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm"
+
+        applySerder, end = exchanging.exchange(route="/ipex/apply",
+                                               payload={'m': 'Applying for a credential', 's': 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao', 'a': {'LEI': '78I9GKEFM361IFY3PIN0'}},
+                                               sender=pre,
+                                               embeds=dict(),
+                                               recipient=pre1,
+                                               date=helping.nowIso8601())
+        assert applySerder.ked == {'a': {'i': 'EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm', 'm': 'Applying for a credential', 's': 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao', 'a': {'LEI': '78I9GKEFM361IFY3PIN0'}},
+                                   'd': 'EJq6zSDUWw6iaBz8n1cY5cAW3Rrgp4E3sUsoz5JkoMZc',
+                                   'dt': '2021-06-27T21:26:21.233257+00:00',
+                                   'e': {},
+                                   'i': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                                   'p': '',
+                                   'q': {},
+                                   'r': '/ipex/apply',
+                                   't': 'exn',
+                                   'v': 'KERI10JSON000187_'}
+        assert end == b''
+        sigs = ["AAAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH"]
+
+        body = dict(
+            exn=applySerder.ked,
+            sigs=sigs,
+            atc="",
+            rec=["EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"]
+        )
+
+        data = json.dumps(body).encode("utf-8")
+        res = client.simulate_post(path="/identifiers/test/ipex/apply", body=data)
+        
+        assert res.status_code == 400
+        assert res.json == {'description': 'attempt to send to unknown '
+                                           'AID=EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM',
+                            'title': '400 Bad Request'}
+
+        body = dict(
+            exn=applySerder.ked,
+            sigs=sigs,
+            atc="",
+            rec=[pre1]
+        )
+
+        # Bad Sender
+        data = json.dumps(body).encode("utf-8")
+        res = client.simulate_post(path="/identifiers/BAD/ipex/apply", body=data)
+        assert res.status_code == 404
+        assert res.json == {'description': 'alias=BAD is not a valid reference to an identifier',
+                            'title': '404 Not Found'}
+
+        data = json.dumps(body).encode("utf-8")
+        res = client.simulate_post(path="/identifiers/test/ipex/apply", body=data)
+        assert res.json == {'done': False,
+                            'error': None,
+                            'metadata': {'said': 'EJq6zSDUWw6iaBz8n1cY5cAW3Rrgp4E3sUsoz5JkoMZc'},
+                            'name': 'exchange.EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                            'response': None}
+
+        assert res.status_code == 200
+        assert len(agent.exchanges) == 1
+
+
+def test_ipex_offer(helpers, mockHelpingNowIso8601):
+    with helpers.openKeria() as (_, agent, app, client):
+        offerEnd = ipexing.IpexOfferCollectionEnd()
+        app.add_route("/identifiers/{name}/ipex/offer", offerEnd)
+
+        end0 = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end0)
+        aidEnd = aiding.IdentifierResourceEnd()
+        app.add_route("/identifiers/{name}", aidEnd)
+
+        salt = b'0123456789abcdef'
+        op = helpers.createAid(client, "test", salt)
+        aid = op["response"]
+        pre = aid['i']
+        assert pre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+
+        salt2 = b'0123456789abcdeg'
+        op = helpers.createAid(client, "recp", salt2)
+        aid1 = op["response"]
+        pre1 = aid1['i']
+        assert pre1 == "EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm"
+
+        # This should be a metadata ACDC in reality
+        acdc = b'{"v":"ACDC10JSON000197_","d":"EBg1YzKmwZIDzZsMslTFwQARB6nUN85sRJF5oywlJr3N","i":"EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze","ri":"EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4","s":"EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs","a":{"d":"ELJ7Emhi0Bhxz3s7HyhZ45qcsgpvsT8p8pxwWkG362n3","dt":"2021-06-27T21:26:21.233257+00:00","i":"EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm","LEI":"78I9GKEFM361IFY3PIN0"}}'
+        embeds = dict(acdc = acdc)
+
+        # First an offer initiated by discloser (no apply)
+        offer0Serder, end0 = exchanging.exchange(route="/ipex/offer",
+                                                payload={'m': 'Offering this'},
+                                                sender=pre,
+                                                embeds=embeds,
+                                                recipient=pre1,
+                                                date=helping.nowIso8601())
+        assert offer0Serder.ked == {'a': {'i': 'EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm', 'm': 'Offering this'},
+                                    'd': 'EDY-IFIMBR4umlYATxAqEAcT5jiHEMn5EyL6i1sUwxDO',
+                                    'dt': '2021-06-27T21:26:21.233257+00:00',
+                                    'e': {'acdc': {'a': {'d': 'ELJ7Emhi0Bhxz3s7HyhZ45qcsgpvsT8p8pxwWkG362n3',
+                                                         'dt': '2021-06-27T21:26:21.233257+00:00',
+                                                         'i': 'EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm',
+                                                         'LEI': '78I9GKEFM361IFY3PIN0'},
+                                                  'd': 'EBg1YzKmwZIDzZsMslTFwQARB6nUN85sRJF5oywlJr3N',
+                                                  'i': 'EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze',
+                                                  'ri': 'EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4',
+                                                  's': 'EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs',
+                                                  'v': 'ACDC10JSON000197_'},
+                                         'd': 'EEcYZMP-zilz2w1w2hEFm6tF0eaX_1KaPEWhNfY3kf8i'},
+                                    'i': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                                    'p': '',
+                                    'q': {},
+                                    'r': '/ipex/offer',
+                                    't': 'exn',
+                                    'v': 'KERI10JSON0002f6_'}
+        assert end0 == b''
+        sigs = ["AAAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH"]
+
+        body = dict(
+            exn=offer0Serder.ked,
+            sigs=sigs,
+            atc="",
+            rec=["EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"]
+        )
+
+        data = json.dumps(body).encode("utf-8")
+        res = client.simulate_post(path="/identifiers/test/ipex/offer", body=data)
+        
+        assert res.status_code == 400
+        assert res.json == {'description': 'attempt to send to unknown '
+                                            'AID=EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM',
+                            'title': '400 Bad Request'}
+
+        body = dict(
+            exn=offer0Serder.ked,
+            sigs=sigs,
+            atc="",
+            rec=[pre1]
+        )
+
+        # Bad Sender
+        data = json.dumps(body).encode("utf-8")
+        res = client.simulate_post(path="/identifiers/BAD/ipex/offer", body=data)
+        assert res.status_code == 404
+        assert res.json == {'description': 'alias=BAD is not a valid reference to an identifier',
+                            'title': '404 Not Found'}
+
+        data = json.dumps(body).encode("utf-8")
+        res = client.simulate_post(path="/identifiers/test/ipex/offer", body=data)
+        assert res.json == {'done': False,
+                            'error': None,
+                            'metadata': {'said': 'EDY-IFIMBR4umlYATxAqEAcT5jiHEMn5EyL6i1sUwxDO'},
+                            'name': 'exchange.EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                            'response': None}
+
+        assert res.status_code == 200
+        assert len(agent.exchanges) == 1
+
+        # Now an offer in response to an agree 
+        dig = "EB_Lr3fHezn1ygn-wbBT5JjzaCMxTmhUoegXeZzWC2eT"
+        offer1Serder, end1 = exchanging.exchange(route="/ipex/offer",
+                                                payload={'m': 'How about this'},
+                                                sender=pre,
+                                                embeds=embeds,
+                                                dig=dig,
+                                                recipient=pre1,
+                                                date=helping.nowIso8601())
+        assert offer1Serder.ked == {'a': {'i': 'EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm', 'm': 'How about this'},
+                                    'd': 'EDT7go7TfCTzeFnhNBl19JJqdabBfBx8tjBvi_asFCwT',
+                                    'dt': '2021-06-27T21:26:21.233257+00:00',
+                                    'e': {'acdc': {'a': {'d': 'ELJ7Emhi0Bhxz3s7HyhZ45qcsgpvsT8p8pxwWkG362n3',
+                                                         'dt': '2021-06-27T21:26:21.233257+00:00',
+                                                         'i': 'EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm',
+                                                         'LEI': '78I9GKEFM361IFY3PIN0'},
+                                                  'd': 'EBg1YzKmwZIDzZsMslTFwQARB6nUN85sRJF5oywlJr3N',
+                                                  'i': 'EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze',
+                                                  'ri': 'EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4',
+                                                  's': 'EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs',
+                                                  'v': 'ACDC10JSON000197_'},
+                                         'd': 'EEcYZMP-zilz2w1w2hEFm6tF0eaX_1KaPEWhNfY3kf8i'},
+                                    'i': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                                    'p': 'EB_Lr3fHezn1ygn-wbBT5JjzaCMxTmhUoegXeZzWC2eT',
+                                    'q': {},
+                                    'r': '/ipex/offer',
+                                    't': 'exn',
+                                    'v': 'KERI10JSON000323_'}
+        assert end1 == b''
+        sigs = ["AAAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH"]
+        
+        body = dict(
+            exn=offer1Serder.ked,
+            sigs=sigs,
+            atc="",
+            rec=[pre1]
+        )
+
+        data = json.dumps(body).encode("utf-8")
+        res = client.simulate_post(path="/identifiers/test/ipex/offer", body=data)
+        assert res.json == {'done': False,
+                            'error': None,
+                            'metadata': {'said': 'EDT7go7TfCTzeFnhNBl19JJqdabBfBx8tjBvi_asFCwT'},
+                            'name': 'exchange.EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                            'response': None}
+
+        assert res.status_code == 200
+        assert len(agent.exchanges) == 2
+
+
+def test_ipex_agree(helpers, mockHelpingNowIso8601):
+    with helpers.openKeria() as (_, agent, app, client):
+        agreeEnd = ipexing.IpexAgreeCollectionEnd()
+        app.add_route("/identifiers/{name}/ipex/agree", agreeEnd)
+
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+        aidEnd = aiding.IdentifierResourceEnd()
+        app.add_route("/identifiers/{name}", aidEnd)
+
+        salt = b'0123456789abcdef'
+        op = helpers.createAid(client, "test", salt)
+        aid = op["response"]
+        pre = aid['i']
+        assert pre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+
+        salt2 = b'0123456789abcdeg'
+        op = helpers.createAid(client, "recp", salt2)
+        aid1 = op["response"]
+        pre1 = aid1['i']
+        assert pre1 == "EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm"
+        dig = "EB_Lr3fHezn1ygn-wbBT5JjzaCMxTmhUoegXeZzWC2eT"
+
+        offerSerder, end = exchanging.exchange(route="/ipex/agree",
+                                                payload={'m': 'Agreed'},
+                                                sender=pre,
+                                                embeds=dict(),
+                                                dig=dig,
+                                                recipient=pre1,
+                                                date=helping.nowIso8601())
+        assert offerSerder.ked == {'a': {'i': 'EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm', 'm': 'Agreed'},
+                                    'd': 'ECxQe2TgUCRjbbxyCaXMEp6EtSMaqPmDstetoi4bEUrG',
+                                    'dt': '2021-06-27T21:26:21.233257+00:00',
+                                    'e': {},
+                                    'i': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                                    'p': 'EB_Lr3fHezn1ygn-wbBT5JjzaCMxTmhUoegXeZzWC2eT',
+                                    'q': {},
+                                    'r': '/ipex/agree',
+                                    't': 'exn',
+                                    'v': 'KERI10JSON00014a_'}
+        assert end == b''
+        sigs = ["AAAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH"]
+
+        body = dict(
+            exn=offerSerder.ked,
+            sigs=sigs,
+            atc="",
+            rec=["EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"]
+        )
+
+        data = json.dumps(body).encode("utf-8")
+        res = client.simulate_post(path="/identifiers/test/ipex/agree", body=data)
+        
+        assert res.status_code == 400
+        assert res.json == {'description': 'attempt to send to unknown '
+                                            'AID=EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM',
+                            'title': '400 Bad Request'}
+
+        body = dict(
+            exn=offerSerder.ked,
+            sigs=sigs,
+            atc="",
+            rec=[pre1]
+        )
+
+        # Bad Sender
+        data = json.dumps(body).encode("utf-8")
+        res = client.simulate_post(path="/identifiers/BAD/ipex/agree", body=data)
+        assert res.status_code == 404
+        assert res.json == {'description': 'alias=BAD is not a valid reference to an identifier',
+                            'title': '404 Not Found'}
+
+        data = json.dumps(body).encode("utf-8")
+        res = client.simulate_post(path="/identifiers/test/ipex/agree", body=data)
+        assert res.json == {'done': False,
+                            'error': None,
+                            'metadata': {'said': 'ECxQe2TgUCRjbbxyCaXMEp6EtSMaqPmDstetoi4bEUrG'},
+                            'name': 'exchange.EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                            'response': None}
+
+        assert res.status_code == 200
+        assert len(agent.exchanges) == 1
