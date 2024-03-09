@@ -173,7 +173,7 @@ class Agency(doing.DoDoer):
         self.adb = adb if adb is not None else basing.AgencyBaser(name="TheAgency", base=base, reopen=True, temp=temp)
         super(Agency, self).__init__(doers=[], always=True)
 
-    def create(self, caid):
+    def create(self, caid, salt=None):
         ks = keeping.Keeper(name=caid,
                             base=self.base,
                             temp=self.temp,
@@ -196,7 +196,7 @@ class Agency(doing.DoDoer):
             cf.put(data)
 
         # Create the Hab for the Agent with only 2 AIDs
-        agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, cf=cf, temp=self.temp)
+        agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, cf=cf, temp=self.temp, salt=salt)
         agentHab = agentHby.makeHab(f"agent-{caid}", ns="agent", transferable=True, delpre=caid)
         agentRgy = Regery(hby=agentHby, name=agentHab.name, base=self.base, temp=self.temp)
 
