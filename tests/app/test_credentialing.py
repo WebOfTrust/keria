@@ -94,6 +94,8 @@ def test_registry_end(helpers, seeder):
         idResEnd = aiding.IdentifierResourceEnd()
         registryEnd = credentialing.RegistryCollectionEnd(idResEnd)
         app.add_route("/identifiers/{name}/registries", registryEnd)
+        registryResEnd = credentialing.RegistryResourceEnd()
+        app.add_route("/identifiers/{name}/registries/{registryName}", registryResEnd)
         opEnd = longrunning.OperationResourceEnd()
         app.add_route("/operations/{name}", opEnd)
 
@@ -160,6 +162,38 @@ def test_registry_end(helpers, seeder):
         assert result.json == {'description': 'alias is not a valid reference to an identifier',
                                'title': '404 Not Found'}
 
+        # Try with bad identifier name
+        body = b'{"name": "new-name"}'
+        result = client.simulate_put(path="/identifiers/test-bad/registries/test", body=body)
+        assert result.status == falcon.HTTP_404
+        assert result.json == {'description': 'test-bad is not a valid reference to an identifier',
+                               'title': '404 Not Found'}
+
+        result = client.simulate_put(path="/identifiers/test/registries/test", body=body)
+        assert result.status == falcon.HTTP_200
+        regk = result.json['regk']
+
+        # Try to rename a the now used name
+        result = client.simulate_put(path="/identifiers/test/registries/new-name", body=b'{}')
+        assert result.status == falcon.HTTP_400
+        assert result.json == {'description': "'name' is required in body", 'title': '400 Bad Request'}
+
+        # Try to rename a the now used name
+        result = client.simulate_put(path="/identifiers/test/registries/test", body=body)
+        assert result.status == falcon.HTTP_400
+        assert result.json == {'description': 'new-name is already in use for a registry',
+                               'title': '400 Bad Request'}
+
+        # Try to rename a now non-existant registry
+        body = b'{"name": "newnew-name"}'
+        result = client.simulate_put(path="/identifiers/test/registries/test", body=body)
+        assert result.status == falcon.HTTP_404
+        assert result.json == {'description': 'test is not a valid reference to a credential registry',
+                               'title': '404 Not Found'}
+        # Rename registry by SAID
+        body = b'{"name": "newnew-name"}'
+        result = client.simulate_put(path=f"/identifiers/test/registries/{regk}", body=body)
+        assert result.status == falcon.HTTP_200
 
         result = client.simulate_get(path="/identifiers/not_test/registries")
         assert result.status == falcon.HTTP_404

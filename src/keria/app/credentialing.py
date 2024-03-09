@@ -14,6 +14,8 @@ from keri.app import signing
 from keri.app.habbing import SignifyGroupHab
 from keri.core import coring, scheming, serdering
 from keri.db import dbing
+from keri.db.dbing import dgKey
+from keri.vdr import viring
 
 from keria.core import httping, longrunning
 
@@ -222,6 +224,70 @@ class RegistryResourceEnd:
 
         if not registry.hab.pre == hab.pre:
             raise falcon.HTTPNotFound(description=f"{registryName} is not a valid registry for AID {name}")
+
+        rd = dict(
+            name=registry.name,
+            regk=registry.regk,
+            pre=registry.hab.pre,
+            state=asdict(registry.tever.state())
+        )
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(rd).encode("utf-8")
+
+    @staticmethod
+    def on_put(req, rep, name, registryName):
+        """  Registry Resource PUT endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            name (str): human readable name for AID
+            registryName(str): human readable name for registry or its SAID
+
+        ---
+        summary: Get a single credential issuance and revocation registy
+        description: Get a single credential issuance and revocation registy
+        tags:
+           - Registries
+        responses:
+           200:
+              description:  credential issuance and revocation registy
+
+        """
+        agent = req.context.agent
+
+        hab = agent.hby.habByName(name)
+        if hab is None:
+            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
+
+        body = req.get_media()
+        if 'name' not in body:
+            raise falcon.HTTPBadRequest(description="'name' is required in body")
+
+        name = body['name']
+        if agent.rgy.registryByName(name) is not None:
+            raise falcon.HTTPBadRequest(description=f"{name} is already in use for a registry")
+
+        registry = agent.rgy.registryByName(registryName)
+        if registry is None:
+            if registryName in agent.rgy.regs:  # Check to see if the registryName parameter is a SAID
+                registry = agent.rgy.regs[registryName]
+            else:
+                regk = registryName
+                key = dgKey(regk, regk)
+                raw = agent.rgy.reger.getTvt(key=key)
+                if raw is None:
+                    raise falcon.HTTPNotFound(
+                        description=f"{registryName} is not a valid reference to a credential registry")
+
+                regser = serdering.SerderKERI(raw=bytes(raw))
+                registry = agent.rgy.makeSignifyRegistry(name, hab.pre, regser)
+
+        regord = viring.RegistryRecord(registryKey=registry.regk, prefix=hab.pre)
+        agent.rgy.reger.regs.pin(keys=(name,), val=regord)
+        agent.rgy.reger.regs.rem(keys=(registryName,))
+        registry.name = name
 
         rd = dict(
             name=registry.name,
