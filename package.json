@@ -59,8 +59,7 @@
     "ecdsa-secp256r1": "^1.3.3",
     "libsodium-wrappers-sumo": "^0.7.9",
     "mathjs": "^12.4.0",
-    "structured-headers": "^0.5.0",
-    "urlsafe-base64": "^1.0.0"
+    "structured-headers": "^0.5.0"
   },
   "workspaces": [
     "examples/*"
