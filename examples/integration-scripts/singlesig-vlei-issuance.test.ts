@@ -44,7 +44,7 @@ const leData = {
 const ecrData = {
     LEI: leData.LEI,
     personLegalName: 'John Doe',
-    engagementContextRole: 'EBA Submitter',
+    engagementContextRole: 'EBA Data Submitter',
 };
 
 const ecrAuthData = {
