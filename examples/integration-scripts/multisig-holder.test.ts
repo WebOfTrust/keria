@@ -1,9 +1,5 @@
 import { strict as assert } from 'assert';
-import signify, {
-    SignifyClient,
-    IssueCredentialArgs,
-    Operation,
-} from 'signify-ts';
+import signify, { SignifyClient, Operation, CredentialData } from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
 import {
     assertOperations,
@@ -354,12 +350,11 @@ test('multisig', async function run() {
 
     console.log(`Issuer starting credential issuance to holder...`);
     const registires = await client3.registries().list('issuer');
-    await issueCredential(client3, {
-        issuerName: 'issuer',
-        registryId: registires[0].regk,
-        schemaId: SCHEMA_SAID,
-        recipient: holderAid['prefix'],
-        data: {
+    await issueCredential(client3, 'issuer', {
+        ri: registires[0].regk,
+        s: SCHEMA_SAID,
+        a: {
+            i: holderAid['prefix'],
             LEI: '5493001KJTIIGC8Y1R17',
         },
     });
@@ -476,23 +471,24 @@ async function createRegistry(
 
 async function issueCredential(
     client: SignifyClient,
-    args: IssueCredentialArgs
+    name: string,
+    data: CredentialData
 ) {
-    const result = await client.credentials().issue(args);
+    const result = await client.credentials().issue(name, data);
 
     await waitOperation(client, result.op);
 
     const creds = await client.credentials().list();
     assert.equal(creds.length, 1);
-    assert.equal(creds[0].sad.s, args.schemaId);
+    assert.equal(creds[0].sad.s, data.s);
     assert.equal(creds[0].status.s, '0');
 
     const dt = createTimestamp();
 
-    if (args.recipient) {
+    if (data.a.i) {
         const [grant, gsigs, end] = await client.ipex().grant({
-            senderName: args.issuerName,
-            recipient: args.recipient,
+            senderName: name,
+            recipient: data.a.i,
             datetime: dt,
             acdc: result.acdc,
             anc: result.anc,
@@ -501,7 +497,7 @@ async function issueCredential(
 
         let op = await client
             .ipex()
-            .submitGrant(args.issuerName, grant, gsigs, end, [args.recipient]);
+            .submitGrant(name, grant, gsigs, end, [data.a.i]);
         op = await waitOperation(client, op);
     }
 

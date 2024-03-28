@@ -36,51 +36,53 @@ export interface CredentialFilter {
     limit?: number;
 }
 
-export interface IssueCredentialArgs {
+export interface CredentialSubject {
     /**
-     * Name of the issuer identifier
+     * Issuee, or holder of the credential.
      */
-    issuerName: string;
+    i?: string;
+    /**
+     * Timestamp of issuance.
+     */
+    dt?: string;
+    /**
+     * Privacy salt
+     */
+    u?: string;
+    [key: string]: unknown;
+}
 
+export interface CredentialData {
+    v?: string;
+    d?: string;
     /**
-     * QB64 AID of credential registry
+     * Privacy salt
      */
-    registryId: string;
-
+    u?: string;
     /**
-     * SAID Of the schema
+     * Issuer of the credential.
      */
-    schemaId: string;
-
+    i?: string;
     /**
-     * Prefix of recipient identifier
+     * Registry id.
      */
-    recipient?: string;
-
+    ri?: string;
     /**
-     * Credential data
+     * Schema id
      */
-    data?: Record<string, unknown>;
-
+    s?: string;
     /**
-     * Credential rules
+     * Credential subject data
      */
-    rules?: string | Record<string, unknown>;
-
+    a: CredentialSubject;
     /**
-     * Credential sources
+     * Credential source section
      */
-    source?: Record<string, unknown>;
-
+    e?: { [key: string]: unknown };
     /**
-     * Datetime to set for the credential
+     * Credential rules section
      */
-    datetime?: string;
-
-    /**
-     * Flag to issue a credential with privacy preserving features
-     */
-    privacy?: boolean;
+    r?: { [key: string]: unknown };
 }
 
 export interface IssueCredentialResult {
@@ -184,8 +186,11 @@ export class Credentials {
     /**
      * Issue a credential
      */
-    async issue(args: IssueCredentialArgs): Promise<IssueCredentialResult> {
-        const hab = await this.client.identifiers().get(args.issuerName);
+    async issue(
+        name: string,
+        args: CredentialData
+    ): Promise<IssueCredentialResult> {
+        const hab = await this.client.identifiers().get(name);
         const estOnly = hab.state.c !== undefined && hab.state.c.includes('EO');
         if (estOnly) {
             // TODO implement rotation event
@@ -197,27 +202,18 @@ export class Credentials {
 
         const keeper = this.client.manager.get(hab);
 
-        const dt =
-            args.datetime ?? new Date().toISOString().replace('Z', '000+00:00');
-
         const [, subject] = Saider.saidify({
             d: '',
-            u: args.privacy ? new Salter({}).qb64 : undefined,
-            i: args.recipient,
-            dt: dt,
-            ...args.data,
+            ...args.a,
+            dt: args.a.dt ?? new Date().toISOString().replace('Z', '000+00:00'),
         });
 
         const [, acdc] = Saider.saidify({
             v: versify(Ident.ACDC, undefined, Serials.JSON, 0),
             d: '',
-            u: args.privacy ? new Salter({}).qb64 : undefined,
-            i: hab.prefix,
-            ri: args.registryId,
-            s: args.schemaId,
+            i: args.i ?? hab.prefix,
+            ...args,
             a: subject,
-            e: args.source,
-            r: args.rules,
         });
 
         const [, iss] = Saider.saidify({
@@ -226,8 +222,8 @@ export class Credentials {
             d: '',
             i: acdc.d,
             s: '0',
-            ri: args.registryId,
-            dt: dt,
+            ri: args.ri,
+            dt: subject.dt,
         });
 
         const sn = parseInt(hab.state.s, 16);

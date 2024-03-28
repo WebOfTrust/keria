@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import { Saider, Serder, SignifyClient } from 'signify-ts';
+import { Saider, Salter, Serder, SignifyClient } from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
 import {
     assertOperations,
@@ -491,7 +491,7 @@ async function getOrIssueCredential(
     schema: string,
     rules?: any,
     source?: any,
-    privacy: boolean = false
+    privacy = false
 ): Promise<any> {
     const credentialList = await issuerClient.credentials().list();
 
@@ -507,15 +507,17 @@ async function getOrIssueCredential(
         if (credential) return credential;
     }
 
-    const issResult = await issuerClient.credentials().issue({
-        issuerName: issuerAid.name,
-        registryId: issuerRegistry.regk,
-        schemaId: schema,
-        recipient: recipientAid.prefix,
-        data: credData,
-        rules: rules,
-        source: source,
-        privacy: privacy,
+    const issResult = await issuerClient.credentials().issue(issuerAid.name, {
+        ri: issuerRegistry.regk,
+        s: schema,
+        u: privacy ? new Salter({}).qb64 : undefined,
+        a: {
+            i: recipientAid.prefix,
+            u: privacy ? new Salter({}).qb64 : undefined,
+            ...credData,
+        },
+        r: rules,
+        e: source,
     });
 
     await waitOperation(issuerClient, issResult.op);
