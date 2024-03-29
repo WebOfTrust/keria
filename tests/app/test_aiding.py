@@ -474,6 +474,19 @@ def test_identifier_collection_end(helpers):
         res = client.simulate_post(path="/identifiers/aid3/events", body=json.dumps(body))
         assert res.status_code == 200
 
+        # rename aid3
+        res = client.simulate_put(path="/identifiers/aid3", body=json.dumps({"name": "aid3renamed"}))
+        assert res.status_code == 200
+        aid = res.json
+        assert aid["name"] == "aid3renamed"
+
+        # delete aid3renamed
+        res = client.simulate_delete(path="/identifiers/aid3renamed")
+        assert res.status_code == 200
+        res = client.simulate_get(path="/identifiers")
+        assert res.status_code == 200
+        assert len(res.json) == 2
+
         # create member habs for group AID
         p1 = p1hby.makeHab(name="p1")
         assert p1.pre == "EBPtjiAY9ITdvScWFGeeCu3Pf6_CFFr57siQqffVt9Of"
@@ -600,8 +613,8 @@ def test_identifier_collection_end(helpers):
 
         res = client.simulate_get(path="/identifiers")
         assert res.status_code == 200
-        assert len(res.json) == 4
-        aid = res.json[3]
+        assert len(res.json) == 3
+        aid = res.json[2]
         assert aid["name"] == "multisig"
         assert aid["prefix"] == serder.pre
         group = aid["group"]
