@@ -475,13 +475,13 @@ def test_identifier_collection_end(helpers):
         assert res.status_code == 200
 
         # rename aid3
-        res = client.simulate_put(path="/identifiers/aid3", body=json.dumps({"name": "aid3renamed"}))
+        res = client.simulate_put(path="/identifiers/aid3", body=json.dumps({"name": "aid3Renamed"}))
         assert res.status_code == 200
         aid = res.json
-        assert aid["name"] == "aid3renamed"
+        assert aid["name"] == "aid3Renamed"
 
         # delete aid3renamed
-        res = client.simulate_delete(path="/identifiers/aid3renamed")
+        res = client.simulate_delete(path="/identifiers/aid3Renamed")
         assert res.status_code == 200
         res = client.simulate_get(path="/identifiers")
         assert res.status_code == 200
