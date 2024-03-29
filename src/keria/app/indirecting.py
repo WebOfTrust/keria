@@ -9,7 +9,7 @@ import falcon
 from keri.app import httping
 from keri.core import eventing
 from keri.core.coring import Ilks, Sadder
-from keri.kering import Protos
+from keri.kering import Protocols
 
 CESR_DESTINATION_HEADER = "CESR-DESTINATION"
 
@@ -84,7 +84,7 @@ class HttpEnd:
 
         agent.parser.ims.extend(msg)
 
-        if serder.proto == Protos.acdc:
+        if serder.proto == Protocols.acdc:
             rep.status = falcon.HTTP_204
 
         else:
