@@ -182,9 +182,7 @@ export class SignifyClient {
         headers.set('Content-Type', 'application/json');
 
         const _body = method == 'GET' ? null : JSON.stringify(data);
-        if (_body !== null) {
-            headers.set('Content-Length', String(_body.length));
-        }
+
         if (this.authn) {
             signed_headers = this.authn.sign(
                 headers,

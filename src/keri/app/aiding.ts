@@ -112,7 +112,7 @@ export class Identifier {
      * @returns {Promise<any>} A promise to the identifier information
      */
     async get(name: string): Promise<any> {
-        const path = `/identifiers/${name}`;
+        const path = `/identifiers/${encodeURIComponent(name)}`;
         const data = null;
         const method = 'GET';
         const res = await this.client.fetch(path, method, data);
