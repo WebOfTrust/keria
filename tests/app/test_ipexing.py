@@ -12,7 +12,7 @@ from falcon import testing
 from hio.base import doing
 from hio.help import decking
 from keri.app import habbing, signing
-from keri.core import eventing, coring, parsing, serdering
+from keri.core import eventing, coring, serdering
 from keri.help import helping
 from keri.kering import Roles
 from keri.peer import exchanging
@@ -605,7 +605,7 @@ def test_multisig_grant_admit(seeder, helpers):
                                   baks=[],
                                   toad="0",
                                   nonce=nonce,
-                                  cnfg=[eventing.TraitCodex.NoRegistrarBackers],
+                                  cnfg=[eventing.TraitCodex.NoBackers],
                                   code=coring.MtrDex.Blake3_256)
 
         anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)

@@ -972,12 +972,12 @@ class KeyEventCollectionEnd:
         preb = pre.encode("utf-8")
         events = []
         for fn, dig in agent.hby.db.getFelItemPreIter(preb, fn=0):
-            dgkey = dbing.dgKey(preb, dig)  # get message
-            if not (raw := agent.hby.db.getEvt(key=dgkey)):
+            if not (raw := agent.hby.db.cloneEvtMsg(pre=preb, fn=fn, dig=dig)):
                 raise falcon.HTTPInternalServerError(f"Missing event for dig={dig}.")
 
             serder = serdering.SerderKERI(raw=bytes(raw))
-            events.append(serder.ked)
+            atc = raw[serder.size:]
+            events.append(dict(ked=serder.ked, atc=atc.decode("utf-8")))
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
