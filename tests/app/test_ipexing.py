@@ -605,7 +605,7 @@ def test_multisig_grant_admit(seeder, helpers):
                                   baks=[],
                                   toad="0",
                                   nonce=nonce,
-                                  cnfg=[eventing.TraitCodex.NoRegistrarBackers],
+                                  cnfg=[eventing.TraitCodex.NoBackers],
                                   code=coring.MtrDex.Blake3_256)
 
         anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)

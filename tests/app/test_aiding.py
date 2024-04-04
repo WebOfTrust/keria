@@ -733,7 +733,7 @@ def test_identifier_collection_end(helpers):
         assert res.status_code == 200
         events = res.json
         assert len(events) == 2
-        assert events[1] == serder.ked
+        assert events[1]['ked'] == serder.ked
 
         serder = eventing.interact(pre=pre, dig=serder.said, sn=len(events), data=[pre])
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
@@ -748,7 +748,7 @@ def test_identifier_collection_end(helpers):
         assert res.status_code == 200
         events = res.json
         assert len(events) == 3
-        assert events[2] == serder.ked
+        assert events[2]['ked'] == serder.ked
 
         # Bad interactions
         res = client.simulate_put(path="/identifiers/badrandy?type=ixn", body=json.dumps(body))
@@ -1135,6 +1135,7 @@ def test_contact_ends(helpers):
         assert response.status == falcon.HTTP_200
         assert response.json == [{'challenges': [],
                                   'company': 'GLEIF',
+                                  'ends': {},
                                   'first': 'Ken3',
                                   'id': 'EAjKmvW6flpWJfdYYZ2Lu4pllPWKFjCBz0dcX-S86Nvg',
                                   'last': 'Burns3',
@@ -1146,30 +1147,35 @@ def test_contact_ends(helpers):
         assert response.status == falcon.HTTP_200
         assert response.json == [{'challenges': [],
                                   'company': 'GLEIF',
+                                  'ends': {},
                                   'first': 'Ken3',
                                   'id': 'EAjKmvW6flpWJfdYYZ2Lu4pllPWKFjCBz0dcX-S86Nvg',
                                   'last': 'Burns3',
                                   'wellKnowns': []},
                                  {'challenges': [],
                                   'company': 'GLEIF',
+                                  'ends': {},
                                   'first': 'Ken1',
                                   'id': 'EER-n23rDM2RQB8Kw4KRrm8SFpoid4Jnelhauo6KxQpz',
                                   'last': 'Burns1',
                                   'wellKnowns': []},
                                  {'challenges': [],
                                   'company': 'ProSapien',
+                                  'ends': {},
                                   'first': 'Ken4',
                                   'id': 'EGwcSt3uvK5-oHI7hVU7dKMvWt0vRfMW2demzBBMDnBG',
                                   'last': 'Burns4',
                                   'wellKnowns': []},
                                  {'challenges': [],
                                   'company': 'ProSapien',
+                                  'ends': {},
                                   'first': 'Ken2',
                                   'id': 'ELTQ3tF3n7QS8LDpKMdJyCMhVyMdvNPTiisnqW5ZQP3C',
                                   'last': 'Burns2',
                                   'wellKnowns': []},
                                  {'challenges': [],
                                   'company': 'GLEIF',
+                                  'ends': {},
                                   'first': 'Ken0',
                                   'id': 'EPo8Wy1xpTa6ri25M4IlmWBBzs5y8v4Qn3Z8xP4kEjcK',
                                   'last': 'Burns0',
