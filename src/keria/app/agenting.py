@@ -149,7 +149,7 @@ def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):
 class Agency(doing.DoDoer):
     """
     Agency
-    
+
     """
 
     def __init__(self, name, bran, base="", configFile=None, configDir=None, adb=None, temp=False):
@@ -287,7 +287,7 @@ class Agent(doing.DoDoer):
         self.agency = agency
         self.caid = caid
 
-        self.swain = delegating.Sealer(hby=hby, proxy=agentHab)
+        self.swain = delegating.Anchorer(hby=hby, proxy=agentHab)
         self.counselor = Counselor(hby=hby, swain=self.swain, proxy=agentHab)
         self.org = connecting.Organizer(hby=hby)
 
