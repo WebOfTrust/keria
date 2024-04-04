@@ -95,7 +95,12 @@ class AgentResourceEnd:
         if agent.caid not in agent.hby.kevers:
             raise falcon.HTTPBadRequest(description=f"invalid controller configuration, {agent.caid} not found")
 
-        pidx = agent.hby.db.habs.cntAll()
+        pidx = 0
+        for name, _ in agent.hby.db.names.getItemIter():
+            if name[0] != "agent":
+                pidx += 1
+
+        # pidx = agent.hby.db.habs.cntAll()
 
         state = asdict(agent.hby.kevers[agent.caid].state())
         key = dbing.dgKey(state['i'], state['ee']['d'])  # digest key
@@ -269,17 +274,18 @@ class IdentifierCollectionEnd:
             start, end = httping.parseRangeHeader(rng, "aids")
 
         count = agent.hby.db.habs.cntAll()
-        it = agent.hby.db.habs.getItemIter()
+        it = agent.hby.db.names.getItemIter()
         for _ in range(start):
             try:
                 next(it)
             except StopIteration:
                 break
 
-        for name, habord in it:
-            name = ".".join(name)  # detupleize the database key name
+        for (ns, name), pre in it:
+            if ns == "agent":
+                continue
 
-            hab = agent.hby.habByName(name)
+            hab = agent.hby.habs[pre]
             data = info(hab, agent.mgr)
             res.append(data)
 
@@ -288,7 +294,7 @@ class IdentifierCollectionEnd:
 
         end = start + (len(res) - 1) if len(res) > 0 else 0
         rep.set_header("Accept-Ranges", "aids")
-        rep.set_header("Content-Range", f"aids {start}-{end}/{count}")
+        rep.set_header("Content-Range", f"aids {start}-{end}/{count-1}")
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
 
@@ -350,10 +356,12 @@ class IdentifierCollectionEnd:
                 ndigs = group["ndigs"]
                 digers = [coring.Diger(qb64=ndig) for ndig in ndigs]
 
-                smids = httping.getRequiredParam(body, "smids")
-                rmids = httping.getRequiredParam(body, "rmids")
-
-                hab = agent.hby.makeSignifyGroupHab(name, mhab=mhab, serder=serder, sigers=sigers)
+                states = httping.getRequiredParam(body, "smids")
+                rstates = httping.getRequiredParam(body, "rmids")
+                smids = [state['i'] for state in states]
+                rmids = [rstate['i'] for rstate in rstates]
+                hab = agent.hby.makeSignifyGroupHab(name, mhab=mhab, smids=smids, rmids=rmids, serder=serder,
+                                                    sigers=sigers)
                 try:
                     agent.inceptGroup(pre=serder.pre, mpre=mhab.pre, verfers=verfers, digers=digers)
                 except ValueError as e:
@@ -361,7 +369,7 @@ class IdentifierCollectionEnd:
                     raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
 
                 # Generate response, a long running operaton indicator for the type
-                agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
+                agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=states, rmids=rstates))
                 op = agent.monitor.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=0))
 
                 rep.content_type = "application/json"
@@ -1145,6 +1153,10 @@ class ContactCollectionEnd:
     def authn(agent, contacts):
         for contact in contacts:
             aid = contact['id']
+
+            ends = agent.agentHab.endsFor(aid)
+            contact['ends'] = ends
+
             accepted = [saider.qb64 for saider in agent.hby.db.chas.get(keys=(aid,))]
             received = [saider.qb64 for saider in agent.hby.db.reps.get(keys=(aid,))]
 
