@@ -76,7 +76,7 @@ setup(
     python_requires='>=3.10.4',
     install_requires=[
         'hio>=0.6.9',
-        'keri>=1.1.6',
+        'keri @ git+https://git@github.com/provenant-dev/keripy.git@v1.1.6-pr1',
         'mnemonic>=0.20',
         'multicommand>=1.0.0',
         'falcon>=3.1.0',
