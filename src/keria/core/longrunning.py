@@ -88,7 +88,7 @@ class Monitor:
     Attributes:
         hby (Habery): identifier database environment
         opr(Operator): long running operations database
-        swain(Sealer): Delegation processes tracker
+        swain(Anchorer): Delegation processes tracker
 
     """
 
@@ -98,7 +98,7 @@ class Monitor:
 
         Parameters:
             hby (Habery): identifier database environment
-            swain(Sealer): Delegation processes tracker
+            swain(Anchorer): Delegation processes tracker
             opr (Operator): long running operations database
 
         """
@@ -410,8 +410,8 @@ class Monitor:
 class OperationCollectionEnd:
     @staticmethod
     def on_get(req, rep):
-        """ Get list of long running operations 
-        
+        """ Get list of long running operations
+
         Parameters:
             req (Request):  Falcon HTTP Request object
             rep (Response): Falcon HTTP Response object
