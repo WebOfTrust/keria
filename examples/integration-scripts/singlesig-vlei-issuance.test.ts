@@ -496,8 +496,6 @@ async function getOrIssueCredential(
     const credentialList = await issuerClient.credentials().list();
 
     if (credentialList.length > 0) {
-        for (let cred of credentialList) {
-        }
         const credential = credentialList.find(
             (cred: any) =>
                 cred.sad.s === schema &&
