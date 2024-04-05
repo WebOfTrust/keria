@@ -10,6 +10,7 @@ from urllib.parse import urlparse, urljoin
 
 import falcon
 from keri import kering
+from keri import core
 from keri.app import habbing
 from keri.app.keeping import Algos
 from keri.core import coring, serdering
@@ -160,11 +161,11 @@ class AgentResourceEnd:
         sigs = body["sigs"]
 
         ctrlHab = agent.hby.habByName(caid, ns="agent")
-        ctrlHab.rotate(serder=rot, sigers=[coring.Siger(qb64=sig) for sig in sigs])
+        ctrlHab.rotate(serder=rot, sigers=[core.Siger(qb64=sig) for sig in sigs])
 
         if not self.authn.verify(req):
             raise falcon.HTTPForbidden(description="invalid signature on request")
-        
+
         sxlt = body["sxlt"]
         agent.mgr.sxlt = sxlt
 
@@ -215,7 +216,7 @@ class AgentResourceEnd:
         ked = body['ixn']
         sigs = body['sigs']
         ixn = serdering.SerderKERI(sad=ked)
-        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+        sigers = [core.Siger(qb64=sig) for sig in sigs]
 
         ctrlHab = agent.hby.habByName(caid, ns="agent")
 
@@ -316,7 +317,7 @@ class IdentifierCollectionEnd:
 
             serder = serdering.SerderKERI(sad=icp)
 
-            sigers = [coring.Siger(qb64=sig) for sig in sigs]
+            sigers = [core.Siger(qb64=sig) for sig in sigs]
 
             if agent.hby.habByName(name) is not None:
                 raise falcon.HTTPBadRequest(title=f"AID with name {name} already incepted")
@@ -494,7 +495,7 @@ class IdentifierResourceEnd:
         hab = agent.hby.habByName(name)
         if hab is None:
             raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
-               
+
         rot = body.get("rot")
         if rot is None:
             raise falcon.HTTPBadRequest(title="invalid rotation",
@@ -512,7 +513,7 @@ class IdentifierResourceEnd:
                                         description=f"required field 'sigs' missing from request")
 
         serder = serdering.SerderKERI(sad=rot)
-        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+        sigers = [core.Siger(qb64=sig) for sig in sigs]
 
         hab.rotate(serder=serder, sigers=sigers)
 
@@ -578,7 +579,7 @@ class IdentifierResourceEnd:
                                         description=f"required field 'sigs' missing from request")
 
         serder = serdering.SerderKERI(sad=ixn)
-        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+        sigers = [core.Siger(qb64=sig) for sig in sigs]
 
         hab.interact(serder=serder, sigers=sigers)
 
@@ -619,7 +620,7 @@ def info(hab, rm, full=False):
         data["state"] = asdict(kever.state())
         dgkey = dbing.dgKey(kever.prefixer.qb64b, kever.serder.saidb)
         wigs = hab.db.getWigs(dgkey)
-        data["windexes"] = [coring.Siger(qb64b=bytes(wig)).index for wig in wigs]
+        data["windexes"] = [core.Siger(qb64b=bytes(wig)).index for wig in wigs]
 
     return data
 
@@ -800,7 +801,7 @@ class EndRoleCollectionEnd:
             raise falcon.errors.HTTPBadRequest(
                 description=f"error trying to create end role for unknown local AID {pre}")
 
-        rsigers = [coring.Siger(qb64=rsig) for rsig in rsigs]
+        rsigers = [core.Siger(qb64=rsig) for rsig in rsigs]
         tsg = (hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn), coring.Saider(qb64=hab.kever.serder.said), rsigers)
         try:
             agent.hby.rvy.processReply(rserder, tsgs=[tsg])

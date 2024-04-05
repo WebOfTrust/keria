@@ -8,6 +8,7 @@ services and endpoint for IPEX message managements
 import json
 
 import falcon
+from keri import core
 from keri.app import habbing
 from keri.core import coring, eventing, serdering
 from keri.peer import exchanging
@@ -46,7 +47,7 @@ class IpexAdmitCollectionEnd:
            - Registries
         responses:
            200:
-              description: long running operation of IPEX admit 
+              description: long running operation of IPEX admit
 
         """
         agent = req.context.agent
@@ -83,7 +84,7 @@ class IpexAdmitCollectionEnd:
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
-        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+        sigers = [core.Siger(qb64=sig) for sig in sigs]
 
         # Now create the stream to send, need the signer seal
         kever = hab.kever
@@ -122,7 +123,7 @@ class IpexAdmitCollectionEnd:
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
-        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+        sigers = [core.Siger(qb64=sig) for sig in sigs]
 
         # Now create the stream to send, need the signer seal
         kever = hab.mhab.kever
@@ -210,7 +211,7 @@ class IpexGrantCollectionEnd:
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
-        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+        sigers = [core.Siger(qb64=sig) for sig in sigs]
 
         # Now create the stream to send, need the signer seal
         kever = hab.kever
@@ -246,7 +247,7 @@ class IpexGrantCollectionEnd:
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
-        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+        sigers = [core.Siger(qb64=sig) for sig in sigs]
 
         # Now create the stream to send, need the signer seal
         kever = hab.mhab.kever
@@ -293,7 +294,7 @@ class IpexApplyCollectionEnd:
         responses:
            200:
               description: long running operation of IPEX apply
-        
+
         """
         agent = req.context.agent
         # Get the hab
@@ -326,7 +327,7 @@ class IpexApplyCollectionEnd:
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
-        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+        sigers = [core.Siger(qb64=sig) for sig in sigs]
 
         # Now create the stream to send, need the signer seal
         kever = hab.kever
@@ -342,7 +343,7 @@ class IpexApplyCollectionEnd:
         return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
 
 class IpexOfferCollectionEnd:
-    
+
     @staticmethod
     def on_post(req, rep, name):
         """ IPEX Offer POST endpoint
@@ -360,7 +361,7 @@ class IpexOfferCollectionEnd:
         responses:
            200:
               description: long running operation of IPEX offer
-        
+
         """
         agent = req.context.agent
         hab = agent.hby.habByName(name)
@@ -393,7 +394,7 @@ class IpexOfferCollectionEnd:
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
-        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+        sigers = [core.Siger(qb64=sig) for sig in sigs]
 
         # Now create the stream to send, need the signer seal
         kever = hab.kever
@@ -407,9 +408,9 @@ class IpexOfferCollectionEnd:
 
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=rec, topic='credential'))
         return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
-    
+
 class IpexAgreeCollectionEnd:
-    
+
     @staticmethod
     def on_post(req, rep, name):
         """ IPEX Agree POST endpoint
@@ -427,7 +428,7 @@ class IpexAgreeCollectionEnd:
         responses:
            200:
               description: long running operation of IPEX agree
-        
+
         """
         agent = req.context.agent
         hab = agent.hby.habByName(name)
@@ -459,7 +460,7 @@ class IpexAgreeCollectionEnd:
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
-        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+        sigers = [core.Siger(qb64=sig) for sig in sigs]
 
         # Now create the stream to send, need the signer seal
         kever = hab.kever
