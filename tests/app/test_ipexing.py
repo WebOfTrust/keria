@@ -11,6 +11,7 @@ import falcon
 from falcon import testing
 from hio.base import doing
 from hio.help import decking
+from keri import core
 from keri.app import habbing, signing
 from keri.core import eventing, coring, serdering
 from keri.help import helping
@@ -312,7 +313,7 @@ def test_ipex_grant(helpers, mockHelpingNowIso8601, seeder):
         assert len(agent.exchanges) == 1
         assert len(agent.grants) == 1
 
-        ims = eventing.messagize(serder=exn, sigers=[coring.Siger(qb64=sigs[0])])
+        ims = eventing.messagize(serder=exn, sigers=[core.Siger(qb64=sigs[0])])
         # Test sending embedded admit in multisig/exn message
         exn, end = exchanging.exchange(route="/multisig/exn",
                                        payload=dict(),
@@ -977,7 +978,7 @@ def test_ipex_apply(helpers, mockHelpingNowIso8601):
 
         data = json.dumps(body).encode("utf-8")
         res = client.simulate_post(path="/identifiers/test/ipex/apply", body=data)
-        
+
         assert res.status_code == 400
         assert res.json == {'description': 'attempt to send to unknown '
                                            'AID=EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM',
@@ -1073,7 +1074,7 @@ def test_ipex_offer(helpers, mockHelpingNowIso8601):
 
         data = json.dumps(body).encode("utf-8")
         res = client.simulate_post(path="/identifiers/test/ipex/offer", body=data)
-        
+
         assert res.status_code == 400
         assert res.json == {'description': 'attempt to send to unknown '
                                             'AID=EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM',
@@ -1104,7 +1105,7 @@ def test_ipex_offer(helpers, mockHelpingNowIso8601):
         assert res.status_code == 200
         assert len(agent.exchanges) == 1
 
-        # Now an offer in response to an agree 
+        # Now an offer in response to an agree
         dig = "EB_Lr3fHezn1ygn-wbBT5JjzaCMxTmhUoegXeZzWC2eT"
         offer1Serder, end1 = exchanging.exchange(route="/ipex/offer",
                                                 payload={'m': 'How about this'},
@@ -1134,7 +1135,7 @@ def test_ipex_offer(helpers, mockHelpingNowIso8601):
                                     'v': 'KERI10JSON000323_'}
         assert end1 == b''
         sigs = ["AAAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH"]
-        
+
         body = dict(
             exn=offer1Serder.ked,
             sigs=sigs,
@@ -1206,7 +1207,7 @@ def test_ipex_agree(helpers, mockHelpingNowIso8601):
 
         data = json.dumps(body).encode("utf-8")
         res = client.simulate_post(path="/identifiers/test/ipex/agree", body=data)
-        
+
         assert res.status_code == 400
         assert res.json == {'description': 'attempt to send to unknown '
                                             'AID=EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM',

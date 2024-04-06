@@ -7,6 +7,7 @@ keria.app.exchanging module
 import json
 
 import falcon
+from keri import core
 from keri.core import coring, eventing, serdering
 from keri.peer import exchanging
 
@@ -58,7 +59,7 @@ class ExchangeCollectionEnd:
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
-        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+        sigers = [core.Siger(qb64=sig) for sig in sigs]
 
         # Now create the stream to send, need the signer seal
         kever = hab.kever

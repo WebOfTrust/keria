@@ -9,15 +9,19 @@ import os
 from dataclasses import asdict
 from urllib.parse import urlparse, urljoin
 
-from keri import kering
-from keri.app.notifying import Notifier
-from keri.app.storing import Mailboxer
 
 import falcon
 from falcon import media
 from hio.base import doing
 from hio.core import http, tcp
 from hio.help import decking
+
+from keri import kering
+from keri import core
+from keri.app.notifying import Notifier
+from keri.app.storing import Mailboxer
+
+
 from keri.app import configing, keeping, habbing, storing, signaling, oobiing, agenting, \
     forwarding, querying, connecting, grouping
 from keri.app.grouping import Counselor
@@ -149,7 +153,7 @@ def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):
 class Agency(doing.DoDoer):
     """
     Agency
-    
+
     """
 
     def __init__(self, name, bran, base="", configFile=None, configDir=None, adb=None, temp=False):
@@ -287,7 +291,7 @@ class Agent(doing.DoDoer):
         self.agency = agency
         self.caid = caid
 
-        self.swain = delegating.Sealer(hby=hby, proxy=agentHab)
+        self.swain = delegating.Anchorer(hby=hby, proxy=agentHab)
         self.counselor = Counselor(hby=hby, swain=self.swain, proxy=agentHab)
         self.org = connecting.Organizer(hby=hby)
 
@@ -814,7 +818,7 @@ class BootEnd:
         if "sig" not in body:
             raise falcon.HTTPBadRequest(title="invalid inception",
                                         description=f'required field "sig" missing from body')
-        siger = coring.Siger(qb64=body["sig"])
+        siger = core.Siger(qb64=body["sig"])
 
         caid = icp.pre
 
