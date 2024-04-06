@@ -31,6 +31,7 @@ def loadEnds(app, agency, authn):
     app.add_route("/identifiers", aidsEnd)
     aidEnd = IdentifierResourceEnd()
     app.add_route("/identifiers/{name}", aidEnd)
+    app.add_route("/identifiers/{name}/events", aidEnd)
 
     aidOOBIsEnd = IdentifierOOBICollectionEnd()
     app.add_route("/identifiers/{name}/oobis", aidOOBIsEnd)
@@ -456,7 +457,54 @@ class IdentifierResourceEnd:
         rep.data = json.dumps(data).encode("utf-8")
 
     def on_put(self, req, rep, name):
-        """ Identifier UPDATE endpoint
+        """ Identifier rename endpoint
+
+        Parameters:
+            req (Request): falcon.Request HTTP request object
+            rep (Response): falcon.Response HTTP response object
+            name (str): human readable name for Hab to rename
+
+        """
+        if not name:
+            raise falcon.HTTPBadRequest(description="name is required")
+        agent = req.context.agent
+        hab = agent.hby.habByName(name)
+
+        if hab is None:
+            raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
+        body = req.get_media()
+        newName = body.get("name")
+        habord = hab.db.habs.get(keys=name)
+        hab.db.habs.put(keys=newName,
+                            val=habord)
+        hab.db.habs.rem(keys=name)
+        hab.name = newName
+        hab = agent.hby.habByName(newName)
+        data = info(hab, agent.mgr, full=True)
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(data).encode("utf-8")
+
+    def on_delete(self, req, rep, name):
+        """ Identifier delete endpoint
+
+        Parameters:
+            req (Request): falcon.Request HTTP request object
+            rep (Response): falcon.Response HTTP response object
+            name (str): human readable name for Hab to delete
+
+        """
+        if not name:
+            raise falcon.HTTPBadRequest(description="name is required")
+        agent = req.context.agent
+        hab = agent.hby.habByName(name)
+        if hab is None:
+            raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
+        hab.db.habs.rem(keys=name)
+        rep.status = falcon.HTTP_200
+
+    def on_post(self, req, rep, name):
+        """ Identifier events endpoint
 
         Parameters:
             req (Request): falcon.Request HTTP request object
@@ -464,15 +512,18 @@ class IdentifierResourceEnd:
             name (str): human readable name for Hab to rotate or interact
 
         """
+        if not name:
+            raise falcon.HTTPBadRequest(description="name is required")
         agent = req.context.agent
         try:
             body = req.get_media()
-            typ = Ilks.ixn if req.params.get("type") == "ixn" else Ilks.rot
-
-            if typ in (Ilks.rot,):
+            if body.get("rot") is not None:
                 op = self.rotate(agent, name, body)
-            else:
+            elif body.get("ixn") is not None:
                 op = self.interact(agent, name, body)
+            else:
+                raise falcon.HTTPBadRequest(title="invalid request",
+                                        description=f"required field 'rot' or 'ixn' missing from request")
 
             rep.status = falcon.HTTP_200
             rep.content_type = "application/json"
