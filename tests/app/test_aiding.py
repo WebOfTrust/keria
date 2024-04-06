@@ -376,7 +376,7 @@ def test_identifier_collection_end(helpers):
             'salty': {'stem': 'signify:aid', 'pidx': 0, 'tier': 'low', 'sxlt': sxlt,
                       'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}
         }
-        res = client.simulate_put(path="/identifiers/aid1", body=json.dumps(body))
+        res = client.simulate_post(path="/identifiers/aid1/events", body=json.dumps(body))
         assert res.status_code == 500
 
         # Test with witnesses
@@ -418,7 +418,6 @@ def test_identifier_collection_end(helpers):
         res = client.simulate_get(path=f"/operations/{name}")
         assert res.status_code == 200
         assert res.json['done'] is False
-
 
         assert len(agent.witners) == 1
         res = client.simulate_get(path="/identifiers")

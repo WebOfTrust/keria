@@ -296,7 +296,7 @@ class IdentifierCollectionEnd:
 
         end = start + (len(res) - 1) if len(res) > 0 else 0
         rep.set_header("Accept-Ranges", "aids")
-        rep.set_header("Content-Range", f"aids {start}-{end}/{count-1}")
+        rep.set_header("Content-Range", f"aids {start}-{end}/{count - 1}")
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
 
@@ -483,17 +483,19 @@ class IdentifierResourceEnd:
             raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
         body = req.get_media()
         newName = body.get("name")
-        habord = hab.db.habs.get(keys=name)
-        hab.db.habs.put(keys=newName,
-                            val=habord)
-        hab.db.habs.rem(keys=name)
+        habord = hab.db.habs.get(keys=(hab.pre,))
+        habord.name = newName
+        hab.db.habs.pin(keys=(hab.pre,),
+                        val=habord)
+        hab.db.names.pin(keys=("", newName), val=hab.pre)
+        hab.db.names.rem(keys=("", name))
         hab.name = newName
         hab = agent.hby.habByName(newName)
         data = info(hab, agent.mgr, full=True)
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(data).encode("utf-8")
-    
+
     def on_delete(self, req, rep, name):
         """ Identifier delete endpoint
 
@@ -509,7 +511,7 @@ class IdentifierResourceEnd:
         hab = agent.hby.habByName(name)
         if hab is None:
             raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
-        hab.db.habs.rem(keys=name)
+        agent.hby.deleteHab(name)
         rep.status = falcon.HTTP_200
 
     def on_post(self, req, rep, name):
@@ -532,7 +534,7 @@ class IdentifierResourceEnd:
                 op = self.interact(agent, name, body)
             else:
                 raise falcon.HTTPBadRequest(title="invalid request",
-                                        description=f"required field 'rot' or 'ixn' missing from request")
+                                            description=f"required field 'rot' or 'ixn' missing from request")
 
             rep.status = falcon.HTTP_200
             rep.content_type = "application/json"
@@ -709,7 +711,8 @@ class IdentifierOOBICollectionEnd:
         if role in (kering.Roles.witness,):  # Fetch URL OOBIs for all witnesses
             oobis = []
             for wit in hab.kever.wits:
-                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit,
+                                                                                           scheme=kering.Schemes.https)
                 if not urls:
                     raise falcon.HTTPNotFound(description=f"unable to query witness {wit}, no http endpoint")
 
@@ -719,7 +722,8 @@ class IdentifierOOBICollectionEnd:
             res["oobis"] = oobis
         elif role in (kering.Roles.controller,):  # Fetch any controller URL OOBIs
             oobis = []
-            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http) or hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.https)
+            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http) or hab.fetchUrls(eid=hab.pre,
+                                                                                           scheme=kering.Schemes.https)
             if not urls:
                 raise falcon.HTTPNotFound(description=f"unable to query controller {hab.pre}, no http endpoint")
 
@@ -728,7 +732,10 @@ class IdentifierOOBICollectionEnd:
             oobis.append(urljoin(up.geturl(), f"/oobi/{hab.pre}/controller"))
             res["oobis"] = oobis
         elif role in (kering.Roles.agent,):  # Fetch URL OOBIs for all witnesses
-            roleUrls = hab.fetchRoleUrls(cid=hab.pre, role=kering.Roles.agent, scheme=kering.Schemes.http) or hab.fetchRoleUrls(cid=hab.pre, role=kering.Roles.agent, scheme=kering.Schemes.https)
+            roleUrls = hab.fetchRoleUrls(cid=hab.pre, role=kering.Roles.agent,
+                                         scheme=kering.Schemes.http) or hab.fetchRoleUrls(cid=hab.pre,
+                                                                                          role=kering.Roles.agent,
+                                                                                          scheme=kering.Schemes.https)
             if kering.Roles.agent not in roleUrls:
                 res['oobis'] = []
             else:
