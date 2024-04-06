@@ -10,6 +10,7 @@ from urllib.parse import urlparse, urljoin
 
 import falcon
 from keri import kering
+from keri import core
 from keri.app import habbing
 from keri.app.keeping import Algos
 from keri.core import coring, serdering
@@ -31,6 +32,7 @@ def loadEnds(app, agency, authn):
     app.add_route("/identifiers", aidsEnd)
     aidEnd = IdentifierResourceEnd()
     app.add_route("/identifiers/{name}", aidEnd)
+    app.add_route("/identifiers/{name}/events", aidEnd)
 
     aidOOBIsEnd = IdentifierOOBICollectionEnd()
     app.add_route("/identifiers/{name}/oobis", aidOOBIsEnd)
@@ -95,7 +97,12 @@ class AgentResourceEnd:
         if agent.caid not in agent.hby.kevers:
             raise falcon.HTTPBadRequest(description=f"invalid controller configuration, {agent.caid} not found")
 
-        pidx = agent.hby.db.habs.cntAll()
+        pidx = 0
+        for name, _ in agent.hby.db.names.getItemIter():
+            if name[0] != "agent":
+                pidx += 1
+
+        # pidx = agent.hby.db.habs.cntAll()
 
         state = asdict(agent.hby.kevers[agent.caid].state())
         key = dbing.dgKey(state['i'], state['ee']['d'])  # digest key
@@ -155,11 +162,11 @@ class AgentResourceEnd:
         sigs = body["sigs"]
 
         ctrlHab = agent.hby.habByName(caid, ns="agent")
-        ctrlHab.rotate(serder=rot, sigers=[coring.Siger(qb64=sig) for sig in sigs])
+        ctrlHab.rotate(serder=rot, sigers=[core.Siger(qb64=sig) for sig in sigs])
 
         if not self.authn.verify(req):
             raise falcon.HTTPForbidden(description="invalid signature on request")
-        
+
         sxlt = body["sxlt"]
         agent.mgr.sxlt = sxlt
 
@@ -210,7 +217,7 @@ class AgentResourceEnd:
         ked = body['ixn']
         sigs = body['sigs']
         ixn = serdering.SerderKERI(sad=ked)
-        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+        sigers = [core.Siger(qb64=sig) for sig in sigs]
 
         ctrlHab = agent.hby.habByName(caid, ns="agent")
 
@@ -269,17 +276,18 @@ class IdentifierCollectionEnd:
             start, end = httping.parseRangeHeader(rng, "aids")
 
         count = agent.hby.db.habs.cntAll()
-        it = agent.hby.db.habs.getItemIter()
+        it = agent.hby.db.names.getItemIter()
         for _ in range(start):
             try:
                 next(it)
             except StopIteration:
                 break
 
-        for name, habord in it:
-            name = ".".join(name)  # detupleize the database key name
+        for (ns, name), pre in it:
+            if ns == "agent":
+                continue
 
-            hab = agent.hby.habByName(name)
+            hab = agent.hby.habs[pre]
             data = info(hab, agent.mgr)
             res.append(data)
 
@@ -288,7 +296,7 @@ class IdentifierCollectionEnd:
 
         end = start + (len(res) - 1) if len(res) > 0 else 0
         rep.set_header("Accept-Ranges", "aids")
-        rep.set_header("Content-Range", f"aids {start}-{end}/{count}")
+        rep.set_header("Content-Range", f"aids {start}-{end}/{count - 1}")
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
 
@@ -310,7 +318,7 @@ class IdentifierCollectionEnd:
 
             serder = serdering.SerderKERI(sad=icp)
 
-            sigers = [coring.Siger(qb64=sig) for sig in sigs]
+            sigers = [core.Siger(qb64=sig) for sig in sigs]
 
             if agent.hby.habByName(name) is not None:
                 raise falcon.HTTPBadRequest(title=f"AID with name {name} already incepted")
@@ -350,10 +358,12 @@ class IdentifierCollectionEnd:
                 ndigs = group["ndigs"]
                 digers = [coring.Diger(qb64=ndig) for ndig in ndigs]
 
-                smids = httping.getRequiredParam(body, "smids")
-                rmids = httping.getRequiredParam(body, "rmids")
-
-                hab = agent.hby.makeSignifyGroupHab(name, mhab=mhab, serder=serder, sigers=sigers)
+                states = httping.getRequiredParam(body, "smids")
+                rstates = httping.getRequiredParam(body, "rmids")
+                smids = [state['i'] for state in states]
+                rmids = [rstate['i'] for rstate in rstates]
+                hab = agent.hby.makeSignifyGroupHab(name, mhab=mhab, smids=smids, rmids=rmids, serder=serder,
+                                                    sigers=sigers)
                 try:
                     agent.inceptGroup(pre=serder.pre, mpre=mhab.pre, verfers=verfers, digers=digers)
                 except ValueError as e:
@@ -361,7 +371,7 @@ class IdentifierCollectionEnd:
                     raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
 
                 # Generate response, a long running operaton indicator for the type
-                agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
+                agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=states, rmids=rstates))
                 op = agent.monitor.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=0))
 
                 rep.content_type = "application/json"
@@ -405,7 +415,7 @@ class IdentifierCollectionEnd:
                 # create Hab and incept the key store (if any)
                 # Generate response, either the serder or a long running operaton indicator for the type
                 rep.content_type = "application/json"
-                if hab.kever.delegator:
+                if hab.kever.delpre:
                     agent.anchors.append(dict(pre=hab.pre, sn=0))
                     op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
                                               metadata=dict(pre=hab.pre, sn=0))
@@ -456,7 +466,56 @@ class IdentifierResourceEnd:
         rep.data = json.dumps(data).encode("utf-8")
 
     def on_put(self, req, rep, name):
-        """ Identifier UPDATE endpoint
+        """ Identifier rename endpoint
+
+        Parameters:
+            req (Request): falcon.Request HTTP request object
+            rep (Response): falcon.Response HTTP response object
+            name (str): human readable name for Hab to rename
+
+        """
+        if not name:
+            raise falcon.HTTPBadRequest(description="name is required")
+        agent = req.context.agent
+        hab = agent.hby.habByName(name)
+
+        if hab is None:
+            raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
+        body = req.get_media()
+        newName = body.get("name")
+        habord = hab.db.habs.get(keys=(hab.pre,))
+        habord.name = newName
+        hab.db.habs.pin(keys=(hab.pre,),
+                        val=habord)
+        hab.db.names.pin(keys=("", newName), val=hab.pre)
+        hab.db.names.rem(keys=("", name))
+        hab.name = newName
+        hab = agent.hby.habByName(newName)
+        data = info(hab, agent.mgr, full=True)
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(data).encode("utf-8")
+
+    def on_delete(self, req, rep, name):
+        """ Identifier delete endpoint
+
+        Parameters:
+            req (Request): falcon.Request HTTP request object
+            rep (Response): falcon.Response HTTP response object
+            name (str): human readable name for Hab to delete
+
+        """
+        if not name:
+            raise falcon.HTTPBadRequest(description="name is required")
+        agent = req.context.agent
+        hab = agent.hby.habByName(name)
+        if hab is None:
+            raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
+        agent.hby.deleteHab(name)
+        rep.status = falcon.HTTP_200
+
+    def on_post(self, req, rep, name):
+        """ Identifier events endpoint
 
         Parameters:
             req (Request): falcon.Request HTTP request object
@@ -464,15 +523,18 @@ class IdentifierResourceEnd:
             name (str): human readable name for Hab to rotate or interact
 
         """
+        if not name:
+            raise falcon.HTTPBadRequest(description="name is required")
         agent = req.context.agent
         try:
             body = req.get_media()
-            typ = Ilks.ixn if req.params.get("type") == "ixn" else Ilks.rot
-
-            if typ in (Ilks.rot,):
+            if body.get("rot") is not None:
                 op = self.rotate(agent, name, body)
-            else:
+            elif body.get("ixn") is not None:
                 op = self.interact(agent, name, body)
+            else:
+                raise falcon.HTTPBadRequest(title="invalid request",
+                                            description=f"required field 'rot' or 'ixn' missing from request")
 
             rep.status = falcon.HTTP_200
             rep.content_type = "application/json"
@@ -486,7 +548,7 @@ class IdentifierResourceEnd:
         hab = agent.hby.habByName(name)
         if hab is None:
             raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
-               
+
         rot = body.get("rot")
         if rot is None:
             raise falcon.HTTPBadRequest(title="invalid rotation",
@@ -504,7 +566,7 @@ class IdentifierResourceEnd:
                                         description=f"required field 'sigs' missing from request")
 
         serder = serdering.SerderKERI(sad=rot)
-        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+        sigers = [core.Siger(qb64=sig) for sig in sigs]
 
         hab.rotate(serder=serder, sigers=sigers)
 
@@ -537,7 +599,7 @@ class IdentifierResourceEnd:
 
             return op
 
-        if hab.kever.delegator:
+        if hab.kever.delpre:
             agent.anchors.append(dict(alias=name, pre=hab.pre, sn=serder.sn))
             op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
                                       metadata=dict(pre=hab.pre, sn=serder.sn))
@@ -570,7 +632,7 @@ class IdentifierResourceEnd:
                                         description=f"required field 'sigs' missing from request")
 
         serder = serdering.SerderKERI(sad=ixn)
-        sigers = [coring.Siger(qb64=sig) for sig in sigs]
+        sigers = [core.Siger(qb64=sig) for sig in sigs]
 
         hab.interact(serder=serder, sigers=sigers)
 
@@ -611,7 +673,7 @@ def info(hab, rm, full=False):
         data["state"] = asdict(kever.state())
         dgkey = dbing.dgKey(kever.prefixer.qb64b, kever.serder.saidb)
         wigs = hab.db.getWigs(dgkey)
-        data["windexes"] = [coring.Siger(qb64b=bytes(wig)).index for wig in wigs]
+        data["windexes"] = [core.Siger(qb64b=bytes(wig)).index for wig in wigs]
 
     return data
 
@@ -649,7 +711,8 @@ class IdentifierOOBICollectionEnd:
         if role in (kering.Roles.witness,):  # Fetch URL OOBIs for all witnesses
             oobis = []
             for wit in hab.kever.wits:
-                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit,
+                                                                                           scheme=kering.Schemes.https)
                 if not urls:
                     raise falcon.HTTPNotFound(description=f"unable to query witness {wit}, no http endpoint")
 
@@ -659,7 +722,8 @@ class IdentifierOOBICollectionEnd:
             res["oobis"] = oobis
         elif role in (kering.Roles.controller,):  # Fetch any controller URL OOBIs
             oobis = []
-            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http) or hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.https)
+            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http) or hab.fetchUrls(eid=hab.pre,
+                                                                                           scheme=kering.Schemes.https)
             if not urls:
                 raise falcon.HTTPNotFound(description=f"unable to query controller {hab.pre}, no http endpoint")
 
@@ -668,7 +732,10 @@ class IdentifierOOBICollectionEnd:
             oobis.append(urljoin(up.geturl(), f"/oobi/{hab.pre}/controller"))
             res["oobis"] = oobis
         elif role in (kering.Roles.agent,):  # Fetch URL OOBIs for all witnesses
-            roleUrls = hab.fetchRoleUrls(cid=hab.pre, role=kering.Roles.agent, scheme=kering.Schemes.http) or hab.fetchRoleUrls(cid=hab.pre, role=kering.Roles.agent, scheme=kering.Schemes.https)
+            roleUrls = hab.fetchRoleUrls(cid=hab.pre, role=kering.Roles.agent,
+                                         scheme=kering.Schemes.http) or hab.fetchRoleUrls(cid=hab.pre,
+                                                                                          role=kering.Roles.agent,
+                                                                                          scheme=kering.Schemes.https)
             if kering.Roles.agent not in roleUrls:
                 res['oobis'] = []
             else:
@@ -792,7 +859,7 @@ class EndRoleCollectionEnd:
             raise falcon.errors.HTTPBadRequest(
                 description=f"error trying to create end role for unknown local AID {pre}")
 
-        rsigers = [coring.Siger(qb64=rsig) for rsig in rsigs]
+        rsigers = [core.Siger(qb64=rsig) for rsig in rsigs]
         tsg = (hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn), coring.Saider(qb64=hab.kever.serder.said), rsigers)
         try:
             agent.hby.rvy.processReply(rserder, tsgs=[tsg])
@@ -1145,6 +1212,10 @@ class ContactCollectionEnd:
     def authn(agent, contacts):
         for contact in contacts:
             aid = contact['id']
+
+            ends = agent.agentHab.endsFor(aid)
+            contact['ends'] = ends
+
             accepted = [saider.qb64 for saider in agent.hby.db.chas.get(keys=(aid,))]
             received = [saider.qb64 for saider in agent.hby.db.reps.get(keys=(aid,))]
 

@@ -167,6 +167,9 @@ class RegistryCollectionEnd:
         if hab is None:
             raise falcon.HTTPNotFound(description="alias is not a valid reference to an identifier")
 
+        if agent.rgy.registryByName(name=rname) is not None:
+            raise falcon.HTTPBadRequest(description=f"registry name {rname} already in use")
+
         registry = agent.rgy.makeSignifyRegistry(name=rname, prefix=hab.pre, regser=vcp)
 
         if hab.kever.estOnly:
@@ -283,6 +286,7 @@ class RegistryResourceEnd:
 
         regord = viring.RegistryRecord(registryKey=registry.regk, prefix=hab.pre)
         agent.rgy.reger.regs.pin(keys=(name,), val=regord)
+        agent.rgy.reger.regs.rem(keys=(registryName,))
         registry.name = name
 
         rd = dict(

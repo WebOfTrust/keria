@@ -242,13 +242,17 @@ def test_agent_resource(helpers, mockHelpingNowUTC):
 
 
 def test_identifier_collection_end(helpers):
+    salt = b'0123456789abcdef'
+    salter = coring.Salter(raw=salt)
+
     with helpers.openKeria() as (agency, agent, app, client), \
-            habbing.openHby(name="p1", temp=True) as p1hby, \
-            habbing.openHby(name="p2", temp=True) as p2hby:
+            habbing.openHby(name="p1", temp=True, salt=salter.qb64) as p1hby, \
+            habbing.openHby(name="p2", temp=True, salt=salter.qb64) as p2hby:
         end = aiding.IdentifierCollectionEnd()
         resend = aiding.IdentifierResourceEnd()
         app.add_route("/identifiers", end)
         app.add_route("/identifiers/{name}", resend)
+        app.add_route("/identifiers/{name}/events", resend)
 
         groupEnd = aiding.GroupMemberCollectionEnd()
         app.add_route("/identifiers/{name}/members", groupEnd)
@@ -362,7 +366,7 @@ def test_identifier_collection_end(helpers):
             'salty': {'stem': 'signify:aid', 'pidx': 0, 'tier': 'low', 'sxlt': sxlt, 'transferable': True, 'kidx': 1,
                       'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}
         }
-        res = client.simulate_put(path="/identifiers/aid1", body=json.dumps(body))
+        res = client.simulate_post(path="/identifiers/aid1/events", body=json.dumps(body))
         assert res.status_code == 200
 
         # Try with missing arguments
@@ -372,7 +376,7 @@ def test_identifier_collection_end(helpers):
             'salty': {'stem': 'signify:aid', 'pidx': 0, 'tier': 'low', 'sxlt': sxlt,
                       'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}
         }
-        res = client.simulate_put(path="/identifiers/aid1", body=json.dumps(body))
+        res = client.simulate_post(path="/identifiers/aid1/events", body=json.dumps(body))
         assert res.status_code == 500
 
         # Test with witnesses
@@ -414,7 +418,6 @@ def test_identifier_collection_end(helpers):
         res = client.simulate_get(path=f"/operations/{name}")
         assert res.status_code == 200
         assert res.json['done'] is False
-
 
         assert len(agent.witners) == 1
         res = client.simulate_get(path="/identifiers")
@@ -467,8 +470,21 @@ def test_identifier_collection_end(helpers):
             'salty': {'stem': 'signify:aid', 'pidx': 0, 'tier': 'low', 'sxlt': sxlt, 'transferable': True, 'kidx': 3,
                       'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}
         }
-        res = client.simulate_put(path="/identifiers/aid3", body=json.dumps(body))
+        res = client.simulate_post(path="/identifiers/aid3/events", body=json.dumps(body))
         assert res.status_code == 200
+
+        # rename aid3
+        res = client.simulate_put(path="/identifiers/aid3", body=json.dumps({"name": "aid3Renamed"}))
+        assert res.status_code == 200
+        aid = res.json
+        assert aid["name"] == "aid3Renamed"
+
+        # delete aid3renamed
+        res = client.simulate_delete(path="/identifiers/aid3Renamed")
+        assert res.status_code == 200
+        res = client.simulate_get(path="/identifiers")
+        assert res.status_code == 200
+        assert len(res.json) == 2
 
         # create member habs for group AID
         p1 = p1hby.makeHab(name="p1")
@@ -596,8 +612,8 @@ def test_identifier_collection_end(helpers):
 
         res = client.simulate_get(path="/identifiers")
         assert res.status_code == 200
-        assert len(res.json) == 4
-        aid = res.json[3]
+        assert len(res.json) == 3
+        aid = res.json[2]
         assert aid["name"] == "multisig"
         assert aid["prefix"] == serder.pre
         group = aid["group"]
@@ -623,10 +639,10 @@ def test_identifier_collection_end(helpers):
         assert res.status_code == 200
         assert "signing" in res.json
         signing = res.json["signing"]
-        assert len(signing) == 5  # this number is a little janky because we reuse public keys above, leaving for now
+        assert len(signing) == 3
         assert "rotation" in res.json
         rotation = res.json["rotation"]
-        assert len(rotation) == 5  # this number is a little janky because we reuse rotation keys above, leaving for now
+        assert len(rotation) == 3
 
         # Try unknown witness
         serder, signers = helpers.incept(salt, "signify:aid", pidx=3,
@@ -651,6 +667,7 @@ def test_identifier_collection_end(helpers):
         resend = aiding.IdentifierResourceEnd()
         app.add_route("/identifiers", end)
         app.add_route("/identifiers/{name}", resend)
+        app.add_route("/identifiers/{name}/events", resend)
         eventsEnd = agenting.KeyEventCollectionEnd()
         app.add_route("/events", eventsEnd)
 
@@ -719,7 +736,7 @@ def test_identifier_collection_end(helpers):
                     "transferable": True,
                 }
                 }
-        res = client.simulate_put(path="/identifiers/randy1", body=json.dumps(body))
+        res = client.simulate_post(path="/identifiers/randy1/events", body=json.dumps(body))
         assert res.status_code == 200
         assert res.json["response"] == serder.ked
         res = client.simulate_get(path="/identifiers")
@@ -730,14 +747,14 @@ def test_identifier_collection_end(helpers):
         assert res.status_code == 200
         events = res.json
         assert len(events) == 2
-        assert events[1] == serder.ked
+        assert events[1]['ked'] == serder.ked
 
         serder = eventing.interact(pre=pre, dig=serder.said, sn=len(events), data=[pre])
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
         body = {'ixn': serder.ked,
                 'sigs': sigers
                 }
-        res = client.simulate_put(path="/identifiers/randy1?type=ixn", body=json.dumps(body))
+        res = client.simulate_post(path="/identifiers/randy1/events", body=json.dumps(body))
         assert res.status_code == 200
         assert res.json["response"] == serder.ked
 
@@ -745,20 +762,20 @@ def test_identifier_collection_end(helpers):
         assert res.status_code == 200
         events = res.json
         assert len(events) == 3
-        assert events[2] == serder.ked
+        assert events[2]['ked'] == serder.ked
 
         # Bad interactions
-        res = client.simulate_put(path="/identifiers/badrandy?type=ixn", body=json.dumps(body))
+        res = client.simulate_post(path="/identifiers/badrandy/events", body=json.dumps(body))
         assert res.status_code == 404
         assert res.json == {'title': 'No AID badrandy found'}
 
         body = {'sigs': sigers}
-        res = client.simulate_put(path="/identifiers/randy1?type=ixn", body=json.dumps(body))
+        res = client.simulate_post(path="/identifiers/randy1/events", body=json.dumps(body))
         assert res.status_code == 400
-        assert res.json == {'description': "required field 'ixn' missing from request", 'title': 'invalid interaction'}
+        assert res.json == {'description': "required field 'rot' or 'ixn' missing from request", 'title': 'invalid request'}
 
         body = {'ixn': serder.ked}
-        res = client.simulate_put(path="/identifiers/randy1?type=ixn", body=json.dumps(body))
+        res = client.simulate_post(path="/identifiers/randy1/events", body=json.dumps(body))
         assert res.status_code == 400
         assert res.json == {'description': "required field 'sigs' missing from request", 'title': 'invalid interaction'}
 
@@ -771,7 +788,7 @@ def test_identifier_collection_end(helpers):
                     "transferable": True,
                 }
                 }
-        res = client.simulate_put(path="/identifiers/randybad?type=rot", body=json.dumps(body))
+        res = client.simulate_post(path="/identifiers/randybad/events", body=json.dumps(body))
         assert res.status_code == 404
         assert res.json == {'title': 'No AID with name randybad found'}
 
@@ -783,9 +800,9 @@ def test_identifier_collection_end(helpers):
                 "transferable": True,
             }
         }
-        res = client.simulate_put(path="/identifiers/randy1", body=json.dumps(body))
+        res = client.simulate_post(path="/identifiers/randy1/events", body=json.dumps(body))
         assert res.status_code == 400
-        assert res.json == {'description': "required field 'rot' missing from request", 'title': 'invalid rotation'}
+        assert res.json == {'description': "required field 'rot' or 'ixn' missing from request", 'title': 'invalid request'}
 
         # rotate to unknown witness
         serder = eventing.rotate(keys=keys,
@@ -809,7 +826,7 @@ def test_identifier_collection_end(helpers):
                     "transferable": True,
                 }
                 }
-        res = client.simulate_put(path="/identifiers/randy1", body=json.dumps(body))
+        res = client.simulate_post(path="/identifiers/randy1/events", body=json.dumps(body))
         assert res.status_code == 400
         assert res.json == {'description': "unknown witness EJJR2nmwyYAZAoTNZH3ULvaU6Z-i0d8fSVPzhzS6b5CM",
                             'title': '400 Bad Request'}
@@ -820,6 +837,7 @@ def test_identifier_collection_end(helpers):
         resend = aiding.IdentifierResourceEnd()
         app.add_route("/identifiers", end)
         app.add_route("/identifiers/{name}", resend)
+        app.add_route("/identifiers/{name}/events", resend)
         eventsEnd = agenting.KeyEventCollectionEnd()
         app.add_route("/events", eventsEnd)
 
@@ -1132,6 +1150,7 @@ def test_contact_ends(helpers):
         assert response.status == falcon.HTTP_200
         assert response.json == [{'challenges': [],
                                   'company': 'GLEIF',
+                                  'ends': {},
                                   'first': 'Ken3',
                                   'id': 'EAjKmvW6flpWJfdYYZ2Lu4pllPWKFjCBz0dcX-S86Nvg',
                                   'last': 'Burns3',
@@ -1143,30 +1162,35 @@ def test_contact_ends(helpers):
         assert response.status == falcon.HTTP_200
         assert response.json == [{'challenges': [],
                                   'company': 'GLEIF',
+                                  'ends': {},
                                   'first': 'Ken3',
                                   'id': 'EAjKmvW6flpWJfdYYZ2Lu4pllPWKFjCBz0dcX-S86Nvg',
                                   'last': 'Burns3',
                                   'wellKnowns': []},
                                  {'challenges': [],
                                   'company': 'GLEIF',
+                                  'ends': {},
                                   'first': 'Ken1',
                                   'id': 'EER-n23rDM2RQB8Kw4KRrm8SFpoid4Jnelhauo6KxQpz',
                                   'last': 'Burns1',
                                   'wellKnowns': []},
                                  {'challenges': [],
                                   'company': 'ProSapien',
+                                  'ends': {},
                                   'first': 'Ken4',
                                   'id': 'EGwcSt3uvK5-oHI7hVU7dKMvWt0vRfMW2demzBBMDnBG',
                                   'last': 'Burns4',
                                   'wellKnowns': []},
                                  {'challenges': [],
                                   'company': 'ProSapien',
+                                  'ends': {},
                                   'first': 'Ken2',
                                   'id': 'ELTQ3tF3n7QS8LDpKMdJyCMhVyMdvNPTiisnqW5ZQP3C',
                                   'last': 'Burns2',
                                   'wellKnowns': []},
                                  {'challenges': [],
                                   'company': 'GLEIF',
+                                  'ends': {},
                                   'first': 'Ken0',
                                   'id': 'EPo8Wy1xpTa6ri25M4IlmWBBzs5y8v4Qn3Z8xP4kEjcK',
                                   'last': 'Burns0',
@@ -1449,7 +1473,6 @@ def test_approve_delegation(helpers):
         assert res.status_code == 200
         agt = res.json["agent"]
         ctrl = res.json["controller"]
-        assert agt["i"] == "EHyaw-1bCenigGQCZRs_hXNdndHw0fSf-Q5-LpUwOR8r"
         assert ctrl["state"]["i"] == controllerAID
 
         anchor = dict(i=agt["i"], s="0", d=agt["d"])
@@ -1533,9 +1556,7 @@ def test_rotation(helpers):
 
         res = client.simulate_get(path=f"/agent/{serder.pre}")
         assert res.status_code == 200
-        agt = res.json["agent"]
         ctrl = res.json["controller"]
-        assert agt["i"] == "EHyaw-1bCenigGQCZRs_hXNdndHw0fSf-Q5-LpUwOR8r"
         assert ctrl["state"]["i"] == controllerAID
 
         op = helpers.createAid(client, name="salty_aid", salt=bran)

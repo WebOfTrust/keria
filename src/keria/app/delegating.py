@@ -5,7 +5,7 @@ from keri.core import coring, serdering
 from keri.db import dbing
 
 
-class Sealer(doing.DoDoer):
+class Anchorer(doing.DoDoer):
     """
     Sends messages to Delegator of an identifier and wait for the anchoring event to
     be processed to ensure the inception or rotation event has been approved by the delegator.
@@ -32,7 +32,7 @@ class Sealer(doing.DoDoer):
         self.witDoer = agenting.Receiptor(hby=self.hby)
         self.proxy = proxy
 
-        super(Sealer, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)],
+        super(Anchorer, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)],
                                      **kwa)
 
     def delegation(self, pre, sn=None, proxy=None):
@@ -41,7 +41,7 @@ class Sealer(doing.DoDoer):
 
         # load the hab of the delegated identifier to anchor
         hab = self.hby.habs[pre]
-        delpre = hab.kever.delegator  # get the delegator identifier
+        delpre = hab.kever.delpre  # get the delegator identifier
         if delpre not in hab.kevers:
             raise kering.ValidationError(f"delegator {delpre} not found, unable to process delegation")
 
@@ -126,7 +126,7 @@ class Sealer(doing.DoDoer):
         """
         for (pre, said), serder in self.hby.db.dune.getItemIter():  # group partial witness escrow
             kever = self.hby.kevers[pre]
-            dkever = self.hby.kevers[kever.delegator]
+            dkever = self.hby.kevers[kever.delpre]
 
             seal = dict(i=serder.pre, s=serder.snh, d=serder.said)
             if dserder := self.hby.db.findAnchoringSealEvent(dkever.prefixer.qb64, seal=seal):

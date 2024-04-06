@@ -12,7 +12,7 @@ from hio.base import doing
 from hio.help import Hict
 from keri import kering
 from keri.app import habbing
-from keri.core import parsing, eventing
+from keri.core import parsing, eventing, coring
 from keri.end import ending
 
 from keria.app import agenting
@@ -21,6 +21,8 @@ from keria.core import authing
 
 def test_authenticater(mockHelpingNowUTC):
     salt = b'0123456789abcdef'
+    salter = coring.Salter(raw=salt)
+
     with habbing.openHab(name="caid", salt=salt, temp=True) as (controllerHby, controller):
 
         agency = agenting.Agency(name="agency", base='', bran=None, temp=True)
@@ -30,7 +32,7 @@ def test_authenticater(mockHelpingNowUTC):
         doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
         doist.enter(doers=[agency])
 
-        agent = agency.create(caid=controller.pre)
+        agent = agency.create(caid=controller.pre, salt=salter.qb64)
 
         # Create authenticater with Agent and controllers AID
         headers = Hict([
@@ -203,6 +205,7 @@ def test_signature_validation(mockHelpingNowUTC):
     assert rep.status == falcon.HTTP_401
 
     salt = b'0123456789abcdef'
+    salter = coring.Salter(raw=salt)
     with habbing.openHab(name="caid", salt=salt, temp=True) as (controllerHby, controller):
 
         agency = agenting.Agency(name="agency", base='', bran=None, temp=True)
@@ -212,7 +215,7 @@ def test_signature_validation(mockHelpingNowUTC):
         doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
         doist.enter(doers=[agency])
 
-        agent = agency.create(caid=controller.pre)
+        agent = agency.create(caid=controller.pre, salt=salter.qb64)
         req = testing.create_req(method="POST", path="/reward")
         req.context.agent = agent
         rep = falcon.Response()

@@ -9,15 +9,19 @@ import os
 from dataclasses import asdict
 from urllib.parse import urlparse, urljoin
 
-from keri import kering
-from keri.app.notifying import Notifier
-from keri.app.storing import Mailboxer
 
 import falcon
 from falcon import media
 from hio.base import doing
 from hio.core import http, tcp
 from hio.help import decking
+
+from keri import kering
+from keri import core
+from keri.app.notifying import Notifier
+from keri.app.storing import Mailboxer
+
+
 from keri.app import configing, keeping, habbing, storing, signaling, oobiing, agenting, \
     forwarding, querying, connecting, grouping
 from keri.app.grouping import Counselor
@@ -149,7 +153,7 @@ def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):
 class Agency(doing.DoDoer):
     """
     Agency
-    
+
     """
 
     def __init__(self, name, bran, base="", configFile=None, configDir=None, adb=None, temp=False):
@@ -173,7 +177,7 @@ class Agency(doing.DoDoer):
         self.adb = adb if adb is not None else basing.AgencyBaser(name="TheAgency", base=base, reopen=True, temp=temp)
         super(Agency, self).__init__(doers=[], always=True)
 
-    def create(self, caid):
+    def create(self, caid, salt=None):
         ks = keeping.Keeper(name=caid,
                             base=self.base,
                             temp=self.temp,
@@ -196,7 +200,7 @@ class Agency(doing.DoDoer):
             cf.put(data)
 
         # Create the Hab for the Agent with only 2 AIDs
-        agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, cf=cf, temp=self.temp)
+        agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, cf=cf, temp=self.temp, salt=salt)
         agentHab = agentHby.makeHab(f"agent-{caid}", ns="agent", transferable=True, delpre=caid)
         agentRgy = Regery(hby=agentHby, name=agentHab.name, base=self.base, temp=self.temp)
 
@@ -287,7 +291,7 @@ class Agent(doing.DoDoer):
         self.agency = agency
         self.caid = caid
 
-        self.swain = delegating.Sealer(hby=hby, proxy=agentHab)
+        self.swain = delegating.Anchorer(hby=hby, proxy=agentHab)
         self.counselor = Counselor(hby=hby, swain=self.swain, proxy=agentHab)
         self.org = connecting.Organizer(hby=hby)
 
@@ -814,7 +818,7 @@ class BootEnd:
         if "sig" not in body:
             raise falcon.HTTPBadRequest(title="invalid inception",
                                         description=f'required field "sig" missing from body')
-        siger = coring.Siger(qb64=body["sig"])
+        siger = core.Siger(qb64=body["sig"])
 
         caid = icp.pre
 
@@ -972,12 +976,12 @@ class KeyEventCollectionEnd:
         preb = pre.encode("utf-8")
         events = []
         for fn, dig in agent.hby.db.getFelItemPreIter(preb, fn=0):
-            dgkey = dbing.dgKey(preb, dig)  # get message
-            if not (raw := agent.hby.db.getEvt(key=dgkey)):
+            if not (raw := agent.hby.db.cloneEvtMsg(pre=preb, fn=fn, dig=dig)):
                 raise falcon.HTTPInternalServerError(f"Missing event for dig={dig}.")
 
             serder = serdering.SerderKERI(raw=bytes(raw))
-            events.append(serder.ked)
+            atc = raw[serder.size:]
+            events.append(dict(ked=serder.ked, atc=atc.decode("utf-8")))
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
