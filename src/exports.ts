@@ -1,5 +1,4 @@
 export * from './ready';
-export * from './math';
 
 export * from './keri/app/habery';
 export * from './keri/app/controller';
