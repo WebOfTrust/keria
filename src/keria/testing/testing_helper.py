@@ -4,6 +4,7 @@ Helpers for tests that need KERIA
 """
 import json
 import os
+import pathlib
 import shutil
 from contextlib import contextmanager
 
@@ -22,6 +23,8 @@ from keri.vdr import eventing as veventing
 from keri.vdr.credentialing import Regery, Registrar
 
 from keria.app import agenting, indirecting
+
+SCRIPTS_DIR = str(pathlib.Path(str(pathlib.Path(__file__).parent.resolve()), "../../../tests/scripts").resolve())
 
 WitnessUrls = {
     "wan:tcp": "tcp://127.0.0.1:5632/",
@@ -521,7 +524,7 @@ class Helpers:
             salter = coring.Salter(raw=salt)
 
         if cf is None:
-            cf = configing.Configer(name="keria", headDirPath="tests/scripts", reopen=True, clear=False)
+            cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, reopen=True, clear=False)
 
         with habbing.openHby(name="keria", salt=salter.qb64, temp=temp, cf=cf) as hby:
             ims = eventing.messagize(serder, sigers=sigers)
