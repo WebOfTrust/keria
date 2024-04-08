@@ -26,6 +26,7 @@ from keri.vdr import credentialing
 
 from keria.app import agenting, aiding
 from keria.core import longrunning
+from keria.testing.testing_helper import SCRIPTS_DIR
 
 
 def test_setup_no_http():
@@ -63,13 +64,13 @@ def test_load_ends(helpers):
 def test_agency():
     salt = b'0123456789abcdef'
     salter = coring.Salter(raw=salt)
-    cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
+    cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
 
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
         hab = hby.makeHab(name="test")
 
         agency = agenting.Agency(name="agency", base="", bran=None, temp=True, configFile="keria",
-                                 configDir="scripts")
+                                 configDir=SCRIPTS_DIR)
         assert agency.cf is not None
         assert agency.cf.path.endswith("scripts/keri/cf/keria.json") is True
 
@@ -111,7 +112,7 @@ def test_agency():
             shutil.rmtree(f'/usr/local/var/keri/adb/{base}')
 
         agency = agenting.Agency(name="agency", base=base, bran=None, configFile="keria",
-                                 configDir="scripts")
+                                 configDir=SCRIPTS_DIR)
         assert agency.cf is not None
         assert agency.cf.path.endswith("scripts/keri/cf/keria.json") is True
 
@@ -126,7 +127,7 @@ def test_agency():
 
         # Rcreate the agency to see if agent is reloaded from disk
         agency = agenting.Agency(name="agency", base=base, bran=None, configFile="keria",
-                                 configDir="scripts")
+                                 configDir=SCRIPTS_DIR)
         doist.enter(doers=[agency])
 
         agent = agency.get(caid)
@@ -199,7 +200,7 @@ def test_keystate_ends(helpers):
     caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
     salt = b'0123456789abcdef'
     salter = coring.Salter(raw=salt)
-    cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
+    cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
 
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
         hab = hby.makeHab(name="test")

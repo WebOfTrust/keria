@@ -26,6 +26,7 @@ from hio.base import doing
 from keria.app import aiding, agenting
 from keria.app.aiding import IdentifierOOBICollectionEnd, RpyEscrowCollectionEnd
 from keria.core import longrunning
+from keria.testing.testing_helper import SCRIPTS_DIR
 
 
 def test_load_ends(helpers):
@@ -1426,7 +1427,7 @@ def test_approve_delegation(helpers):
     caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
     salt = b'0123456789abcdef'
     salter = coring.Salter(raw=salt)
-    cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
+    cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
 
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
         hab = hby.makeHab(name="test")
@@ -1506,7 +1507,7 @@ def test_rotation(helpers):
     caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
     salt = b'0123456789abcdef'
     salter = coring.Salter(raw=salt)
-    cf = configing.Configer(name="keria", headDirPath="scripts", temp=True, reopen=True, clear=False)
+    cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
 
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
         hab = hby.makeHab(name="test")
