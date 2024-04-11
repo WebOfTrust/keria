@@ -75,6 +75,22 @@ signify-ts-deps-1  | Dependencies running
 signify-ts-deps-1 exited with code 0
 ```
 
+It is possible to change the keria image by using environment variables. For example, to use weboftrust/keria:0.1.3, do:
+
+```bash
+export KERIA_IMAGE_TAG=0.1.3
+docker compose pull
+docker compose up deps
+```
+
+To use another repository, you can do:
+
+```bash
+export KERIA_IMAGE=gleif/keria
+docker compose pull
+docker compose up deps
+```
+
 **Important!** The integration tests runs on the build output in `dist/` directory. Make sure to run build before running the integration tests.
 
 ```bash
@@ -100,14 +116,6 @@ TEST_ENVIRONMENT=local npx jest examples/integration-scripts/credentials.test.ts
 ```
 
 This changes the discovery urls to use `localhost` instead of the hostnames inside the docker network.
-
-### Old integration scripts
-
-To run any of the old integration scripts that has not yet been converted to an integration test. Use `ts-node-esm`
-
-```bash
-npx ts-node-esm examples/integration-scripts/challenge.ts
-```
 
 # Diagrams
 
