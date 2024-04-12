@@ -15,8 +15,8 @@ export function sleep(ms: number): Promise<void> {
 export async function assertOperations(
     ...clients: SignifyClient[]
 ): Promise<void> {
-    for (let client of clients) {
-        let operations = await client.operations().list();
+    for (const client of clients) {
+        const operations = await client.operations().list();
         expect(operations).toHaveLength(0);
     }
 }
@@ -30,9 +30,9 @@ export async function assertOperations(
 export async function assertNotifications(
     ...clients: SignifyClient[]
 ): Promise<void> {
-    for (let client of clients) {
-        let res = await client.notifications().list();
-        let notes = res.notes.filter((i: any) => i.r === false);
+    for (const client of clients) {
+        const res = await client.notifications().list();
+        const notes = res.notes.filter((i: { r: boolean }) => i.r === false);
         expect(notes).toHaveLength(0);
     }
 }
@@ -46,9 +46,9 @@ export async function warnNotifications(
     ...clients: SignifyClient[]
 ): Promise<void> {
     let count = 0;
-    for (let client of clients) {
-        let res = await client.notifications().list();
-        let notes = res.notes.filter((i: any) => i.r === false);
+    for (const client of clients) {
+        const res = await client.notifications().list();
+        const notes = res.notes.filter((i: { r: boolean }) => i.r === false);
         if (notes.length > 0) {
             count += notes.length;
             console.warn('notifications', notes);
@@ -58,72 +58,35 @@ export async function warnNotifications(
 }
 
 /**
- * Get status of operation.
- * If parameter recurse is set then also checks status of dependent operations.
- */
-async function getOperation<T>(
-    client: SignifyClient,
-    name: string,
-    recurse?: boolean
-): Promise<Operation<T>> {
-    const result = await client.operations().get<T>(name);
-    if (recurse === true) {
-        let i: Operation | undefined = result;
-        while (result.done && i?.metadata?.depends !== undefined) {
-            let depends: Operation = await client
-                .operations()
-                .get(i.metadata.depends.name);
-            result.done = result.done && depends.done;
-            i.metadata.depends = depends;
-            i = depends.metadata?.depends;
-        }
-    }
-    return result;
-}
-
-/**
  * Poll for operation to become completed.
  * Removes completed operation
  */
 export async function waitOperation<T = any>(
     client: SignifyClient,
     op: Operation<T> | string,
-    options: RetryOptions = {}
+    signal?: AbortSignal
 ): Promise<Operation<T>> {
-    const ctrl = new AbortController();
-    options.signal?.addEventListener('abort', (e: Event) => {
-        const s = e.target as AbortSignal;
-        ctrl.abort(s.reason);
-    });
-    let name: string;
     if (typeof op === 'string') {
-        name = op;
-    } else if (typeof op === 'object' && 'name' in op) {
-        name = op.name;
-    } else {
-        throw new Error();
+        op = await client.operations().get(op);
     }
-    const result: Operation<T> = await retry(async () => {
-        let t: Operation<T>;
-        try {
-            t = await getOperation<T>(client, name, true);
-        } catch (e) {
-            ctrl.abort(e);
-            throw e;
-        }
-        if (t.done !== true) {
-            throw new Error(`Operation ${name} not done`);
-        }
-        console.log('DONE', name);
-        return t;
-    }, options);
-    let i: Operation | undefined = result;
-    while (i !== undefined) {
-        // console.log('DELETE', i.name);
-        await client.operations().delete(i.name);
-        i = i.metadata?.depends;
+
+    op = await client
+        .operations()
+        .wait(op, { signal: signal ?? AbortSignal.timeout(30000) });
+    await deleteOperations(client, op);
+
+    return op;
+}
+
+async function deleteOperations<T = any>(
+    client: SignifyClient,
+    op: Operation<T>
+) {
+    if (op.metadata?.depends) {
+        await deleteOperations(client, op.metadata.depends);
     }
-    return result;
+
+    await client.operations().delete(op.name);
 }
 
 export async function resolveOobi(
