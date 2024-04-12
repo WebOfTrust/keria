@@ -338,10 +338,10 @@ def test_ipex_grant(helpers, mockHelpingNowIso8601, seeder):
 
 
 def test_multisig_grant_admit(seeder, helpers):
-    with (helpers.openKeria(salter=coring.Salter(raw=b'0123456789abcM00')) as (agency0, agent0, app0, client0), \
-            helpers.openKeria(salter=coring.Salter(raw=b'0123456789abcM01')) as (agency1, agent1, app1, client1), \
-            helpers.openKeria(salter=coring.Salter(raw=b'0123456789abcM02')) as (hagency0, hagent0, happ0, hclient0), \
-            helpers.openKeria(salter=coring.Salter(raw=b'0123456789abcM03')) as (hagency1, hagent1, happ1, hclient1)):
+    with (helpers.openKeria(salter=core.Salter(raw=b'0123456789abcM00')) as (agency0, agent0, app0, client0), \
+            helpers.openKeria(salter=core.Salter(raw=b'0123456789abcM01')) as (agency1, agent1, app1, client1), \
+            helpers.openKeria(salter=core.Salter(raw=b'0123456789abcM02')) as (hagency0, hagent0, happ0, hclient0), \
+            helpers.openKeria(salter=core.Salter(raw=b'0123456789abcM03')) as (hagency1, hagent1, happ1, hclient1)):
 
         tock = 0.03125
         doist = doing.Doist(tock=tock, real=True)

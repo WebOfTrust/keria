@@ -11,6 +11,7 @@ from falcon import testing
 from hio.base import doing
 from hio.help import Hict
 from keri import kering
+from keri import core
 from keri.app import habbing
 from keri.core import parsing, eventing, coring
 from keri.end import ending
@@ -21,7 +22,7 @@ from keria.core import authing
 
 def test_authenticater(mockHelpingNowUTC):
     salt = b'0123456789abcdef'
-    salter = coring.Salter(raw=salt)
+    salter = core.Salter(raw=salt)
 
     with habbing.openHab(name="caid", salt=salt, temp=True) as (controllerHby, controller):
 
@@ -205,7 +206,7 @@ def test_signature_validation(mockHelpingNowUTC):
     assert rep.status == falcon.HTTP_401
 
     salt = b'0123456789abcdef'
-    salter = coring.Salter(raw=salt)
+    salter = core.Salter(raw=salt)
     with habbing.openHab(name="caid", salt=salt, temp=True) as (controllerHby, controller):
 
         agency = agenting.Agency(name="agency", base='', bran=None, temp=True)

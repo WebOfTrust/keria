@@ -188,7 +188,7 @@ class AgentResourceEnd:
                 prxs = val["prxs"]
 
                 for idx, prx in enumerate(prxs):
-                    cipher = coring.Cipher(qb64=prx)
+                    cipher = core.Cipher(qb64=prx)
                     agent.mgr.rb.prxs.put(keys=verfers[idx].qb64b, val=cipher)
 
                 if "nxts" in val:
@@ -197,7 +197,7 @@ class AgentResourceEnd:
                         raise ValueError("If encrypted private next keys are provided, must match digers")
 
                     for idx, prx in enumerate(nxts):
-                        cipher = coring.Cipher(qb64=prx)
+                        cipher = core.Cipher(qb64=prx)
                         agent.mgr.rb.nxts.put(keys=digers[idx].qb64b, val=cipher)
 
         agent.mgr.delete_sxlt()

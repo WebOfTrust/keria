@@ -7,6 +7,7 @@ Testing the Mark II Agent
 """
 import falcon.testing
 from hio.help import Hict
+from keri import core
 from keri.app import habbing, httping
 from keri.core import coring, serdering
 from keri.core.coring import randomNonce, MtrDex
@@ -18,7 +19,7 @@ from keria.app import indirecting, aiding
 
 def test_indirecting(helpers):
     salt = b'0123456789abcdef'
-    salter = coring.Salter(raw=salt)
+    salter = core.Salter(raw=salt)
     with helpers.openKeria() as (agency, agent, app, client), \
             habbing.openHby(name="keria", salt=salter.qb64, temp=True) as hby:
 
@@ -155,8 +156,8 @@ def test_indirecting(helpers):
         app.add_route("/oobi/{aid}/{role}/{eid}", oobiEnd)
 
         result = client.simulate_get(path="/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/role")
-        assert result.status == falcon.HTTP_200 
+        assert result.status == falcon.HTTP_200
 
         result = client.simulate_get(path="/oobi/EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3")
-        assert result.status == falcon.HTTP_404 
+        assert result.status == falcon.HTTP_404
 

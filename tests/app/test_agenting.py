@@ -18,6 +18,7 @@ from hio.help import decking
 from keri import kering
 from keri.app import habbing, configing, oobiing, querying
 from keri.app.agenting import Receiptor
+from keri import core
 from keri.core import coring, serdering
 from keri.core.coring import MtrDex
 from keri.db import basing
@@ -63,7 +64,7 @@ def test_load_ends(helpers):
 
 def test_agency():
     salt = b'0123456789abcdef'
-    salter = coring.Salter(raw=salt)
+    salter = core.Salter(raw=salt)
     cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
 
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
@@ -180,7 +181,7 @@ def test_boot_ends(helpers):
 
 def test_witnesser(helpers):
     salt = b'0123456789abcdef'
-    salter = coring.Salter(raw=salt)
+    salter = core.Salter(raw=salt)
 
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True) as hby:
         witners = decking.Deck()
@@ -199,7 +200,7 @@ def test_witnesser(helpers):
 def test_keystate_ends(helpers):
     caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
     salt = b'0123456789abcdef'
-    salter = coring.Salter(raw=salt)
+    salter = core.Salter(raw=salt)
     cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
 
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
@@ -236,7 +237,7 @@ def test_keystate_ends(helpers):
 
 def test_oobi_ends(seeder, helpers):
     with helpers.openKeria() as (agency, agent, app, client), \
-            habbing.openHby(name="wes", salt=coring.Salter(raw=b'wess-the-witness').qb64) as wesHby:
+            habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby:
         wesHab = wesHby.makeHab(name="wes", transferable=False)
 
         result = client.simulate_get(path="/oobi/pal?role=witness")
