@@ -1,5 +1,5 @@
 import { blake3 } from '@noble/hashes/blake3';
-
+import { Buffer } from 'buffer';
 import { Matter, MatterArgs, MtrDex } from './matter';
 
 /**

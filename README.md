@@ -9,7 +9,7 @@ Project Name: signify-ts
 
 ## Signify - KERI Signing at the Edge
 
-Of the five functions in a KERI agent, 
+Of the five functions in a KERI agent,
 
 1. Key generation
 2. Encrypted key storage
@@ -19,20 +19,18 @@ Of the five functions in a KERI agent,
 
 Signify-TS splits off two, key generation and event signing into a TypeScript library to provide "signing at the edge".
 It accomplishes this by using [libsodium](https://doc.libsodium.org/) to generate ed25519 key pairs for signing and x25519 key pairs for encrypting the
-private keys, next public keys and salts used to generate the private keys.  The encrypted private key and salts are then stored on a
-remote cloud agent that never has access to the decryption keys.  New key pair sets (current and next) will be generated 
+private keys, next public keys and salts used to generate the private keys. The encrypted private key and salts are then stored on a
+remote cloud agent that never has access to the decryption keys. New key pair sets (current and next) will be generated
 for inception and rotation events with only the public keys and blake3 hash of the next keys made available to the agent.
 
 The communication protocol between a Signify client and [KERI](https://github.com/WebOfTrust/keri) agent will encode all cryptographic primitives as CESR base64
-encoded strings for the initial implementation.  Support for binary CESR can be added in the future.
-
+encoded strings for the initial implementation. Support for binary CESR can be added in the future.
 
 ### Environment Setup
 
 The code is built using Typescript and running code locally requires a Mac or Linux OS.
 
--   Install [Node.js](https://nodejs.org)    
-
+-   Install [Node.js](https://nodejs.org)
 
 -   Install dependencies:
     ```bash
@@ -77,6 +75,22 @@ signify-ts-deps-1  | Dependencies running
 signify-ts-deps-1 exited with code 0
 ```
 
+It is possible to change the keria image by using environment variables. For example, to use weboftrust/keria:0.1.3, do:
+
+```bash
+export KERIA_IMAGE_TAG=0.1.3
+docker compose pull
+docker compose up deps
+```
+
+To use another repository, you can do:
+
+```bash
+export KERIA_IMAGE=gleif/keria
+docker compose pull
+docker compose up deps
+```
+
 **Important!** The integration tests runs on the build output in `dist/` directory. Make sure to run build before running the integration tests.
 
 ```bash
@@ -103,19 +117,10 @@ TEST_ENVIRONMENT=local npx jest examples/integration-scripts/credentials.test.ts
 
 This changes the discovery urls to use `localhost` instead of the hostnames inside the docker network.
 
-### Old integration scripts
-
-To run any of the old integration scripts that has not yet been converted to an integration test. Use `ts-node-esm`
-
-```bash
-npx ts-node-esm examples/integration-scripts/challenge.ts
-```
-
 # Diagrams
 
 Account Creation Workflow
 
 ![Account Creation](/diagrams/account-creation-workflow.png)
-
 
 ![Account Creation Webpage](/diagrams/account-creation-webpage-workflow.png)

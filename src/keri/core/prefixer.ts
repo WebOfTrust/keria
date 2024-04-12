@@ -3,7 +3,7 @@ import { EmptyMaterialError } from './kering';
 import { Dict, Ilks } from './core';
 import { sizeify } from './serder';
 import { Verfer } from './verfer';
-
+import { Buffer } from 'buffer';
 import { blake3 } from '@noble/hashes/blake3';
 
 const Dummy: string = '#';

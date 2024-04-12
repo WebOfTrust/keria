@@ -7,7 +7,8 @@ export function randomPasscode(): string {
     const raw = libsodium.randombytes_buf(16);
     const salter = new Salter({ raw: raw });
 
-    return salter.qb64.substring(2);
+    // https://github.com/WebOfTrust/signify-ts/issues/242
+    return salter.qb64.substring(2, 23);
 }
 
 export function randomNonce(): string {
@@ -71,18 +72,27 @@ export interface Operation<T = unknown> {
     response?: T;
 }
 
+export interface OperationsDeps {
+    fetch(
+        pathname: string,
+        method: string,
+        body: unknown,
+        headers?: Headers
+    ): Promise<Response>;
+}
+
 /**
  * Operations
  * @remarks
  * Operations represent the status and result of long running tasks performed by KERIA agent
  */
 export class Operations {
-    public client: SignifyClient;
+    public client: OperationsDeps;
     /**
      * Operations
      * @param {SignifyClient} client
      */
-    constructor(client: SignifyClient) {
+    constructor(client: OperationsDeps) {
         this.client = client;
     }
 
@@ -126,6 +136,51 @@ export class Operations {
         const data = null;
         const method = 'DELETE';
         await this.client.fetch(path, method, data);
+    }
+
+    /**
+     * Poll for operation to become completed.
+     */
+    async wait<T>(
+        op: Operation<T>,
+        options: {
+            signal?: AbortSignal;
+            minSleep?: number;
+            maxSleep?: number;
+            increaseFactor?: number;
+        } = {}
+    ): Promise<Operation<T>> {
+        const minSleep = options.minSleep ?? 10;
+        const maxSleep = options.maxSleep ?? 10000;
+        const increaseFactor = options.increaseFactor ?? 50;
+
+        if (op.metadata?.depends?.done === false) {
+            await this.wait(op.metadata.depends, options);
+        }
+
+        if (op.done === true) {
+            return op;
+        }
+
+        let retries = 0;
+
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+            op = await this.get(op.name);
+
+            const delay = Math.max(
+                minSleep,
+                Math.min(maxSleep, 2 ** retries * increaseFactor)
+            );
+            retries++;
+
+            if (op.done === true) {
+                return op;
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            options.signal?.throwIfAborted();
+        }
     }
 }
 

@@ -1,7 +1,6 @@
 import { BexDex, Matter, NumDex } from './matter';
 import { CesrNumber } from './number';
-import { Fraction } from 'mathjs';
-import { math } from '../../index';
+import { Fraction, format, sum, fraction } from 'mathjs';
 
 export class Tholder {
     private _weighted: boolean = false;
@@ -45,9 +44,9 @@ export class Tholder {
             let sith = this.thold.map((clause: Fraction[]) => {
                 return clause.map((c) => {
                     if (0 < Number(c) && Number(c) < 1) {
-                        return math.format(c, { fraction: 'ratio' });
+                        return format(c, { fraction: 'ratio' });
                     } else {
-                        return math.format(c, { fraction: 'decimal' });
+                        return format(c, { fraction: 'decimal' });
                     }
                 });
             });
@@ -159,7 +158,7 @@ export class Tholder {
 
     private _processWeighted(thold: Array<Array<Fraction>>) {
         for (const clause of thold) {
-            if (Number(math.sum(clause)) < 1) {
+            if (Number(sum(clause)) < 1) {
                 throw new Error(
                     'Invalid sith clause: ' +
                         thold +
@@ -178,7 +177,7 @@ export class Tholder {
     }
 
     private weight(w: string): Fraction {
-        return math.fraction(w);
+        return fraction(w);
     }
 
     private _satisfy_numeric(indices: any[]) {

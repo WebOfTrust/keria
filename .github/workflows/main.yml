@@ -47,25 +47,34 @@ jobs:
         run: npm run build
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   test:
-    name: Run integration test
-    runs-on: ubuntu-latest
+    name: Run integration test using keria:${{ matrix.keria-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ['ubuntu-latest']
+        keria-version: ['latest']
+        node-version: ['20']
+    env:
+      KERIA_IMAGE_TAG: ${{ matrix.keria-version }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
       - name: install deps
         run: npm ci
       - name: Build
         run: npm run build
+      - name: Print docker compose config
+        run: docker compose config
       - name: Start dependencies
         run: docker compose up deps --pull always
       - name: Run integration test

@@ -1,11 +1,17 @@
 import { strict as assert } from 'assert';
 import libsodium from 'libsodium-wrappers-sumo';
-import { randomPasscode, randomNonce } from '../../src/keri/app/coring';
+import {
+    randomPasscode,
+    randomNonce,
+    Operations,
+    OperationsDeps,
+} from '../../src/keri/app/coring';
 import { SignifyClient } from '../../src/keri/app/clienting';
 import { Authenticater } from '../../src/keri/core/authing';
 import { Salter, Tier } from '../../src/keri/core/salter';
 import fetchMock from 'jest-fetch-mock';
 import 'whatwg-fetch';
+import { randomUUID } from 'crypto';
 
 fetchMock.enableMocks();
 
@@ -161,7 +167,7 @@ describe('Coring', () => {
     it('Random passcode', async () => {
         await libsodium.ready;
         const passcode = randomPasscode();
-        assert.equal(passcode.length, 22);
+        assert.equal(passcode.length, 21);
     });
 
     it('Random nonce', async () => {
@@ -200,38 +206,6 @@ describe('Coring', () => {
         assert.equal(lastCall[1]!.method, 'POST');
         assert.deepEqual(lastBody.url, 'http://oobiurl.com');
         assert.deepEqual(lastBody.oobialias, 'witness');
-    });
-
-    it('Operations', async () => {
-        await libsodium.ready;
-        const bran = '0123456789abcdefghijk';
-
-        const client = new SignifyClient(url, bran, Tier.low, boot_url);
-
-        await client.boot();
-        await client.connect();
-
-        const ops = client.operations();
-
-        await ops.get('operationName');
-        let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
-        assert.equal(lastCall[0]!, url + '/operations/operationName');
-        assert.equal(lastCall[1]!.method, 'GET');
-
-        await ops.list();
-        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
-        assert.equal(lastCall[0]!, url + '/operations?');
-        assert.equal(lastCall[1]!.method, 'GET');
-
-        await ops.list('witness');
-        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
-        assert.equal(lastCall[0]!, url + '/operations?type=witness');
-        assert.equal(lastCall[1]!.method, 'GET');
-
-        await ops.delete('operationName');
-        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
-        assert.equal(lastCall[0]!, url + '/operations/operationName');
-        assert.equal(lastCall[1]!.method, 'DELETE');
     });
 
     it('Events and states', async () => {
@@ -292,5 +266,198 @@ describe('Coring', () => {
             lastBody.anchor,
             'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao'
         );
+    });
+});
+
+describe('Operations', () => {
+    class MockClient implements OperationsDeps {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        fetch = jest.fn<Promise<Response>, [string, string, any]>();
+
+        constructor() {}
+
+        operations() {
+            return new Operations(this);
+        }
+
+        getLastMockRequest() {
+            const [pathname, method, body] = this.fetch.mock.lastCall ?? [];
+
+            return {
+                path: pathname,
+                method: method,
+                body: body,
+            };
+        }
+    }
+
+    let client: MockClient;
+    beforeEach(async () => {
+        await libsodium.ready;
+        client = new MockClient();
+    });
+
+    it('Can get operation by name', async () => {
+        await libsodium.ready;
+
+        client.fetch.mockResolvedValue(
+            new Response(JSON.stringify({ name: randomUUID() }), {
+                status: 200,
+            })
+        );
+        await client.operations().get('operationName');
+        const lastCall = client.getLastMockRequest();
+        assert.equal(lastCall.path, '/operations/operationName');
+        assert.equal(lastCall.method, 'GET');
+    });
+
+    it('Can list operations', async () => {
+        client.fetch.mockResolvedValue(
+            new Response(JSON.stringify([]), {
+                status: 200,
+            })
+        );
+        await client.operations().list();
+        const lastCall = client.getLastMockRequest();
+        assert.equal(lastCall.path, '/operations?');
+        assert.equal(lastCall.method, 'GET');
+    });
+
+    it('Can list operations by type', async () => {
+        client.fetch.mockResolvedValue(
+            new Response(JSON.stringify([]), {
+                status: 200,
+            })
+        );
+        await client.operations().list('witness');
+        const lastCall = client.getLastMockRequest();
+        assert.equal(lastCall.path, '/operations?type=witness');
+        assert.equal(lastCall.method, 'GET');
+    });
+
+    it('Can delete operation by name', async () => {
+        client.fetch.mockResolvedValue(
+            new Response(JSON.stringify({}), {
+                status: 200,
+            })
+        );
+        await client.operations().delete('operationName');
+        const lastCall = client.getLastMockRequest();
+        assert.equal(lastCall.path, '/operations/operationName');
+        assert.equal(lastCall.method, 'DELETE');
+    });
+
+    describe('wait', () => {
+        it('does not wait for operation that is already "done"', async () => {
+            const name = randomUUID();
+            client.fetch.mockResolvedValue(
+                new Response(JSON.stringify({ name }), {
+                    status: 200,
+                })
+            );
+
+            const op = { name, done: true };
+            const result = await client.operations().wait(op);
+            assert.equal(client.fetch.mock.calls.length, 0);
+            assert.equal(op, result);
+        });
+
+        it('returns when operation is done after first call', async () => {
+            const name = randomUUID();
+            client.fetch.mockResolvedValue(
+                new Response(JSON.stringify({ name, done: true }), {
+                    status: 200,
+                })
+            );
+
+            const op = { name, done: false };
+            await client.operations().wait(op);
+            assert.equal(client.fetch.mock.calls.length, 1);
+        });
+
+        it('returns when operation is done after second call', async () => {
+            const name = randomUUID();
+            client.fetch.mockResolvedValueOnce(
+                new Response(JSON.stringify({ name, done: false }), {
+                    status: 200,
+                })
+            );
+
+            client.fetch.mockResolvedValueOnce(
+                new Response(JSON.stringify({ name, done: true }), {
+                    status: 200,
+                })
+            );
+
+            const op = { name, done: false };
+            await client.operations().wait(op, { maxSleep: 10 });
+            assert.equal(client.fetch.mock.calls.length, 2);
+        });
+
+        it('throw if aborted', async () => {
+            const name = randomUUID();
+            client.fetch.mockImplementation(
+                async () =>
+                    new Response(JSON.stringify({ name, done: false }), {
+                        status: 200,
+                    })
+            );
+
+            const op = { name, done: false };
+
+            const controller = new AbortController();
+            const promise = client
+                .operations()
+                .wait(op, { signal: controller.signal })
+                .catch((e) => e);
+
+            const abortError = new Error('Aborted');
+            controller.abort(abortError);
+
+            const error = await promise;
+
+            assert.equal(error, abortError);
+        });
+
+        it('returns when child operation is also done', async () => {
+            const name = randomUUID();
+            const nestedName = randomUUID();
+            const depends = { name: nestedName, done: false };
+            const op = { name, done: false, depends };
+
+            client.fetch.mockResolvedValueOnce(
+                new Response(JSON.stringify({ ...op, done: false }), {
+                    status: 200,
+                })
+            );
+
+            client.fetch.mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify({
+                        ...op,
+                        depends: { ...depends, done: true },
+                    }),
+                    {
+                        status: 200,
+                    }
+                )
+            );
+
+            client.fetch.mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify({
+                        ...op,
+                        done: true,
+                        depends: { ...depends, done: true },
+                    }),
+                    {
+                        status: 200,
+                    }
+                )
+            );
+
+            await client.operations().wait(op, { maxSleep: 10 });
+            assert.equal(client.fetch.mock.calls.length, 3);
+        });
     });
 });

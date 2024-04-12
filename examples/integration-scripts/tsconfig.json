@@ -1,9 +1,9 @@
 {
-  "extends": "../../tsconfig.node.json",
-  "compilerOptions": {
-    "noEmit": true,
-    "paths": {
-      "signify-ts": ["../../src"]
+    "extends": "../../tsconfig.node.json",
+    "compilerOptions": {
+        "noEmit": true,
+        "paths": {
+            "signify-ts": ["../../src"]
+        }
     }
-  }
 }

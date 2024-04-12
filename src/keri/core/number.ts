@@ -40,7 +40,7 @@ export class CesrNumber extends Matter {
             // make huge version of code
             code = code = NumDex.Huge;
         } else {
-            throw new Error('Invalid num = {num}, too large to encode.');
+            throw new Error(`Invalid num = ${num}, too large to encode.`);
         }
 
         raw = intToBytes(_num, Matter._rawSize(code));

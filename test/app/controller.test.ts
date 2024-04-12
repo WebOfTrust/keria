@@ -4,7 +4,7 @@ import libsodium from 'libsodium-wrappers-sumo';
 import { openManager } from '../../src/keri/core/manager';
 import { Signer } from '../../src/keri/core/signer';
 import { MtrDex } from '../../src/keri/core/matter';
-import { Tier } from '../../src';
+import { Tier, randomPasscode } from '../../src';
 
 describe('Controller', () => {
     it('manage account AID signing and agent verification', async () => {
@@ -43,5 +43,16 @@ describe('Controller', () => {
             controller.pre,
             'EIIY2SgE_bqKLl2MlnREUawJ79jTuucvWwh-S6zsSUFo'
         );
+    });
+
+    it('should generate unique controller AIDs per passcode', async () => {
+        await libsodium.ready;
+        const passcode1 = randomPasscode();
+        const passcode2 = randomPasscode();
+
+        const controller1 = new Controller(passcode1, Tier.low);
+        const controller2 = new Controller(passcode2, Tier.low);
+
+        assert.notEqual(controller1.pre, controller2.pre);
     });
 });

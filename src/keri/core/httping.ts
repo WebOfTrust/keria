@@ -10,8 +10,8 @@ import { b } from './core';
 import { Cigar } from './cigar';
 import { nowUTC } from './utils';
 import { Siger } from './siger';
-import Base64 from 'urlsafe-base64';
 import { Buffer } from 'buffer';
+import { encodeBase64Url } from './base64';
 
 export function normalize(header: string) {
     return header.trim();
@@ -121,7 +121,7 @@ export class Unqualified {
     }
 
     get qb64(): string {
-        return Base64.encode(Buffer.from(this._raw));
+        return encodeBase64Url(Buffer.from(this._raw));
     }
 
     get qb64b(): Uint8Array {

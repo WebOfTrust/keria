@@ -1,7 +1,7 @@
 import { SignifyClient } from 'signify-ts';
 import { getOrCreateClients, getOrCreateIdentifier } from './utils/test-setup';
 import { resolveEnvironment } from './utils/resolve-env';
-import { assertOperations, waitOperation } from './utils/test-util';
+import { assertOperations } from './utils/test-util';
 
 let client: SignifyClient;
 let name1_id: string, name1_oobi: string;
