@@ -7,7 +7,8 @@ export function randomPasscode(): string {
     const raw = libsodium.randombytes_buf(16);
     const salter = new Salter({ raw: raw });
 
-    return salter.qb64.substring(2);
+    // https://github.com/WebOfTrust/signify-ts/issues/242
+    return salter.qb64.substring(2, 23);
 }
 
 export function randomNonce(): string {

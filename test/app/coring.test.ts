@@ -161,7 +161,7 @@ describe('Coring', () => {
     it('Random passcode', async () => {
         await libsodium.ready;
         const passcode = randomPasscode();
-        assert.equal(passcode.length, 22);
+        assert.equal(passcode.length, 21);
     });
 
     it('Random nonce', async () => {
