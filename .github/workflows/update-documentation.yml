@@ -4,35 +4,44 @@ on:
     branches:
       - 'main'
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
-  update:
-    name: Updater documentation
+  build:
+    name: Build docs
 
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v2
-
-      - uses: actions/setup-node@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: '18.12.1'
-          cache: 'npm'
-
-      - name: build
+          node-version: "20"
+          cache: "npm"
+      - name: Install dependencies
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git checkout docs
-          npm cache clean --force
           npm set registry https://registry.npmjs.org/
-          npm i
-          npx typedoc src/index.ts
-          git add .
-          git commit -a -m "Update documentation"
-
-      - name: Push changes
-        uses: ad-m/github-push-action@master
+          npm ci
+      - name: Build documentation
+        run: npx typedoc src/index.ts
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
+          path: ./docs
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
