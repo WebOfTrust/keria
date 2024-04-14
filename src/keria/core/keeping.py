@@ -7,6 +7,7 @@ keria.core.keeping module
 from dataclasses import dataclass, asdict, field
 
 from keri.app.keeping import PreSit, Algos, PubLot, PubSet
+from keri import core
 from keri.core import coring
 from keri.core.coring import Tiers, MtrDex
 from keri.db import dbing, subing, koming
@@ -109,10 +110,10 @@ class RemoteKeeper(dbing.LMDBer):
         self.gbls = subing.Suber(db=self, subkey='gbls.')
         self.prxs = subing.CesrSuber(db=self,
                                      subkey='prxs.',
-                                     klas=coring.Cipher)
+                                     klas=core.Cipher)
         self.nxts = subing.CesrSuber(db=self,
                                      subkey='nxts.',
-                                     klas=coring.Cipher)
+                                     klas=core.Cipher)
         self.mhabs = subing.CesrSuber(db=self,
                                       subkey='mhabs.',
                                       klas=coring.Prefixer)
@@ -263,7 +264,7 @@ class RandyManager:
             raise ValueError("If encrypted private keys are provided, must match verfers")
 
         for idx, prx in enumerate(prxs):
-            cipher = coring.Cipher(qb64=prx)
+            cipher = core.Cipher(qb64=prx)
             self.rb.prxs.put(keys=verfers[idx].qb64b, val=cipher)
 
         if nxts is not None:
@@ -271,7 +272,7 @@ class RandyManager:
                 raise ValueError("If encrypted private next keys are provided, must match digers")
 
             for idx, prx in enumerate(nxts):
-                cipher = coring.Cipher(qb64=prx)
+                cipher = core.Cipher(qb64=prx)
                 self.rb.nxts.put(keys=digers[idx].qb64b, val=cipher)
 
     def rotate(self, pre, verfers, digers, prxs, nxts, transferable):
@@ -293,7 +294,7 @@ class RandyManager:
             raise ValueError("If encrypted private keys are provided, must match verfers")
 
         for idx, prx in enumerate(prxs):
-            cipher = coring.Cipher(qb64=prx)
+            cipher = core.Cipher(qb64=prx)
             self.rb.prxs.put(keys=verfers[idx].qb64b, val=cipher)
 
         if nxts is not None:
@@ -301,7 +302,7 @@ class RandyManager:
                 raise ValueError("If encrypted private keys are provided, must match verfers")
 
             for idx, prx in enumerate(nxts):
-                cipher = coring.Cipher(qb64=prx)
+                cipher = core.Cipher(qb64=prx)
                 self.rb.nxts.put(keys=digers[idx].qb64b, val=cipher)
 
     def params(self, pre):

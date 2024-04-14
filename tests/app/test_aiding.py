@@ -12,6 +12,7 @@ from dataclasses import asdict
 
 import falcon
 from falcon import testing
+from keri import core
 from keri.app import habbing, keeping, configing
 from keri.app.keeping import Algos
 from keri.core import coring, eventing, parsing, serdering
@@ -244,7 +245,7 @@ def test_agent_resource(helpers, mockHelpingNowUTC):
 
 def test_identifier_collection_end(helpers):
     salt = b'0123456789abcdef'
-    salter = coring.Salter(raw=salt)
+    salter = core.Salter(raw=salt)
 
     with helpers.openKeria() as (agency, agent, app, client), \
             habbing.openHby(name="p1", temp=True, salt=salter.qb64) as p1hby, \
@@ -288,8 +289,8 @@ def test_identifier_collection_end(helpers):
         assert res.json == {'description': 'invalid request: one of group, rand or salt field required',
                             'title': '400 Bad Request'}
 
-        salter = coring.Salter(raw=salt)
-        encrypter = coring.Encrypter(verkey=signers[0].verfer.qb64)
+        salter = core.Salter(raw=salt)
+        encrypter = core.Encrypter(verkey=signers[0].verfer.qb64)
         sxlt = encrypter.encrypt(salter.qb64).qb64
 
         body = {'name': 'aid1',
@@ -346,7 +347,7 @@ def test_identifier_collection_end(helpers):
         assert ss["pidx"] == 1
 
         # Rotate aid1
-        salter = coring.Salter(raw=salt)
+        salter = core.Salter(raw=salt)
         creator = keeping.SaltyCreator(salt=salter.qb64, stem="signify:aid", tier=coring.Tiers.low)
 
         signers = creator.create(pidx=0, ridx=1, tier=coring.Tiers.low, temp=False, count=1)
@@ -446,7 +447,7 @@ def test_identifier_collection_end(helpers):
         agent0 = mhab["state"]
 
         # rotate aid3
-        salter = coring.Salter(raw=salt)
+        salter = core.Salter(raw=salt)
         creator = keeping.SaltyCreator(salt=salter.qb64, stem="signify:aid", tier=coring.Tiers.low)
 
         signers = creator.create(pidx=3, ridx=1, tier=coring.Tiers.low, temp=False, count=1)
@@ -704,14 +705,14 @@ def test_identifier_collection_end(helpers):
         pre = randy1["prefix"]
         params = randy1["randy"]
 
-        salter = coring.Salter(raw=salt)
+        salter = core.Salter(raw=salt)
         signer = salter.signer(transferable=False)
-        decrypter = coring.Decrypter(seed=signer.qb64)
-        encrypter = coring.Encrypter(verkey=signer.verfer.qb64)
+        decrypter = core.Decrypter(seed=signer.qb64)
+        encrypter = core.Encrypter(verkey=signer.verfer.qb64)
 
         # Now rotate, we must decrypt the prxs, nxts, create a new next key and the rotation event
         nxts = params["nxts"]
-        signers = [decrypter.decrypt(cipher=coring.Cipher(qb64=nxt),
+        signers = [decrypter.decrypt(cipher=core.Cipher(qb64=nxt),
                                      transferable=True) for nxt in nxts]
         creator = keeping.RandyCreator()
         nsigners = creator.create(count=1)
@@ -855,8 +856,8 @@ def test_identifier_collection_end(helpers):
         delpre = "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHUNKNx"
         serder, signers = helpers.incept(salt, "signify:aid", pidx=0, delpre=delpre)
 
-        salter = coring.Salter(raw=salt)
-        encrypter = coring.Encrypter(verkey=signers[0].verfer.qb64)
+        salter = core.Salter(raw=salt)
+        encrypter = core.Encrypter(verkey=signers[0].verfer.qb64)
         sxlt = encrypter.encrypt(salter.qb64).qb64
 
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
@@ -1002,7 +1003,7 @@ def test_challenge_ends(helpers):
 
 def test_contact_ends(helpers):
     with helpers.openKeria() as (agency, agent, app, client), \
-            habbing.openHby(name="ken", salt=coring.Salter(raw=b'0123456789ghijkl').qb64) as kenHby:
+            habbing.openHby(name="ken", salt=core.Salter(raw=b'0123456789ghijkl').qb64) as kenHby:
 
         # Register the identifier endpoint so we can create an AID for the test
         end = aiding.IdentifierCollectionEnd()
@@ -1250,8 +1251,8 @@ def test_identifier_resource_end(helpers):
         salt = b'0123456789abcdef'
         serder, signers = helpers.incept(salt, "signify:aid", pidx=0)
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
-        salter = coring.Salter(raw=salt)
-        encrypter = coring.Encrypter(verkey=signers[0].verfer.qb64)
+        salter = core.Salter(raw=salt)
+        encrypter = core.Encrypter(verkey=signers[0].verfer.qb64)
         sxlt = encrypter.encrypt(salter.qb64).qb64
 
         body = {'name': 'aid1',
@@ -1426,7 +1427,7 @@ def test_rpy_escow_end(helpers):
 def test_approve_delegation(helpers):
     caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
     salt = b'0123456789abcdef'
-    salter = coring.Salter(raw=salt)
+    salter = core.Salter(raw=salt)
     cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
 
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
@@ -1506,7 +1507,7 @@ def test_approve_delegation(helpers):
 def test_rotation(helpers):
     caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
     salt = b'0123456789abcdef'
-    salter = coring.Salter(raw=salt)
+    salter = core.Salter(raw=salt)
     cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
 
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
