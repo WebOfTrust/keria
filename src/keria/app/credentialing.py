@@ -546,13 +546,17 @@ class CredentialCollectionEnd:
         hab = agent.hby.habByName(name)
         if hab is None:
             raise falcon.HTTPNotFound(description="name is not a valid reference to an identifier")
-
-        creder = serdering.SerderACDC(sad=httping.getRequiredParam(body, "acdc"))
-        iserder = serdering.SerderKERI(sad=httping.getRequiredParam(body, "iss"))
-        if "ixn" in body:
-            anc = serdering.SerderKERI(sad=httping.getRequiredParam(body, "ixn"))
-        else:
-            anc = serdering.SerderKERI(sad=httping.getRequiredParam(body, "rot"))
+        try: 
+            creder = serdering.SerderACDC(sad=httping.getRequiredParam(body, "acdc"))
+            iserder = serdering.SerderKERI(sad=httping.getRequiredParam(body, "iss"))
+            if "ixn" in body:
+                anc = serdering.SerderKERI(sad=httping.getRequiredParam(body, "ixn"))
+            else:
+                anc = serdering.SerderKERI(sad=httping.getRequiredParam(body, "rot"))
+        except kering.ValidationError as e:
+            rep.status = falcon.HTTP_400
+            rep.text = e.args[0]
+            return
 
         regk = iserder.ked['ri']
         if regk not in agent.rgy.tevers:
