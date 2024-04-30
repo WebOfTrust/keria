@@ -15,7 +15,7 @@ from keri import core
 from keri.app import habbing, signing
 from keri.core import eventing, coring, serdering
 from keri.help import helping
-from keri.kering import Roles
+from keri.kering import Roles, TraitCodex
 from keri.peer import exchanging
 from keri.vc import proving
 from keri.vdr import eventing as veventing
@@ -606,7 +606,7 @@ def test_multisig_grant_admit(seeder, helpers):
                                   baks=[],
                                   toad="0",
                                   nonce=nonce,
-                                  cnfg=[eventing.TraitCodex.NoBackers],
+                                  cnfg=[TraitCodex.NoBackers],
                                   code=coring.MtrDex.Blake3_256)
 
         anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)

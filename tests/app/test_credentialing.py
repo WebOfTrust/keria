@@ -12,7 +12,8 @@ from falcon import testing
 from hio.base import doing
 from keri.app import habbing
 from keri.core import scheming, coring, parsing, serdering
-from keri.core.eventing import TraitCodex, SealEvent
+from keri.core.eventing import SealEvent
+from keri.kering import TraitCodex
 from keri.vc import proving
 from keri.vdr import eventing
 from keri.vdr.credentialing import Regery, Registrar
