@@ -294,7 +294,7 @@ def test_join(helpers, monkeypatch):
         assert res.status_code == 202
         assert res.json == {'done': False,
                             'error': None,
-                            'metadata': {'sn': 0},
+                            'metadata': {'sn': 3},
                             'name': 'group.EDWg3-rB5FTpcckaYdBcexGmbLIO6AvAwjaJTBlXUn_I',
                             'response': None}
 

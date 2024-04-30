@@ -141,7 +141,7 @@ class MultisigJoinCollectionEnd:
 
         serder = serdering.SerderKERI(sad=rot)
         agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
-        op = agent.monitor.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=0))
+        op = agent.monitor.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=serder.sn))
 
         rep.content_type = "application/json"
         rep.status = falcon.HTTP_202
