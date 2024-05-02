@@ -553,7 +553,7 @@ class CredentialCollectionEnd:
                 anc = serdering.SerderKERI(sad=httping.getRequiredParam(body, "ixn"))
             else:
                 anc = serdering.SerderKERI(sad=httping.getRequiredParam(body, "rot"))
-        except kering.ValidationError as e:
+        except (kering.ValidationError, json.decoder.JSONDecodeError) as e:
             rep.status = falcon.HTTP_400
             rep.text = e.args[0]
             return

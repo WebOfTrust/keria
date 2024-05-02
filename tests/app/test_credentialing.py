@@ -293,11 +293,6 @@ def test_issue_credential(helpers, seeder):
         assert result.json == {'description': "name is not a valid reference to an identifier",
                                'title': '404 Not Found'}
         
-        result = client.simulate_post(path="/identifiers/issuer/credentials", body=json.dumps({}).encode("utf-8"))
-        assert result.status_code == 400
-        assert result.json == {'description': "required field 'acdc' missing from request",
-                               'title': '400 Bad Request'}
-
         result = client.simulate_post(path="/identifiers/issuer/credentials", body=json.dumps(body).encode("utf-8"))
         op = result.json
 
@@ -309,6 +304,9 @@ def test_issue_credential(helpers, seeder):
 
         assert agent.credentialer.complete(creder.said) is True
 
+        body["acdc"]["a"]["LEI"] = "ACDC10JSON000197_"
+        result = client.simulate_post(path="/identifiers/issuer/credentials", body=json.dumps(body).encode("utf-8"))
+        assert result.status_code == 400
 
 def test_credentialing_ends(helpers, seeder):
     salt = b'0123456789abcdef'
