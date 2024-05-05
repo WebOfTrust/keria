@@ -91,5 +91,10 @@ describe('Serder', () => {
 
         aid0 = new Prefixer({ code: MtrDex.Blake3_256 }, ked0);
         assert.equal(aid0.qb64, 'ECHOi6qRaswNpvytpCtpvEh2cB2aLAwVHBLFinno3YVW');
+
+        const ked1 = ked0;
+        ked1.a = { n: 'Lenksjö' };
+        const serder1 = new Serder(ked1);
+        assert.equal(serder1.ked.v, 'KERI10JSON000139_');
     });
 });

@@ -153,7 +153,7 @@ export function sizeify(
     }
 
     let raw = dumps(ked, kind);
-    const size = raw.length;
+    const size = new TextEncoder().encode(raw).length;
 
     ked['v'] = versify(ident, version, kind, size);
 
