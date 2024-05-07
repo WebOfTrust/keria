@@ -27,7 +27,8 @@ from keri.app import configing, keeping, habbing, storing, signaling, oobiing, a
 from keri.app.grouping import Counselor
 from keri.app.keeping import Algos
 from keri.core import coring, parsing, eventing, routing, serdering
-from keri.core.coring import Ilks, randomNonce
+from keri.core.coring import Ilks
+from keri.core.signing import Salter
 from keri.db import dbing
 from keri.db.basing import OobiRecord
 from keri.vc import protocoling
@@ -1049,7 +1050,7 @@ class OOBICollectionEnd:
         else:
             raise falcon.HTTPBadRequest(description="invalid OOBI request body, either 'rpy' or 'url' is required")
 
-        oid = randomNonce()
+        oid = Salter().qb64
         op = agent.monitor.submit(oid, longrunning.OpTypes.oobi, metadata=dict(oobi=oobi))
 
         rep.status = falcon.HTTP_202
