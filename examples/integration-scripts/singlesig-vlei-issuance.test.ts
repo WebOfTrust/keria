@@ -106,6 +106,13 @@ const ECR_AUTH_RULES = Saider.saidify({
 const OOR_RULES = LE_RULES;
 const OOR_AUTH_RULES = LE_RULES;
 
+const CRED_RETRY_DEFAULTS = {
+    maxSleep: 1000,
+    minSleep: 10,
+    maxRetries: 5,
+    timeout: 10000,
+};
+
 interface Aid {
     name: string;
     prefix: string;
@@ -193,8 +200,9 @@ test('singlesig-vlei-issuance', async function run() {
             const cred = await getGrantedCredential(qviClient, qviCred.sad.d);
             assert(cred !== undefined);
             return cred;
-        });
+        }, CRED_RETRY_DEFAULTS);
     }
+
     assert.equal(qviCredHolder.sad.d, qviCred.sad.d);
     assert.equal(qviCredHolder.sad.s, QVI_SCHEMA_SAID);
     assert.equal(qviCredHolder.sad.i, gleifAid.prefix);
@@ -232,8 +240,9 @@ test('singlesig-vlei-issuance', async function run() {
             const cred = await getGrantedCredential(leClient, leCred.sad.d);
             assert(cred !== undefined);
             return cred;
-        });
+        }, CRED_RETRY_DEFAULTS);
     }
+
     assert.equal(leCredHolder.sad.d, leCred.sad.d);
     assert.equal(leCredHolder.sad.s, LE_SCHEMA_SAID);
     assert.equal(leCredHolder.sad.i, qviAid.prefix);
@@ -273,8 +282,9 @@ test('singlesig-vlei-issuance', async function run() {
             const cred = await getGrantedCredential(roleClient, ecrCred.sad.d);
             assert(cred !== undefined);
             return cred;
-        });
+        }, CRED_RETRY_DEFAULTS);
     }
+
     assert.equal(ecrCredHolder.sad.d, ecrCred.sad.d);
     assert.equal(ecrCredHolder.sad.s, ECR_SCHEMA_SAID);
     assert.equal(ecrCredHolder.sad.i, leAid.prefix);
@@ -320,8 +330,9 @@ test('singlesig-vlei-issuance', async function run() {
             );
             assert(cred !== undefined);
             return cred;
-        });
+        }, CRED_RETRY_DEFAULTS);
     }
+
     assert.equal(ecrAuthCredHolder.sad.d, ecrAuthCred.sad.d);
     assert.equal(ecrAuthCredHolder.sad.s, ECR_AUTH_SCHEMA_SAID);
     assert.equal(ecrAuthCredHolder.sad.i, leAid.prefix);
@@ -363,8 +374,9 @@ test('singlesig-vlei-issuance', async function run() {
             const cred = await getGrantedCredential(roleClient, ecrCred2.sad.d);
             assert(cred !== undefined);
             return cred;
-        });
+        }, CRED_RETRY_DEFAULTS);
     }
+
     assert.equal(ecrCredHolder2.sad.d, ecrCred2.sad.d);
     assert.equal(ecrCredHolder2.sad.s, ECR_SCHEMA_SAID);
     assert.equal(ecrCredHolder2.sad.i, qviAid.prefix);
@@ -409,8 +421,9 @@ test('singlesig-vlei-issuance', async function run() {
             );
             assert(cred !== undefined);
             return cred;
-        });
+        }, CRED_RETRY_DEFAULTS);
     }
+
     assert.equal(oorAuthCredHolder.sad.d, oorAuthCred.sad.d);
     assert.equal(oorAuthCredHolder.sad.s, OOR_AUTH_SCHEMA_SAID);
     assert.equal(oorAuthCredHolder.sad.i, leAid.prefix);
@@ -451,8 +464,9 @@ test('singlesig-vlei-issuance', async function run() {
             const cred = await getGrantedCredential(roleClient, oorCred.sad.d);
             assert(cred !== undefined);
             return cred;
-        });
+        }, CRED_RETRY_DEFAULTS);
     }
+
     assert.equal(oorCredHolder.sad.d, oorCred.sad.d);
     assert.equal(oorCredHolder.sad.s, OOR_SCHEMA_SAID);
     assert.equal(oorCredHolder.sad.i, qviAid.prefix);

@@ -211,9 +211,13 @@ export class Credentials {
         const [, acdc] = Saider.saidify({
             v: versify(Ident.ACDC, undefined, Serials.JSON, 0),
             d: '',
+            u: args.u,
             i: args.i ?? hab.prefix,
-            ...args,
+            ri: args.ri,
+            s: args.s,
             a: subject,
+            e: args.e,
+            r: args.r,
         });
 
         const [, iss] = Saider.saidify({
