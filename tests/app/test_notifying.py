@@ -7,7 +7,7 @@ Testing the Mark II Agent notification endpoint
 """
 from builtins import isinstance
 
-from keri.core.coring import randomNonce
+from keri.core.signing import Salter
 
 from keria.app import notifying, grouping
 
@@ -63,7 +63,7 @@ def test_notifications(helpers):
         assert notes[1]['a'] == dict(a=2)
 
         # Load with a non-existance last
-        last = randomNonce()
+        last = Salter().qb64
         # Not found for deleting or marking as read a non-existent note
         res = client.simulate_delete(path=f"/notifications/{last}")
         assert res.status_code == 404

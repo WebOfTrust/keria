@@ -14,6 +14,7 @@ from hio.help import decking
 from keri import core
 from keri.app import habbing, signing
 from keri.core import eventing, coring, serdering
+from keri.core.signing import Salter
 from keri.help import helping
 from keri.kering import Roles, TraitCodex
 from keri.peer import exchanging
@@ -601,7 +602,7 @@ def test_multisig_grant_admit(seeder, helpers):
             assert holderHab.pre in agent1.hby.kevers
 
         # Create credential registry
-        nonce = coring.randomNonce()
+        nonce = Salter().qb64
         regser = veventing.incept(issuerPre,
                                   baks=[],
                                   toad="0",

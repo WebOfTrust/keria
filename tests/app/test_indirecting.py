@@ -10,7 +10,8 @@ from hio.help import Hict
 from keri import core
 from keri.app import habbing, httping
 from keri.core import coring, serdering
-from keri.core.coring import randomNonce, MtrDex
+from keri.core.coring import MtrDex
+from keri.core.signing import Salter
 from keri.vdr import eventing
 from keria.end import ending
 
@@ -105,7 +106,7 @@ def test_indirecting(helpers):
         regser = eventing.incept(hab.pre,
                                  baks=[],
                                  toad="0",
-                                 nonce=randomNonce(),
+                                 nonce=Salter().qb64,
                                  cnfg=[],
                                  code=MtrDex.Blake3_256)
         headers = Hict([

@@ -13,6 +13,7 @@ from hio.base import doing
 from keri.app import habbing
 from keri.core import scheming, coring, parsing, serdering
 from keri.core.eventing import SealEvent
+from keri.core.signing import Salter
 from keri.kering import TraitCodex
 from keri.vc import proving
 from keri.vdr import eventing
@@ -116,7 +117,7 @@ def test_registry_end(helpers, seeder):
         result = client.simulate_post(path="/identifiers/test123/registries", body=b'{"name": "test"}')
         assert result.status == falcon.HTTP_400  # Bad Request, invalid aid name
 
-        nonce = coring.randomNonce()
+        nonce = Salter().qb64
         regser = eventing.incept(pre,
                                  baks=[],
                                  toad="0",
