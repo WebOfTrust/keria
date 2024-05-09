@@ -67,9 +67,9 @@ export function rotate({
         throw new Error(`Invalid ilk = ${ilk} for rot or drt.`);
     }
 
-    const sner = Number(sn);
-    if (sner < 1) {
-        throw new Error(`Invalid sn = 0x${sner.toString()} for rot or drt.`);
+    const sner = new CesrNumber({}, sn);
+    if (sner.num < 1) {
+        throw new Error(`Invalid sn = 0x${sner.numh} for rot or drt.`);
     }
     let _isit: number;
 
@@ -199,7 +199,7 @@ export function rotate({
         t: _ilk,
         d: '',
         i: pre,
-        s: sner.toString(16),
+        s: sner.numh,
         p: dig,
         kt:
             tholder.num &&

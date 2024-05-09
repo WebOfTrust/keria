@@ -2,11 +2,12 @@ import libsodium from 'libsodium-wrappers-sumo';
 import { Signer } from '../../src/keri/core/signer';
 import { strict as assert } from 'assert';
 import { MtrDex } from '../../src/keri/core/matter';
-import { incept, messagize } from '../../src/keri/core/eventing';
+import { incept, messagize, rotate } from '../../src/keri/core/eventing';
 import { Saider } from '../../src/keri/core/saider';
 import { Diger } from '../../src/keri/core/diger';
 import { b, d, Ilks } from '../../src/keri/core/core';
 import { Siger } from '../../src/keri/core/siger';
+import { randomBytes } from 'crypto';
 
 describe('key event function', () => {
     it('incept should create inception events', async () => {
@@ -189,5 +190,31 @@ describe('key event function', () => {
                 ':[]}-FABEIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL0AAAAAAAAAAAAAAAAAAAAAAAEIflL4H4134zYoRM6ls6Q086RLC_' +
                 'BhfNFh5uk-WxvhsL-AABAABB3MJGmBXxSEryNHw3YwZZLRl_6Ws4Me2WFq8PrQ6WlluSOpPqbwXuiG9RvNWZkqeW8A_0VRjokGMVRZ3m-c0I'
         );
+    });
+
+    it('Rotate should create rotation event with hex sequence number', async () => {
+        await libsodium.ready;
+
+        const signer0 = new Signer({ transferable: true });
+        const signer1 = new Signer({ transferable: true });
+        const keys0 = [signer0.verfer.qb64];
+        const ndigs = [new Diger({}, signer1.verfer.qb64b).qb64];
+        const serder = incept({ keys: keys0, ndigs });
+
+        function createRotation(sn: number) {
+            return rotate({
+                keys: keys0,
+                pre: serder.ked.i,
+                ndigs: serder.ked.n,
+                sn,
+                isith: 1,
+                nsith: 1,
+            }).ked['s'];
+        }
+
+        assert.equal(createRotation(1), '1');
+        assert.equal(createRotation(10), 'a');
+        assert.equal(createRotation(14), 'e');
+        assert.equal(createRotation(255), 'ff');
     });
 });
