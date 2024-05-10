@@ -5,6 +5,7 @@ import 'whatwg-fetch';
 import { Registries } from '../../src/keri/app/credentialing';
 import { Identifier, KeyManager, SaltyKeeper } from '../../src';
 import { strict as assert } from 'assert';
+import { HabState, State } from '../../src/keri/core/state';
 
 describe('registry', () => {
     it('should create a registry', async () => {
@@ -14,12 +15,15 @@ describe('registry', () => {
         const mockedKeyManager = mock(KeyManager);
         const mockedKeeper = mock(SaltyKeeper);
 
-        const hab = { prefix: 'hab prefix', state: { s: 0, d: 'a digest' } };
+        const hab = {
+            prefix: 'hab prefix',
+            state: { s: '0', d: 'a digest' } as State,
+        } as HabState;
 
         when(mockedClient.manager).thenReturn(instance(mockedKeyManager));
         when(mockedKeyManager.get(hab)).thenReturn(instance(mockedKeeper));
 
-        when(mockedKeeper.sign(anyOfClass(Uint8Array))).thenReturn([
+        when(mockedKeeper.sign(anyOfClass(Uint8Array))).thenResolve([
             'a signature',
         ]);
 
@@ -62,8 +66,11 @@ describe('registry', () => {
 
         const hab = {
             prefix: 'hab prefix',
-            state: { s: 0, d: 'a digest', c: ['EO'] },
-        };
+            state: { s: 0, d: 'a digest', c: ['EO'] } as unknown as State,
+            name: 'a name',
+            transferable: true,
+            windexes: [],
+        } as HabState;
 
         when(mockedIdentifiers.get('a name')).thenResolve(hab);
         when(mockedClient.identifiers()).thenReturn(

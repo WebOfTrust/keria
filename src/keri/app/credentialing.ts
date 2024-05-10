@@ -1,5 +1,4 @@
 import { SignifyClient } from './clienting';
-import { Salter } from '../core/salter';
 import { interact, messagize } from '../core/eventing';
 import { vdr } from '../core/vdring';
 import {
@@ -21,6 +20,7 @@ import {
     serializeIssExnAttachment,
 } from '../core/utils';
 import { Operation } from './coring';
+import { HabState } from '../core/state';
 
 /** Types of credentials */
 export class CredentialTypes {
@@ -412,7 +412,7 @@ export class Credentials {
 
         const keeper = this.client!.manager!.get(hab);
 
-        const sig = keeper.sign(b(exn.raw), true);
+        const sig = await keeper.sign(b(exn.raw), true);
 
         const siger = new Siger({ qb64: sig[0] });
         const seal = ['SealLast', { i: pre }];
@@ -638,7 +638,7 @@ export class Registries {
     }
 
     createFromEvents(
-        hab: Dict<any>,
+        hab: HabState,
         name: string,
         registryName: string,
         vcp: Dict<any>,
@@ -747,7 +747,7 @@ export class Ipex {
 
         let atc = args.ancAttachment;
         if (atc === undefined) {
-            const keeper = this.client.manager?.get(hab);
+            const keeper = this.client.manager!.get(hab);
             const sigs = await keeper.sign(b(args.anc.raw));
             const sigers = sigs.map((sig: string) => new Siger({ qb64: sig }));
             const ims = d(messagize(args.anc, sigers));

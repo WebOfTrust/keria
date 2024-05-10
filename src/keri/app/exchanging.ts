@@ -5,6 +5,7 @@ import { nowUTC } from '../core/utils';
 import { Pather } from '../core/pather';
 import { Counter, CtrDex } from '../core/counter';
 import { Saider } from '../core/saider';
+import { HabState } from '../core/state';
 
 /**
  * Exchanges
@@ -33,7 +34,7 @@ export class Exchanges {
      * @param dig
      */
     async createExchangeMessage(
-        sender: Dict<any>,
+        sender: HabState,
         route: string,
         payload: Dict<any>,
         embeds: Dict<any>,
@@ -72,7 +73,7 @@ export class Exchanges {
     async send(
         name: string,
         topic: string,
-        sender: Dict<any>,
+        sender: HabState,
         route: string,
         payload: Dict<any>,
         embeds: Dict<any>,

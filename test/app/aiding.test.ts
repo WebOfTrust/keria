@@ -366,7 +366,7 @@ describe('Aiding', () => {
                 rstates: [member1.state, member2.state],
             };
 
-            await client.identifiers().rotate(group.alias, args);
+            await client.identifiers().rotate(group.name, args);
             const request = client.getLastMockRequest();
             const body = request.body;
             expect(body).toMatchObject({
@@ -395,7 +395,7 @@ describe('Aiding', () => {
 
             client.fetch.mockResolvedValueOnce(Response.json(group));
             client.fetch.mockResolvedValueOnce(Response.json({}));
-            await client.identifiers().rotate(group.alias, {
+            await client.identifiers().rotate(group.name, {
                 nsith: '1',
                 states: [member1.state, member2.state],
                 rstates: [member1.state, member2.state],

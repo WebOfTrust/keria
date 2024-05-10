@@ -9,12 +9,13 @@ import {
     Versionage,
     incept,
 } from '../../src';
+import { EstablishmentState, HabState, State } from '../../src/keri/core/state';
 
 export async function createMockIdentifierState(
     name: string,
     bran: string,
     kargs: CreateIdentiferArgs = {}
-) {
+): Promise<HabState> {
     const controller = new Controller(bran, Tier.low);
     const manager = new KeyManager(controller.salter);
     const algo = kargs.algo == undefined ? Algos.salty : kargs.algo;
@@ -89,12 +90,14 @@ export async function createMockIdentifierState(
         name: name,
         prefix: serder.pre,
         [algo]: keeper.params(),
+        transferable,
+        windexes: [],
         state: {
             vn: [serder.version.major, serder.version.minor],
             s: serder.ked.s,
             d: serder.ked.d,
             i: serder.pre,
-            ee: serder.ked,
+            ee: serder.ked as EstablishmentState,
             kt: serder.ked.kt,
             k: serder.ked.k,
             nt: serder.ked.nt,
@@ -102,8 +105,11 @@ export async function createMockIdentifierState(
             bt: serder.ked.bt,
             b: serder.ked.b,
             p: serder.ked.p ?? '',
+            f: '',
+            dt: new Date().toISOString().replace('Z', '000+00:00'),
+            et: '',
             c: [],
             di: serder.ked.di ?? '',
-        },
+        } as State,
     };
 }

@@ -17,6 +17,7 @@ import {
     waitForNotifications,
 } from './utils/test-util';
 import { getOrCreateClients, getOrCreateContact } from './utils/test-setup';
+import { HabState } from '../../src/keri/core/state';
 
 const { vleiServerUrl, witnessIds } = resolveEnvironment();
 
@@ -65,12 +66,6 @@ const ECR_RULES = Saider.saidify({
         l: 'It is the sole responsibility of Holders as Issuees of an ECR vLEI Credential to present that Credential in a privacy-preserving manner using the mechanisms provided in the Issuance and Presentation Exchange (IPEX) protocol specification and the Authentic Chained Data Container (ACDC) specification. https://github.com/WebOfTrust/IETF-IPEX and https://github.com/trustoverip/tswg-acdc-specification.',
     },
 })[1];
-
-interface Aid {
-    name: string;
-    prefix: string;
-    state: any;
-}
 
 test('multisig-vlei-issuance', async function run() {
     /**
@@ -190,7 +185,7 @@ test('multisig-vlei-issuance', async function run() {
 
     // Create a multisig AID for the GEDA.
     // Skip if a GEDA AID has already been incepted.
-    let aidGEDAbyGAR1, aidGEDAbyGAR2: Aid;
+    let aidGEDAbyGAR1, aidGEDAbyGAR2: HabState;
     try {
         aidGEDAbyGAR1 = await clientGAR1.identifiers().get('GEDA');
         aidGEDAbyGAR2 = await clientGAR2.identifiers().get('GEDA');
@@ -291,7 +286,7 @@ test('multisig-vlei-issuance', async function run() {
 
     // Create a multisig AID for the QVI.
     // Skip if a QVI AID has already been incepted.
-    let aidQVIbyQAR1, aidQVIbyQAR2, aidQVIbyQAR3: Aid;
+    let aidQVIbyQAR1, aidQVIbyQAR2, aidQVIbyQAR3: HabState;
     try {
         aidQVIbyQAR1 = await clientQAR1.identifiers().get('QVI');
         aidQVIbyQAR2 = await clientQAR2.identifiers().get('QVI');
@@ -655,7 +650,7 @@ test('multisig-vlei-issuance', async function run() {
 
     // Create a multisig AID for the LE.
     // Skip if a LE AID has already been incepted.
-    let aidLEbyLAR1, aidLEbyLAR2, aidLEbyLAR3: Aid;
+    let aidLEbyLAR1, aidLEbyLAR2, aidLEbyLAR3: HabState;
     try {
         aidLEbyLAR1 = await clientLAR1.identifiers().get('LE');
         aidLEbyLAR2 = await clientLAR2.identifiers().get('LE');
@@ -1249,31 +1244,30 @@ async function getOrCreateAID(
     client: SignifyClient,
     name: string,
     kargs: CreateIdentiferArgs
-): Promise<Aid> {
-    let aid: Aid;
+): Promise<HabState> {
     try {
-        aid = await client.identifiers().get(name);
+        return await client.identifiers().get(name);
     } catch {
         const result: EventResult = await client
             .identifiers()
             .create(name, kargs);
 
         await waitOperation(client, await result.op());
-        aid = await client.identifiers().get(name);
+        const aid = await client.identifiers().get(name);
 
         const op = await client
             .identifiers()
             .addEndRole(name, 'agent', client!.agent!.pre);
         await waitOperation(client, await op.op());
         console.log(name, 'AID:', aid.prefix);
+        return aid;
     }
-    return aid;
 }
 
 async function createAIDMultisig(
     client: SignifyClient,
-    aid: Aid,
-    otherMembersAIDs: Aid[],
+    aid: HabState,
+    otherMembersAIDs: HabState[],
     groupName: string,
     kargs: CreateIdentiferArgs,
     isInitiator: boolean = false
@@ -1311,9 +1305,9 @@ async function createAIDMultisig(
 
 async function interactMultisig(
     client: SignifyClient,
-    aid: Aid,
-    otherMembersAIDs: Aid[],
-    multisigAID: Aid,
+    aid: HabState,
+    otherMembersAIDs: HabState[],
+    multisigAID: HabState,
     anchor: { i: string; s: string; d: string },
     isInitiator: boolean = false
 ) {
@@ -1351,9 +1345,9 @@ async function interactMultisig(
 
 async function addEndRoleMultisig(
     client: SignifyClient,
-    aid: Aid,
-    otherMembersAIDs: Aid[],
-    multisigAID: Aid,
+    aid: HabState,
+    otherMembersAIDs: HabState[],
+    multisigAID: HabState,
     timestamp: string,
     isInitiator: boolean = false
 ) {
@@ -1411,9 +1405,9 @@ async function addEndRoleMultisig(
 
 async function createRegistryMultisig(
     client: SignifyClient,
-    aid: Aid,
-    otherMembersAIDs: Aid[],
-    multisigAID: Aid,
+    aid: HabState,
+    otherMembersAIDs: HabState[],
+    multisigAID: HabState,
     registryName: string,
     nonce: string,
     isInitiator: boolean = false
@@ -1456,8 +1450,8 @@ async function createRegistryMultisig(
 
 async function getIssuedCredential(
     issuerClient: SignifyClient,
-    issuerAID: Aid,
-    recipientAID: Aid,
+    issuerAID: HabState,
+    recipientAID: HabState,
     schemaSAID: string
 ) {
     const credentialList = await issuerClient.credentials().list({
@@ -1473,8 +1467,8 @@ async function getIssuedCredential(
 
 async function issueCredentialMultisig(
     client: SignifyClient,
-    aid: Aid,
-    otherMembersAIDs: Aid[],
+    aid: HabState,
+    otherMembersAIDs: HabState[],
     multisigAIDName: string,
     kargsIss: CredentialData,
     isInitiator: boolean = false
@@ -1516,10 +1510,10 @@ async function issueCredentialMultisig(
 
 async function grantMultisig(
     client: SignifyClient,
-    aid: Aid,
-    otherMembersAIDs: Aid[],
-    multisigAID: Aid,
-    recipientAID: Aid,
+    aid: HabState,
+    otherMembersAIDs: HabState[],
+    multisigAID: HabState,
+    recipientAID: HabState,
     credential: any,
     timestamp: string,
     isInitiator: boolean = false
@@ -1568,10 +1562,10 @@ async function grantMultisig(
 
 async function admitMultisig(
     client: SignifyClient,
-    aid: Aid,
-    otherMembersAIDs: Aid[],
-    multisigAID: Aid,
-    recipientAID: Aid,
+    aid: HabState,
+    otherMembersAIDs: HabState[],
+    multisigAID: HabState,
+    recipientAID: HabState,
     timestamp: string
     // numGrantMsgs: number
 ) {
@@ -1617,8 +1611,8 @@ async function admitMultisig(
 
 async function admitSinglesig(
     client: SignifyClient,
-    aid: Aid,
-    recipientAid: Aid
+    aid: HabState,
+    recipientAid: HabState
 ) {
     const grantMsgSaid = await waitAndMarkNotification(
         client,

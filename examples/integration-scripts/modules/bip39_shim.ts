@@ -1,7 +1,7 @@
 import { mnemonicToSeedSync, generateMnemonic } from 'bip39';
-import { Diger, Signer, MtrDex } from 'signify-ts';
+import { Diger, Signer, MtrDex, Keeper, KeeperResult, Algos } from 'signify-ts';
 
-export class BIP39Shim {
+export class BIP39Shim implements Keeper {
     private icount: number;
     private ncount: number;
     private dcode: string | undefined;
@@ -10,6 +10,8 @@ export class BIP39Shim {
     private transferable: boolean;
     private stem: string;
     private mnemonics: string = '';
+    algo: Algos = Algos.extern;
+    signers: Signer[] = [];
 
     constructor(pidx: number, kargs: any) {
         this.icount = kargs.icount ?? 1;
@@ -47,7 +49,7 @@ export class BIP39Shim {
         return keys;
     }
 
-    incept(transferable: boolean) {
+    async incept(transferable: boolean): Promise<KeeperResult> {
         const signers = this.keys(this.icount, this.kidx, transferable);
         const verfers = signers.map((signer) => signer.verfer.qb64);
 
@@ -63,7 +65,12 @@ export class BIP39Shim {
         return [verfers, digers];
     }
 
-    rotate(ncount: number, transferable: boolean) {
+    async rotate(
+        // TODO: This signature is incompatible with Keeper
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        count: any, //number,
+        transferable: boolean
+    ): Promise<KeeperResult> {
         const signers = this.keys(
             this.ncount,
             this.kidx + this.icount,
@@ -73,7 +80,9 @@ export class BIP39Shim {
 
         this.kidx = this.kidx + this.icount;
         this.icount = this.ncount;
-        this.ncount = ncount;
+
+        // TODO: Due to incompatible signature.
+        this.ncount = count as number;
 
         const nsigners = this.keys(
             this.ncount,
@@ -88,7 +97,7 @@ export class BIP39Shim {
         return [verfers, digers];
     }
 
-    sign(
+    async sign(
         ser: Uint8Array,
         indexed = true,
         indices: number[] | undefined = undefined,
@@ -133,7 +142,7 @@ export class BIP39Shim {
             return sigers.map((siger) => siger.qb64);
         } else {
             const cigars = [];
-            for (const [_, signer] of signers.entries()) {
+            for (const [, signer] of signers.entries()) {
                 cigars.push(signer.sign(ser));
             }
             return cigars.map((cigar) => cigar.qb64);

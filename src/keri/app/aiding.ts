@@ -7,6 +7,7 @@ import { MtrDex } from '../core/matter';
 import { Serder } from '../core/serder';
 import { parseRangeHeaders } from '../core/httping';
 import { KeyManager } from '../core/keeping';
+import { HabState } from '../core/state';
 
 /** Arguments required to create an identfier */
 export interface CreateIdentiferArgs {
@@ -25,9 +26,9 @@ export interface CreateIdentiferArgs {
     rstates?: any[];
     prxs?: any[];
     nxts?: any[];
-    mhab?: any;
-    keys?: any[];
-    ndigs?: any[];
+    mhab?: HabState;
+    keys?: string[];
+    ndigs?: string[];
     bran?: string;
     count?: number;
     ncount?: number;
@@ -111,7 +112,7 @@ export class Identifier {
      * @param {string} name Name or alias of the identifier
      * @returns {Promise<any>} A promise to the identifier information
      */
-    async get(name: string): Promise<any> {
+    async get(name: string): Promise<HabState> {
         const path = `/identifiers/${encodeURIComponent(name)}`;
         const data = null;
         const method = 'GET';

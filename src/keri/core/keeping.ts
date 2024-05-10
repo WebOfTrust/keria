@@ -9,28 +9,79 @@ import { Cipher } from './cipher';
 import { Diger } from './diger';
 import { Prefixer } from './prefixer';
 import { Signer } from './signer';
-import { Siger } from './siger';
-import { Cigar } from './cigar';
-
-export {};
+import { HabState, State } from './state';
 
 /** External module definition */
+export interface ExternalModuleType {
+    new (pidx: number, args: KeeperParams): Keeper;
+}
+
 export interface ExternalModule {
     type: string;
     name: string;
-    module: any;
+    module: ExternalModuleType;
+}
+
+export type KeeperResult = [string[], string[]];
+export type SignResult = string[];
+
+export interface KeeperParams {
+    [key: string]: unknown;
+}
+
+export interface SaltyParams extends KeeperParams {
+    pidx: number;
+    kidx: number;
+    tier: Tier;
+    transferable: boolean;
+    stem: string | undefined;
+    icodes: string[] | undefined;
+    ncodes: string[] | undefined;
+    dcode: string | undefined;
+    sxlt: string | undefined;
+}
+
+export interface RandyParams extends KeeperParams {
+    nxts?: string[];
+    prxs?: string[];
+    transferable: boolean;
+}
+
+export interface GroupParams extends KeeperParams {
+    mhab: HabState;
+}
+
+export interface Keeper<T extends KeeperParams = KeeperParams> {
+    algo: Algos;
+    signers: Signer[];
+    params(): T;
+    incept(transferable: boolean): Promise<KeeperResult>;
+    rotate(
+        ncodes: string[],
+        transferable: boolean,
+        states?: State[],
+        rstates?: State[]
+    ): Promise<KeeperResult>;
+    sign(
+        ser: Uint8Array,
+        indexed?: boolean,
+        indices?: number[],
+        ondices?: number[]
+    ): Promise<SignResult>;
 }
 
 export class KeyManager {
-    private salter?: Salter;
-    private modules?: any;
+    private modules: Record<string, ExternalModuleType> = {};
 
-    constructor(salter: Salter, externalModules: ExternalModule[] = []) {
+    constructor(
+        private salter: Salter,
+        externalModules: ExternalModule[] = []
+    ) {
         this.salter = salter;
-        this.modules = [];
-        externalModules.forEach((mod) => {
+
+        for (const mod of externalModules) {
             this.modules[mod.type] = mod.module;
-        });
+        }
     }
 
     new(algo: Algos, pidx: number, kargs: any) {
@@ -76,67 +127,69 @@ export class KeyManager {
                     kargs['keys'],
                     kargs['ndigs']
                 );
-            case Algos.extern:
-                const typ = kargs.extern_type;
-                if (typ in this.modules) {
-                    const mod = new this.modules[typ](pidx, kargs);
-                    return mod;
-                } else {
-                    throw new Error(`unsupported external module type ${typ}`);
+            case Algos.extern: {
+                const ModuleConstructor = this.modules[kargs.extern_type];
+                if (!ModuleConstructor) {
+                    throw new Error(
+                        `unsupported external module type ${kargs.extern_type}`
+                    );
                 }
+
+                return new ModuleConstructor(pidx, kargs);
+            }
             default:
                 throw new Error('Unknown algo');
         }
     }
 
-    get(aid: any) {
-        const pre = new Prefixer({ qb64: aid['prefix'] });
-        if (Algos.salty in aid) {
+    get(aid: HabState): Keeper {
+        if (aid[Algos.salty]) {
             const kargs = aid[Algos.salty];
             return new SaltyKeeper(
-                this.salter!,
+                this.salter,
                 kargs['pidx'],
                 kargs['kidx'],
                 kargs['tier'],
                 kargs['transferable'],
                 kargs['stem'],
-                kargs['code'],
-                kargs['count'],
+                undefined,
+                undefined,
                 kargs['icodes'],
-                kargs['ncode'],
-                kargs['ncount'],
+                undefined,
+                undefined,
                 kargs['ncodes'],
                 kargs['dcode'],
-                kargs['bran'],
+                undefined,
                 kargs['sxlt']
             );
-        } else if (Algos.randy in aid) {
-            const kargs = aid[Algos.randy];
+        } else if (aid[Algos.randy]) {
+            const pre = new Prefixer({ qb64: aid['prefix'] });
+            const kargs = aid[Algos.randy]!;
             return new RandyKeeper(
-                this.salter!,
-                kargs['code'],
-                kargs['count'],
-                kargs['icodes'],
+                this.salter,
+                undefined,
+                undefined,
+                undefined,
                 pre.transferable,
-                kargs['ncode'],
-                kargs['ncount'],
-                kargs['ncodes'],
-                kargs['dcode'],
+                undefined,
+                undefined,
+                [],
+                undefined,
                 kargs['prxs'],
                 kargs['nxts']
             );
-        } else if (Algos.group in aid) {
+        } else if (aid[Algos.group]) {
             const kargs = aid[Algos.group];
             return new GroupKeeper(
                 this,
                 kargs['mhab'],
-                kargs['states'],
-                kargs['rstates'],
+                undefined,
+                undefined,
                 kargs['keys'],
                 kargs['ndigs']
             );
-        } else if (Algos.extern in aid) {
-            const kargs = aid[Algos.randy];
+        } else if (aid[Algos.extern]) {
+            const kargs = aid[Algos.extern];
             const typ = kargs.extern_type;
             if (typ in this.modules) {
                 const mod = new this.modules[typ](kargs['pidx'], kargs);
@@ -150,7 +203,7 @@ export class KeyManager {
     }
 }
 
-export class SaltyKeeper {
+export class SaltyKeeper implements Keeper {
     private aeid: string;
     private encrypter: Encrypter;
     private decrypter: Decrypter;
@@ -179,7 +232,7 @@ export class SaltyKeeper {
         kidx: number = 0,
         tier = Tier.low,
         transferable = false,
-        stem = undefined,
+        stem: string | undefined = undefined,
         code = MtrDex.Ed25519_Seed,
         count = 1,
         icodes: string[] | undefined = undefined,
@@ -188,7 +241,7 @@ export class SaltyKeeper {
         ncodes: string[] | undefined = undefined,
         dcode = MtrDex.Blake3_256,
         bran: string | undefined = undefined,
-        sxlt = undefined
+        sxlt: string | undefined = undefined
     ) {
         // # Salter is the entered passcode and used for enc/dec of salts for each AID
         this.salter = salter;
@@ -228,7 +281,7 @@ export class SaltyKeeper {
             const ciph = new Cipher({ qb64: this.sxlt });
             this.creator = new SaltyCreator(
                 this.decrypter.decrypt(null, ciph).qb64,
-                (tier = tier),
+                tier,
                 this.stem
             );
         }
@@ -245,9 +298,7 @@ export class SaltyKeeper {
         ).signers;
     }
 
-    params() {
-        // Get AID parameters to store externally
-
+    params(): SaltyParams {
         return {
             sxlt: this.sxlt,
             pidx: this.pidx,
@@ -261,16 +312,7 @@ export class SaltyKeeper {
         };
     }
 
-    incept(transferable: boolean) {
-        // Create verfers and digers for inception event for AID represented by this Keeper
-
-        // Args:
-        //     transferable (bool): True if the AID for this keeper can establish new keys
-
-        // Returns:
-        //     verfers(list): qualified base64 of signing public keys
-        //     digers(list): qualified base64 of hash of rotation public keys
-
+    async incept(transferable: boolean): Promise<KeeperResult> {
         this.transferable = transferable;
         this.kidx = 0;
 
@@ -304,17 +346,10 @@ export class SaltyKeeper {
         return [verfers, digers];
     }
 
-    rotate(ncodes: string[], transferable: boolean, ..._: any[]) {
-        // Rotate and return verfers and digers for next rotation event for AID represented by this Keeper
-
-        // Args:
-        //     ncodes (list):
-        //     transferable (bool): derivation codes for rotation key creation
-
-        // Returns:
-        //     verfers(list): qualified base64 of signing public keys
-        //     digers(list): qualified base64 of hash of rotation public keys
-
+    async rotate(
+        ncodes: string[],
+        transferable: boolean
+    ): Promise<[string[], string[]]> {
         this.ncodes = ncodes;
         this.transferable = transferable;
         const signers = this.creator.create(
@@ -348,12 +383,12 @@ export class SaltyKeeper {
         return [verfers, digers];
     }
 
-    sign(
+    async sign(
         ser: Uint8Array,
         indexed = true,
         indices: number[] | undefined = undefined,
         ondices: number[] | undefined = undefined
-    ) {
+    ): Promise<SignResult> {
         const signers = this.creator.create(
             this.icodes,
             this.ncount,
@@ -402,7 +437,7 @@ export class SaltyKeeper {
             return sigers.map((siger) => siger.qb64);
         } else {
             const cigars = [];
-            for (const [_, signer] of signers.signers.entries()) {
+            for (const [, signer] of signers.signers.entries()) {
                 cigars.push(signer.sign(ser));
             }
             return cigars.map((cigar) => cigar.qb64);
@@ -410,7 +445,7 @@ export class SaltyKeeper {
     }
 }
 
-export class RandyKeeper {
+export class RandyKeeper implements Keeper {
     private salter: Salter;
     private code: string;
     private count: number;
@@ -480,7 +515,7 @@ export class RandyKeeper {
         );
     }
 
-    params() {
+    params(): RandyParams {
         return {
             nxts: this.nxts,
             prxs: this.prxs,
@@ -488,7 +523,7 @@ export class RandyKeeper {
         };
     }
 
-    incept(transferable: boolean) {
+    async incept(transferable: boolean): Promise<KeeperResult> {
         this.transferable = transferable;
 
         const signers = this.creator.create(
@@ -522,7 +557,10 @@ export class RandyKeeper {
         return [verfers, digers];
     }
 
-    rotate(ncodes: string[], transferable: boolean, ..._: any[]) {
+    async rotate(
+        ncodes: string[],
+        transferable: boolean
+    ): Promise<KeeperResult> {
         this.ncodes = ncodes;
         this.transferable = transferable;
         this.prxs = this.nxts;
@@ -554,12 +592,12 @@ export class RandyKeeper {
         return [verfers, digers];
     }
 
-    sign(
+    async sign(
         ser: Uint8Array,
         indexed = true,
         indices: number[] | undefined = undefined,
         ondices: number[] | undefined = undefined
-    ) {
+    ): Promise<SignResult> {
         const signers = this.prxs!.map((prx) =>
             this.decrypter.decrypt(
                 new Cipher({ qb64: prx }).qb64b,
@@ -605,28 +643,29 @@ export class RandyKeeper {
             return sigers.map((siger) => siger.qb64);
         } else {
             const cigars = [];
-            for (const [_, signer] of signers.entries()) {
+            for (const [, signer] of signers.entries()) {
                 cigars.push(signer.sign(ser));
             }
             return cigars.map((cigar) => cigar.qb64);
         }
     }
 }
-export class GroupKeeper {
+
+export class GroupKeeper implements Keeper {
     private manager: KeyManager;
-    private mhab: any;
-    private gkeys: string[] | undefined;
-    private gdigs: string[] | undefined;
+    private mhab: HabState;
+    private gkeys: string[] = [];
+    private gdigs: string[] = [];
     public algo: Algos = Algos.group;
     public signers: Signer[];
 
     constructor(
         manager: KeyManager,
-        mhab = undefined,
-        states: any[] | undefined = undefined,
-        rstates: any[] | undefined = undefined,
-        keys: any[] | undefined = undefined,
-        ndigs: any[] | undefined = undefined
+        mhab: HabState,
+        states: State[] | undefined = undefined,
+        rstates: State[] | undefined = undefined,
+        keys: string[] = [],
+        ndigs: string[] = []
     ) {
         this.manager = manager;
         if (states != undefined) {
@@ -637,33 +676,32 @@ export class GroupKeeper {
             ndigs = rstates.map((state) => state['n'][0]);
         }
 
-        this.gkeys = keys;
-        this.gdigs = ndigs;
+        this.gkeys = states?.map((state) => state['k'][0]) ?? keys;
+        this.gdigs = rstates?.map((state) => state['n'][0]) ?? ndigs;
         this.mhab = mhab;
         this.signers = [];
     }
-    incept(..._: any) {
+
+    async incept(): Promise<KeeperResult> {
         return [this.gkeys, this.gdigs];
     }
 
-    rotate(
+    async rotate(
         _ncodes: string[],
         _transferable: boolean,
-        states: any[],
-        rstates: any[],
-        ..._: any
-    ) {
+        states: State[],
+        rstates: State[]
+    ): Promise<KeeperResult> {
         this.gkeys = states.map((state) => state['k'][0]);
         this.gdigs = rstates.map((state) => state['n'][0]);
         return [this.gkeys, this.gdigs];
     }
 
-    async sign(
-        ser: Uint8Array,
-        indexed: boolean = true,
-        _indices: number[] | undefined = undefined,
-        _ondices: number[] | undefined = undefined
-    ): Promise<Siger[] | Cigar[]> {
+    async sign(ser: Uint8Array, indexed: boolean = true): Promise<SignResult> {
+        if (!this.mhab.state) {
+            throw new Error(`No state in mhab`);
+        }
+
         const key = this.mhab['state']['k'][0];
         const ndig = this.mhab['state']['n'][0];
 

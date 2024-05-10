@@ -19,6 +19,15 @@ import { Diger } from '../../src/keri/core/diger';
 import { Siger } from '../../src/keri/core/siger';
 import { b } from '../../src/keri/core/core';
 import { Cigar } from '../../src/keri/core/cigar';
+import {
+    Keeper,
+    KeeperParams,
+    KeyManager,
+    Prefixer,
+    RandyKeeper,
+} from '../../src';
+import { RandyState, State } from '../../src/keri/core/state';
+import { randomUUID } from 'crypto';
 
 describe('RandyCreator', () => {
     it('should create sets of random signers', async () => {
@@ -694,5 +703,152 @@ describe('Manager', () => {
             psigs[0],
             'AACRPqO6vdXm1oSSa82rmVVHikf7NdN4JXjOWEk30Ub5JHChL0bW6DzJfA-7VlgLm_B1XR0Z61FweP87bBQpVawI'
         );
+    });
+
+    it('Should support creating and getting randy keeper', async () => {
+        const passcode = '0123456789abcdefghijk';
+        const salter = new Salter({ raw: b(passcode) });
+
+        const manager = new KeyManager(salter, []);
+
+        const keeper0 = manager.new(Algos.randy, 0, {}) as RandyKeeper;
+        const [keys] = await keeper0.incept(false);
+        const prefixes = new Prefixer({ qb64: keys[0] });
+
+        const keeper1 = manager.get({
+            prefix: prefixes.qb64,
+            name: '',
+            state: {} as State,
+            randy: keeper0.params() as RandyState,
+            transferable: false,
+            windexes: [],
+        });
+
+        assert(keeper0 instanceof RandyKeeper);
+        assert(keeper1 instanceof RandyKeeper);
+    });
+
+    it('Should throw if algo is not supported', async () => {
+        const passcode = '0123456789abcdefghijk';
+        const salter = new Salter({ raw: b(passcode) });
+
+        const manager = new KeyManager(salter, []);
+
+        expect(() => manager.new(randomUUID() as Algos, 0, {})).toThrow(
+            'Unknown algo'
+        );
+        expect(() =>
+            manager.get({
+                prefix: '',
+                name: '',
+                state: {} as State,
+                transferable: false,
+                windexes: [],
+            })
+        ).toThrow('Algo not allowed yet');
+    });
+
+    describe('External Module ', () => {
+        class MockModule implements jest.Mocked<Keeper> {
+            #params: Record<string, unknown>;
+
+            constructor(
+                public pidx: number,
+                params: KeeperParams
+            ) {
+                this.#params = params;
+            }
+
+            signers: Signer[] = [];
+            sign = jest.fn();
+            algo: Algos = Algos.extern;
+            incept = jest.fn();
+            rotate = jest.fn();
+            params = jest.fn(() => this.#params);
+        }
+
+        it('Should support creating external keeper module', async () => {
+            const passcode = '0123456789abcdefghijk';
+            const salter = new Salter({ raw: b(passcode) });
+
+            const manager = new KeyManager(salter, [
+                { module: MockModule, name: 'mock', type: 'mock' },
+            ]);
+
+            const param = randomUUID();
+            const keeper = manager.new(Algos.extern, 0, {
+                extern_type: 'mock',
+                param,
+            });
+
+            assert(keeper instanceof MockModule);
+            expect(keeper.params()).toMatchObject({ param });
+        });
+
+        it('Should throw if external keeper module is not addede', async () => {
+            const passcode = '0123456789abcdefghijk';
+            const salter = new Salter({ raw: b(passcode) });
+
+            const manager = new KeyManager(salter, []);
+
+            const param = randomUUID();
+            expect(() =>
+                manager.new(Algos.extern, 0, {
+                    extern_type: 'mock',
+                    param,
+                })
+            ).toThrow('unsupported external module type mock');
+        });
+
+        it('Should support getting external keeper module', async () => {
+            const passcode = '0123456789abcdefghijk';
+            const salter = new Salter({ raw: b(passcode) });
+
+            const manager = new KeyManager(salter, [
+                { module: MockModule, name: 'mock', type: 'mock' },
+            ]);
+
+            const param = randomUUID();
+
+            const keeper = manager.get({
+                name: randomUUID(),
+                prefix: '',
+                state: {} as unknown as State,
+                windexes: [],
+                extern: {
+                    extern_type: 'mock',
+                    pidx: 3,
+                    param,
+                },
+                transferable: true,
+            });
+
+            assert(keeper instanceof MockModule);
+            expect(keeper.params()).toMatchObject({ param, pidx: 3 });
+        });
+
+        it('Should throw when trying to get external keeper that is not registered', async () => {
+            const passcode = '0123456789abcdefghijk';
+            const salter = new Salter({ raw: b(passcode) });
+
+            const manager = new KeyManager(salter, []);
+
+            const param = randomUUID();
+
+            expect(() =>
+                manager.get({
+                    name: randomUUID(),
+                    prefix: '',
+                    state: {} as unknown as State,
+                    windexes: [],
+                    extern: {
+                        extern_type: 'mock',
+                        pidx: 3,
+                        param,
+                    },
+                    transferable: true,
+                })
+            ).toThrow('unsupported external module type mock');
+        });
     });
 });
