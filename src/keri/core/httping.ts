@@ -13,6 +13,9 @@ import { Siger } from './siger';
 import { Buffer } from 'buffer';
 import { encodeBase64Url } from './base64';
 
+export const HEADER_SIG_INPUT = normalize('Signature-Input');
+export const HEADER_SIG_TIME = normalize('Signify-Timestamp');
+
 export function normalize(header: string) {
     return header.trim();
 }
@@ -107,7 +110,7 @@ export function siginput(
 
     return [
         new Map<string, string>([
-            ['Signature-Input', `${serializeDictionary(sid as Dictionary)}`],
+            [HEADER_SIG_INPUT, `${serializeDictionary(sid as Dictionary)}`],
         ]),
         sig,
     ];

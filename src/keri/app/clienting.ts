@@ -1,16 +1,17 @@
-import { Agent, Controller } from './controller';
-import { Tier } from '../core/salter';
 import { Authenticater } from '../core/authing';
+import { HEADER_SIG_TIME } from '../core/httping';
 import { ExternalModule, KeyManager } from '../core/keeping';
+import { Tier } from '../core/salter';
 
 import { Identifier } from './aiding';
 import { Contacts, Challenges } from './contacting';
+import { Agent, Controller } from './controller';
 import { Oobis, Operations, KeyEvents, KeyStates } from './coring';
 import { Credentials, Ipex, Registries, Schemas } from './credentialing';
-import { Notifications } from './notifying';
 import { Escrows } from './escrowing';
-import { Groups } from './grouping';
 import { Exchanges } from './exchanging';
+import { Groups } from './grouping';
+import { Notifications } from './notifying';
 
 const DEFAULT_BOOT_URL = 'http://localhost:3903';
 
@@ -176,7 +177,7 @@ export class SignifyClient {
 
         headers.set('Signify-Resource', this.controller.pre);
         headers.set(
-            'Signify-Timestamp',
+            HEADER_SIG_TIME,
             new Date().toISOString().replace('Z', '000+00:00')
         );
         headers.set('Content-Type', 'application/json');
@@ -230,22 +231,24 @@ export class SignifyClient {
     }
 
     /**
-     * Fetch a resource from from an external URL with headers signed by an AID
+     * Create a Signed Request to fetch a resource from an external URL with headers signed by an AID
      * @async
-     * @param {string} url URL of the resource
-     * @param {string} path Path to the resource
-     * @param {string} method HTTP method
-     * @param {any} data Data to be sent in the body of the resource
      * @param {string} aidName Name or alias of the AID to be used for signing
-     * @returns {Promise<Response>} A promise to the result of the fetch
+     * @param {string} url URL of the requested resource
+     * @param {RequestInit} req Request options should include:
+     *     - method: HTTP method
+     *     - data Data to be sent in the body of the resource.
+     *              If the data is a CESR JSON string then you should also set contentType to 'application/json+cesr'
+     *              If the data is a FormData object then you should not set the contentType and the browser will set it to 'multipart/form-data'
+     *              If the data is an object then you should use JSON.stringify to convert it to a string and set the contentType to 'application/json'
+     *     - contentType Content type of the request.
+     * @returns {Promise<Request>} A promise to the created Request
      */
-    async signedFetch(
+    async createSignedRequest(
+        aidName: string,
         url: string,
-        path: string,
-        method: string,
-        data: any,
-        aidName: string
-    ): Promise<Response> {
+        req: RequestInit
+    ): Promise<Request> {
         const hab = await this.identifiers().get(aidName);
         const keeper = this.manager!.get(hab);
 
@@ -254,42 +257,21 @@ export class SignifyClient {
             keeper.signers[0].verfer
         );
 
-        const headers = new Headers();
-        headers.set('Signify-Resource', hab.prefix);
+        const headers = new Headers(req.headers);
+        headers.set('Signify-Resource', hab['prefix']);
         headers.set(
-            'Signify-Timestamp',
+            HEADER_SIG_TIME,
             new Date().toISOString().replace('Z', '000+00:00')
         );
 
-        if (data !== null) {
-            headers.set('Content-Length', data.length);
-        } else {
-            headers.set('Content-Length', '0');
-        }
         const signed_headers = authenticator.sign(
-            headers,
-            method,
-            path.split('?')[0]
+            new Headers(headers),
+            req.method ?? 'GET',
+            new URL(url).pathname
         );
-        let _body = null;
-        if (method != 'GET') {
-            if (data instanceof FormData) {
-                _body = data;
-                // do not set the content type, let the browser do it
-                // headers.set('Content-Type', 'multipart/form-data')
-            } else {
-                _body = JSON.stringify(data);
-                headers.set('Content-Type', 'application/json');
-            }
-        } else {
-            headers.set('Content-Type', 'application/json');
-        }
+        req.headers = signed_headers;
 
-        return await fetch(url + path, {
-            method: method,
-            body: _body,
-            headers: signed_headers,
-        });
+        return new Request(url, req);
     }
 
     /**

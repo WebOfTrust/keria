@@ -1,6 +1,12 @@
 import { Signer } from './signer';
 import { Verfer } from './verfer';
-import { desiginput, normalize, siginput } from './httping';
+import {
+    desiginput,
+    HEADER_SIG_INPUT,
+    HEADER_SIG_TIME,
+    normalize,
+    siginput,
+} from './httping';
 import { Signage, signature, designature } from '../end/ending';
 import { Cigar } from './cigar';
 import { Siger } from './siger';
@@ -9,7 +15,7 @@ export class Authenticater {
         '@method',
         '@path',
         'signify-resource',
-        'signify-timestamp',
+        HEADER_SIG_TIME.toLowerCase(),
     ];
     private _verfer: Verfer;
     private readonly _csig: Signer;
@@ -20,7 +26,7 @@ export class Authenticater {
     }
 
     verify(headers: Headers, method: string, path: string): boolean {
-        const siginput = headers.get('Signature-Input');
+        const siginput = headers.get(HEADER_SIG_INPUT);
         if (siginput == null) {
             return false;
         }

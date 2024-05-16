@@ -108,9 +108,9 @@ const OOR_AUTH_RULES = LE_RULES;
 
 const CRED_RETRY_DEFAULTS = {
     maxSleep: 1000,
-    minSleep: 10,
-    maxRetries: 5,
-    timeout: 10000,
+    minSleep: 100,
+    maxRetries: undefined,
+    timeout: 30000,
 };
 
 interface Aid {
