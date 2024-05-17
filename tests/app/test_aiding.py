@@ -355,6 +355,8 @@ def test_identifier_collection_end(helpers):
 
         keys = [signer.verfer.qb64 for signer in signers]
         ndigs = [coring.Diger(ser=nsigner.verfer.qb64b) for nsigner in nsigners]
+        signer1 = signers[0]
+        diger1 = ndigs[0]
 
         serder = eventing.rotate(pre=res.json[0]["prefix"],
                                  keys=keys,
@@ -645,6 +647,63 @@ def test_identifier_collection_end(helpers):
         assert "rotation" in res.json
         rotation = res.json["rotation"]
         assert len(rotation) == 3
+
+        # Test group rotation
+        p1.rotate()
+        p2.rotate()
+
+        keys = [signer1.verfer.qb64, p1.kever.verfers[0].qb64, p2.kever.verfers[0].qb64]
+        ndigs = [diger1.qb64, p1.kever.ndigers[0].qb64, p2.kever.ndigers[0].qb64]
+
+        rserder = eventing.rotate(pre=serder.pre,
+                                 dig=serder.said,
+                                 keys=keys,
+                                 ndigs=ndigs,
+                                 isith="2",
+                                 nsith="2")
+
+        sigers = [signer1.sign(ser=rserder.raw, index=0).qb64,
+                  p1.sign(ser=rserder.raw, indices=[1])[0].qb64,
+                  p2.sign(ser=rserder.raw, indices=[2])[0].qb64]
+        smids = rmids = [agent0.get('i'), p1.pre, p2.pre]
+
+        body = {
+            'rot': rserder.ked,
+            'sigs': sigers,
+            'smids': smids,
+            'rmids': rmids,
+            'group': {
+                'mhab': mhab,
+                'keys': keys,
+                'ndigs': ndigs
+            }
+        }
+
+        res = client.simulate_post(path="/identifiers/multisig/events", body=json.dumps(body))
+        assert res.status_code == 200
+
+        # Make sure keys got rotated
+        res = client.simulate_get(path="/identifiers")
+        assert res.status_code == 200
+        assert len(res.json) == 3
+        aid = res.json[2]
+        assert aid["name"] == "multisig"
+        assert aid["prefix"] == rserder.pre
+        group = aid["group"]
+
+        assert group["keys"] == ['DKy7HNSig5OuFOfXKq85H_R35KA6TqjRnaLKrCl8sYih',
+                                 'DNHAT44MX_0kvxXm2JParu_VXDk6_Y3csi22h85ZXklA',
+                                 'DFWjujqjGJDJPDTxcCUv5uQ7rfHHVKM8FWIVMrqMM6ib']
+        assert group["ndigs"] == ['EHTQYGOEz97iOPC_DgEEGncSa1-X-TDiHdGNKQiN_3XJ',
+                                  'EGk-woPrFzGCOqPY4eOjpUFMKXXO1QcpaY53FplXqnvr',
+                                  'EDubroAsnG8zcvKQcjA-H1nfDVVvoxGy96LsEq0cTFJX']
+
+        # Ensure smids and rmids (remain) set
+        habord = agent.hby.db.habs.get(keys=(rserder.pre,))
+        assert habord.smids == ['EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                               'EBPtjiAY9ITdvScWFGeeCu3Pf6_CFFr57siQqffVt9Of',
+                               'EMYBtOuBKVdp3KdW_QM__pi-UAWfrewlDyiqGcbIbopR']
+        assert habord.smids == habord.rmids
 
         # Try unknown witness
         serder, signers = helpers.incept(salt, "signify:aid", pidx=3,
