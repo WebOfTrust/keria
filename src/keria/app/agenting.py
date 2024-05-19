@@ -9,7 +9,6 @@ import os
 from dataclasses import asdict
 from urllib.parse import urlparse, urljoin
 
-
 import falcon
 from falcon import media
 from hio.base import doing
@@ -21,7 +20,6 @@ from keri import core
 from keri.app.notifying import Notifier
 from keri.app.storing import Mailboxer
 
-
 from keri.app import configing, keeping, habbing, storing, signaling, oobiing, agenting, \
     forwarding, querying, connecting, grouping
 from keri.app.grouping import Counselor
@@ -29,7 +27,6 @@ from keri.app.keeping import Algos
 from keri.core import coring, parsing, eventing, routing, serdering
 from keri.core.coring import Ilks
 from keri.core.signing import Salter
-from keri.db import dbing
 from keri.db.basing import OobiRecord
 from keri.vc import protocoling
 
@@ -211,8 +208,8 @@ class Agency(doing.DoDoer):
                       configDir=self.configDir,
                       configFile=self.configFile)
 
-        res = self.adb.agnt.pin(keys=(caid,),
-                                val=coring.Prefixer(qb64=agent.pre))
+        self.adb.agnt.pin(keys=(caid,),
+                          val=coring.Prefixer(qb64=agent.pre))
 
         self.adb.ctrl.pin(keys=(agent.pre,),
                           val=coring.Prefixer(qb64=caid))
@@ -362,7 +359,8 @@ class Agent(doing.DoDoer):
                                      tvy=self.tvy,
                                      exc=self.exc,
                                      rvy=self.rvy,
-                                     vry=self.verifier)
+                                     vry=self.verifier,
+                                     local=True)  # disable misfit escrow until we can add another parser for remote.
 
         doers.extend([
             Initer(agentHab=agentHab, caid=caid),
@@ -373,7 +371,7 @@ class Agent(doing.DoDoer):
             Witnesser(receiptor=receiptor, witners=self.witners),
             Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
             ExchangeSender(hby=hby, agentHab=agentHab, exc=self.exc, exchanges=self.exchanges),
-            Granter(hby=hby, rgy=rgy,  agentHab=agentHab, exc=self.exc, grants=self.grants),
+            Granter(hby=hby, rgy=rgy, agentHab=agentHab, exc=self.exc, grants=self.grants),
             Admitter(hby=hby, witq=self.witq, psr=self.parser, agentHab=agentHab, exc=self.exc, admits=self.admits),
             GroupRequester(hby=hby, agentHab=agentHab, counselor=self.counselor, groups=self.groups),
             SeekerDoer(seeker=self.seeker, cues=self.verifier.cues),

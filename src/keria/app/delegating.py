@@ -39,6 +39,9 @@ class Anchorer(doing.DoDoer):
         if pre not in self.hby.habs:
             raise kering.ValidationError(f"{pre} is not a valid local AID for delegation")
 
+        if proxy is not None:
+            self.proxy = proxy
+
         # load the hab of the delegated identifier to anchor
         hab = self.hby.habs[pre]
         delpre = hab.kever.delpre  # get the delegator identifier
@@ -50,22 +53,9 @@ class Anchorer(doing.DoDoer):
         # load the event and signatures
         evt = hab.makeOwnEvent(sn=sn)
 
-        if isinstance(hab, habbing.GroupHab):
-            phab = hab.mhab
-        elif hab.kever.sn > 0:
-            phab = hab
-        elif proxy is not None:
-            phab = proxy
-        elif self.proxy is not None:
-            phab = self.proxy
-        else:
-            raise kering.ValidationError("no proxy to send messages for delegation")
-
         srdr = serdering.SerderKERI(raw=evt)
-        del evt[:srdr.size]
-        self.postman.send(hab=phab, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
-
-        self.hby.db.dune.pin(keys=(srdr.pre, srdr.said), val=srdr)
+        self.witDoer.msgs.append(dict(pre=pre, sn=srdr.sn))
+        self.hby.db.dpwe.pin(keys=(srdr.pre, srdr.said), val=srdr)
 
     def complete(self, prefixer, seqner, saider=None):
         """ Check for completed delegation protocol for the specific event
@@ -114,8 +104,8 @@ class Anchorer(doing.DoDoer):
             yield 0.5
 
     def processEscrows(self):
-        self.processUnanchoredEscrow()
         self.processPartialWitnessEscrow()
+        self.processUnanchoredEscrow()
 
     def processUnanchoredEscrow(self):
         """
@@ -134,11 +124,10 @@ class Anchorer(doing.DoDoer):
                 couple = seqner.qb64b + dserder.saidb
                 dgkey = dbing.dgKey(kever.prefixer.qb64b, kever.serder.saidb)
                 self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
-                self.witDoer.msgs.append(dict(pre=pre, sn=serder.sn))
 
                 # Move to escrow waiting for witness receipts
-                print(f"Waiting for fully signed witness receipts for {serder.sn}")
-                self.hby.db.dpwe.pin(keys=(pre, said), val=serder)
+                print(f"Delegation approval received,  {serder.pre} confirmed")
+                self.hby.db.cdel.put(keys=(pre, coring.Seqner(sn=serder.sn).qb64), val=coring.Saider(qb64=serder.said))
                 self.hby.db.dune.rem(keys=(pre, said))
 
     def processPartialWitnessEscrow(self):
@@ -149,7 +138,9 @@ class Anchorer(doing.DoDoer):
 
         """
         for (pre, said), serder in self.hby.db.dpwe.getItemIter():  # group partial witness escrow
+            hab = self.hby.habs[pre]
             kever = self.hby.kevers[pre]
+            delpre = hab.kever.delpre  # get the delegator identifier
             dgkey = dbing.dgKey(pre, serder.said)
             seqner = coring.Seqner(sn=serder.sn)
 
@@ -163,6 +154,22 @@ class Anchorer(doing.DoDoer):
                             witnessed = True
                     if not witnessed:
                         continue
-                print(f"Witness receipts complete, {pre} confirmed.")
+                print(f"Witness receipts complete, waiting for delegation approval.")
+                if isinstance(hab, habbing.GroupHab):
+                    phab = hab.mhab
+                elif hab.kever.sn > 0:
+                    phab = hab
+                elif self.proxy is not None:
+                    phab = self.proxy
+                else:
+                    raise kering.ValidationError("no proxy to send messages for delegation")
+
+                evt = hab.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
+
+                srdr = serdering.SerderKERI(raw=evt)
+                del evt[:srdr.size]
+                self.postman.send(hab=phab, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
+
                 self.hby.db.dpwe.rem(keys=(pre, said))
-                self.hby.db.cdel.put(keys=(pre, seqner.qb64), val=coring.Saider(qb64=serder.said))
+                self.hby.db.dune.pin(keys=(srdr.pre, srdr.said), val=srdr)
+
