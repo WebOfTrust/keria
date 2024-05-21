@@ -750,6 +750,7 @@ class Escrower(doing.Doer):
     def recur(self, tyme):
         """ Process all escrows once per loop. """
         self.kvy.processEscrows()
+        self.kvy.processEscrowDelegables()
         self.rgy.processEscrows()
         self.rvy.processEscrowReply()
         if self.tvy is not None:
