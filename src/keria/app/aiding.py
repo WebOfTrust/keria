@@ -532,6 +532,8 @@ class IdentifierResourceEnd:
                 op = self.rotate(agent, name, body)
             elif body.get("ixn") is not None:
                 op = self.interact(agent, name, body)
+            elif body.get("approveDelegation") is not None:
+                op = self.approveDelegation(agent, name, body)
             else:
                 raise falcon.HTTPBadRequest(title="invalid request",
                                             description=f"required field 'rot' or 'ixn' missing from request")
@@ -655,7 +657,39 @@ class IdentifierResourceEnd:
         op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
                                   metadata=dict(response=serder.ked))
         return op
+    
+    @staticmethod
+    def approveDelegation(agent, name, body):
+        hab = agent.hby.habByName(name)
+        if hab is None:
+            raise falcon.HTTPNotFound(title=f"No AID {name} found")
 
+        ixn = body.get("approveDelegation")
+        if ixn is None:
+            raise falcon.HTTPBadRequest(title="invalid interaction",
+                                        description=f"required field 'approveDelegation' missing from request")
+
+        sigs = body.get("sigs")
+        if sigs is None or len(sigs) == 0:
+            raise falcon.HTTPBadRequest(title="invalid interaction",
+                                        description=f"required field 'sigs' missing from approveDelegation request")
+
+        serder = serdering.SerderKERI(sad=ixn)
+        sigers = [core.Siger(qb64=sig) for sig in sigs]
+
+        kever = hab.kevers[hab.pre]
+        
+        gatePre = ixn['a'][0]['i']
+        gateSaid = ixn['a'][0]['d']
+
+        seqner = coring.Seqner(sn=serder.sn)
+        couple = seqner.qb64b + serder.saidb
+        dgkey = dbing.dgKey(coring.Saider(qb64=gatePre).qb64b, coring.Saider(qb64=gateSaid).qb64b)
+        hab.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
+
+        op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
+                                  metadata=dict(response=serder.ked))
+        return op
 
 def info(hab, rm, full=False):
     data = dict(
