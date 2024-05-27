@@ -109,7 +109,7 @@ class Anchorer(doing.DoDoer):
 
     def processUnanchoredEscrow(self):
         """
-        Process escrow of unacnchored events that have been delegated and are waiting for delegator anchor or approval.
+        Process escrow of unanchored events that have been delegated and are waiting for delegator anchor or approval.
 
         """
         for (pre, said), serder in self.hby.db.dune.getItemIter():  # group partial witness escrow
