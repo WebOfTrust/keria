@@ -1144,32 +1144,23 @@ def test_identifier_delegation_end(helpers):
         seqner = coring.Seqner(sn=0)
         assert anchorer.complete(prefixer=prefixer, seqner=seqner) is False
 
-        serder = gatehab.kever.serder
+        gateser = gatehab.kever.serder
 
-        seal = eventing.SealEvent(prefixer.qb64, "0", prefixer.qb64)
+        seal = dict(i=prefixer.qb64, s="0", d=prefixer.qb64)
 
         # Anchor the seal in delegator's KEL, approving the delegation
-        iserder, isigers = helpers.interact(pre=gatehab.pre, bran=saltb, pidx=0, ridx=0, dig=serder.said, sn='1', data=[seal])
+        iserder, isigers = helpers.interact(pre=aid["i"], bran=saltb, pidx=0, ridx=0, dig=aid["d"], sn='1', data=[seal])
         body = {"ixn": iserder.ked, "sigs": isigers}
         res = gatorclient.simulate_post(
             path=f"/identifiers/{gatorname}/events", body=json.dumps(body)
         )
         assert res.status_code == 200
         assert res.json["response"] == iserder.ked
-        # seal = eventing.SealEvent(prefixer.qb64, "0", prefixer.qb64)
-        #         body = {"ixn": serder.ked}
-        # res = client.simulate_post(
-        #     path="/identifiers/randy1/events", body=json.dumps(body)
-        # )
-        # gatorclient.simulate_put(path=f"/identifiers/{gatorname}/", body=json.dumps({"seal": seal._asdict()}))
-        # .interact('delegator', anchor);
-    # const anchorRes = await waitOperation(client1, await ixnResult1.op());
-    # console.log('Delegator approve delegation submitted');
-
-    # const apprDelRes = await client1.identifiers().approveDelegation('delegator', ixnResult1, anchorRes);
-    # const adRes = await waitOperation(client1, await apprDelRes.op());
-        # gatoragent.interact(data=[seal._asdict()])
-
+        
+        appDelBody = {"approveDelegation": iserder.ked, "sigs": isigers}
+        apprDelRes = gatorclient.simulate_post(path=f"/identifiers/{gatorname}/events", body=json.dumps(appDelBody))
+        assert apprDelRes.status_code == 202
+        
         while anchorer.complete(prefixer=prefixer, seqner=seqner) is False:
             doist.recur(deeds=deeds)
 
