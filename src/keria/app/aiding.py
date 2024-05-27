@@ -544,6 +544,8 @@ class IdentifierResourceEnd:
 
         except (kering.AuthError, ValueError) as e:
             raise falcon.HTTPBadRequest(description=e.args[0])
+        except (falcon.HTTPBadRequest, falcon.HTTPNotFound, falcon.HTTPInternalServerError) as e:
+            raise e
 
     @staticmethod
     def rotate(agent, name, body):
@@ -675,21 +677,22 @@ class IdentifierResourceEnd:
                                         description=f"required field 'sigs' missing from approveDelegation request")
 
         serder = serdering.SerderKERI(sad=ixn)
-        sigers = [core.Siger(qb64=sig) for sig in sigs]
-
-        kever = hab.kevers[hab.pre]
         
         gatePre = ixn['a'][0]['i']
         gateSaid = ixn['a'][0]['d']
 
-        seqner = coring.Seqner(sn=serder.sn)
-        couple = seqner.qb64b + serder.saidb
-        dgkey = dbing.dgKey(coring.Saider(qb64=gatePre).qb64b, coring.Saider(qb64=gateSaid).qb64b)
-        hab.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
+        for (pre, sn), dig in hab.db.delegables.getItemIter():
+            if pre == gatePre and sn == serder.sn:
+                seqner = coring.Seqner(sn=serder.sn)
+                couple = seqner.qb64b + serder.saidb
+                dgkey = dbing.dgKey(coring.Saider(qb64=gatePre).qb64b, coring.Saider(qb64=gateSaid).qb64b)
+                hab.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
 
-        op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
-                                  metadata=dict(response=serder.ked))
-        return op
+                op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
+                                        metadata=dict(response=serder.ked))
+                return op
+            
+        raise falcon.HTTPBadRequest(title=f"No delegation event found for approval")
 
 def info(hab, rm, full=False):
     data = dict(
