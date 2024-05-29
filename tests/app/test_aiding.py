@@ -1092,22 +1092,16 @@ def test_identifier_delegation_end(helpers):
     gatorname = "delegator"
     gatename = "delegate"
     saltb = b"0123456789abcdef"
-    salter = core.Salter(raw=saltb)
     
     with habbing.openHby(name="p1", temp=True) as hby, \
         helpers.openKeria() as (gatoragency, gatoragent, gatorapp, gatorclient):
-    # , \
-    #     habbing.openHby(name=gatorname, temp=True, salt=salter.qb64) as gatorhby, \
-    #     habbing.openHby(name="p1", temp=True, salt=salter.qb64) as phby:
+
         # Create Anchorer to test
         anchorer = delegating.Anchorer(hby=hby)
         
-        indirecting.loadEnds(gatorapp, gatoragency)
         ending.loadEnds(app=gatorapp, agency=gatoragency)
-        serverDoer = helpers.server(agency=gatoragency)
 
         # Create delegator and delegate Habs
-        # delegator = hby.makeHab("delegator")
         end = aiding.IdentifierCollectionEnd()
         resend = aiding.IdentifierResourceEnd()
         gatorapp.add_route("/identifiers", end)
@@ -1133,8 +1127,8 @@ def test_identifier_delegation_end(helpers):
         serder = serdering.SerderKERI(sad=ked)
         assert serder.raw == rpy.raw
         
-        # proxy = hby.makeHab("proxy")
-        gatehab = hby.makeHab("delegate", delpre=gatorpre)
+        fakeproxy = hby.makeHab("proxy")
+        gatehab = hby.makeHab(gatename, delpre=gatorpre)
         
         # Use valid AID, role and EID
         gatoroobi = gatorclient.simulate_get(path=f"/oobi/{gatorpre}/agent/{gatoragent.agentHab.pre}")
@@ -1143,25 +1137,29 @@ def test_identifier_delegation_end(helpers):
 
         # Try before knowing delegator key state
         with pytest.raises(kering.ValidationError):
-            anchorer.delegation(pre=gatehab.pre)
+            anchorer.delegation(pre=gatehab.pre, proxy=fakeproxy)
 
         gatehab.psr.parse(ims=gatoroobi.content)
 
         # Doer hierarchy
-        gatedoist = doing.Doist(tock=0.03125, real=True)
-        deeds = gatedoist.enter(doers=([anchorer, gatoragent, serverDoer]))
+        doist = doing.Doist(tock=0.03125, real=True)
+        deeds = doist.enter(doers=([anchorer, gatoragent]))
 
         # Run delegation to escrow inception event
-        anchorer.delegation(pre=gatehab.pre, proxy=gatoragent.agentHab)
-        gatedoist.recur(deeds=deeds)
+        anchorer.delegation(pre=gatehab.pre)
+        doist.recur(deeds=deeds)
+        
+        # normally postman would take care of this but we can do it manually here
+        gateser = gatehab.kever.serder
+        for msg in gatehab.db.clonePreIter(pre=gatehab.pre):
+            parsing.Parser().parse(ims=bytearray(msg), kvy=gatoragent.kvy, local=True) # Local true otherwise it will be a misfit
 
         prefixer = coring.Prefixer(qb64=gatehab.pre)
         seqner = coring.Seqner(sn=0)
         assert anchorer.complete(prefixer=prefixer, seqner=seqner) is False
 
-        gateser = gatehab.kever.serder
-
-        gatedoist.recur(deeds=deeds)
+        doist.recur(deeds=deeds)
+        assert gatehab.pre not in gatoragent.agentHab.kevers
 
         # Anchor the seal in delegator's KEL, step 1 of approving the delegation
         seal = dict(i=prefixer.qb64, s="0", d=prefixer.qb64)
@@ -1176,14 +1174,24 @@ def test_identifier_delegation_end(helpers):
         gatoroobi = gatorclient.simulate_get(path=f"/oobi/{gatorpre}/agent/{gatoragent.agentHab.pre}")
         gatehab.psr.parse(ims=gatoroobi.content)
         while anchorer.complete(prefixer=prefixer, seqner=seqner) is False:
-            gatedoist.recur(deeds=deeds)
+            doist.recur(deeds=deeds)
         
-        agent.g
+        assert gatehab.pre not in gatoragent.agentHab.kevers
         
         # Explicityly approve delegation, step 2 of approving the delegation
         appDelBody = {"approveDelegation": iserder.ked, "sigs": isigers}
         apprDelRes = gatorclient.simulate_post(path=f"/identifiers/{gatorname}/events", body=json.dumps(appDelBody))
-        assert apprDelRes.status_code == 202
+        assert apprDelRes.status_code == 200
+        
+        assert gatehab.pre not in gatoragent.agentHab.kevers
+        
+        doist.recur(deeds=deeds)
+        
+        # delegator recognizes the delegatee
+        while gatehab.pre not in gatoragent.agentHab.kevers:
+            doist.recur(deeds=deeds)
+            
+        assert gatehab.pre in gatoragent.agentHab.kevers
         
     # Lets test delegated AID
     # with helpers.openKeria() as (agency, agent, app, client):
