@@ -25,7 +25,7 @@ from keri.vdr import credentialing
 from hio.base import doing
 import pytest
 
-from keria.app import aiding, agenting, delegating
+from keria.app import aiding, agenting, delegating, indirecting
 from keria.app.aiding import IdentifierOOBICollectionEnd, RpyEscrowCollectionEnd
 from keria.core import longrunning
 from keria.end import ending
@@ -1101,12 +1101,10 @@ def test_identifier_delegation_end(helpers):
     #     habbing.openHby(name="p1", temp=True, salt=salter.qb64) as phby:
         # Create Anchorer to test
         anchorer = delegating.Anchorer(hby=hby)
-
+        
+        indirecting.loadEnds(gatorapp, gatoragency)
         ending.loadEnds(app=gatorapp, agency=gatoragency)
-
-        # Doer hierarchy
-        doist = doing.Doist(tock=0.03125, real=True)
-        deeds = doist.enter(doers=([anchorer]))
+        serverDoer = helpers.server(agency=gatoragency)
 
         # Create delegator and delegate Habs
         # delegator = hby.makeHab("delegator")
@@ -1122,23 +1120,40 @@ def test_identifier_delegation_end(helpers):
         gatorpre = aid["i"]
         assert gatorpre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
         
-        proxy = hby.makeHab("proxy")
+        endRolesEnd = aiding.EndRoleCollectionEnd()
+        gatorapp.add_route("/identifiers/{name}/endroles", endRolesEnd)
+        recp = aid['i']
+        rpy = helpers.endrole(recp, gatoragent.agentHab.pre)
+        sigs = helpers.sign(salt, 0, 0, rpy.raw)
+        body = dict(rpy=rpy.ked, sigs=sigs)
+
+        endres = gatorclient.simulate_post(path=f"/identifiers/{gatorname}/endroles", json=body)
+        op = endres.json
+        ked = op["response"]
+        serder = serdering.SerderKERI(sad=ked)
+        assert serder.raw == rpy.raw
+        
+        # proxy = hby.makeHab("proxy")
         gatehab = hby.makeHab("delegate", delpre=gatorpre)
         
         # Use valid AID, role and EID
-        res = gatorclient.simulate_get(path=f"/oobi/{gatorpre}/agent/{gatoragent.agentHab.pre}")
-        assert res.status_code == 200
-        assert res.headers['Content-Type'] == "application/json+cesr"
+        gatoroobi = gatorclient.simulate_get(path=f"/oobi/{gatorpre}/agent/{gatoragent.agentHab.pre}")
+        assert gatoroobi.status_code == 200
+        assert gatoroobi.headers['Content-Type'] == "application/json+cesr"
 
         # Try before knowing delegator key state
         with pytest.raises(kering.ValidationError):
             anchorer.delegation(pre=gatehab.pre)
 
-        gatehab.psr.parse(ims=res.content)
+        gatehab.psr.parse(ims=gatoroobi.content)
+
+        # Doer hierarchy
+        gatedoist = doing.Doist(tock=0.03125, real=True)
+        deeds = gatedoist.enter(doers=([anchorer, gatoragent, serverDoer]))
 
         # Run delegation to escrow inception event
-        anchorer.delegation(pre=gatehab.pre, proxy=proxy)
-        doist.recur(deeds=deeds)
+        anchorer.delegation(pre=gatehab.pre, proxy=gatoragent.agentHab)
+        gatedoist.recur(deeds=deeds)
 
         prefixer = coring.Prefixer(qb64=gatehab.pre)
         seqner = coring.Seqner(sn=0)
@@ -1146,25 +1161,29 @@ def test_identifier_delegation_end(helpers):
 
         gateser = gatehab.kever.serder
 
-        seal = dict(i=prefixer.qb64, s="0", d=prefixer.qb64)
+        gatedoist.recur(deeds=deeds)
 
-        # Anchor the seal in delegator's KEL, approving the delegation
+        # Anchor the seal in delegator's KEL, step 1 of approving the delegation
+        seal = dict(i=prefixer.qb64, s="0", d=prefixer.qb64)
         iserder, isigers = helpers.interact(pre=aid["i"], bran=saltb, pidx=0, ridx=0, dig=aid["d"], sn='1', data=[seal])
         body = {"ixn": iserder.ked, "sigs": isigers}
-        res = gatorclient.simulate_post(
+        ires = gatorclient.simulate_post(
             path=f"/identifiers/{gatorname}/events", body=json.dumps(body)
         )
-        assert res.status_code == 200
-        assert res.json["response"] == iserder.ked
+        assert ires.status_code == 200
+        assert ires.json["response"] == iserder.ked
+        # update delegate with delegator KEL w/ interaction event
+        gatoroobi = gatorclient.simulate_get(path=f"/oobi/{gatorpre}/agent/{gatoragent.agentHab.pre}")
+        gatehab.psr.parse(ims=gatoroobi.content)
+        while anchorer.complete(prefixer=prefixer, seqner=seqner) is False:
+            gatedoist.recur(deeds=deeds)
         
+        agent.g
+        
+        # Explicityly approve delegation, step 2 of approving the delegation
         appDelBody = {"approveDelegation": iserder.ked, "sigs": isigers}
         apprDelRes = gatorclient.simulate_post(path=f"/identifiers/{gatorname}/events", body=json.dumps(appDelBody))
         assert apprDelRes.status_code == 202
-        
-        while anchorer.complete(prefixer=prefixer, seqner=seqner) is False:
-            doist.recur(deeds=deeds)
-
-        assert anchorer.complete(prefixer=prefixer, seqner=seqner) is True
         
     # Lets test delegated AID
     # with helpers.openKeria() as (agency, agent, app, client):

@@ -682,7 +682,7 @@ class IdentifierResourceEnd:
         gateSaid = ixn['a'][0]['d']
 
         for (pre, sn), dig in hab.db.delegables.getItemIter():
-            if pre == gatePre and sn == serder.sn:
+            if pre == gatePre:
                 seqner = coring.Seqner(sn=serder.sn)
                 couple = seqner.qb64b + serder.saidb
                 dgkey = dbing.dgKey(coring.Saider(qb64=gatePre).qb64b, coring.Saider(qb64=gateSaid).qb64b)
