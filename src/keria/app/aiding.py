@@ -28,6 +28,9 @@ def loadEnds(app, agency, authn):
     groupEnd = AgentResourceEnd(agency=agency, authn=authn)
     app.add_route("/agent/{caid}", groupEnd)
 
+    approvalEnd = IdentifierApprovalEnd()
+    app.add_route("/identifiers/{name}/approvals", approvalEnd)
+
     aidsEnd = IdentifierCollectionEnd()
     app.add_route("/identifiers", aidsEnd)
     aidEnd = IdentifierResourceEnd()
@@ -245,6 +248,110 @@ class AgentResourceEnd:
         dgkey = dbing.dgKey(prefixer.qb64b, saider.qb64)
         agent.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
 
+class IdentifierApprovalEnd:
+    """ Resource class for approving identifier events"""
+
+    # @staticmethod
+    # def on_get(req, rep, name):
+    #     """ Identifier approval GET endpoint
+
+    #     Parameters:
+    #         req: falcon.Request HTTP request
+    #         rep: falcon.Response HTTP response
+    #         name (str): human readable name for Hab to GET
+
+    #     """
+    #     raise falcon.HTTPBadRequest(description="Identifier approval endpoint GET not implemented")
+
+    def on_put(self, req, rep, name):
+        """ Identifier approval PUT endpoint
+
+        Parameters:
+            req (Request): falcon.Request HTTP request object
+            rep (Response): falcon.Response HTTP response object
+            name (str): human readable name for Hab to rename
+
+        """
+        if not name:
+            raise falcon.HTTPBadRequest(description="name is required")
+        agent = req.context.agent
+        hab = agent.hby.habByName(name)
+
+        if hab is None:
+            raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
+        
+        body = req.get_media()
+        
+        if body.get("approveDelegation") is not None:
+            op = self.approveDelegation(agent, name, body)
+        else:
+            raise falcon.HTTPBadRequest(title="invalid request",
+                                        description=f"required field 'approveDelegation' missing from request")
+
+        try:
+            rep.status = falcon.HTTP_200
+            rep.content_type = "application/json"
+            rep.data = op.to_json().encode("utf-8")
+        except (kering.AuthError, ValueError) as e:
+            raise falcon.HTTPBadRequest(description=e.args[0])
+        except (falcon.HTTPBadRequest, falcon.HTTPNotFound, falcon.HTTPInternalServerError) as e:
+            raise e
+
+    # def on_delete(self, req, rep, name):
+    #     """ Identifier approval delete endpoint not currently implemented
+
+    #     Parameters:
+    #         req (Request): falcon.Request HTTP request object
+    #         rep (Response): falcon.Response HTTP response object
+    #         name (str): human readable name for Hab to delete
+
+    #     """
+    #     raise falcon.HTTPBadRequest(description="Identifier approval endpoint DELETE not implemented")
+
+    # def on_post(self, req, rep, name):
+    #     """ Identifier approval POST functionality not currently implemented
+
+    #     Parameters:
+    #         req (Request): falcon.Request HTTP request object
+    #         rep (Response): falcon.Response HTTP response object
+    #         name (str): human readable name for Hab to rotate or interact
+
+    #     """
+    #     raise falcon.HTTPBadRequest(description="Identifier approval endpoint POST not implemented")
+    
+    @staticmethod
+    def approveDelegation(agent, name, body):
+        hab = agent.hby.habByName(name)
+        if hab is None:
+            raise falcon.HTTPNotFound(title=f"No AID {name} found")
+
+        ixn = body.get("approveDelegation")
+        if ixn is None:
+            raise falcon.HTTPBadRequest(title="invalid interaction",
+                                        description=f"required field 'approveDelegation' missing from request")
+
+        sigs = body.get("sigs")
+        if sigs is None or len(sigs) == 0:
+            raise falcon.HTTPBadRequest(title="invalid interaction",
+                                        description=f"required field 'sigs' missing from approveDelegation request")
+
+        serder = serdering.SerderKERI(sad=ixn)
+        
+        gatePre = ixn['a'][0]['i']
+        gateSaid = ixn['a'][0]['d']
+
+        for (pre, sn), dig in hab.db.delegables.getItemIter():
+            if pre == gatePre:
+                seqner = coring.Seqner(sn=serder.sn)
+                couple = seqner.qb64b + serder.saidb
+                dgkey = dbing.dgKey(coring.Saider(qb64=gatePre).qb64b, coring.Saider(qb64=gateSaid).qb64b)
+                hab.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
+
+                op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
+                                        metadata=dict(response=serder.ked))
+                return op
+            
+        raise falcon.HTTPBadRequest(title=f"No delegation event found for approval")
 
 class IdentifierCollectionEnd:
     """ Resource class for creating and managing identifiers """
@@ -532,8 +639,6 @@ class IdentifierResourceEnd:
                 op = self.rotate(agent, name, body)
             elif body.get("ixn") is not None:
                 op = self.interact(agent, name, body)
-            elif body.get("approveDelegation") is not None:
-                op = self.approveDelegation(agent, name, body)
             else:
                 raise falcon.HTTPBadRequest(title="invalid request",
                                             description=f"required field 'rot' or 'ixn' missing from request")
@@ -659,40 +764,6 @@ class IdentifierResourceEnd:
         op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
                                   metadata=dict(response=serder.ked))
         return op
-    
-    @staticmethod
-    def approveDelegation(agent, name, body):
-        hab = agent.hby.habByName(name)
-        if hab is None:
-            raise falcon.HTTPNotFound(title=f"No AID {name} found")
-
-        ixn = body.get("approveDelegation")
-        if ixn is None:
-            raise falcon.HTTPBadRequest(title="invalid interaction",
-                                        description=f"required field 'approveDelegation' missing from request")
-
-        sigs = body.get("sigs")
-        if sigs is None or len(sigs) == 0:
-            raise falcon.HTTPBadRequest(title="invalid interaction",
-                                        description=f"required field 'sigs' missing from approveDelegation request")
-
-        serder = serdering.SerderKERI(sad=ixn)
-        
-        gatePre = ixn['a'][0]['i']
-        gateSaid = ixn['a'][0]['d']
-
-        for (pre, sn), dig in hab.db.delegables.getItemIter():
-            if pre == gatePre:
-                seqner = coring.Seqner(sn=serder.sn)
-                couple = seqner.qb64b + serder.saidb
-                dgkey = dbing.dgKey(coring.Saider(qb64=gatePre).qb64b, coring.Saider(qb64=gateSaid).qb64b)
-                hab.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
-
-                op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
-                                        metadata=dict(response=serder.ked))
-                return op
-            
-        raise falcon.HTTPBadRequest(title=f"No delegation event found for approval")
 
 def info(hab, rm, full=False):
     data = dict(

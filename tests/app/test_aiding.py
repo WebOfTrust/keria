@@ -1107,6 +1107,7 @@ def test_identifier_delegation_end(helpers):
         gatorapp.add_route("/identifiers", end)
         gatorapp.add_route("/identifiers/{name}", resend)
         gatorapp.add_route("/identifiers/{name}/events", resend)
+        gatorapp.add_route("/identifiers/{name}/approvals", aiding.IdentifierApprovalEnd())
         
         salt = b"0123456789abcdef"
         op = helpers.createAid(gatorclient, gatorname, salt)
@@ -1180,7 +1181,7 @@ def test_identifier_delegation_end(helpers):
         
         # Explicityly approve delegation, step 2 of approving the delegation
         appDelBody = {"approveDelegation": iserder.ked, "sigs": isigers}
-        apprDelRes = gatorclient.simulate_post(path=f"/identifiers/{gatorname}/events", body=json.dumps(appDelBody))
+        apprDelRes = gatorclient.simulate_put(path=f"/identifiers/{gatorname}/approvals", body=json.dumps(appDelBody))
         assert apprDelRes.status_code == 200
         
         assert gatehab.pre not in gatoragent.agentHab.kevers
