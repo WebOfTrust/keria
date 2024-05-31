@@ -99,6 +99,45 @@ describe('Aiding', () => {
         assert.deepEqual(lastCall.body.salty.transferable, true);
     });
 
+    it('Can create non-transferable salty identifiers', async () => {
+        client.fetch.mockResolvedValue(Response.json({}));
+        await client.identifiers().create('aid1', {
+            bran: '0123456789abcdefghijk',
+            transferable: false,
+        });
+
+        const lastCall = client.getLastMockRequest();
+        assert.equal(lastCall.path, '/identifiers');
+        assert.equal(lastCall.method, 'POST');
+        assert.equal(lastCall.body.name, 'aid1');
+        console.log(lastCall.body);
+        assert.deepEqual(lastCall.body.icp, {
+            v: 'KERI10JSON0000fd_',
+            t: 'icp',
+            d: 'EFI3s8I7M6b8iiOFJOqDfjuak9NQJtVx8N2Px_cm2lsN',
+            i: 'BPmhSfdhCPxr3EqjxzEtF8TVy0YX7ATo0Uc8oo2cnmY9',
+            s: '0',
+            kt: '1',
+            k: ['BPmhSfdhCPxr3EqjxzEtF8TVy0YX7ATo0Uc8oo2cnmY9'],
+            nt: '0',
+            n: [],
+            bt: '0',
+            b: [],
+            c: [],
+            a: [],
+        });
+        assert.deepEqual(lastCall.body.sigs, [
+            'AAD43ke-FKLzD_eOJuE7-G5jeqjs9iyirE-atbxd4sSvEn-0fRibOWI5jtvlE8b8Dn8_rVRa1BUCyDfmEXzy1uwA',
+        ]);
+        assert.deepEqual(lastCall.body.salty.pidx, 0);
+        assert.deepEqual(lastCall.body.salty.kidx, 0);
+        assert.deepEqual(lastCall.body.salty.stem, 'signify:aid');
+        assert.deepEqual(lastCall.body.salty.tier, 'low');
+        assert.deepEqual(lastCall.body.salty.icodes, ['A']);
+        assert.deepEqual(lastCall.body.salty.dcode, 'B');
+        assert.deepEqual(lastCall.body.salty.transferable, false);
+    });
+
     it('Can get identifiers with special characters in the name', async () => {
         client.fetch.mockResolvedValue(Response.json({}));
         await client.identifiers().get('a name with ñ!');

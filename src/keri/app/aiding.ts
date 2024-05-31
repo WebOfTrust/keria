@@ -135,10 +135,10 @@ export class Identifier {
 
         const transferable = kargs.transferable ?? true;
         const isith = kargs.isith ?? '1';
-        const nsith = kargs.nsith ?? '1';
+        let nsith = kargs.nsith ?? '1';
         let wits = kargs.wits ?? [];
         const toad = kargs.toad ?? 0;
-        const dcode = kargs.dcode ?? MtrDex.Blake3_256;
+        let dcode = kargs.dcode ?? MtrDex.Blake3_256;
         const proxy = kargs.proxy;
         const delpre = kargs.delpre;
         const data = kargs.data != undefined ? [kargs.data] : [];
@@ -152,10 +152,16 @@ export class Identifier {
         const _ndigs = kargs.ndigs;
         const bran = kargs.bran;
         const count = kargs.count;
-        const ncount = kargs.ncount;
+        let ncount = kargs.ncount;
         const tier = kargs.tier;
         const extern_type = kargs.extern_type;
         const extern = kargs.extern;
+
+        if (!transferable) {
+            ncount = 0;
+            nsith = 0;
+            dcode = MtrDex.Ed25519N;
+        }
 
         const xargs = {
             transferable: transferable,
