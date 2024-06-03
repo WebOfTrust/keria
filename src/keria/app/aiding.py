@@ -568,9 +568,9 @@ class IdentifierResourceEnd:
         serder = serdering.SerderKERI(sad=rot)
         sigers = [core.Siger(qb64=sig) for sig in sigs]
 
-        hab.rotate(serder=serder, sigers=sigers)
-
         if Algos.salty in body:
+            hab.rotate(serder=serder, sigers=sigers)
+
             salt = body[Algos.salty]
             keeper = agent.mgr.get(Algos.salty)
 
@@ -581,18 +581,22 @@ class IdentifierResourceEnd:
                 raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
 
         elif Algos.randy in body:
+            hab.rotate(serder=serder, sigers=sigers)
+
             rand = body[Algos.randy]
             keeper = agent.mgr.get(Algos.randy)
 
             keeper.rotate(pre=serder.pre, verfers=serder.verfers, digers=serder.ndigers, **rand)
 
         elif Algos.group in body:
+            smids = httping.getRequiredParam(body, "smids")
+            rmids = httping.getRequiredParam(body, "rmids")
+
+            hab.rotate(serder=serder, sigers=sigers, smids=smids, rmids=rmids)
+
             keeper = agent.mgr.get(Algos.group)
 
             keeper.rotate(pre=serder.pre, verfers=serder.verfers, digers=serder.ndigers)
-
-            smids = httping.getRequiredParam(body, "smids")
-            rmids = httping.getRequiredParam(body, "rmids")
 
             agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
             op = agent.monitor.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=serder.sn))

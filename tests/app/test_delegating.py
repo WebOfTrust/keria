@@ -32,10 +32,6 @@ def test_sealer():
         with pytest.raises(kering.ValidationError):
             anchorer.delegation(pre="EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY")
 
-        # Needs a proxy
-        with pytest.raises(kering.ValidationError):
-            anchorer.delegation(pre=delegate.pre)
-
         # Run delegation to escrow inception event
         anchorer.delegation(pre=delegate.pre, proxy=proxy)
         doist.recur(deeds=deeds)

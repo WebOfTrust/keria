@@ -17,7 +17,9 @@ from keri.app import keeping, habbing, configing, signing
 from keri.core import coring, eventing, parsing, routing, scheming, serdering
 from keri.core.coring import MtrDex
 from keri.core.eventing import SealEvent
+from keri.core.signing import Salter
 from keri.help import helping
+from keri.kering import TraitCodex
 from keri.vc import proving
 from keri.vdr import credentialing, verifying
 from keri.vdr import eventing as veventing
@@ -472,12 +474,12 @@ class Helpers:
         pre = aid['i']
         assert pre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
 
-        nonce = coring.randomNonce()
+        nonce = Salter().qb64
         regser = veventing.incept(pre,
                                   baks=[],
                                   toad="0",
                                   nonce=nonce,
-                                  cnfg=[eventing.TraitCodex.NoBackers],
+                                  cnfg=[TraitCodex.NoBackers],
                                   code=coring.MtrDex.Blake3_256)
         anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)
         serder, sigers = Helpers.interact(pre=pre, bran=salt, pidx=0, ridx=0, dig=aid['d'], sn='1', data=[anchor])
