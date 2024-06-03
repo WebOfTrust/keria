@@ -1050,10 +1050,10 @@ def test_identifier_delegator_end(helpers):
         torapp.add_route("/operations/{name}", opResEnd)
 
         count=0
-        while not op['done']:
+        while not op or not "done" in op or not op["done"]:
             doist.recur(deeds=deeds)
             time.sleep(1)
-            res = torclient.simulate_get(path=f"/operations/{op["name"]}")
+            res = torclient.simulate_get(path=f'/operations/{op["name"]}')
             assert res.status_code == 200
             op = res.json
             count += 1
