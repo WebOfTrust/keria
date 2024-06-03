@@ -592,12 +592,7 @@ class IdentifierDelegatorEnd:
         if body.get("ixn") is not None:
             iop = IdentifierResourceEnd.interact(agent, name, body)
             
-            while not hasattr(iop,'done') or not iop.done:
-                time.sleep(1)
-                iop = agent.monitor.status(iop)
-
-            serder = serdering.SerderKERI(sad=iop.response)
-            gatepre = self.approveDelegation(agent, hab, serder.ked)
+            gatepre = self.approveDelegation(agent, hab, body.get("ixn"))
             adop = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegable,
                                         metadata=dict(response=gatepre, depends=iop))
             
