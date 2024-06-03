@@ -1044,11 +1044,12 @@ def test_identifier_delegator_end(helpers):
         op = apprDelRes.json
         assert op["metadata"]["response"] == iserder.ked['a'][0]['i']
 
+        assert teehab.pre not in toragent.agentHab.kevers
+
         opColEnd = longrunning.OperationCollectionEnd()
         torapp.add_route("/operations", opColEnd)
         opResEnd = longrunning.OperationResourceEnd()
         torapp.add_route("/operations/{name}", opResEnd)
-
         count=0
         while not op or not "done" in op or not op["done"]:
             doist.recur(deeds=deeds)
