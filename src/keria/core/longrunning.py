@@ -273,7 +273,7 @@ class Monitor:
             gatepre = op.metadata['response']
             if gatepre in self.hby.kevers:
                 operation.done = True
-                operation.response = serder.ked
+                operation.response = op.metadata['response']
             else:
                 operation.done = False
 

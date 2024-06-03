@@ -1038,11 +1038,6 @@ def test_identifier_delegator_end(helpers):
         # Anchor the seal in delegator's KEL, step 1 of approving the delegation
         seal = dict(i=prefixer.qb64, s="0", d=prefixer.qb64)
         iserder, isigers = helpers.interact(pre=aid["i"], bran=saltb, pidx=0, ridx=0, dig=aid["d"], sn='1', data=[seal])
-        # body = {"ixn": iserder.ked, "sigs": isigers}
-        # ires = gatorclient.simulate_post(
-        #     path=f"/identifiers/{gatorname}/events", body=json.dumps(body)
-        # )
-        # Explicityly approve delegation, step 2 of approving the delegation
         appDelBody = {"ixn": iserder.ked, "sigs": isigers}
         apprDelRes = torclient.simulate_post(path=f"/identifiers/{torname}/delegator", body=json.dumps(appDelBody))
         assert apprDelRes.status_code == 200
@@ -1055,7 +1050,8 @@ def test_identifier_delegator_end(helpers):
         torapp.add_route("/operations/{name}", opResEnd)
 
         count=0
-        while not hasattr(op,'done') or not op.done:
+        while not op['done']:
+            doist.recur(deeds=deeds)
             time.sleep(1)
             res = torclient.simulate_get(path=f"/operations/{op["name"]}")
             assert res.status_code == 200
@@ -1064,23 +1060,16 @@ def test_identifier_delegator_end(helpers):
             if count > 10:
                 raise Exception("Delegator never processed the delegatee dip event")
         
-        assert teehab.pre not in toragent.agentHab.kevers
-
+        assert teehab.pre in toragent.agentHab.kevers
+        
         # update delegatee with delegator KEL w/ interaction event
         toroobi = torclient.simulate_get(path=f"/oobi/{torpre}/agent/{toragent.agentHab.pre}")
         teehab.psr.parse(ims=toroobi.content)
+        count = 0
         while anchorer.complete(prefixer=prefixer, seqner=seqner) is False:
             doist.recur(deeds=deeds)
-        
-        assert teehab.pre not in toragent.agentHab.kevers
-        
-        doist.recur(deeds=deeds)
-        
-        # delegator recognizes the delegatee
-        while teehab.pre not in toragent.agentHab.kevers:
-            doist.recur(deeds=deeds)
-            
-        assert teehab.pre in toragent.agentHab.kevers
+            if count > 10:
+                raise Exception("Delegatee never saw the successful anchor")
 
 def test_challenge_ends(helpers):
     with helpers.openKeria() as (agency, agent, app, client):
