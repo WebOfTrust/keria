@@ -448,7 +448,7 @@ class IdentifierDelegatorEnd:
     """ Resource class for for handling delegator events"""
 
     def on_post(self, req, rep, name):
-        """ Identifier delegator approval POST endpoint to add the anchor and approve the delegation
+        """ Identifier delegator enpoint POST to create the ixn anchor and approve the delegation
 
         Parameters:
             req (Request): falcon.Request HTTP request object
