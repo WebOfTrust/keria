@@ -17,11 +17,11 @@ from keri.core import eventing, coring, serdering
 from keri.db import dbing, koming
 from keri.help import helping
 
-# long running operationt types
-Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole challenge exchange '
+# long running operation types
+Typeage = namedtuple("Tierage", 'oobi witness delegable delegation group query registry credential endrole challenge exchange '
                                 'done')
 
-OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation', group='group', query='query',
+OpTypes = Typeage(oobi="oobi", witness='witness', delegable='delegable', delegation='delegation', group='group', query='query',
                   registry='registry', credential='credential', endrole='endrole', challenge='challenge',
                   exchange='exchange', done='done')
 
@@ -261,6 +261,17 @@ class Monitor:
                 evt = self.hby.db.getEvt(dbing.dgKey(pre=kever.prefixer.qb64, dig=bytes(sdig)))
                 serder = serdering.SerderKERI(raw=bytes(evt))
 
+                operation.done = True
+                operation.response = serder.ked
+            else:
+                operation.done = False
+                
+        elif op.type in (OpTypes.delegable, ):
+            if op.oid not in self.hby.kevers:
+                raise kering.ValidationError(f"long running {op.type} operation identifier {op.oid} not found")
+
+            gatepre = op.metadata['response']
+            if gatepre in self.hby.kevers:
                 operation.done = True
                 operation.response = serder.ked
             else:
