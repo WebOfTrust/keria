@@ -8,11 +8,11 @@ from keri.db import dbing
 
 from keria.core import httping, longrunning
 
-DELEGATOR_ROUTE = "/delegation/{name}"
+DELEGATION_ROUTE = "/identifiers/{name}/delegation"
 
 def loadEnds(app, identifierResource):
     gatorEnd = DelegatorEnd(identifierResource)
-    app.add_route(DELEGATOR_ROUTE, gatorEnd)
+    app.add_route(DELEGATION_ROUTE, gatorEnd)
 
 class Anchorer(doing.DoDoer):
     """
