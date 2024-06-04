@@ -8,7 +8,7 @@ from keri.db import dbing
 
 from keria.core import httping, longrunning
 
-DELEGATOR_ROUTE = "/delegator/{name}"
+DELEGATOR_ROUTE = "/delegation/{name}"
 
 def loadEnds(app, identifierResource):
     gatorEnd = DelegatorEnd(identifierResource)
@@ -209,13 +209,14 @@ class DelegatorEnd:
             raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
         
         body = req.get_media()
+        
+        op = self.identifierResource.interact(agent, name, body)
         anc = httping.getRequiredParam(body, "ixn")
         
-        iop = self.identifierResource.interact(agent, name, body)
-        
-        gatepre = self.approveDelegation(agent, hab, anc)
-        adop = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegable,
-                                    metadata=dict(response=gatepre, depends=iop))
+        # successful approval returns the delegatee prefix
+        teepre = self.approveDelegation(agent, hab, anc)
+        adop = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
+                                    metadata=dict(teepre=teepre, depends=op))
         
         try:
             rep.status = falcon.HTTP_200
@@ -226,22 +227,22 @@ class DelegatorEnd:
             raise falcon.HTTPBadRequest(description=e.args[0])
     
     @staticmethod
-    def approveDelegation(agent, hab, ixn) -> str:
-        serder = serdering.SerderKERI(sad=ixn)
+    def approveDelegation(agent, hab, anc) -> str:
+        serder = serdering.SerderKERI(sad=anc)
         
-        gatePre = ixn['a'][0]['i']
-        gateSaid = ixn['a'][0]['d']
+        teepre = anc['a'][0]['i']
+        teesaid = anc['a'][0]['d']
 
         for (pre, sn), dig in hab.db.delegables.getItemIter():
-            if pre == gatePre:
+            if pre == teepre:
                 seqner = coring.Seqner(sn=serder.sn)
                 couple = seqner.qb64b + serder.saidb
-                dgkey = dbing.dgKey(coring.Saider(qb64=gatePre).qb64b, coring.Saider(qb64=gateSaid).qb64b)
+                dgkey = dbing.dgKey(coring.Saider(qb64=teepre).qb64b, coring.Saider(qb64=teesaid).qb64b)
                 # the dip event should have been received from the delegatee via a postman call
                 # and will be sitting in the delegator escrows (hence the hab.db.delegables above)
                 # adding the authorize event seal will allow the dip to be processed
                 # and added to the delegator kever
                 hab.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
-                return gatePre
+                return teepre
             
-        raise falcon.HTTPBadRequest(title=f"No delegables found for delegator {hab.pre} to approve delegatee {gatePre}")
+        raise falcon.HTTPBadRequest(title=f"No delegables found for delegator {hab.pre} to approve delegatee {teepre}")
