@@ -78,7 +78,7 @@ def test_delegator_end(helpers):
         torapp.add_route("/identifiers/{name}", resend)
         torapp.add_route("/identifiers/{name}/events", resend)
         torend = delegating.DelegatorEnd(resend)
-        torapp.add_route(delegating.DELEGATOR_ROUTE, torend)
+        torapp.add_route(delegating.DELEGATION_ROUTE, torend)
         
         # Create delegator
         salt = b"0123456789abcdef"
@@ -129,7 +129,7 @@ def test_delegator_end(helpers):
         seal = dict(i=prefixer.qb64, s="0", d=prefixer.qb64)
         iserder, isigers = helpers.interact(pre=aid["i"], bran=saltb, pidx=0, ridx=0, dig=aid["d"], sn='1', data=[seal])
         appDelBody = {"ixn": iserder.ked, "sigs": isigers}
-        apprDelRes = torclient.simulate_post(path=f"/delegation/{torname}", body=json.dumps(appDelBody))
+        apprDelRes = torclient.simulate_post(path=f"/identifiers/{torname}/delegation", body=json.dumps(appDelBody))
         assert apprDelRes.status_code == 200
         op = apprDelRes.json
         assert op["metadata"]["teepre"] == iserder.ked['a'][0]['i']
