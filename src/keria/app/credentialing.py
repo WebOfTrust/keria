@@ -393,12 +393,6 @@ class CredentialQueryCollectionEnd:
         tags:
            - Credentials
         parameters:
-           - in: path
-             name: aid
-             schema:
-               type: string
-             required: true
-             description: identifier to load credentials for
            - in: query
              name: type
              schema:
@@ -605,12 +599,6 @@ class CredentialResourceEnd:
            - Credentials
         parameters:
            - in: path
-             name: aid
-             schema:
-               type: string
-             required: true
-             description: The identifier to create
-           - in: path
              name: said
              schema:
                type: string
@@ -624,7 +612,8 @@ class CredentialResourceEnd:
                     schema:
                         description: Credential
                         type: object
-
+           400:
+             description: The requested credential was not found.
         """
         agent = req.context.agent
         accept = req.get_header("accept")
