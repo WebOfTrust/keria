@@ -70,8 +70,8 @@ def test_delegator_end(helpers):
         # Create Anchorer to test
         anchorer = delegating.Anchorer(hby=hby)
         
+        #setup agency endpoints
         ending.loadEnds(app=torapp, agency=toragency)
-
         end = aiding.IdentifierCollectionEnd()
         resend = aiding.IdentifierResourceEnd()
         torapp.add_route("/identifiers", end)
@@ -80,25 +80,14 @@ def test_delegator_end(helpers):
         torend = delegating.DelegatorEnd(resend)
         torapp.add_route(delegating.DELEGATOR_ROUTE, torend)
         
+        # Create delegator
         salt = b"0123456789abcdef"
         op = helpers.createAid(torclient, torname, salt)
         aid = op["response"]
         torpre = aid["i"]
         assert torpre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
         
-        endRolesEnd = aiding.EndRoleCollectionEnd()
-        torapp.add_route("/identifiers/{name}/endroles", endRolesEnd)
-        recp = aid['i']
-        rpy = helpers.endrole(recp, toragent.agentHab.pre)
-        sigs = helpers.sign(salt, 0, 0, rpy.raw)
-        body = dict(rpy=rpy.ked, sigs=sigs)
-
-        endres = torclient.simulate_post(path=f"/identifiers/{torname}/endroles", json=body)
-        op = endres.json
-        ked = op["response"]
-        serder = serdering.SerderKERI(sad=ked)
-        assert serder.raw == rpy.raw
-        
+        # setup delegatee
         fakeproxy = hby.makeHab("proxy")
         teehab = hby.makeHab(teename, delpre=torpre)
         
@@ -111,6 +100,7 @@ def test_delegator_end(helpers):
         with pytest.raises(kering.ValidationError):
             anchorer.delegation(pre=teehab.pre, proxy=fakeproxy)
 
+        #introduce delegator to delegatee
         teehab.psr.parse(ims=toroobi.content)
 
         # Doer hierarchy
@@ -126,24 +116,29 @@ def test_delegator_end(helpers):
         for msg in teehab.db.clonePreIter(pre=teehab.pre):
             parsing.Parser().parse(ims=bytearray(msg), kvy=toragent.kvy, local=True) # Local true otherwise it will be a misfit
 
+        # Delegatee hasn't seen delegator anchor
         prefixer = coring.Prefixer(qb64=teehab.pre)
         seqner = coring.Seqner(sn=0)
         assert anchorer.complete(prefixer=prefixer, seqner=seqner) is False
 
+        # Delegator still hasn't processed the delegatee dip event
         doist.recur(deeds=deeds)
         assert teehab.pre not in toragent.agentHab.kevers
 
-        # Anchor the seal in delegator's KEL, step 1 of approving the delegation
+        # Anchor the seal in delegator's KEL and approve the escrowed dip event
         seal = dict(i=prefixer.qb64, s="0", d=prefixer.qb64)
         iserder, isigers = helpers.interact(pre=aid["i"], bran=saltb, pidx=0, ridx=0, dig=aid["d"], sn='1', data=[seal])
         appDelBody = {"ixn": iserder.ked, "sigs": isigers}
-        apprDelRes = torclient.simulate_post(path=f"/delegator/{torname}", body=json.dumps(appDelBody))
+        apprDelRes = torclient.simulate_post(path=f"/delegation/{torname}", body=json.dumps(appDelBody))
         assert apprDelRes.status_code == 200
         op = apprDelRes.json
-        assert op["metadata"]["response"] == iserder.ked['a'][0]['i']
+        assert op["metadata"]["teepre"] == iserder.ked['a'][0]['i']
 
+        # Delegator still hasn't processed the delegatee dip event
         assert teehab.pre not in toragent.agentHab.kevers
 
+        # Monitor long running operation indicating escrowed delegatee 
+        # dip event was successfully processed
         opColEnd = longrunning.OperationCollectionEnd()
         torapp.add_route("/operations", opColEnd)
         opResEnd = longrunning.OperationResourceEnd()
@@ -159,7 +154,11 @@ def test_delegator_end(helpers):
             if count > 10:
                 raise Exception("Delegator never processed the delegatee dip event")
         
+        # Delegator escrows completed and now aknowledges the delegatee dip event
         assert teehab.pre in toragent.agentHab.kevers
+        
+        # Delegatee hasn't seen the anchor yet
+        assert anchorer.complete(prefixer=prefixer, seqner=seqner) is False
         
         # update delegatee with delegator KEL w/ interaction event
         toroobi = torclient.simulate_get(path=f"/oobi/{torpre}/agent/{toragent.agentHab.pre}")
