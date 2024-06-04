@@ -1,9 +1,18 @@
+import falcon
+
 from hio.base import doing
 from keri import kering
 from keri.app import forwarding, agenting, habbing
 from keri.core import coring, serdering
 from keri.db import dbing
 
+from keria.core import httping, longrunning
+
+DELEGATOR_ROUTE = "/delegator/{name}"
+
+def loadEnds(app, identifierResource):
+    gatorEnd = DelegatorEnd(identifierResource)
+    app.add_route(DELEGATOR_ROUTE, gatorEnd)
 
 class Anchorer(doing.DoDoer):
     """
@@ -169,4 +178,70 @@ class Anchorer(doing.DoDoer):
 
                 self.hby.db.dpwe.rem(keys=(pre, said))
                 self.hby.db.dune.pin(keys=(srdr.pre, srdr.said), val=srdr)
+                
+class DelegatorEnd:
+    """ Resource class for for handling delegator events"""
+    
+    def __init__(self, identifierResource) -> None:
+        """
 
+        Parameters:
+            identifierResource (IdentifierResourceEnd): endpoint class for creating rotation and interaction events
+
+        """
+        self.identifierResource = identifierResource
+
+    def on_post(self, req, rep, name):
+        """ Identifier delegator enpoint POST to create the ixn anchor and approve the delegation
+
+        Parameters:
+            req (Request): falcon.Request HTTP request object
+            rep (Response): falcon.Response HTTP response object
+            name (str): human readable name for Hab to rename
+
+        """
+        if not name:
+            raise falcon.HTTPBadRequest(description="name is required")
+        agent = req.context.agent
+        hab = agent.hby.habByName(name)
+
+        if hab is None:
+            raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
+        
+        body = req.get_media()
+        anc = httping.getRequiredParam(body, "ixn")
+        
+        iop = self.identifierResource.interact(agent, name, body)
+        
+        gatepre = self.approveDelegation(agent, hab, anc)
+        adop = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegable,
+                                    metadata=dict(response=gatepre, depends=iop))
+        
+        try:
+            rep.status = falcon.HTTP_200
+            rep.content_type = "application/json"
+            rep.data = adop.to_json().encode("utf-8")
+            return rep
+        except (kering.AuthError, ValueError) as e:
+            raise falcon.HTTPBadRequest(description=e.args[0])
+    
+    @staticmethod
+    def approveDelegation(agent, hab, ixn) -> str:
+        serder = serdering.SerderKERI(sad=ixn)
+        
+        gatePre = ixn['a'][0]['i']
+        gateSaid = ixn['a'][0]['d']
+
+        for (pre, sn), dig in hab.db.delegables.getItemIter():
+            if pre == gatePre:
+                seqner = coring.Seqner(sn=serder.sn)
+                couple = seqner.qb64b + serder.saidb
+                dgkey = dbing.dgKey(coring.Saider(qb64=gatePre).qb64b, coring.Saider(qb64=gateSaid).qb64b)
+                # the dip event should have been received from the delegatee via a postman call
+                # and will be sitting in the delegator escrows (hence the hab.db.delegables above)
+                # adding the authorize event seal will allow the dip to be processed
+                # and added to the delegator kever
+                hab.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
+                return gatePre
+            
+        raise falcon.HTTPBadRequest(title=f"No delegables found for delegator {hab.pre} to approve delegatee {gatePre}")

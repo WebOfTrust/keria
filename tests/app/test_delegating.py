@@ -5,14 +5,18 @@ keria.app.delegating module
 
 Testing the Mark II Agent Anchorer
 """
+import json
+import time
 import pytest
+
 from hio.base import doing
 from keri import kering
 from keri.app import habbing
-from keri.core import coring, eventing
+from keri.core import coring, eventing, parsing, serdering
 
-from keria.app import delegating
-
+from keria.app import aiding, delegating
+from keria.core import longrunning
+from keria.end import ending
 
 def test_sealer():
     with habbing.openHby(name="p1", temp=True) as hby:
@@ -54,7 +58,114 @@ def test_sealer():
             anchorer.complete(prefixer=prefixer, seqner=seqner, saider=saider)
 
         assert anchorer.complete(prefixer=prefixer, seqner=seqner) is True
+        
+def test_delegator_end(helpers):
+    torname = "delegator"
+    teename = "delegatee"
+    saltb = b"0123456789abcdef"
+    
+    with habbing.openHby(name="p1", temp=True) as hby, \
+        helpers.openKeria() as (toragency, toragent, torapp, torclient):
 
+        # Create Anchorer to test
+        anchorer = delegating.Anchorer(hby=hby)
+        
+        ending.loadEnds(app=torapp, agency=toragency)
 
+        end = aiding.IdentifierCollectionEnd()
+        resend = aiding.IdentifierResourceEnd()
+        torapp.add_route("/identifiers", end)
+        torapp.add_route("/identifiers/{name}", resend)
+        torapp.add_route("/identifiers/{name}/events", resend)
+        torend = delegating.DelegatorEnd(resend)
+        torapp.add_route(delegating.DELEGATOR_ROUTE, torend)
+        
+        salt = b"0123456789abcdef"
+        op = helpers.createAid(torclient, torname, salt)
+        aid = op["response"]
+        torpre = aid["i"]
+        assert torpre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+        
+        endRolesEnd = aiding.EndRoleCollectionEnd()
+        torapp.add_route("/identifiers/{name}/endroles", endRolesEnd)
+        recp = aid['i']
+        rpy = helpers.endrole(recp, toragent.agentHab.pre)
+        sigs = helpers.sign(salt, 0, 0, rpy.raw)
+        body = dict(rpy=rpy.ked, sigs=sigs)
 
+        endres = torclient.simulate_post(path=f"/identifiers/{torname}/endroles", json=body)
+        op = endres.json
+        ked = op["response"]
+        serder = serdering.SerderKERI(sad=ked)
+        assert serder.raw == rpy.raw
+        
+        fakeproxy = hby.makeHab("proxy")
+        teehab = hby.makeHab(teename, delpre=torpre)
+        
+        # Use valid AID, role and EID
+        toroobi = torclient.simulate_get(path=f"/oobi/{torpre}/agent/{toragent.agentHab.pre}")
+        assert toroobi.status_code == 200
+        assert toroobi.headers['Content-Type'] == "application/json+cesr"
 
+        # Try before knowing delegator key state
+        with pytest.raises(kering.ValidationError):
+            anchorer.delegation(pre=teehab.pre, proxy=fakeproxy)
+
+        teehab.psr.parse(ims=toroobi.content)
+
+        # Doer hierarchy
+        doist = doing.Doist(tock=0.03125, real=True)
+        deeds = doist.enter(doers=([anchorer, toragent]))
+
+        # Run delegation to escrow inception event
+        anchorer.delegation(pre=teehab.pre)
+        doist.recur(deeds=deeds)
+        
+        # normally postman would take care of this but we can do it manually here
+        teeser = teehab.kever.serder
+        for msg in teehab.db.clonePreIter(pre=teehab.pre):
+            parsing.Parser().parse(ims=bytearray(msg), kvy=toragent.kvy, local=True) # Local true otherwise it will be a misfit
+
+        prefixer = coring.Prefixer(qb64=teehab.pre)
+        seqner = coring.Seqner(sn=0)
+        assert anchorer.complete(prefixer=prefixer, seqner=seqner) is False
+
+        doist.recur(deeds=deeds)
+        assert teehab.pre not in toragent.agentHab.kevers
+
+        # Anchor the seal in delegator's KEL, step 1 of approving the delegation
+        seal = dict(i=prefixer.qb64, s="0", d=prefixer.qb64)
+        iserder, isigers = helpers.interact(pre=aid["i"], bran=saltb, pidx=0, ridx=0, dig=aid["d"], sn='1', data=[seal])
+        appDelBody = {"ixn": iserder.ked, "sigs": isigers}
+        apprDelRes = torclient.simulate_post(path=f"/delegator/{torname}", body=json.dumps(appDelBody))
+        assert apprDelRes.status_code == 200
+        op = apprDelRes.json
+        assert op["metadata"]["response"] == iserder.ked['a'][0]['i']
+
+        assert teehab.pre not in toragent.agentHab.kevers
+
+        opColEnd = longrunning.OperationCollectionEnd()
+        torapp.add_route("/operations", opColEnd)
+        opResEnd = longrunning.OperationResourceEnd()
+        torapp.add_route("/operations/{name}", opResEnd)
+        count=0
+        while not op or not "done" in op or not op["done"]:
+            doist.recur(deeds=deeds)
+            time.sleep(1)
+            res = torclient.simulate_get(path=f'/operations/{op["name"]}')
+            assert res.status_code == 200
+            op = res.json
+            count += 1
+            if count > 10:
+                raise Exception("Delegator never processed the delegatee dip event")
+        
+        assert teehab.pre in toragent.agentHab.kevers
+        
+        # update delegatee with delegator KEL w/ interaction event
+        toroobi = torclient.simulate_get(path=f"/oobi/{torpre}/agent/{toragent.agentHab.pre}")
+        teehab.psr.parse(ims=toroobi.content)
+        count = 0
+        while anchorer.complete(prefixer=prefixer, seqner=seqner) is False:
+            doist.recur(deeds=deeds)
+            if count > 10:
+                raise Exception("Delegatee never saw the successful anchor")
