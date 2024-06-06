@@ -91,6 +91,34 @@ class ExchangeQueryCollectionEnd:
             req (Request): falcon HTTP request object
             rep (Response): falcon HTTP response object
 
+        ---
+        summary: Query exchange message collection.
+        description: This endpoint retrieves the exchange messages based on the provided query parameters.
+        tags:
+        - Exchange Message
+        requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    filter:
+                      type: object
+                      description: The filter criteria to apply on the exchange messages.
+                    sort:
+                      type: object
+                      description: The sorting criteria to apply on the exchange messages.
+                    skip:
+                      type: integer
+                      description: The number of exchange messages to skip. (default=0)
+                    limit:
+                      type: integer
+                      description: The maximum number of exchange messages to return. (default=25)
+        responses:
+            200:
+              description: Successfully retrieved the exchange messages.
+            400:
+              description: Bad request. This could be due to missing or invalid parameters.
         """
         agent = req.context.agent
 
@@ -146,6 +174,23 @@ class ExchangeResourceEnd:
             rep (Response): falcon HTTP response object
             said (str): qb64 SAID of exchange message to retrieve
 
+        ---
+        summary: Retrieve a specific exchange message.
+        description: This endpoint retrieves a specific exchange message based on the provided SAID.
+        tags:
+        - Exchange Message
+        parameters:
+        - in: path
+          name: said
+          schema:
+            type: string
+          required: true
+          description: The qb64 SAID of the exchange message to retrieve.
+        responses:
+            200:
+              description: Successfully retrieved the exchange message.
+            404:
+              description: The requested exchange message was not found.
         """
         agent = req.context.agent
         serder, pathed = exchanging.cloneMessage(agent.hby, said)
