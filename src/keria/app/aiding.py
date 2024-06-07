@@ -360,9 +360,9 @@ class IdentifierCollectionEnd:
 
                 states = httping.getRequiredParam(body, "smids")
                 rstates = httping.getRequiredParam(body, "rmids")
-                smids = [state['i'] for state in states]
-                rmids = [rstate['i'] for rstate in rstates]
-                hab = agent.hby.makeSignifyGroupHab(name, mhab=mhab, smids=smids, rmids=rmids, serder=serder,
+                # smids = [state['i'] for state in states]
+                # rmids = [rstate['i'] for rstate in rstates]
+                hab = agent.hby.makeSignifyGroupHab(name, mhab=mhab, smids=states, rmids=rstates, serder=serder,
                                                     sigers=sigers)
                 try:
                     agent.inceptGroup(pre=serder.pre, mpre=mhab.pre, verfers=verfers, digers=digers)
