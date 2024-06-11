@@ -35,7 +35,50 @@ class ExchangeCollectionEnd:
             req (Request): falcon HTTP request object
             rep (Response): falcon HTTP response object
             name (str): human readable alias for AID context
-
+        ---
+        summary: Post an exchange message for an identifier.
+        description: This endpoint posts an exchange message to a specific named identifier.
+        tags:
+        - Exchange Message
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The human-readable alias for the AID context.
+        requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    exn:
+                      type: object
+                      description: The exchange message event.
+                    sigs:
+                      type: array
+                      items:
+                        type: string
+                      description: The signatures for the exn message.
+                    atc:
+                      type: object
+                      description: The additional attachments for the exn message.
+                    rec:
+                      type: array
+                      items:
+                        type: string
+                      description: The recipients of the exn message.
+                    tpc:
+                      type: string
+                      description: The topic of the exn message.
+        responses:
+            202:
+                description: Successfully posted the exchange message.
+            400:
+                description: Bad request. This could be due to missing or invalid parameters.
+            404:
+                description: The requested identifier was not found.
         """
         agent = req.context.agent
 

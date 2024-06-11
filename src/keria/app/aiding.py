@@ -919,8 +919,32 @@ class IdentifierOOBICollectionEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable name for Hab to GET
-
+            name (str): human-readable name for Hab to GET
+        ---
+        summary: Fetch OOBI URLs of an identifier.
+        description: This endpoint fetches the OOBI URLs for a specific role associated with an identifier.
+        tags:
+        - Identifier
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The human-readable name of the identifier.
+        - in: query
+          name: role
+          schema:
+            type: string
+          required: true
+          description: The role for which to fetch the OOBI URLs. Can be a witness, controller, agent, or mailbox.
+        responses:
+            200:
+              description: Successfully fetched the OOBI URLs. The response body contains the OOBI URLs.
+            400:
+              description: Bad request. This could be due to missing or invalid parameters.
+            404:
+              description: The requested identifier was not found.
         """
         agent = req.context.agent
         if not name:
@@ -1850,6 +1874,33 @@ class GroupMemberCollectionEnd:
 
     @staticmethod
     def on_get(req, rep, name):
+        """
+        GET endpoint for group members
+        Parameters:
+            req (falcon.Request): The request object.
+            rep (falcon.Response): The response object.
+            name (str): The human-readable name of the identifier.
+
+        ---
+        summary: Fetch group member information.
+        description: This endpoint retrieves the signing and rotation members for a specific group associated with an identifier.
+        tags:
+        - Group Member
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The human-readable name of the identifier.
+        responses:
+            200:
+                description: Successfully fetched the group member information.
+            400:
+                description: Bad request. This could be due to missing or invalid parameters.
+            404:
+                description: The requested identifier was not found.
+        """
         agent = req.context.agent
 
         hab = agent.hby.habByName(name)
