@@ -1543,13 +1543,15 @@ class GroupMemberCollectionEnd:
 
         signing = []
         for smid in smids:
-            ends = hab.endsFor(smid)
-            signing.append(dict(aid=smid, ends=ends))
+            spre = smid['i']
+            ends = hab.endsFor(spre)
+            signing.append(dict(aid=spre, ends=ends))
 
         rotation = []
         for rmid in rmids:
-            ends = hab.endsFor(rmid)
-            rotation.append(dict(aid=rmid, ends=ends))
+            rpre = rmid['i']
+            ends = hab.endsFor(rpre)
+            rotation.append(dict(aid=rpre, ends=ends))
 
         data = dict(signing=signing, rotation=rotation)
         rep.status = falcon.HTTP_200
