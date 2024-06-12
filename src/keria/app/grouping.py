@@ -70,7 +70,8 @@ class MultisigRequestCollectionEnd:
         # now get rid of the event so we can pass it as atc to send
         del ims[:serder.size]
 
-        smids = hab.db.signingMembers(pre=hab.pre)
+        slist = hab.db.signingMembers(pre=hab.pre)
+        smids = [d['i'] for d in slist if 'i' in d]
         smids.remove(hab.mhab.pre)
 
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=smids, topic='multisig'))
