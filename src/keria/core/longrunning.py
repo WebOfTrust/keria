@@ -265,9 +265,6 @@ class Monitor:
                 if self.swain.complete(kever.prefixer, seqner):
                     evt = self.hby.db.getEvt(dbing.dgKey(pre=kever.prefixer.qb64, dig=bytes(sdig)))
                     serder = serdering.SerderKERI(raw=bytes(evt))
-                if self.swain.complete(kever.prefixer, seqner):
-                    evt = self.hby.db.getEvt(dbing.dgKey(pre=kever.prefixer.qb64, dig=bytes(sdig)))
-                    serder = serdering.SerderKERI(raw=bytes(evt))
 
                     operation.done = True
                     operation.response = serder.ked
