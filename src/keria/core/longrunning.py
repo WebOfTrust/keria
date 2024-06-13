@@ -17,7 +17,7 @@ from keri.core import eventing, coring, serdering
 from keri.db import dbing, koming
 from keri.help import helping
 
-# long running operationt types
+# long running operation types
 Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole challenge exchange '
                                 'done')
 
@@ -249,22 +249,34 @@ class Monitor:
             if op.oid not in self.hby.kevers:
                 raise kering.ValidationError(f"long running {op.type} operation identifier {op.oid} not found")
 
-            if "sn" not in op.metadata:
-                raise kering.ValidationError(f"invalid long running {op.type} operation, metadata missing 'sn' field")
-
             kever = self.hby.kevers[op.oid]
-            sn = op.metadata["sn"]
-            seqner = coring.Seqner(sn=sn)
-            sdig = self.hby.db.getKeLast(key=dbing.snKey(pre=op.oid, sn=sn))
+            
+            reqsn = "sn"
+            reqtee = "teepre"
+            required = [reqsn, reqtee]
+            if reqsn in op.metadata: #delegatee detects successful delegation
+                sn = op.metadata["sn"]
+                seqner = coring.Seqner(sn=sn)
+                sdig = self.hby.db.getKeLast(key=dbing.snKey(pre=op.oid, sn=sn))
 
-            if self.swain.complete(kever.prefixer, seqner):
-                evt = self.hby.db.getEvt(dbing.dgKey(pre=kever.prefixer.qb64, dig=bytes(sdig)))
-                serder = serdering.SerderKERI(raw=bytes(evt))
+                if self.swain.complete(kever.prefixer, seqner):
+                    evt = self.hby.db.getEvt(dbing.dgKey(pre=kever.prefixer.qb64, dig=bytes(sdig)))
+                    serder = serdering.SerderKERI(raw=bytes(evt))
 
-                operation.done = True
-                operation.response = serder.ked
+                    operation.done = True
+                    operation.response = serder.ked
+                else:
+                    operation.done = False
+            elif reqtee in op.metadata: #delegator detects delegatee delegation success
+                teepre = op.metadata[reqtee]
+                # Once the delegatee dip is processed by the delegator, the 
+                if teepre in self.hby.kevers:
+                    operation.done = True
+                    operation.response = op.metadata[reqtee]
+                else:
+                    operation.done = False
             else:
-                operation.done = False
+                raise falcon.HTTPBadRequest(description=f"longrunning operation type {op.type} requires one of {required}, but are missing from request")
 
         elif op.type in (OpTypes.group, ):
             if "sn" not in op.metadata:

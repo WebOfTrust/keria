@@ -5,10 +5,11 @@ keria.app.agenting module
 
 Testing the Mark II Agent
 """
-import json
-import os
 from builtins import isinstance
 from dataclasses import asdict
+import json
+import os
+import pytest
 
 import falcon
 from falcon import testing
@@ -23,6 +24,7 @@ from keri.db import basing, dbing
 from keri import kering
 from keri.vdr import credentialing
 from hio.base import doing
+
 
 from keria.app import aiding, agenting
 from keria.app.aiding import IdentifierOOBICollectionEnd, RpyEscrowCollectionEnd
@@ -957,7 +959,6 @@ def test_identifier_collection_end(helpers):
                 }
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
         assert res.status_code == 202
-
 
 def test_challenge_ends(helpers):
     with helpers.openKeria() as (agency, agent, app, client):

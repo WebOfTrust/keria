@@ -90,6 +90,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
     loadEnds(app=app)
     aidEnd = aiding.loadEnds(app=app, agency=agency, authn=authn)
     credentialing.loadEnds(app=app, identifierResource=aidEnd)
+    delegating.loadEnds(app=app, identifierResource=aidEnd)
     notifying.loadEnds(app=app)
     keriagrouping.loadEnds(app=app)
     keriaexchanging.loadEnds(app=app)

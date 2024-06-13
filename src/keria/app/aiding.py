@@ -23,13 +23,13 @@ from ..core import longrunning, httping
 
 logger = ogler.getLogger()
 
-
 def loadEnds(app, agency, authn):
     groupEnd = AgentResourceEnd(agency=agency, authn=authn)
     app.add_route("/agent/{caid}", groupEnd)
 
     aidsEnd = IdentifierCollectionEnd()
     app.add_route("/identifiers", aidsEnd)
+
     aidEnd = IdentifierResourceEnd()
     app.add_route("/identifiers/{name}", aidEnd)
     app.add_route("/identifiers/{name}/events", aidEnd)
@@ -560,7 +560,6 @@ class IdentifierCollectionEnd:
 
         except (kering.AuthError, ValueError) as e:
             raise falcon.HTTPBadRequest(description=e.args[0])
-
 
 class IdentifierResourceEnd:
     """ Resource class for updating and deleting identifiers """

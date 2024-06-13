@@ -77,15 +77,16 @@ def test_ipex_admit(helpers, mockHelpingNowIso8601):
                                                recipient=pre1,
                                                date=helping.nowIso8601())
         assert admitSerder.ked == {'a': {'i': 'EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm'},
-                                   'd': 'EBrMlfQbJRS9RYuP90t2PPPV24Qynmtu7BefWAqWzb0Q',
+                                   'd': 'EEsFX0BFd58i84TBnq4S4Z_5XZuuz1HGtDC5Hb7NdU1P',
                                    'dt': '2021-06-27T21:26:21.233257+00:00',
                                    'e': {},
                                    'i': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                                   'rp': 'EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm',
                                    'p': 'EB_Lr3fHezn1ygn-wbBT5JjzaCMxTmhUoegXeZzWC2eT',
                                    'q': {},
                                    'r': '/ipex/admit',
                                    't': 'exn',
-                                   'v': 'KERI10JSON00013d_'}
+                                   'v': 'KERI10JSON000171_'}
         assert end == b''
         sigs = ["AAAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH"]
 
@@ -236,7 +237,7 @@ def test_ipex_grant(helpers, mockHelpingNowIso8601, seeder):
                                        recipient=verifier['i'],
                                        date=helping.nowIso8601())
         assert exn.ked == {'a': {'i': 'EEtaMHCGi83N3IJN05DRDhkpIo5S03LOX5_8IgdvMaVq'},
-                           'd': 'EHwjDEsub6XT19ISLft1m1xMNvVXnSfH0IsDGllox4Y8',
+                           'd': 'ELkQART3yXFd8C6ImzGyqlDrgVUDtCfh1Goqr1PCbi9r',
                            'dt': '2021-06-27T21:26:21.233257+00:00',
                            'e': {'acdc': {'a': {'LEI': '78I9GKEFM361IFY3PIN0',
                                                 'd': 'ELJ7Emhi0Bhxz3s7HyhZ45qcsgpvsT8p8pxwWkG362n3',
@@ -265,11 +266,12 @@ def test_ipex_grant(helpers, mockHelpingNowIso8601, seeder):
                                          't': 'iss',
                                          'v': 'KERI10JSON0000ed_'}},
                            'i': 'EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm',
+                           'rp': 'EEtaMHCGi83N3IJN05DRDhkpIo5S03LOX5_8IgdvMaVq',
                            'p': '',
                            'q': {},
                            'r': '/ipex/grant',
                            't': 'exn',
-                           'v': 'KERI10JSON000517_'}
+                           'v': 'KERI10JSON00054b_'}
         assert end == (b'-LAg4AACA-e-acdc-IABEBg1YzKmwZIDzZsMslTFwQARB6nUN85sRJF5oywlJr3N'
                        b'0AAAAAAAAAAAAAAAAAAAAAAAEO83mwXWqiGxovpTXE6QQUBP05xkP9c1xc88xvMw'
                        b'kWWZ-LAW5AACAA-e-iss-VAS-GAB0AAAAAAAAAAAAAAAAAAAAAACEKZtbklUNPLO'
@@ -308,7 +310,7 @@ def test_ipex_grant(helpers, mockHelpingNowIso8601, seeder):
         assert res.status_code == 200
         assert res.json == {'done': False,
                             'error': None,
-                            'metadata': {'said': 'EHwjDEsub6XT19ISLft1m1xMNvVXnSfH0IsDGllox4Y8'},
+                            'metadata': {'said': 'ELkQART3yXFd8C6ImzGyqlDrgVUDtCfh1Goqr1PCbi9r'},
                             'name': 'exchange.EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm',
                             'response': None}
         assert len(agent.exchanges) == 1
@@ -958,15 +960,16 @@ def test_ipex_apply(helpers, mockHelpingNowIso8601):
                                                recipient=pre1,
                                                date=helping.nowIso8601())
         assert applySerder.ked == {'a': {'i': 'EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm', 'm': 'Applying for a credential', 's': 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao', 'a': {'LEI': '78I9GKEFM361IFY3PIN0'}},
-                                   'd': 'EJq6zSDUWw6iaBz8n1cY5cAW3Rrgp4E3sUsoz5JkoMZc',
+                                   'd': 'EPAThHL_ExMdhQoLTxsMWdsDo-aunDFZPkK_UKlCVe2d',
                                    'dt': '2021-06-27T21:26:21.233257+00:00',
                                    'e': {},
                                    'i': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                                   'rp': 'EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm',
                                    'p': '',
                                    'q': {},
                                    'r': '/ipex/apply',
                                    't': 'exn',
-                                   'v': 'KERI10JSON000187_'}
+                                   'v': 'KERI10JSON0001bb_'}
         assert end == b''
         sigs = ["AAAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH"]
 
@@ -1003,7 +1006,7 @@ def test_ipex_apply(helpers, mockHelpingNowIso8601):
         res = client.simulate_post(path="/identifiers/test/ipex/apply", body=data)
         assert res.json == {'done': False,
                             'error': None,
-                            'metadata': {'said': 'EJq6zSDUWw6iaBz8n1cY5cAW3Rrgp4E3sUsoz5JkoMZc'},
+                            'metadata': {'said': 'EPAThHL_ExMdhQoLTxsMWdsDo-aunDFZPkK_UKlCVe2d'},
                             'name': 'exchange.EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
                             'response': None}
 
@@ -1045,7 +1048,7 @@ def test_ipex_offer(helpers, mockHelpingNowIso8601):
                                                 recipient=pre1,
                                                 date=helping.nowIso8601())
         assert offer0Serder.ked == {'a': {'i': 'EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm', 'm': 'Offering this'},
-                                    'd': 'EDY-IFIMBR4umlYATxAqEAcT5jiHEMn5EyL6i1sUwxDO',
+                                    'd': 'ECa9XU2648ryO8PXKEcWkS7V-hvpj86Nh3rjGv93g6jT',
                                     'dt': '2021-06-27T21:26:21.233257+00:00',
                                     'e': {'acdc': {'a': {'d': 'ELJ7Emhi0Bhxz3s7HyhZ45qcsgpvsT8p8pxwWkG362n3',
                                                          'dt': '2021-06-27T21:26:21.233257+00:00',
@@ -1058,11 +1061,12 @@ def test_ipex_offer(helpers, mockHelpingNowIso8601):
                                                   'v': 'ACDC10JSON000197_'},
                                          'd': 'EEcYZMP-zilz2w1w2hEFm6tF0eaX_1KaPEWhNfY3kf8i'},
                                     'i': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                                    'rp': 'EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm',
                                     'p': '',
                                     'q': {},
                                     'r': '/ipex/offer',
                                     't': 'exn',
-                                    'v': 'KERI10JSON0002f6_'}
+                                    'v': 'KERI10JSON00032a_'}
         assert end0 == b''
         sigs = ["AAAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH"]
 
@@ -1099,7 +1103,7 @@ def test_ipex_offer(helpers, mockHelpingNowIso8601):
         res = client.simulate_post(path="/identifiers/test/ipex/offer", body=data)
         assert res.json == {'done': False,
                             'error': None,
-                            'metadata': {'said': 'EDY-IFIMBR4umlYATxAqEAcT5jiHEMn5EyL6i1sUwxDO'},
+                            'metadata': {'said': 'ECa9XU2648ryO8PXKEcWkS7V-hvpj86Nh3rjGv93g6jT'},
                             'name': 'exchange.EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
                             'response': None}
 
@@ -1116,7 +1120,7 @@ def test_ipex_offer(helpers, mockHelpingNowIso8601):
                                                 recipient=pre1,
                                                 date=helping.nowIso8601())
         assert offer1Serder.ked == {'a': {'i': 'EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm', 'm': 'How about this'},
-                                    'd': 'EDT7go7TfCTzeFnhNBl19JJqdabBfBx8tjBvi_asFCwT',
+                                    'd': 'EM79tlKrG142-jcaglGnIXKRfLW_DKOK5pnTwN60yz5U',
                                     'dt': '2021-06-27T21:26:21.233257+00:00',
                                     'e': {'acdc': {'a': {'d': 'ELJ7Emhi0Bhxz3s7HyhZ45qcsgpvsT8p8pxwWkG362n3',
                                                          'dt': '2021-06-27T21:26:21.233257+00:00',
@@ -1129,11 +1133,12 @@ def test_ipex_offer(helpers, mockHelpingNowIso8601):
                                                   'v': 'ACDC10JSON000197_'},
                                          'd': 'EEcYZMP-zilz2w1w2hEFm6tF0eaX_1KaPEWhNfY3kf8i'},
                                     'i': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                                    'rp': 'EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm',
                                     'p': 'EB_Lr3fHezn1ygn-wbBT5JjzaCMxTmhUoegXeZzWC2eT',
                                     'q': {},
                                     'r': '/ipex/offer',
                                     't': 'exn',
-                                    'v': 'KERI10JSON000323_'}
+                                    'v': 'KERI10JSON000357_'}
         assert end1 == b''
         sigs = ["AAAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH"]
 
@@ -1148,7 +1153,7 @@ def test_ipex_offer(helpers, mockHelpingNowIso8601):
         res = client.simulate_post(path="/identifiers/test/ipex/offer", body=data)
         assert res.json == {'done': False,
                             'error': None,
-                            'metadata': {'said': 'EDT7go7TfCTzeFnhNBl19JJqdabBfBx8tjBvi_asFCwT'},
+                            'metadata': {'said': 'EM79tlKrG142-jcaglGnIXKRfLW_DKOK5pnTwN60yz5U'},
                             'name': 'exchange.EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
                             'response': None}
 
@@ -1187,15 +1192,16 @@ def test_ipex_agree(helpers, mockHelpingNowIso8601):
                                                 recipient=pre1,
                                                 date=helping.nowIso8601())
         assert offerSerder.ked == {'a': {'i': 'EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm', 'm': 'Agreed'},
-                                    'd': 'ECxQe2TgUCRjbbxyCaXMEp6EtSMaqPmDstetoi4bEUrG',
+                                    'd': 'ENMBCgTGXxiMuTMcfGWp4uqnsiso1Jm3tAAn1x7ZPRox',
                                     'dt': '2021-06-27T21:26:21.233257+00:00',
                                     'e': {},
                                     'i': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                                    'rp': 'EFnYGvF_ENKJ_4PGsWsvfd_R6m5cN-3KYsz_0mAuNpCm',
                                     'p': 'EB_Lr3fHezn1ygn-wbBT5JjzaCMxTmhUoegXeZzWC2eT',
                                     'q': {},
                                     'r': '/ipex/agree',
                                     't': 'exn',
-                                    'v': 'KERI10JSON00014a_'}
+                                    'v': 'KERI10JSON00017e_'}
         assert end == b''
         sigs = ["AAAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH"]
 
@@ -1232,7 +1238,7 @@ def test_ipex_agree(helpers, mockHelpingNowIso8601):
         res = client.simulate_post(path="/identifiers/test/ipex/agree", body=data)
         assert res.json == {'done': False,
                             'error': None,
-                            'metadata': {'said': 'ECxQe2TgUCRjbbxyCaXMEp6EtSMaqPmDstetoi4bEUrG'},
+                            'metadata': {'said': 'ENMBCgTGXxiMuTMcfGWp4uqnsiso1Jm3tAAn1x7ZPRox'},
                             'name': 'exchange.EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
                             'response': None}
 
