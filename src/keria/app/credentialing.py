@@ -207,10 +207,24 @@ class RegistryResourceEnd:
         description: Get a single credential issuance and revocation registy
         tags:
            - Registries
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The human-readable name of the identifier.
+        - in: path
+          name: registryName
+          schema:
+            type: string
+          required: true
+          description: The human-readable name of the registry.
         responses:
            200:
               description:  credential issuance and revocation registy
-
+           404:
+            description: The requested registry was not found.
         """
         agent = req.context.agent
 
@@ -250,10 +264,35 @@ class RegistryResourceEnd:
         description: Get a single credential issuance and revocation registy
         tags:
            - Registries
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The human-readable name of the identifier.
+        - in: path
+          name: registryName
+          schema:
+            type: string
+          required: true
+          description: The human-readable name of the registry.
+        requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: The new name for the registry.
         responses:
            200:
-              description:  credential issuance and revocation registy
-
+                description:  credential issuance and revocation registy
+           400:
+                description: Bad request. This could be due to missing or invalid parameters.
+           404:
+                description: The requested registry was not found.
         """
         agent = req.context.agent
 
@@ -708,7 +747,49 @@ class CredentialResourceDeleteEnd:
             sigs (list): list of signatures for the revocation event
         ---
         summary: Perform credential revocation
-        description: Perform credential revocation
+        description: Initiates a credential revocation for a given identifier and SAID.
+        tags:
+         - Credentials
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The human-readable alias for the AID to use as issuer.
+        - in: path
+          name: said
+          schema:
+            type: string
+          required: true
+          description: The SAID of the credential to revoke.
+        requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    rev:
+                      type: string
+                      description: Serialized revocation event.
+                    ixn:
+                      type: string
+                      description: Serialized interaction event.
+                    rot:
+                      type: string
+                      description: Serialized rotation event.
+                    sigs:
+                      type: array
+                      items:
+                        type: string
+                      description: List of signatures for the revocation event.
+        responses:
+            200:
+                description: Credential revocation initiated successfully.
+            400:
+                description: Bad request. This could be due to invalid revocation event or other invalid parameters.
+            404:
+                description: The requested identifier or credential was not found.
         """
 
         agent = req.context.agent

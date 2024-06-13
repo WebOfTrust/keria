@@ -90,7 +90,52 @@ class MultisigJoinCollectionEnd:
             req (falcon.Request): HTTP request object
             rep (falcon.Response): HTTP response object
             name (str): AID of Hab to load credentials for
-
+        ---
+        summary: Create a multisig group request.
+        description: This endpoint creates a multisig request based on the provided name.
+        tags:
+        - Multisig Request
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The AID of Hab to load credentials for.
+        requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    rot:
+                      type: object
+                      description: The rotation event.
+                    sigs:
+                      type: array
+                      items:
+                        type: string
+                      description: List of signatures for the rotation event.
+                    gid:
+                      type: string
+                      description: The group identifier.
+                    smids:
+                      type: array
+                      items:
+                        type: string
+                      description: List of signing member identifiers.
+                    rmids:
+                      type: array
+                      items:
+                        type: string
+                      description: List of recipient member identifiers.
+        responses:
+            202:
+                description: Successfully created the multisig request.
+            400:
+                description: Bad request. Bad request. This could be due to missing or invalid parameters.
+            404:
+                description: The requested identifier was not found.
         """
         agent = req.context.agent
 
@@ -159,7 +204,25 @@ class MultisigRequestResourceEnd:
             req (falcon.Request): HTTP request object
             rep (falcon.Response): HTTP response object
             said (str): qb64 SAID of EXN multisig message.
-
+        ---
+        summary: Retrieve a specific multisig resource.
+        description: This endpoint retrieves the multisig resources based on the provided SAID.
+        tags:
+        - Multisig Resource
+        parameters:
+        - in: path
+          name: said
+          schema:
+            type: string
+          required: true
+          description: The qb64 SAID of the multisig resource to retrieve.
+        responses:
+            200:
+                description: Successfully retrieved the multisig resource.
+            400:
+                description: Bad request. This could be due to missing or invalid parameters.
+            404:
+                description: The requested multisig resource was not found.
         """
         agent = req.context.agent
         exn = agent.hby.db.exns.get(keys=(said,))
