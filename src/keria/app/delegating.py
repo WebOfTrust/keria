@@ -1,3 +1,4 @@
+import time
 import falcon
 
 from hio.base import doing
@@ -209,14 +210,15 @@ class DelegatorEnd:
             raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
         
         body = req.get_media()
-        
-        op = self.identifierResource.interact(agent, name, body)
         anc = httping.getRequiredParam(body, "ixn")
         
+        if not agent.hby.db.findAnchoringSealEvent(hab.pre, seal=anc):
+            op = self.identifierResource.interact(agent, name, body)
+        
         # successful approval returns the delegatee prefix
-        teepre = self.approveDelegation(agent, hab, anc)
+        teepre = approveDelegation(hab, anc)
         adop = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
-                                    metadata=dict(teepre=teepre, depends=op))
+                                    metadata=dict(teepre=teepre, anchor=anc, depends=op))
         
         try:
             rep.status = falcon.HTTP_200
@@ -226,23 +228,23 @@ class DelegatorEnd:
         except (kering.AuthError, ValueError) as e:
             raise falcon.HTTPBadRequest(description=e.args[0])
     
-    @staticmethod
-    def approveDelegation(agent, hab, anc) -> str:
-        serder = serdering.SerderKERI(sad=anc)
-        
-        teepre = anc['a'][0]['i']
-        teesaid = anc['a'][0]['d']
+@staticmethod
+def approveDelegation(hab, anc) -> str:
+    serder = serdering.SerderKERI(sad=anc)
+    
+    teepre = anc['a'][0]['i']
+    teesaid = anc['a'][0]['d']
 
-        for (pre, sn), dig in hab.db.delegables.getItemIter():
-            if pre == teepre:
-                seqner = coring.Seqner(sn=serder.sn)
-                couple = seqner.qb64b + serder.saidb
-                dgkey = dbing.dgKey(coring.Saider(qb64=teepre).qb64b, coring.Saider(qb64=teesaid).qb64b)
-                # the dip event should have been received from the delegatee via a postman call
-                # and will be sitting in the delegator escrows (hence the hab.db.delegables above)
-                # adding the authorize event seal will allow the dip to be processed
-                # and added to the delegator kever
-                hab.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
-                return teepre
-            
-        raise falcon.HTTPBadRequest(title=f"No delegables found for delegator {hab.pre} to approve delegatee {teepre}")
+    for (pre, sn), dig in hab.db.delegables.getItemIter():
+        if pre == teepre:
+            seqner = coring.Seqner(sn=serder.sn)
+            couple = seqner.qb64b + serder.saidb
+            dgkey = dbing.dgKey(coring.Saider(qb64=teepre).qb64b, coring.Saider(qb64=teesaid).qb64b)
+            # the dip event should have been received from the delegatee via a postman call
+            # and will be sitting in the delegator escrows (hence the hab.db.delegables above)
+            # adding the authorize event seal will allow the dip to be processed
+            # and added to the delegator kever
+            hab.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
+        
+    return teepre
+    # raise falcon.HTTPBadRequest(title=f"No delegables found for delegator {hab.pre} to approve delegatee {teepre}")
