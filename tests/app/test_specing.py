@@ -10,6 +10,7 @@ def test_spec_resource(helpers):
         agenting.loadEnds(app)
         aiding.loadEnds(app, agency, authn=None)
         delegating.loadEnds(app=app, identifierResource=aiding.IdentifierResourceEnd())
+        delegating.loadEnds(app=app, identifierResource=aiding.IdentifierResourceEnd())
         ending.loadEnds(agency=agency, app=app)
         indirecting.loadEnds(agency=agency, app=app)
         notifying.loadEnds(app)

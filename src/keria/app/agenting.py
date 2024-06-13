@@ -905,11 +905,11 @@ class KeyStateCollectionEnd:
            - Key Event Log
         parameters:
           - in: path
-            name: prefix
+            name: pre
+            description: qb64 identifier prefix of KEL to load
             schema:
               type: string
             required: true
-            description: qb64 identifier prefix of KEL to load
         responses:
            200:
               description: Key event log and key state of identifier
@@ -956,7 +956,7 @@ class KeyEventCollectionEnd:
            - Key Event Log
         parameters:
           - in: path
-            name: prefix
+            name: pre
             schema:
               type: string
             required: true
@@ -1014,12 +1014,13 @@ class OOBICollectionEnd:
             content:
               application/json:
                 schema:
-                    description: OOBI
-                    properties:
+                  description: OOBI
+                  oneOf:
+                    - type: object
+                      properties:
                         oobialias:
                           type: string
                           description: alias to assign to the identifier resolved from this OOBI
-                          required: false
                         url:
                           type: string
                           description:  URL OOBI
@@ -1166,13 +1167,24 @@ class QueryCollectionEnd:
                       identifier along with the KEL and all associated signatures and receipts
         tags:
           - Query
-        parameters:
-          - in: body
-            name: pre
-            schema:
-              type: string
-            required: true
-            description: qb64 identifier prefix of KEL to load
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                    - pre
+                properties:
+                  pre:
+                    type: string
+                    description: qb64 identifier prefix of KEL to load
+                  anchor:
+                    type: string
+                    description: Anchor
+                  sn:
+                    type: string
+                    description: Serial number
         responses:
            200:
               description: Key event log and key state of identifier

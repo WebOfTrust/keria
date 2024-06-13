@@ -86,6 +86,25 @@ class AgentResourceEnd:
             rep: falcon.Response HTTP response
             caid(str): qb64 identifier prefix of Controller
 
+        ---
+        summary: Retrieve key state record of an agent by controller AID.
+        description: This endpoint retrieves the key state record for a given controller of an agent.
+        tags:
+        - Agent
+        parameters:
+        - in: path
+          name: caid
+          schema:
+            type: string
+          required: true
+          description: The qb64 identifier prefix of Controller.
+        responses:
+          200:
+            description: Successfully retrieved the key state record.
+          400:
+            description: Bad request. This could be due to an invalid agent or controller configuration.
+          404:
+            description: The requested controller or agent was not found.
         """
         agent = self.agency.get(caid)
         if agent is None:
@@ -133,6 +152,53 @@ class AgentResourceEnd:
             rep (Response): falcon.Response HTTP response
             caid(str): qb64 identifier prefix of Controller
 
+        ---
+        summary: Update agent configuration by controller AID.
+        description: This endpoint updates the agent configuration based on the provided request parameters and body.
+        tags:
+        - Agent
+        parameters:
+        - in: path
+          name: caid
+          schema:
+            type: string
+          required: true
+          description: The qb64 identifier prefix of Controller.
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  required:
+                    - rot
+                    - sigs
+                    - sxlt
+                    - kyes
+                  properties:
+                    rot:
+                      type: object
+                      description: The rotation event.
+                    sigs:
+                      type: array
+                      items:
+                          type: string
+                      description: The signatures.
+                    sxlt:
+                      type: string
+                      description: The salty parameters.
+                    keys:
+                      type: object
+                      description: The keys.
+        responses:
+            204:
+              description: Successfully updated the agent configuration.
+            400:
+              description: Bad request. This could be due to missing or invalid parameters.
+            404:
+              description: The requested agent was not found.
+            500:
+              description: Internal server error. This could be due to an issue with updating the agent configuration.
         """
         agent = self.agency.get(caid)
         if agent is None:
@@ -262,6 +328,24 @@ class IdentifierCollectionEnd:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
 
+        ---
+        summary: Retrieve a list of identifiers associated with the agent.
+        description: This endpoint retrieves a list of identifiers associated with the agent.
+                     It supports pagination through the 'Range' header.
+        tags:
+          - Identifier
+        parameters:
+        - in: header
+          name: Range
+          schema:
+            type: string
+          required: false
+          description: The 'Range' header is used for pagination. The default range is 0-9.
+        responses:
+            200:
+                description: Successfully retrieved identifiers.
+            206:
+                description: Successfully retrieved identifiers within the specified range.
         """
         agent = req.context.agent
         res = []
@@ -308,6 +392,45 @@ class IdentifierCollectionEnd:
             req (Request): falcon.Request HTTP request object
             rep (Response): falcon.Response HTTP response object
 
+        ---
+        summary: Create an identifier.
+        description: This endpoint creates an identifier with the provided inception event, name, and signatures.
+        tags:
+        - Identifier
+        requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    icp:
+                      type: object
+                      description: The inception event for the identifier.
+                    name:
+                      type: string
+                      description: The name of the identifier.
+                    sigs:
+                      type: array
+                      items:
+                          type: string
+                      description: The signatures for the inception event.
+                    group:
+                      type: object
+                      description: Multisig group information.
+                    salty:
+                      type: object
+                      description: Salty parameters.
+                    randy:
+                      type: object
+                      description: Randomly generated materials.
+                    extern:
+                      type: object
+                      description: External parameters.
+        responses:
+            202:
+                description: Identifier creation is in progress. The response is a long running operation.
+            400:
+                description: Bad request. This could be due to missing or invalid parameters.
         """
         agent = req.context.agent
         try:
@@ -448,8 +571,27 @@ class IdentifierResourceEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable name for Hab to GET
+            name (str): human-readable name for Hab to GET
 
+        ---
+        summary: Retrieve an identifier.
+        description: This endpoint retrieves an identifier by its human-readable name.
+        tags:
+        - Identifier
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The human-readable name of the identifier.
+        responses:
+            200:
+                description: Successfully retrieved the identifier details.
+            400:
+                description: Bad request. This could be due to a missing or invalid name parameter.
+            404:
+                description: The requested identifier was not found.
         """
         if not name:
             raise falcon.HTTPBadRequest(description="name is required")
@@ -472,6 +614,36 @@ class IdentifierResourceEnd:
             rep (Response): falcon.Response HTTP response object
             name (str): human readable name for Hab to rename
 
+        ---
+        summary: Rename an identifier.
+        description: This endpoint renames an identifier with the provided new name.
+        tags:
+        - Identifier
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The current human-readable name of the identifier.
+        requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: The new name for the identifier.
+                  required:
+                  - name
+        responses:
+            200:
+              description: Successfully renamed the identifier and returns the updated information.
+            400:
+              description: Bad request. This could be due to a missing or invalid name parameter.
+            404:
+              description: The requested identifier was not found.
         """
         if not name:
             raise falcon.HTTPBadRequest(description="name is required")
@@ -501,8 +673,26 @@ class IdentifierResourceEnd:
         Parameters:
             req (Request): falcon.Request HTTP request object
             rep (Response): falcon.Response HTTP response object
-            name (str): human readable name for Hab to delete
-
+            name (str): human-readable name for Hab to delete
+        ---
+        summary: Delete an identifier.
+        description: This endpoint deletes an identifier by its name.
+        tags:
+        - Identifier
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The human-readable name of the identifier.
+        responses:
+            200:
+                description: Successfully deleted the identifier.
+            400:
+                description: Bad request. This could be due to a missing or invalid name parameter.
+            404:
+                description: The requested identifier was not found.
         """
         if not name:
             raise falcon.HTTPBadRequest(description="name is required")
@@ -519,8 +709,42 @@ class IdentifierResourceEnd:
         Parameters:
             req (Request): falcon.Request HTTP request object
             rep (Response): falcon.Response HTTP response object
-            name (str): human readable name for Hab to rotate or interact
+            name (str): human-readable name for Hab to rotate or interact
 
+        ---
+        summary: Process identifier events.
+        description: This endpoint handles the 'rot' or 'ixn' events of an identifier based on the provided request.
+        tags:
+        - Identifier
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The human-readable name of the identifier.
+        requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    rot:
+                      type: object
+                      description: The rotation event details.
+                    ixn:
+                      type: object
+                      description: The interaction event details.
+                  oneOf:
+                  - required:
+                    - rot
+                  - required:
+                    - ixn
+        responses:
+            200:
+              description: Successfully processed the identifier's event.
+            400:
+              description: Bad request. This could be due to missing or invalid parameters.
         """
         if not name:
             raise falcon.HTTPBadRequest(description="name is required")
@@ -694,8 +918,32 @@ class IdentifierOOBICollectionEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable name for Hab to GET
-
+            name (str): human-readable name for Hab to GET
+        ---
+        summary: Fetch OOBI URLs of an identifier.
+        description: This endpoint fetches the OOBI URLs for a specific role associated with an identifier.
+        tags:
+        - Identifier
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The human-readable name of the identifier.
+        - in: query
+          name: role
+          schema:
+            type: string
+          required: true
+          description: The role for which to fetch the OOBI URLs. Can be a witness, controller, agent, or mailbox.
+        responses:
+            200:
+              description: Successfully fetched the OOBI URLs. The response body contains the OOBI URLs.
+            400:
+              description: Bad request. This could be due to missing or invalid parameters.
+            404:
+              description: The requested identifier was not found.
         """
         agent = req.context.agent
         if not name:
@@ -801,6 +1049,38 @@ class EndRoleCollectionEnd:
             aid (str): aid to use instead of name
             role (str): optional role to search for
 
+        ---
+        summary: Retrieve end roles.
+        description: This endpoint retrieves the end roles associated with AID or human-readable name.
+                     It can also filter the end roles based on a specific role.
+        tags:
+        - End Role
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: false
+          description: The human-readable name of the identifier.
+        - in: path
+          name: aid
+          schema:
+            type: string
+          required: false
+          description: The identifier (AID).
+        - in: path
+          name: role
+          schema:
+            type: string
+          required: false
+          description: The specific role to filter the end roles.
+        responses:
+            200:
+                description: Successfully retrieved the end roles. The response body contains the end roles.
+            400:
+                description: Bad request. This could be due to missing or invalid parameters.
+            404:
+                description: The requested identifier was not found.
         """
         agent = req.context.agent
 
@@ -838,6 +1118,45 @@ class EndRoleCollectionEnd:
             aid (str): Not supported for POST.  If provided, a 404 is returned
             role (str): Not supported for POST.  If provided, a 404 is returned
 
+        ---
+        summary: Create an end role.
+        description: This endpoint creates an end role associated with a given identifier (AID) or name.
+        tags:
+        - End Role
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The human-readable name of the identifier.
+        - in: path
+          name: aid
+          schema:
+            type: string
+          required: false
+          description: Not supported for POST. If provided, a 404 is returned.
+        requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    rpy:
+                      type: object
+                      description: The reply object.
+                    sigs:
+                      type: array
+                      items:
+                        type: string
+                      description: The signatures.
+        responses:
+            202:
+                description: Accepted. The end role creation is in progress.
+            400:
+                description: Bad request. This could be due to missing or invalid parameters.
+            404:
+                description: Not found. The requested identifier was not found.
         """
         if role is not None or aid is not None:
             raise falcon.HTTPNotFound(description="route not found")
@@ -887,6 +1206,31 @@ class RpyEscrowCollectionEnd:
 
     @staticmethod
     def on_get(req, rep):
+        """
+        GET endpoint for reply escrow collection
+
+        Parameters:
+            req (falcon.Request): The request object.
+            rep (falcon.Response): The response object.
+
+        ---
+        summary: Retrieve reply escrows.
+        description: This endpoint retrieves the reply escrows and can filter the collection based on a specific route.
+        tags:
+        - Reply Escrow
+        parameters:
+        - in: query
+          name: route
+          schema:
+            type: string
+          required: false
+          description: The specific route to filter the reply escrow collection.
+        responses:
+            200:
+                description: Successfully retrieved the reply escrows.
+            400:
+                description: Bad request. This could be due to missing or invalid parameters.
+        """
         agent = req.context.agent
 
         # Optional Route parameter
@@ -922,7 +1266,7 @@ class ChallengeCollectionEnd:
            - in: query
              name: strength
              schema:
-                type: int
+                type: integer
              description:  cryptographic strength of word list
              required: false
         responses:
@@ -1040,7 +1384,7 @@ class ChallengeVerifyResourceEnd:
            - Challenge/Response
         parameters:
           - in: path
-            name: name
+            name: source
             schema:
               type: string
             required: true
@@ -1094,12 +1438,12 @@ class ChallengeVerifyResourceEnd:
         tags:
            - Challenge/Response
         parameters:
-          - in: path
-            name: name
-            schema:
-              type: string
-            required: true
-            description: Human readable alias for the identifier to create
+        - in: path
+          name: source
+          schema:
+            type: string
+          required: true
+          description: Human readable alias for the identifier to create
         requestBody:
             required: true
             content:
@@ -1529,6 +1873,33 @@ class GroupMemberCollectionEnd:
 
     @staticmethod
     def on_get(req, rep, name):
+        """
+        GET endpoint for group members
+        Parameters:
+            req (falcon.Request): The request object.
+            rep (falcon.Response): The response object.
+            name (str): The human-readable name of the identifier.
+
+        ---
+        summary: Fetch group member information.
+        description: This endpoint retrieves the signing and rotation members for a specific group associated with an identifier.
+        tags:
+        - Group Member
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The human-readable name of the identifier.
+        responses:
+            200:
+                description: Successfully fetched the group member information.
+            400:
+                description: Bad request. This could be due to missing or invalid parameters.
+            404:
+                description: The requested identifier was not found.
+        """
         agent = req.context.agent
 
         hab = agent.hby.habByName(name)
