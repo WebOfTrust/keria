@@ -741,22 +741,24 @@ class Escrower(doing.Doer):
         self.vry = vry
         self.registrar = registrar
         self.credentialer = credentialer
+        self.tock = 30.0
 
-        super(Escrower, self).__init__()
+        super(Escrower, self).__init__(tock=self.tock)
 
-    def recur(self, tyme):
+    def recur(self, tyme=None):
         """ Process all escrows once per loop. """
-        self.kvy.processEscrows()
-        self.rgy.processEscrows()
-        self.rvy.processEscrowReply()
-        if self.tvy is not None:
-            self.tvy.processEscrows()
-        self.exc.processEscrow()
-        self.vry.processEscrows()
-        self.registrar.processEscrows()
-        self.credentialer.processEscrows()
+        while True:
+            self.kvy.processEscrows()
+            self.rgy.processEscrows()
+            self.rvy.processEscrowReply()
+            if self.tvy is not None:
+                self.tvy.processEscrows()
+            self.exc.processEscrow()
+            self.vry.processEscrows()
+            self.registrar.processEscrows()
+            self.credentialer.processEscrows()
 
-        return False
+            yield self.tock
 
 
 def loadEnds(app):
