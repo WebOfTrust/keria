@@ -306,6 +306,7 @@ class Agent(doing.DoDoer):
         self.exchanges = decking.Deck()
         self.grants = decking.Deck()
         self.admits = decking.Deck()
+        self.submits = decking.Deck()
 
         receiptor = agenting.Receiptor(hby=hby)
         self.witq = agenting.WitnessInquisitor(hby=self.hby)
@@ -376,7 +377,8 @@ class Agent(doing.DoDoer):
             Admitter(hby=hby, witq=self.witq, psr=self.parser, agentHab=agentHab, exc=self.exc, admits=self.admits),
             GroupRequester(hby=hby, agentHab=agentHab, counselor=self.counselor, groups=self.groups),
             SeekerDoer(seeker=self.seeker, cues=self.verifier.cues),
-            ExchangeCueDoer(seeker=self.exnseeker, cues=self.exc.cues, queries=self.queries)
+            ExchangeCueDoer(seeker=self.exnseeker, cues=self.exc.cues, queries=self.queries),
+            Submitter(hby=hby, agentHab=agentHab, submits=self.submits),
         ])
 
         super(Agent, self).__init__(doers=doers, always=True, **opts)
@@ -762,6 +764,63 @@ class Escrower(doing.Doer):
         self.credentialer.processEscrows()
 
         return False
+    
+class Submitter(doing.Doer):
+    def __init__(self, hby, agentHab, submits):
+        """
+        Process to re-submit an identifier to the witnesses for receipts and to propogate it to each witness
+        """
+        self.hby = hby
+        self.agentHab = agentHab
+        self.submits = submits
+        # self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', "/replay", "/reply"])
+        # self.endpoint = endpoint
+
+        super(Submitter, self).__init__(always=True)
+
+    def recur(self, tyme, deeds=None):
+        """
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        Returns:  doifiable Doist compatible generator method
+        """
+        if self.submits:
+            msg = self.submits.popleft()
+            alias = msg["alias"]
+            code = msg["code"]
+            hab = self.hby.habByName(name=alias)
+            auths = dict()
+            if code:
+                for wit in hab.kever.wits:
+                    auths[wit] = f"{code}#{helping.nowIso8601()}"
+
+            if self.endpoint:
+                receiptor = agenting.Receiptor(hby=self.hby)
+                self.extend([receiptor])
+
+                print("Re-submit waiting for receipts...")
+                yield from receiptor.receipt(hab.pre, sn=hab.kever.sn, auths=auths)
+                self.remove([receiptor])
+
+            else:
+                witDoer = agenting.WitnessReceiptor(hby=self.hby, force=True, auths=auths)
+                self.extend([witDoer])
+
+                if hab.kever.wits:
+                    print("Re-submit waiting for witness receipts...")
+                    witDoer.msgs.append(dict(pre=hab.pre))
+                    while not witDoer.cues:
+                        _ = yield self.tock
+
+                self.remove([witDoer])
+
+            # toRemove = [self.hbyDoer, self.mbx]
+            # self.remove(toRemove)
+            
+        return super(Submitter, self).recur(tyme, deeds)
 
 
 def loadEnds(app):

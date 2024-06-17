@@ -195,7 +195,33 @@ def test_witnesser(helpers):
         # doist.do(doers=doers)
         deeds = doist.enter(doers=[wr])
         doist.recur(deeds)
+        
+def test_submitter(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        sub = agenting.Submitter(hby=agent.hby, agentHab=agent.agentHab, submits=decking.Deck())
+        doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+        deeds = doist.enter(doers=[sub])
 
+        sub.submits.append(dict(alias="test1"))
+        sub.recur(1.0, deeds=deeds)
+
+        assert len(sub.doers) == 1
+        rectDoer = sub.doers[0]
+        assert isinstance(rectDoer, agenting.Receiptor) is True
+        # assert seqNoDoer.pre == "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
+        # assert seqNoDoer.sn == 1
+
+        sub.doers.remove(rectDoer)
+
+        # Anchor not implemented yet
+        sub.submitter.append(dict(alias="test2"))
+        sub.recur(1.0, deeds=deeds)
+        assert len(sub.doers) == 1
+        witDoer = sub.doers[0]
+        assert isinstance(witDoer, agenting.WitnessReceiptor) is True
+        assert witDoer.pre == "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
+        assert witDoer.anchor == {}
+        sub.doers.remove(witDoer)
 
 def test_keystate_ends(helpers):
     caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
