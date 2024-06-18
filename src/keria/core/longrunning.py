@@ -412,6 +412,19 @@ class Monitor:
             else:
                 operation.done = False
 
+        elif op.type in (OpTypes.submit, ):
+            if:
+                
+            else:
+                start = helping.fromIso8601(op.start)
+                dtnow = helping.nowUTC()
+                if (dtnow - start) > datetime.timedelta(seconds=eventing.Kevery.TimeoutPWE):
+                    operation.done = True
+                    operation.error = Status(code=408,  # Using HTTP error codes here for lack of a better alternative
+                                                message=f"long running {op.type} for {op.oid} operation timed out before "
+                                                        f"receiving sufficient witness receipts")
+                else:
+                    operation.done = False
         elif op.type in (OpTypes.done, ):
             operation.done = True
             operation.response = op.metadata["response"]

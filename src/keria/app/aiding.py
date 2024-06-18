@@ -33,6 +33,7 @@ def loadEnds(app, agency, authn):
     aidEnd = IdentifierResourceEnd()
     app.add_route("/identifiers/{name}", aidEnd)
     app.add_route("/identifiers/{name}/events", aidEnd)
+    app.add_route("/identifiers/{name}/submit", aidEnd)
 
     aidOOBIsEnd = IdentifierOOBICollectionEnd()
     app.add_route("/identifiers/{name}/oobis", aidOOBIsEnd)
@@ -755,6 +756,8 @@ class IdentifierResourceEnd:
                 op = self.rotate(agent, name, body)
             elif body.get("ixn") is not None:
                 op = self.interact(agent, name, body)
+            elif body.get("submit") is not None:
+                op = self.submit_id(agent, name, body)
             else:
                 raise falcon.HTTPBadRequest(title="invalid request",
                                             description=f"required field 'rot' or 'ixn' missing from request")
@@ -878,7 +881,23 @@ class IdentifierResourceEnd:
         op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.done,
                                   metadata=dict(response=serder.ked))
         return op
+    
+    
+    @staticmethod
+    def submit_id(agent, name, body):
+        hab = agent.hby.habByName(name)
+        if hab is None:
+            raise falcon.HTTPNotFound(title=f"No AID {name} found")
 
+        code = body.get("code")
+
+        if hab.kever.wits:
+            agent.submits.append(dict(alias=name,code=code))
+            op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.witness,
+                                      metadata=dict(alias=name))
+            return op
+
+        raise falcon.HTTPBadRequest(title=f"invalid identifier submit, {name} has no witnesses")
 
 def info(hab, rm, full=False):
     data = dict(

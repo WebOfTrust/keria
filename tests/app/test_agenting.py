@@ -215,6 +215,7 @@ def test_submitter(helpers):
 
         salt = b'0123456789abcdef'
 
+        # wits, so should be processed
         helpers.createAid(client, "test1", salt, wits=[wesHab.pre], toad="1")
         submitter.submits.append(dict(alias="test1",code=None))
         submitter.recur(tyme=1.0, deeds=deeds)
@@ -223,6 +224,7 @@ def test_submitter(helpers):
         assert isinstance(rectDoer, WitnessReceiptor) is True
         submitter.recur(tyme=1.0, deeds=deeds)
 
+        # no wits, should not be added for processing
         helpers.createAid(client, "test2", salt)
         submitter.submits.append(dict(alias="test2"))
         submitter.recur(1.0, deeds=deeds)

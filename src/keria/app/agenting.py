@@ -781,7 +781,7 @@ class Submitter(doing.DoDoer):
             msg = self.submits.popleft()
             alias = msg["alias"]
             hab = self.hby.habByName(name=alias)
-
+            sn = hab.kever.sn
             if hab and hab.kever.wits:
                 auths = {}
                 if hasattr(msg, "code"):
@@ -793,7 +793,17 @@ class Submitter(doing.DoDoer):
                 self.extend([witDoer])
                 print("Re-submit waiting for witness receipts...")
                 witDoer.msgs.append(dict(pre=hab.pre))
-            
+        else:
+            for doer in self.doers:
+                witnessed = False
+                if doer.cues:
+                    cue = doer.cues.popleft()
+                    if cue["pre"] == hab.pre and cue["sn"] == sn:
+                        witnessed = True
+                        print("Re-submit received all witness receipts for", cue["pre"])
+                        self.witDoer.cues.clear()
+                        self.remove(doer)
+                
         return super(Submitter, self).recur(tyme, deeds)
 
 
