@@ -197,30 +197,36 @@ def test_witnesser(helpers):
         doist.recur(deeds)
         
 def test_submitter(helpers):
-    with helpers.openKeria() as (agency, agent, app, client):
-        submitter = agenting.Submiter(hby=agent.hby, agentHab=agent.agentHab, submits=decking.Deck())
+    with helpers.openKeria() as (agency, agent, app, client), \
+            habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby:
+        wesHab = wesHby.makeHab(name="wes", transferable=False)
+
+        # Add witness endpoints
+        url = "http://127.0.0.1:9999"
+        agent.hby.db.locs.put(keys=(wesHab.pre, kering.Schemes.http), val=basing.LocationRecord(url=url))
+
+        # Register the identifier endpoint so we can create an AID for the test
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+        
+        submitter = agenting.Submitter(hby=agent.hby, submits=decking.Deck())
         doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
         deeds = doist.enter(doers=[submitter])
 
+        salt = b'0123456789abcdef'
+
+        helpers.createAid(client, "test1", salt, wits=[wesHab.pre], toad="1")
         submitter.submits.append(dict(alias="test1",code=None))
-
         submitter.recur(tyme=1.0, deeds=deeds)
-
         assert len(submitter.doers) == 1
         rectDoer = submitter.doers[0]
-        assert isinstance(rectDoer, Receiptor) is True
-        # assert seqNoDoer.pre == "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
-        # assert seqNoDoer.sn == 1
+        assert isinstance(rectDoer, WitnessReceiptor) is True
+        submitter.recur(tyme=1.0, deeds=deeds)
 
-        submitter.doers.remove(rectDoer)
-
-        # Anchor not implemented yet
+        helpers.createAid(client, "test2", salt)
         submitter.submits.append(dict(alias="test2"))
         submitter.recur(1.0, deeds=deeds)
-        assert len(submitter.doers) == 1
-        witDoer = submitter.doers[0]
-        assert isinstance(witDoer, WitnessReceiptor) is True
-        submitter.doers.remove(witDoer)
+        assert len(submitter.doers) == 1   
 
 def test_keystate_ends(helpers):
     caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"

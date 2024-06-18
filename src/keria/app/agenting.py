@@ -378,7 +378,7 @@ class Agent(doing.DoDoer):
             GroupRequester(hby=hby, agentHab=agentHab, counselor=self.counselor, groups=self.groups),
             SeekerDoer(seeker=self.seeker, cues=self.verifier.cues),
             ExchangeCueDoer(seeker=self.exnseeker, cues=self.exc.cues, queries=self.queries),
-            Submiter(hby=hby, agentHab=agentHab, submits=self.submits),
+            Submitter(hby=hby, submits=self.submits),
         ])
 
         super(Agent, self).__init__(doers=doers, always=True, **opts)
@@ -765,18 +765,15 @@ class Escrower(doing.Doer):
 
         return False
     
-class Submiter(doing.DoDoer):
-    def __init__(self, hby, agentHab, submits, endpoint=None):
+class Submitter(doing.DoDoer):
+    def __init__(self, hby, submits):
         """
         Process to re-submit an identifier to the witnesses for receipts and to propogate it to each witness
         """
         self.hby = hby
-        self.agentHab = agentHab
         self.submits = submits
-        # self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', "/replay", "/reply"])
-        self.endpoint = endpoint
 
-        super(Submiter, self).__init__(always=True)
+        super(Submitter, self).__init__(always=True)
 
     def recur(self, tyme, deeds=None):
         """ Processes query reqests submitting any on the cue"""
@@ -784,37 +781,20 @@ class Submiter(doing.DoDoer):
             msg = self.submits.popleft()
             alias = msg["alias"]
             hab = self.hby.habByName(name=alias)
-            auths = {}
-            # if hasattr(msg, "code"):
-            #     code = msg["code"]
-            #     if code:
-            #         for wit in hab.kever.wits:
-            #             auths[wit] = f"{code}#{helping.nowIso8601()}"
 
-            # if self.endpoint:
-            #     receiptor = agenting.Receiptor(hby=self.hby)
-            #     self.extend([receiptor])
-
-            #     print("Re-submit waiting for receipts...")
-            #     yield from receiptor.receipt(hab.pre, sn=hab.kever.sn, auths=auths)
-            #     self.remove([receiptor])
-
-            # else:
-            witDoer = agenting.WitnessReceiptor(hby=self.hby, force=True, auths=auths)
-            self.extend([witDoer])
-
-            # if hab.kever.wits:
-            #     print("Re-submit waiting for witness receipts...")
-            #     witDoer.msgs.append(dict(pre=hab.pre))
-            #     while not witDoer.cues:
-            #         _ = yield self.tock
-
-            self.remove([witDoer])
-
-            # toRemove = [self.hbyDoer, self.mbx]
-            # self.remove(toRemove)
+            if hab and hab.kever.wits:
+                auths = {}
+                if hasattr(msg, "code"):
+                    code = msg["code"]
+                    if code:
+                        for wit in hab.kever.wits:
+                            auths[wit] = f"{code}#{helping.nowIso8601()}"
+                witDoer = agenting.WitnessReceiptor(hby=self.hby, force=True, auths=auths)
+                self.extend([witDoer])
+                print("Re-submit waiting for witness receipts...")
+                witDoer.msgs.append(dict(pre=hab.pre))
             
-        return super(Submiter, self).recur(tyme, deeds)
+        return super(Submitter, self).recur(tyme, deeds)
 
 
 def loadEnds(app):
