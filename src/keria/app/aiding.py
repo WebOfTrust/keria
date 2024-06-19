@@ -893,8 +893,8 @@ class IdentifierResourceEnd:
 
         if hab.kever.wits:
             agent.submits.append(dict(alias=name,code=code))
-            op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.witness,
-                                      metadata=dict(alias=name))
+            op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.submit,
+                                      metadata=dict(alias=name,sn=hab.kever.sn))
             return op
 
         raise falcon.HTTPBadRequest(title=f"invalid identifier submit, {name} has no witnesses")
