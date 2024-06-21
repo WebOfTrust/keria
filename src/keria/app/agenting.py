@@ -798,11 +798,10 @@ class Submitter(doing.DoDoer):
                 witnessed = False
                 if doer.cues:
                     cue = doer.cues.popleft()
-                    if cue["pre"] == hab.pre and cue["sn"] == sn:
-                        witnessed = True
-                        print("Re-submit received all witness receipts for", cue["pre"])
-                        self.witDoer.cues.clear()
-                        self.remove(doer)
+                    witnessed = True
+                    print("Re-submit received all witness receipts for", cue["pre"])
+                    doer.cues.clear()
+                    self.doers.remove(doer)
                 
         return super(Submitter, self).recur(tyme, deeds)
 

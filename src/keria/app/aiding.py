@@ -484,8 +484,6 @@ class IdentifierCollectionEnd:
 
                 states = httping.getRequiredParam(body, "smids")
                 rstates = httping.getRequiredParam(body, "rmids")
-                # smids = [state['i'] for state in states]
-                # rmids = [rstate['i'] for rstate in rstates]
                 hab = agent.hby.makeSignifyGroupHab(name, mhab=mhab, smids=states, rmids=rstates, serder=serder,
                                                     sigers=sigers)
                 try:
@@ -892,6 +890,7 @@ class IdentifierResourceEnd:
         code = body.get("code")
 
         if hab.kever.wits:
+            hab.db.delWigs(key=dbing.dgKey(hab.kever.prefixer.qb64b, hab.kever.serder.saidb))
             agent.submits.append(dict(alias=name,code=code))
             op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.submit,
                                       metadata=dict(alias=name,sn=hab.kever.sn))
