@@ -10,10 +10,12 @@ import falcon
 from keri import core
 from keri.app import habbing
 from keri.core import coring, eventing, serdering
+from keri.help import ogler
 from keri.kering import SerializeError
 
 from keria.core import httping, longrunning
 
+logger = ogler.getLogger()
 
 def loadEnds(app):
     msrCol = MultisigRequestCollectionEnd()
@@ -72,7 +74,8 @@ class MultisigRequestCollectionEnd:
 
         slist = hab.db.signingMembers(pre=hab.pre)
         smids = slist
-        smids.remove(hab.mhab.pre)
+        if hab.mhab.pre in smids:
+            smids.remove(hab.mhab.pre)
 
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=smids, topic='multisig'))
 
@@ -150,6 +153,12 @@ class MultisigJoinCollectionEnd:
 
         # Get the rot, sigs and recipients  from the request
         rot = httping.getRequiredParam(body, "rot")
+        serder = None
+        try:
+            serder = serdering.SerderKERI(sad=rot)
+        except(SerializeError) as e:
+            raise falcon.HTTPBadRequest(description=f"{e.args[0]}")
+        
         sigs = httping.getRequiredParam(body, "sigs")
 
         # Get group specific values
@@ -179,13 +188,11 @@ class MultisigJoinCollectionEnd:
 
         hab = agent.hby.joinSignifyGroupHab(gid, name=name, mhab=mhab, smids=smids, rmids=rmids)
         try:
-            hab.make(serder=serdering.SerderKERI(sad=rot), sigers=sigers)
-            agent.inceptGroup(pre=gid, mpre=mhab.pre, verfers=verfers, digers=digers)
-        except (ValueError, SerializeError) as e:
-            agent.hby.deleteHab(name=name)
-            raise falcon.HTTPBadRequest(description=f"{e.args[0]}")
+            hab.make(serder=serder, sigers=sigers)
+        except (ValueError) as e:
+            logger.info("Already incepted group, continuing...")
 
-        serder = serdering.SerderKERI(sad=rot)
+        agent.inceptGroup(pre=gid, mpre=mhab.pre, verfers=verfers, digers=digers)
         agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
         op = agent.monitor.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=serder.sn))
 
