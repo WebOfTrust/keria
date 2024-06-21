@@ -83,13 +83,14 @@ def test_multisig_request_ends(helpers):
         # Send in all signatures as if we are joining the inception event
         sigers = [signer0.sign(ser=serder.raw, index=0).qb64, signer1.sign(ser=serder.raw, index=1).qb64]
         states = nstates = [m0['state'], m1['state']]
+        smids = rmids = [state['i'] for state in states if 'i' in state]
 
         body = {
             'name': 'multisig',
             'icp': serder.ked,
             'sigs': sigers,
-            "smids": states,
-            "rmids": nstates,
+            "smids": smids,
+            "rmids": rmids,
             'group': {
                 "mhab": m0,
                 "keys": keys,

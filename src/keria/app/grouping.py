@@ -71,7 +71,7 @@ class MultisigRequestCollectionEnd:
         del ims[:serder.size]
 
         slist = hab.db.signingMembers(pre=hab.pre)
-        smids = [d['i'] for d in slist if 'i' in d]
+        smids = slist
         smids.remove(hab.mhab.pre)
 
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=smids, topic='multisig'))

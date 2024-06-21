@@ -194,13 +194,14 @@ def test_ipex_grant(helpers, mockHelpingNowIso8601, seeder):
         # Send in all signatures as if we are joining the inception event
         sigers = [signer0.sign(ser=serder.raw, index=0).qb64, signer1.sign(ser=serder.raw, index=1).qb64]
         states = nstates = [m0['state'], m1['state']]
+        smids = rmids = [state['i'] for state in states if 'i' in state]
 
         body = {
             'name': 'multisig',
             'icp': serder.ked,
             'sigs': sigers,
-            "smids": states,
-            "rmids": nstates,
+            "smids": smids,
+            "rmids": rmids,
             'group': {
                 "mhab": m0,
                 "keys": keys,
@@ -430,13 +431,14 @@ def test_multisig_grant_admit(seeder, helpers):
 
         sigers = [issuerSigner0.sign(ser=serder.raw, index=0).qb64, issuerSigner1.sign(ser=serder.raw, index=1).qb64]
         states = nstates = [ip0['state'], ip1['state']]
+        smids = rmids = [state['i'] for state in states if 'i' in state]
 
         body = {
             'name': 'issuer',
             'icp': serder.ked,
             'sigs': sigers,
-            "smids": states,
-            "rmids": nstates,
+            "smids": smids,
+            "rmids": rmids,
             'group': {
                 "mhab": ip0,
                 "keys": ikeys,
@@ -451,8 +453,8 @@ def test_multisig_grant_admit(seeder, helpers):
             'name': 'issuer',
             'icp': serder.ked,
             'sigs': sigers,
-            "smids": states,
-            "rmids": nstates,
+            "smids": smids,
+            "rmids": rmids,
             'group': {
                 "mhab": ip1,
                 "keys": ikeys,
@@ -530,13 +532,14 @@ def test_multisig_grant_admit(seeder, helpers):
         # Send in all signatures as if we are joining the inception event
         sigers = [holderSigner0.sign(ser=serder.raw, index=0).qb64, holderSigner1.sign(ser=serder.raw, index=1).qb64]
         states = nstates = [hp0['state'], hp1['state']]
-
+        smids = rmids = [state['i'] for state in states if 'i' in state]
+        
         body = {
             'name': 'holder',
             'icp': serder.ked,
             'sigs': sigers,
-            "smids": states,
-            "rmids": nstates,
+            "smids": smids,
+            "rmids": rmids,
             'group': {
                 "mhab": hp0,
                 "keys": keys,
@@ -551,8 +554,8 @@ def test_multisig_grant_admit(seeder, helpers):
             'name': 'holder',
             'icp': serder.ked,
             'sigs': sigers,
-            "smids": states,
-            "rmids": nstates,
+            "smids": smids,
+            "rmids": rmids,
             'group': {
                 "mhab": hp1,
                 "keys": keys,

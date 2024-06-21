@@ -522,13 +522,14 @@ def test_identifier_collection_end(helpers):
         sigers = [signer0.sign(ser=serder.raw, index=0).qb64, p1.sign(ser=serder.raw, indices=[1])[0].qb64,
                   p2.sign(ser=serder.raw, indices=[2])[0].qb64]
         states = nstates = [agent0, asdict(p1.kever.state()), asdict(p2.kever.state())]
+        smids = rmids = [state['i'] for state in states if 'i' in state]
 
         body = {
             'name': 'multisig',
             'icp': serder.ked,
             'sigs': sigers,
-            "smids": states,
-            "rmids": nstates,
+            "smids": smids,
+            "rmids": rmids,
             'group': {
                 "keys": keys,
                 "ndigs": ndigs
@@ -546,8 +547,8 @@ def test_identifier_collection_end(helpers):
             'name': 'multisig',
             'icp': serder.ked,
             'sigs': sigers,
-            "smids": states,
-            "rmids": nstates,
+            "smids": smids,
+            "rmids": rmids,
             'group': {
                 "mhab": bad,
                 "keys": keys,
@@ -564,8 +565,8 @@ def test_identifier_collection_end(helpers):
             'name': 'multisig',
             'icp': serder.ked,
             'sigs': sigers,
-            "smids": states,
-            "rmids": nstates,
+            "smids": smids,
+            "rmids": rmids,
             'group': {
                 "mhab": mhab,
                 "ndigs": ndigs
@@ -581,8 +582,8 @@ def test_identifier_collection_end(helpers):
             'name': 'multisig',
             'icp': serder.ked,
             'sigs': sigers,
-            "smids": states,
-            "rmids": nstates,
+            "smids": smids,
+            "rmids": rmids,
             'group': {
                 "mhab": mhab,
                 "keys": keys,
@@ -599,8 +600,8 @@ def test_identifier_collection_end(helpers):
             'name': 'multisig',
             'icp': serder.ked,
             'sigs': sigers,
-            "smids": states,
-            "rmids": nstates,
+            "smids": smids,
+            "rmids": rmids,
             'group': {
                 "mhab": mhab,
                 "keys": keys,
