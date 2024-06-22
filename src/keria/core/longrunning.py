@@ -19,6 +19,8 @@ from keri.help import helping
 
 from keria.app import delegating
 
+from keria.app import delegating
+
 # long running operation types
 Typeage = namedtuple(
     "Tierage",
@@ -121,6 +123,7 @@ class Monitor:
         registrar=None,
         exchanger=None,
         credentialer=None,
+        submitter=None,
         opr=None,
         temp=False,
     ):
@@ -138,6 +141,7 @@ class Monitor:
         self.registrar = registrar
         self.exchanger = exchanger
         self.credentialer = credentialer
+        self.submitter = submitter
         self.opr = opr if opr is not None else Operator(name=hby.name, temp=temp)
 
     def submit(self, oid, typ, metadata=None):
@@ -304,6 +308,7 @@ class Monitor:
             reqsn = "sn"
             reqtee = "teepre"
             anchor = "anchor"
+            anchor = "anchor"
             required = [reqsn, reqtee]
             if reqsn in op.metadata:  # delegatee detects successful delegation
                 sn = op.metadata["sn"]
@@ -325,14 +330,12 @@ class Monitor:
             ):  # delegator detects delegatee delegation success
                 teepre = op.metadata[reqtee]
                 anc = op.metadata[anchor]
-                if (
-                    teepre in self.hby.kevers
-                ):  # delegatee dip has been processed by the delegator
+                if teepre in self.hby.kevers: # delegatee dip has been processed by the delegator
                     operation.done = True
                     operation.response = op.metadata[reqtee]
                 else:
                     hab = self.hby.habByPre(kever.prefixer.qb64)
-                    delegating.approveDelegation(hab, anc)
+                    delegating.approveDelegation(hab,anc)
                     operation.done = False
             else:
                 raise falcon.HTTPBadRequest(
@@ -487,11 +490,7 @@ class Monitor:
 
         elif op.type in (OpTypes.submit,):
             kever = self.hby.kevers[op.oid]
-            sn = op.metadata["sn"]
-            sdig = self.hby.db.getKeLast(
-                key=dbing.snKey(pre=kever.prefixer.qb64b, sn=sn)
-            )
-            if sdig is not None:
+            if kever and len(self.submitter.submits) and len(self.submitter.doers) == 0:
                 operation.done = True
                 operation.response = asdict(kever.state())
             else:

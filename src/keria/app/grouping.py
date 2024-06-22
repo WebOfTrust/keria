@@ -11,12 +11,10 @@ from keri import core
 from keri.app import habbing
 from keri.core import coring, eventing, serdering
 from keri.help import ogler
-from keri.help import ogler
 from keri.kering import SerializeError
 
 from keria.core import httping, longrunning
 
-logger = ogler.getLogger()
 logger = ogler.getLogger()
 
 def loadEnds(app):
@@ -161,12 +159,6 @@ class MultisigJoinCollectionEnd:
         except(SerializeError) as e:
             raise falcon.HTTPBadRequest(description=f"{e.args[0]}")
         
-        serder = None
-        try:
-            serder = serdering.SerderKERI(sad=rot)
-        except(SerializeError) as e:
-            raise falcon.HTTPBadRequest(description=f"{e.args[0]}")
-        
         sigs = httping.getRequiredParam(body, "sigs")
 
         # Get group specific values
@@ -200,9 +192,8 @@ class MultisigJoinCollectionEnd:
             hab.make(serder=serder, sigers=sigers)
         except (ValueError) as e:
             logger.info("Already incepted group, continuing...")
-            
-        agent.inceptGroup(pre=gid, mpre=mhab.pre, verfers=verfers, digers=digers)
 
+        agent.inceptGroup(pre=gid, mpre=mhab.pre, verfers=verfers, digers=digers)
         agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
         op = agent.monitor.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=serder.sn))
 

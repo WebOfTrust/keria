@@ -339,8 +339,9 @@ class Agent(doing.DoDoer):
         self.exc = exchanging.Exchanger(hby=hby, handlers=handlers)
         grouping.loadHandlers(exc=self.exc, mux=self.mux)
         protocoling.loadHandlers(hby=self.hby, exc=self.exc, notifier=self.notifier)
+        self.submitter = Submitter(hby=hby, submits=self.submits)
         self.monitor = longrunning.Monitor(hby=hby, swain=self.swain, counselor=self.counselor, temp=hby.temp,
-                                           registrar=self.registrar, credentialer=self.credentialer, exchanger=self.exc)
+                                           registrar=self.registrar, credentialer=self.credentialer, submitter=self.submitter, exchanger=self.exc)
 
         self.rvy = routing.Revery(db=hby.db, cues=self.cues)
         self.kvy = eventing.Kevery(db=hby.db,
@@ -378,7 +379,7 @@ class Agent(doing.DoDoer):
             GroupRequester(hby=hby, agentHab=agentHab, counselor=self.counselor, groups=self.groups),
             SeekerDoer(seeker=self.seeker, cues=self.verifier.cues),
             ExchangeCueDoer(seeker=self.exnseeker, cues=self.exc.cues, queries=self.queries),
-            Submitter(hby=hby, submits=self.submits),
+            self.submitter,
         ])
 
         super(Agent, self).__init__(doers=doers, always=True, **opts)
@@ -798,10 +799,12 @@ class Submitter(doing.DoDoer):
                 witnessed = False
                 if doer.cues:
                     cue = doer.cues.popleft()
-                    witnessed = True
-                    print("Re-submit received all witness receipts for", cue["pre"])
-                    doer.cues.clear()
-                    self.doers.remove(doer)
+                    if len(doer.cues) == 0:
+                        witnessed = True
+                        print("Re-submit received all witness receipts for", cue["pre"])
+                        self.doers.remove(doer)
+                    else:
+                        print(f"Re-submit for {hab.pre} has {len(cue)} events left to process, completed {cue}.")
                 
         return super(Submitter, self).recur(tyme, deeds)
 
