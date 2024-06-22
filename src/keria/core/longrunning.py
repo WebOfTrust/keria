@@ -17,6 +17,8 @@ from keri.core import eventing, coring, serdering
 from keri.db import dbing, koming
 from keri.help import helping
 
+from keria.app import delegating
+
 # long running operation types
 Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole challenge exchange '
                                 'done')
@@ -253,6 +255,7 @@ class Monitor:
             
             reqsn = "sn"
             reqtee = "teepre"
+            anchor = "anchor"
             required = [reqsn, reqtee]
             if reqsn in op.metadata: #delegatee detects successful delegation
                 sn = op.metadata["sn"]
@@ -269,11 +272,13 @@ class Monitor:
                     operation.done = False
             elif reqtee in op.metadata: #delegator detects delegatee delegation success
                 teepre = op.metadata[reqtee]
-                # Once the delegatee dip is processed by the delegator, the 
-                if teepre in self.hby.kevers:
+                anc = op.metadata[anchor]
+                if teepre in self.hby.kevers: # delegatee dip has been processed by the delegator
                     operation.done = True
                     operation.response = op.metadata[reqtee]
                 else:
+                    hab = self.hby.habByPre(kever.prefixer.qb64)
+                    delegating.approveDelegation(hab,anc)
                     operation.done = False
             else:
                 raise falcon.HTTPBadRequest(description=f"longrunning operation type {op.type} requires one of {required}, but are missing from request")
