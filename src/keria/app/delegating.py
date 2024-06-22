@@ -227,7 +227,6 @@ class DelegatorEnd:
         except (kering.AuthError, ValueError) as e:
             raise falcon.HTTPBadRequest(description=e.args[0])
     
-@staticmethod
 def approveDelegation(hab, anc) -> str:
     serder = serdering.SerderKERI(sad=anc)
     

@@ -66,6 +66,12 @@ All Agent db access is through the associated Agent.
     make build-keria
     ```
 
+#### Run with docker
+* Specify an entrypoint with proper configuration, for instance if you want to use the demo-witness-oobis that is under the scripts/keri/cf dir:
+```
+ENTRYPOINT ["keria", "start",  "--config-file", "demo-witness-oobis", "--config-dir", "./scripts"]
+```
+You can see a [working example here](https://github.com/WebOfTrust/signify-ts/blob/main/docker-compose.yaml).
 
 ### Running Tests
 

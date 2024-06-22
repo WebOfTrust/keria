@@ -8,5 +8,3 @@ COPY . /usr/local/var/keria
 WORKDIR /usr/local/var/keria
 
 RUN pip install -r requirements.txt
-
-ENTRYPOINT ["keria", "start",  "--config-file", "demo-witness-oobis", "--config-dir", "./scripts"]

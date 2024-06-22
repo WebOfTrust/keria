@@ -11,10 +11,12 @@ from keri import core
 from keri.app import habbing
 from keri.core import coring, eventing, serdering
 from keri.help import ogler
+from keri.help import ogler
 from keri.kering import SerializeError
 
 from keria.core import httping, longrunning
 
+logger = ogler.getLogger()
 logger = ogler.getLogger()
 
 def loadEnds(app):
@@ -73,8 +75,9 @@ class MultisigRequestCollectionEnd:
         del ims[:serder.size]
 
         slist = hab.db.signingMembers(pre=hab.pre)
-        smids = [d['i'] for d in slist if 'i' in d]
-        smids.remove(hab.mhab.pre)
+        smids = slist
+        if hab.mhab.pre in smids:
+            smids.remove(hab.mhab.pre)
 
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=smids, topic='multisig'))
 
@@ -152,6 +155,12 @@ class MultisigJoinCollectionEnd:
 
         # Get the rot, sigs and recipients  from the request
         rot = httping.getRequiredParam(body, "rot")
+        serder = None
+        try:
+            serder = serdering.SerderKERI(sad=rot)
+        except(SerializeError) as e:
+            raise falcon.HTTPBadRequest(description=f"{e.args[0]}")
+        
         serder = None
         try:
             serder = serdering.SerderKERI(sad=rot)

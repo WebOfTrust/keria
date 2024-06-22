@@ -666,14 +666,18 @@ def test_identifier_collection_end(helpers):
             p2.sign(ser=serder.raw, indices=[2])[0].qb64,
         ]
         states = nstates = [agent0, asdict(p1.kever.state()), asdict(p2.kever.state())]
+        smids = rmids = [state['i'] for state in states if 'i' in state]
 
         body = {
-            "name": "multisig",
-            "icp": serder.ked,
-            "sigs": sigers,
-            "smids": states,
-            "rmids": nstates,
-            "group": {"keys": keys, "ndigs": ndigs},
+            'name': 'multisig',
+            'icp': serder.ked,
+            'sigs': sigers,
+            "smids": smids,
+            "rmids": rmids,
+            'group': {
+                "keys": keys,
+                "ndigs": ndigs
+            }
         }
         # Try without mhab
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
@@ -686,12 +690,16 @@ def test_identifier_collection_end(helpers):
         bad = dict(mhab)
         bad["prefix"] = "12345"
         body = {
-            "name": "multisig",
-            "icp": serder.ked,
-            "sigs": sigers,
-            "smids": states,
-            "rmids": nstates,
-            "group": {"mhab": bad, "keys": keys, "ndigs": ndigs},
+            'name': 'multisig',
+            'icp': serder.ked,
+            'sigs': sigers,
+            "smids": smids,
+            "rmids": rmids,
+            'group': {
+                "mhab": bad,
+                "keys": keys,
+                "ndigs": ndigs
+            }
         }
         # Try with bad mhab
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
@@ -702,12 +710,15 @@ def test_identifier_collection_end(helpers):
         }
 
         body = {
-            "name": "multisig",
-            "icp": serder.ked,
-            "sigs": sigers,
-            "smids": states,
-            "rmids": nstates,
-            "group": {"mhab": mhab, "ndigs": ndigs},
+            'name': 'multisig',
+            'icp': serder.ked,
+            'sigs': sigers,
+            "smids": smids,
+            "rmids": rmids,
+            'group': {
+                "mhab": mhab,
+                "ndigs": ndigs
+            }
         }
         # Try without keys
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
@@ -718,12 +729,12 @@ def test_identifier_collection_end(helpers):
         }
 
         body = {
-            "name": "multisig",
-            "icp": serder.ked,
-            "sigs": sigers,
-            "smids": states,
-            "rmids": nstates,
-            "group": {
+            'name': 'multisig',
+            'icp': serder.ked,
+            'sigs': sigers,
+            "smids": smids,
+            "rmids": rmids,
+            'group': {
                 "mhab": mhab,
                 "keys": keys,
             },
@@ -738,12 +749,16 @@ def test_identifier_collection_end(helpers):
         }
 
         body = {
-            "name": "multisig",
-            "icp": serder.ked,
-            "sigs": sigers,
-            "smids": states,
-            "rmids": nstates,
-            "group": {"mhab": mhab, "keys": keys, "ndigs": ndigs},
+            'name': 'multisig',
+            'icp': serder.ked,
+            'sigs': sigers,
+            "smids": smids,
+            "rmids": rmids,
+            'group': {
+                "mhab": mhab,
+                "keys": keys,
+                "ndigs": ndigs
+            }
         }
 
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
