@@ -9,6 +9,7 @@ import signify, {
     EventResult,
     randomNonce,
     Salter,
+    HabState,
 } from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
 import {
@@ -17,7 +18,6 @@ import {
     waitForNotifications,
 } from './utils/test-util';
 import { getOrCreateClients, getOrCreateContact } from './utils/test-setup';
-import { HabState } from '../../src/keri/core/state';
 
 const { vleiServerUrl, witnessIds } = resolveEnvironment();
 

@@ -77,7 +77,7 @@ export async function getOrCreateIdentifier(
     name: string,
     kargs: CreateIdentiferArgs | undefined = undefined
 ): Promise<[string, string]> {
-    let id: any = undefined;
+    let id: string;
     try {
         const identfier = await client.identifiers().get(name);
         // console.log("identifiers.get", identfier);
@@ -96,13 +96,16 @@ export async function getOrCreateIdentifier(
         // console.log("identifiers.create", op);
         id = op.response.i;
     }
-    const eid = client.agent?.pre!;
+    const eid = client.agent?.pre;
+    if (!eid) {
+        throw new Error('No agent on client');
+    }
     if (!(await hasEndRole(client, name, 'agent', eid))) {
         const result: EventResult = await client
             .identifiers()
             .addEndRole(name, 'agent', eid);
-        let op = await result.op();
-        op = await waitOperation(client, op);
+        const op = await result.op();
+        await waitOperation(client, op);
         // console.log("identifiers.addEndRole", op);
     }
     const oobi = await client.oobis().get(name, 'agent');
