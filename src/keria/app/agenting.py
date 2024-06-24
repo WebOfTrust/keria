@@ -5,7 +5,6 @@ keria.app.agenting module
 
 """
 import json
-import datetime
 import os
 from dataclasses import asdict
 from urllib.parse import urlparse, urljoin
@@ -750,20 +749,19 @@ class Escrower(doing.Doer):
 
         super(Escrower, self).__init__(tock=self.tock)
 
-    def recur(self, tyme=None):
+    def recur(self, tyme):
         """ Process all escrows once per loop. """
-        while True:
-            self.kvy.processEscrows()
-            self.kvy.processEscrowDelegables()
-            self.rgy.processEscrows()
-            self.rvy.processEscrowReply()
-            if self.tvy is not None:
-                self.tvy.processEscrows()
-            self.exc.processEscrow()
-            self.vry.processEscrows()
-            self.registrar.processEscrows()
-            self.credentialer.processEscrows()
-            yield self.tock
+        self.kvy.processEscrows()
+        self.kvy.processEscrowDelegables()
+        self.rgy.processEscrows()
+        self.rvy.processEscrowReply()
+        if self.tvy is not None:
+            self.tvy.processEscrows()
+        self.exc.processEscrow()
+        self.vry.processEscrows()
+        self.registrar.processEscrows()
+        self.credentialer.processEscrows()
+        return False
 
 
 def loadEnds(app):
