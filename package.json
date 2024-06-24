@@ -23,7 +23,7 @@
     "test:integration": "jest examples/integration-scripts/ --runInBand --bail",
     "lint": "npx eslint src test examples/integration-scripts",
     "prepare": "npm run build",
-    "generate-docs": "node_modules/.bin/jsdoc --configure .jsdoc.json --verbose",
+    "generate-docs": "jsdoc --configure .jsdoc.json --verbose",
     "pretty": "prettier --write .",
     "pretty:check": "prettier --check ."
   },
