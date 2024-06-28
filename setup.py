@@ -34,7 +34,7 @@ from setuptools import setup
 
 setup(
     name='keria',
-    version='0.2.0-dev0',  # also change in src/keria/__init__.py
+    version='0.2.0-dev3',  # also change in src/keria/__init__.py
     license='Apache Software License 2.0',
     description='KERIA: KERI Agent in the cloud',
     long_description="KERIA: KERI Agent in the cloud.",
