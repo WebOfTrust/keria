@@ -485,24 +485,6 @@ class IdentifierResourceEnd:
         rep.content_type = "application/json"
         rep.data = json.dumps(data).encode("utf-8")
 
-    def on_delete(self, req, rep, name):
-        """ Identifier delete endpoint
-
-        Parameters:
-            req (Request): falcon.Request HTTP request object
-            rep (Response): falcon.Response HTTP response object
-            name (str): human readable name for Hab to delete
-
-        """
-        if not name:
-            raise falcon.HTTPBadRequest(description="name is required")
-        agent = req.context.agent
-        hab = agent.hby.habByName(name)
-        if hab is None:
-            raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
-        hab.db.habs.rem(keys=name)
-        rep.status = falcon.HTTP_200
-
     def on_post(self, req, rep, name):
         """ Identifier events endpoint
 
