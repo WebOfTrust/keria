@@ -490,7 +490,7 @@ class Monitor:
 
         elif op.type in (OpTypes.submit,):
             kever = self.hby.kevers[op.oid]
-            if kever and len(self.submitter.submits) and len(self.submitter.doers) == 0:
+            if kever and len(self.submitter.submits) == 0 and len(self.submitter.doers) == 0:
                 operation.done = True
                 operation.response = asdict(kever.state())
             else:
