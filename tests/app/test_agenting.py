@@ -209,7 +209,7 @@ def test_submitter(helpers):
         end = aiding.IdentifierCollectionEnd()
         app.add_route("/identifiers", end)
         
-        submitter = agenting.Submitter(hby=agent.hby, submits=decking.Deck())
+        submitter = agenting.Submitter(hby=agent.hby, submits=decking.Deck(), witRec=WitnessReceiptor(hby=agent.hby))
         doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
         deeds = doist.enter(doers=[submitter])
 
