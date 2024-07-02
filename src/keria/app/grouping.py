@@ -44,13 +44,13 @@ class MultisigRequestCollectionEnd:
         body = req.get_media()
 
         # Get the hab
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(description=f"alias or prefix {name} is not a valid reference to an identifier")
 
         # ...and make sure we're a Group
         if not isinstance(hab, habbing.SignifyGroupHab):
-            raise falcon.HTTPBadRequest(description=f"hab for alias {name} is not a multisig")
+            raise falcon.HTTPBadRequest(description=f"hab for alias or prefix {name} is not a multisig")
 
         # grab all of the required parameters
         ked = httping.getRequiredParam(body, "exn")
@@ -144,9 +144,9 @@ class MultisigJoinCollectionEnd:
         agent = req.context.agent
 
         # Get the hab
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is not None:
-            raise falcon.HTTPBadRequest(description=f"attempt to create identifier with an already used alias={name}")
+            raise falcon.HTTPBadRequest(description=f"attempt to create identifier with an already used alias or prefix {name}")
 
         agent = req.context.agent
         body = req.get_media()

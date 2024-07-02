@@ -80,9 +80,9 @@ class RegistryCollectionEnd:
         """
         agent = req.context.agent
 
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description="name is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
 
         res = []
         for name, registry in agent.rgy.regs.items():
@@ -163,9 +163,9 @@ class RegistryCollectionEnd:
         ked = httping.getRequiredParam(body, "ixn")
         ixn = serdering.SerderKERI(sad=ked)
 
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description="alias is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
 
         if agent.rgy.registryByName(name=rname) is not None:
             raise falcon.HTTPBadRequest(description=f"registry name {rname} already in use")
@@ -228,7 +228,7 @@ class RegistryResourceEnd:
         """
         agent = req.context.agent
 
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
             raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
 
@@ -296,7 +296,7 @@ class RegistryResourceEnd:
         """
         agent = req.context.agent
 
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
             raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
 
@@ -576,9 +576,9 @@ class CredentialCollectionEnd:
         agent = req.context.agent
 
         body = req.get_media()
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description="name is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
         try: 
             creder = serdering.SerderACDC(sad=httping.getRequiredParam(body, "acdc"))
             iserder = serdering.SerderKERI(sad=httping.getRequiredParam(body, "iss"))
@@ -795,9 +795,9 @@ class CredentialResourceDeleteEnd:
         agent = req.context.agent
 
         body = req.get_media()
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description="name is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
 
         rserder = serdering.SerderKERI(sad=httping.getRequiredParam(body, "rev"))
 

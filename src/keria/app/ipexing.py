@@ -52,9 +52,9 @@ class IpexAdmitCollectionEnd:
         """
         agent = req.context.agent
         # Get the hab
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
 
         body = req.get_media()
 
@@ -179,9 +179,9 @@ class IpexGrantCollectionEnd:
 
         """
         agent = req.context.agent
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
 
         body = req.get_media()
 
@@ -298,9 +298,9 @@ class IpexApplyCollectionEnd:
         """
         agent = req.context.agent
         # Get the hab
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
 
         body = req.get_media()
 
@@ -364,9 +364,9 @@ class IpexOfferCollectionEnd:
 
         """
         agent = req.context.agent
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
 
         body = req.get_media()
 
@@ -431,9 +431,9 @@ class IpexAgreeCollectionEnd:
 
         """
         agent = req.context.agent
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
 
         body = req.get_media()
 
