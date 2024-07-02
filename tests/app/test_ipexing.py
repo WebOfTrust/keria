@@ -1002,7 +1002,7 @@ def test_ipex_apply(helpers, mockHelpingNowIso8601):
         data = json.dumps(body).encode("utf-8")
         res = client.simulate_post(path="/identifiers/BAD/ipex/apply", body=data)
         assert res.status_code == 404
-        assert res.json == {'description': 'alias=BAD is not a valid reference to an identifier',
+        assert res.json == {'description': 'BAD is not a valid reference to an identifier',
                             'title': '404 Not Found'}
 
         data = json.dumps(body).encode("utf-8")
@@ -1099,7 +1099,7 @@ def test_ipex_offer(helpers, mockHelpingNowIso8601):
         data = json.dumps(body).encode("utf-8")
         res = client.simulate_post(path="/identifiers/BAD/ipex/offer", body=data)
         assert res.status_code == 404
-        assert res.json == {'description': 'alias=BAD is not a valid reference to an identifier',
+        assert res.json == {'description': 'BAD is not a valid reference to an identifier',
                             'title': '404 Not Found'}
 
         data = json.dumps(body).encode("utf-8")
@@ -1234,7 +1234,7 @@ def test_ipex_agree(helpers, mockHelpingNowIso8601):
         data = json.dumps(body).encode("utf-8")
         res = client.simulate_post(path="/identifiers/BAD/ipex/agree", body=data)
         assert res.status_code == 404
-        assert res.json == {'description': 'alias=BAD is not a valid reference to an identifier',
+        assert res.json == {'description': 'BAD is not a valid reference to an identifier',
                             'title': '404 Not Found'}
 
         data = json.dumps(body).encode("utf-8")

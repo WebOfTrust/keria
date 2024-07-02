@@ -675,10 +675,10 @@ class IdentifierResourceEnd:
             raise falcon.HTTPBadRequest(description="name is required")
 
         agent = req.context.agent
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
             raise falcon.HTTPNotFound(
-                description=f"{name} is not a valid identifier name"
+                description=f"{name} is not a valid identifier name or prefix"
             )
 
         data = info(hab, agent.mgr, full=True)
@@ -728,10 +728,10 @@ class IdentifierResourceEnd:
         if not name:
             raise falcon.HTTPBadRequest(description="name is required")
         agent = req.context.agent
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
 
         if hab is None:
-            raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
+            raise falcon.HTTPNotFound(title=f"No AID with name or prefix {name} found")
         body = req.get_media()
         newName = body.get("name")
         habord = hab.db.habs.get(keys=(hab.pre,))
@@ -776,9 +776,9 @@ class IdentifierResourceEnd:
         if not name:
             raise falcon.HTTPBadRequest(description="name is required")
         agent = req.context.agent
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
+            raise falcon.HTTPNotFound(title=f"No AID with name or prefix {name} found")
         agent.hby.deleteHab(name)
         rep.status = falcon.HTTP_200
 
@@ -849,9 +849,9 @@ class IdentifierResourceEnd:
 
     @staticmethod
     def rotate(agent, name, body):
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
+            raise falcon.HTTPNotFound(title=f"No AID with name or prefix {name} found")
 
         rot = body.get("rot")
         if rot is None:
@@ -946,7 +946,7 @@ class IdentifierResourceEnd:
 
     @staticmethod
     def interact(agent, name, body):
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
             raise falcon.HTTPNotFound(title=f"No AID {name} found")
 
@@ -1067,9 +1067,9 @@ class IdentifierOOBICollectionEnd:
         if not name:
             raise falcon.HTTPBadRequest(description="name is required")
 
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if not hab:
-            raise falcon.HTTPNotFound(description="invalid alias {name}")
+            raise falcon.HTTPNotFound(description="invalid alias or prefix {name}")
 
         if "role" not in req.params:
             raise falcon.HTTPBadRequest(description="role parameter required")
@@ -1229,9 +1229,9 @@ class EndRoleCollectionEnd:
         agent = req.context.agent
 
         if name is not None:
-            hab = agent.hby.habByName(name)
+            hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
             if hab is None:
-                raise falcon.errors.HTTPNotFound(description=f"invalid alias {name}")
+                raise falcon.errors.HTTPNotFound(description=f"invalid alias or prefix {name}")
             pre = hab.pre
         elif aid is not None:
             pre = aid
@@ -1322,9 +1322,9 @@ class EndRoleCollectionEnd:
         role = data["role"]
         eid = data["eid"]
 
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.errors.HTTPNotFound(description=f"invalid alias {name}")
+            raise falcon.errors.HTTPNotFound(description=f"invalid alias or prefix {name}")
 
         if pre != hab.pre:
             raise falcon.errors.HTTPBadRequest(
@@ -1498,9 +1498,9 @@ class ChallengeResourceEnd:
               description: Success submission of signed challenge/response
         """
         agent = req.context.agent
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPBadRequest(description="no matching Hab for alias {name}")
+            raise falcon.HTTPBadRequest(description="no matching Hab for alias or prefix {name}")
 
         body = req.get_media()
         if "exn" not in body or "sig" not in body or "recipient" not in body:
@@ -2093,9 +2093,9 @@ class GroupMemberCollectionEnd:
         """
         agent = req.context.agent
 
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.errors.HTTPNotFound(description=f"invalid alias {name}")
+            raise falcon.errors.HTTPNotFound(description=f"invalid alias or prefix {name}")
 
         if not isinstance(hab, habbing.SignifyGroupHab):
             raise falcon.HTTPBadRequest(

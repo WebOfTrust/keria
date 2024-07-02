@@ -203,10 +203,10 @@ class DelegatorEnd:
         if not name:
             raise falcon.HTTPBadRequest(description="name is required")
         agent = req.context.agent
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
 
         if hab is None:
-            raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
+            raise falcon.HTTPNotFound(title=f"No AID with name or prefix {name} found")
         
         body = req.get_media()
         anc = httping.getRequiredParam(body, "ixn")
