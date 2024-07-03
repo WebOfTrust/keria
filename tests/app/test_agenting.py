@@ -98,13 +98,13 @@ def test_load_tocks_config(helpers):
         assert escrower_doer is not None
         assert escrower_doer.tock == 1.0
 
-        querier_docer = next((doer for doer in agent.doers if isinstance(doer, agenting.Initer)), None)
-        assert querier_docer is not None
-        assert querier_docer.tock == 0.0
+        initer_doer = next((doer for doer in agent.doers if isinstance(doer, agenting.Initer)), None)
+        assert initer_doer is not None
+        assert initer_doer.tock == 0.0
 
-        querier_docer = next((doer for doer in agent.doers if isinstance(doer, agenting.Querier)), None)
-        assert querier_docer is not None
-        assert querier_docer.tock == 0.0
+        querier_doer = next((doer for doer in agent.doers if isinstance(doer, agenting.Querier)), None)
+        assert querier_doer is not None
+        assert querier_doer.tock == 0.0
 
         with pytest.raises(TypeError):
             agent.tocks["initer"] = 1.0 # agent.tocks is read-only
