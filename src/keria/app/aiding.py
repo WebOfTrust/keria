@@ -1011,7 +1011,7 @@ class IdentifierResourceEnd:
                                       metadata=dict(alias=name,sn=hab.kever.sn))
             return op
 
-        raise falcon.HTTPBadRequest(title=f"invalid identifier submit, {name} has no witnesses")
+        raise falcon.HTTPBadRequest(title=f"invalid identifier submitted, {name} has no witnesses")
 
 def info(hab, rm, full=False):
     data = dict(

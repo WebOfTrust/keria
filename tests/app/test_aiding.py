@@ -356,7 +356,7 @@ def test_identifier_collection_end(helpers):
         )
         assert res.status_code == 400
         assert res.json == {
-            "title": f"invalid identifier submit, {body['name']} has no witnesses"
+            "title": f"invalid identifier submitted, {body['name']} has no witnesses"
         }
 
         res = client.simulate_get(path="/identifiers")
