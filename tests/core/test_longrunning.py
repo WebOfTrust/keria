@@ -16,6 +16,8 @@ def test_operations(helpers):
         app.add_route("/operations", opColEnd)
         opResEnd = longrunning.OperationResourceEnd()
         app.add_route("/operations/{name}", opResEnd)
+        subs = aiding.IdentifierSubmitResourceEnd()
+        app.add_route("/identifiers/{name}/submit", subs)
 
         # operations is empty
 
@@ -168,6 +170,13 @@ def test_operations(helpers):
         assert op.name == f"query.{recp}"
         assert op.done is False
 
+        # submit
+
+        res = client.simulate_put(
+            path=f"/identifiers/user1/submit", json=body)
+        op = res.json
+        assert op["done"] is True
+        assert op["name"] == "submit.EAF7geUfHm-M5lA-PI6Jv-4708a-KknnlMlA7U1_Wduv"
 
 def test_error(helpers):
     with helpers.openKeria() as (agency, agent, app, client):

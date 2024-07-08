@@ -12,6 +12,8 @@ from keri.core.coring import Tiers, MtrDex
 from keri.db import dbing, subing, koming
 from keri.help import helping
 
+from keria import core
+
 
 @dataclass()
 class Prefix:

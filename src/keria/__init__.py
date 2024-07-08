@@ -3,5 +3,5 @@
 main package
 """
 
-__version__ = '0.1.3'  # also change in setup.py
+__version__ = '0.1.4-dev0'  # also change in setup.py
 

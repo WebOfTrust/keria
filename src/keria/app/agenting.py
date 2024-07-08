@@ -308,11 +308,12 @@ class Agent(doing.DoDoer):
         self.witq = agenting.WitnessInquisitor(hby=self.hby)
         self.witPub = agenting.WitnessPublisher(hby=self.hby)
         self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
+        self.submitter = agenting.WitnessReceiptor(hby=self.hby, force=True, tock=5.0)
 
         self.rep = storing.Respondant(hby=hby, cues=self.cues, mbx=Mailboxer(name=self.hby.name, temp=self.hby.temp))
 
         doers = [habbing.HaberyDoer(habery=hby), receiptor, self.witq, self.witPub, self.rep, self.swain,
-                 self.counselor, self.witDoer, *oobiery.doers]
+                 self.counselor, self.witDoer, self.submitter, *oobiery.doers]
 
         signaler = signaling.Signaler()
         self.notifier = Notifier(hby=hby, signaler=signaler)
@@ -336,7 +337,7 @@ class Agent(doing.DoDoer):
         grouping.loadHandlers(exc=self.exc, mux=self.mux)
         protocoling.loadHandlers(hby=self.hby, exc=self.exc, notifier=self.notifier)
         self.monitor = longrunning.Monitor(hby=hby, swain=self.swain, counselor=self.counselor, temp=hby.temp,
-                                           registrar=self.registrar, credentialer=self.credentialer, exchanger=self.exc)
+                                           registrar=self.registrar, credentialer=self.credentialer, exchanger=self.exc, submitter=self.submitter)
 
         self.rvy = routing.Revery(db=hby.db, cues=self.cues)
         self.kvy = eventing.Kevery(db=hby.db,
@@ -404,6 +405,9 @@ class Agent(doing.DoDoer):
         keeper.incept(pre=pre, verfers=verfers, digers=digers, **kwargs)
 
         self.agency.incept(self.caid, pre)
+
+    def witnessResubmit(self, pre):
+        self.submitDoer.msgs.append(dict(pre=pre))        
 
 
 class ParserDoer(doing.Doer):

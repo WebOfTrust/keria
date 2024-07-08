@@ -1218,8 +1218,10 @@ def test_identifier_resource_end(helpers):
             habbing.openHby(name="p2", temp=True) as p2hby:
         end = aiding.IdentifierCollectionEnd()
         resend = aiding.IdentifierResourceEnd()
+        subend = aiding.IdentifierSubmitResourceEnd()
         app.add_route("/identifiers", end)
         app.add_route("/identifiers/{name}", resend)
+        app.add_route("/identifiers/{name}/submit", subend)
 
         client = testing.TestClient(app)
         salt = b'0123456789abcdef'
@@ -1248,6 +1250,12 @@ def test_identifier_resource_end(helpers):
         assert res.status_code == 200
         assert res.json['prefix'] == 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY'
 
+        res = client.simulate_put(path="/identifiers/bad/submit")
+        assert res.status_code == 404
+        assert res.json == {'description': 'invalid alias bad', 'title': '404 Not Found'}
+
+        res = client.simulate_put(path="/identifiers/aid1/submit")
+        assert res.status_code == 202
 
 def test_oobi_ends(helpers):
     with helpers.openKeria() as (agency, agent, app, client):

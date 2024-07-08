@@ -29,6 +29,8 @@ def loadEnds(app, agency, authn):
 
     aidsEnd = IdentifierCollectionEnd()
     app.add_route("/identifiers", aidsEnd)
+    submitEnd = IdentifierSubmitResourceEnd()    
+    app.add_route("/identifiers/{name}/submit", submitEnd)    
     aidEnd = IdentifierResourceEnd()
     app.add_route("/identifiers/{name}", aidEnd)
 
@@ -615,7 +617,35 @@ def info(hab, rm, full=False):
 
     return data
 
+class IdentifierSubmitResourceEnd:
+    """ Resource class to submit identifier to its witnesses for receipts """
 
+    @staticmethod
+    def on_put(req, rep, name):
+        """ Submit request POST endpoint
+
+        Parameters:
+            req (Request): falcon.Request HTTP request object
+            rep (Response): falcon.Response HTTP response object
+            name (str): human readable name for Hab to submit
+
+        """
+        agent = req.context.agent
+        try:
+            hab = agent.hby.habByName(name)
+            if not hab:
+                raise falcon.HTTPNotFound(description=f"invalid alias {name}")
+
+            oid = hab.pre
+            op = agent.monitor.submit(oid, longrunning.OpTypes.submit, metadata=dict(pre=hab.pre))
+
+            rep.content_type = "application/json"
+            rep.status = falcon.HTTP_202
+            rep.data = op.to_json().encode("utf-8")
+
+        except (kering.AuthError, ValueError) as e:
+            raise falcon.HTTPBadRequest(description=e.args[0])     
+               
 class IdentifierOOBICollectionEnd:
     """
       This class represents the OOBI subresource collection endpoint for identifiers

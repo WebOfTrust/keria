@@ -19,11 +19,11 @@ from keri.help import helping
 
 # long running operationt types
 Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole challenge exchange '
-                                'done')
+                                'submit done')
 
 OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation', group='group', query='query',
                   registry='registry', credential='credential', endrole='endrole', challenge='challenge',
-                  exchange='exchange', done='done')
+                  exchange='exchange', submit='submit', done='done')
 
 
 @dataclass_json
@@ -93,13 +93,18 @@ class Monitor:
     """
 
     def __init__(self, hby, swain, counselor=None, registrar=None, exchanger=None, credentialer=None, opr=None,
-                 temp=False):
+                 submitter=None, temp=False):
         """ Create long running operation monitor
 
         Parameters:
             hby (Habery): identifier database environment
             swain(Sealer): Delegation processes tracker
+            counselor (Counselor): Group processes tracker
+            registrar (Registrar): Registry processes tracker
+            exchanger (Exchanger): Exchange processes tracker
+            credentialer (Credentialer): Credential processes tracker
             opr (Operator): long running operations database
+            submitter (Submitter): Submit processes tracker
 
         """
         self.hby = hby
@@ -109,6 +114,7 @@ class Monitor:
         self.exchanger = exchanger
         self.credentialer = credentialer
         self.opr = opr if opr is not None else Operator(name=hby.name, temp=temp)
+        self.submitter = submitter
 
     def submit(self, oid, typ, metadata=None):
         """  Submit a new long running operation to track
@@ -357,7 +363,7 @@ class Monitor:
         elif op.type in (OpTypes.endrole, ):
             if "cid" not in op.metadata or "role" not in op.metadata or "eid" not in op.metadata:
                 raise kering.ValidationError(
-                    f"invalid long running {op.type} operation, metadata missing 'ced' field")
+                    f"invalid long running {op.type} operation, metadata missing 'cid'/'role'/'eid' field")
 
             cid = op.metadata['cid']
             role = op.metadata['role']
@@ -378,7 +384,7 @@ class Monitor:
 
             if "words" not in op.metadata:
                 raise kering.ValidationError(
-                    f"invalid long running {op.type} operation, metadata missing 'ced' field")
+                    f"invalid long running {op.type} operation, metadata missing 'words' field")
 
             found = False
             words = op.metadata["words"]
@@ -394,6 +400,15 @@ class Monitor:
                 operation.response = dict(exn=exn.ked)
             else:
                 operation.done = False
+        elif op.type in (OpTypes.submit, ):
+            if "pre" not in op.metadata:
+                raise kering.ValidationError(
+                    f"invalid long running {op.type} operation, metadata missing 'pre' field")
+
+            pre = op.metadata['pre']            
+            self.submitter.msgs.append(dict(pre=pre))
+
+            operation.done = True
 
         elif op.type in (OpTypes.done, ):
             operation.done = True
