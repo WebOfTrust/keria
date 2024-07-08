@@ -404,10 +404,7 @@ class Agent(doing.DoDoer):
         keeper = self.mgr.get(Algos.extern)
         keeper.incept(pre=pre, verfers=verfers, digers=digers, **kwargs)
 
-        self.agency.incept(self.caid, pre)
-
-    def witnessResubmit(self, pre):
-        self.submitDoer.msgs.append(dict(pre=pre))        
+        self.agency.incept(self.caid, pre)     
 
 
 class ParserDoer(doing.Doer):
