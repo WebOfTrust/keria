@@ -223,7 +223,7 @@ def test_witnesser(helpers):
         doist.recur(deeds)
 
 
-def test_submitter(seeder, helpers):
+def test_submitter(helpers):
     with helpers.openKeria() as (agency, agent, app, client), habbing.openHby(
         name="wes", salt=core.Salter(raw=b"wess-the-witness").qb64
     ) as wesHby:
@@ -254,8 +254,10 @@ def test_submitter(seeder, helpers):
         )
         hab = agent.hby.habByName(alias)
         serder = hab.iserder
+        dgkey = dbing.dgKey(serder.preb, hab.kever.serder.saidb)
+        wigs = hab.db.getWigs(dgkey)
+        assert len(wigs) == 0
 
-        witKvys = [wesKvy]
         witHabs = [wesHab]
 
         op = res
@@ -263,23 +265,16 @@ def test_submitter(seeder, helpers):
         while op is None or op["done"] is False:
             if rctMsgs is None:  # get witness receipted messages
                 rctMsgs = helpers.witnessMsg(
-                    agent=agent, alias=alias, sn=0, witHabs=witHabs, witKvys=witKvys
+                    agent=agent, alias=alias, sn=0, witHabs=witHabs
                 )
-                dgkey = dbing.dgKey(serder.preb, hab.kever.serder.saidb)
 
                 wigs = hab.db.getWigs(dgkey)
                 assert len(wigs) == len(witHabs)
-                # wigers = [indexing.Siger(qb64b=bytes(wig)) for wig in wigs]
-                # rserder = eventing.receipt(pre=hab.pre,
-                #                    sn=hab.kever.sn,
-                #                    said=hab.kever.serder.said)
-                # camIcpWitRctMsg = eventing.messagize(serder=rserder, wigers=wigers)
-                # assert len(camIcpWitRctMsg) == 237
-                # for i in range(len(witKvys)):
-                #     kvy = witKvys[i]
-                #     parsing.Parser().parse(ims=bytearray(camIcpWitRctMsg), kvy=kvy, local=True)
-                #     assert len(kvy.db.getWigs(dgkey)) == len(witHabs)  # fully witnessed
-                #     assert len(kvy.cues) == 0  # no cues
+
+                for witHab in witHabs:
+                    kvy = witHab.kvy
+                    assert len(kvy.db.getWigs(dgkey)) == len(witHabs)  # fully witnessed
+                    assert len(kvy.cues) == 0  # no cues
 
             res = client.simulate_get(path=f'/operations/{op["name"]}')
             op = res.json
@@ -340,36 +335,41 @@ def test_submitter(seeder, helpers):
             res = client.simulate_get(path=f'/operations/{op["name"]}')
             op = res.json
 
-        res = op["response"]
-        assert res.text == json.dumps(dict(
-            name="submit.EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0",
-            metadata={"alias": "pal", "sn": 0},
-            done=True,
-            error="null",
-            response={
-                "vn": [1, 0],
-                "i": "EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0",
-                "s": "0",
-                "p": "",
-                "d": "EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0",
-                "f": "0",
-                "dt": "2024-07-10T20:42:42.216148+00:00",
-                "et": "icp",
-                "kt": "1",
-                "k": ["DDNGgXzEO4LD8G1z1uD7eIDF2pDj6Y7hVx-nqhYZmU_8"],
-                "nt": "1",
-                "n": ["EHj7rmVHVkQKqnfeer068PiYvYm-WFSTVZZpFGsClfT-"],
-                "bt": "1",
-                "b": ["BN8t3n1lxcV0SWGJIIF46fpSUqA7Mqre5KJNN3nbx3mr"],
-                "c": [],
-                "ee": {
+        wigs = hab.db.getWigs(dgkey)
+        assert len(wigs) == 1
+
+        assert res.status_code == 200
+        assert res.text == json.dumps(
+            dict(
+                name="submit.EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0",
+                metadata={"alias": "pal", "sn": 0},
+                done=True,
+                error=None,
+                response={
+                    "vn": [1, 0],
+                    "i": "EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0",
                     "s": "0",
+                    "p": "",
                     "d": "EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0",
-                    "br": [],
-                    "ba": [],
+                    "f": "0",
+                    "dt": res.json["response"]["dt"],
+                    "et": "icp",
+                    "kt": "1",
+                    "k": ["DDNGgXzEO4LD8G1z1uD7eIDF2pDj6Y7hVx-nqhYZmU_8"],
+                    "nt": "1",
+                    "n": ["EHj7rmVHVkQKqnfeer068PiYvYm-WFSTVZZpFGsClfT-"],
+                    "bt": "1",
+                    "b": ["BN8t3n1lxcV0SWGJIIF46fpSUqA7Mqre5KJNN3nbx3mr"],
+                    "c": [],
+                    "ee": {
+                        "s": "0",
+                        "d": "EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0",
+                        "br": [],
+                        "ba": [],
+                    },
+                    "di": "",
                 },
-                "di": "",
-            },)
+            )
         )
 
         # submitter = agenting.Submitter(hby=agent.hby, submits=decking.Deck(), witRec=WitnessReceiptor(hby=agent.hby))
