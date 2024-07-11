@@ -17,6 +17,7 @@ from keri.core import coring, eventing, parsing, serdering
 from keria.app import aiding, delegating
 from keria.core import longrunning
 from keria.end import ending
+from keria.app import agenting
 
 def test_sealer():
     with habbing.openHby(name="p1", temp=True) as hby:
@@ -69,6 +70,10 @@ def test_delegator_end(helpers):
 
         # Create Anchorer to test
         anchorer = delegating.Anchorer(hby=hby)
+
+        escrower = next((doer for doer in toragent.doers if isinstance(doer, agenting.Escrower)), None)
+        assert escrower is not None
+        dipEvtProcDelay = escrower.tock * 60 + 10 # 60 seconds * escrower.tock + 10 seconds
         
         #setup agency endpoints
         ending.loadEnds(app=torapp, agency=toragency)
@@ -151,7 +156,7 @@ def test_delegator_end(helpers):
             assert res.status_code == 200
             op = res.json
             count += 1
-            if count > 60:
+            if count > dipEvtProcDelay:
                 raise Exception("Delegator never processed the delegatee dip event")
         
         # Delegator escrows completed and now aknowledges the delegatee dip event
