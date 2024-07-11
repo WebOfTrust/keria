@@ -66,7 +66,7 @@ class RegistryCollectionEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable name for AID
+            name (str): human readable name or prefix for AID
 
         ---
         summary: List credential issuance and revocation registies
@@ -108,7 +108,7 @@ class RegistryCollectionEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): AID of Hab to load credentials for
+            name (str): human readable name or prefix of Hab to load credentials for
 
         ---
         summary: Request to create a credential issuance and revocation registry
@@ -199,7 +199,7 @@ class RegistryResourceEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable name for AID
+            name (str): human readable name or prefix for AID
             registryName(str): human readable name for registry
 
         ---
@@ -256,7 +256,7 @@ class RegistryResourceEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable name for AID
+            name (str): human readable name or prefix for AID
             registryName(str): human readable name for registry or its SAID
 
         ---
@@ -514,7 +514,7 @@ class CredentialCollectionEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable alias for AID to use as issuer
+            name (str): human readable alias or prefix for AID to use as issuer
 
         ---
         summary: Perform credential issuance
@@ -523,11 +523,11 @@ class CredentialCollectionEnd:
            - Credentials
         parameters:
           - in: path
-            name: alias
+            name: alias or prefix
             schema:
               type: string
             required: true
-            description: Human readable alias for the identifier to create
+            description: Human readable alias or prefix for the identifier to create
         requestBody:
             required: true
             content:
@@ -737,7 +737,7 @@ class CredentialResourceDeleteEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable alias for AID to use as issuer
+            name (str): human readable alias or prefix for AID to use as issuer
             said (str): SAID of credential to revoke
 
         RequestBody:
@@ -752,11 +752,11 @@ class CredentialResourceDeleteEnd:
          - Credentials
         parameters:
         - in: path
-          name: name
+          name: name or prefix
           schema:
             type: string
           required: true
-          description: The human-readable alias for the AID to use as issuer.
+          description: The human-readable alias or prefix for the AID to use as issuer.
         - in: path
           name: said
           schema:
