@@ -1157,6 +1157,8 @@ class EndRoleCollectionEnd:
             name (str): human readable alias or prefix for AID
             aid (str): aid to use instead of name
             name (str): human readable alias or prefix for AID
+            name (str): human readable alias or prefix for AID
+            aid (str): aid to use instead of name
             role (str): optional role to search for
 
         ---
@@ -1180,7 +1182,6 @@ class EndRoleCollectionEnd:
             type: string
           required: false
           description: The identifier (AID).
-          description: The human-readable name of the identifier or its prefix.
         - in: path
           name: role
           schema:
@@ -1226,7 +1227,7 @@ class EndRoleCollectionEnd:
         rep.data = json.dumps(ends).encode("utf-8")
 
     @staticmethod
-    def on_post(req, rep, name, role=None):
+    def on_post(req, rep, name, aid=None, role=None):
         """POST endpoint for end role collection
 
         Args:
@@ -1277,7 +1278,7 @@ class EndRoleCollectionEnd:
             404:
                 description: Not found. The requested identifier was not found.
         """
-        if role is not None:
+        if role is not None or aid is not None:
             raise falcon.HTTPNotFound(description="route not found")
 
         agent = req.context.agent
