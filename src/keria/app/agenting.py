@@ -762,6 +762,7 @@ class Escrower(doing.Doer):
         self.registrar = registrar
         self.credentialer = credentialer
         self.tock = tock
+
         super(Escrower, self).__init__(tock=self.tock)
 
     def recur(self, tyme):
@@ -776,7 +777,6 @@ class Escrower(doing.Doer):
         self.vry.processEscrows()
         self.registrar.processEscrows()
         self.credentialer.processEscrows()
-
         return False
 
 
