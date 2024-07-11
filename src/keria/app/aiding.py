@@ -1148,7 +1148,7 @@ class IdentifierOOBICollectionEnd:
 class EndRoleCollectionEnd:
 
     @staticmethod
-    def on_get(req, rep, name=None, aid=None, role=None):
+    def on_get(req, rep, name=None, role=None):
         """GET endpoint for end role collection
 
         Parameters:
@@ -1156,16 +1156,19 @@ class EndRoleCollectionEnd:
             rep (Response): falcon HTTP response object
             name (str): human readable alias or prefix for AID
             aid (str): aid to use instead of name
+            name (str): human readable alias or prefix for AID
             role (str): optional role to search for
 
         ---
         summary: Retrieve end roles.
+        description: This endpoint retrieves the end roles associated with an identifier prefix or human-readable name.
         description: This endpoint retrieves the end roles associated with an identifier prefix or human-readable name.
                      It can also filter the end roles based on a specific role.
         tags:
         - End Role
         parameters:
         - in: path
+          name: name or prefix
           name: name or prefix
           schema:
             type: string
@@ -1177,6 +1180,7 @@ class EndRoleCollectionEnd:
             type: string
           required: false
           description: The identifier (AID).
+          description: The human-readable name of the identifier or its prefix.
         - in: path
           name: role
           schema:
@@ -1222,12 +1226,13 @@ class EndRoleCollectionEnd:
         rep.data = json.dumps(ends).encode("utf-8")
 
     @staticmethod
-    def on_post(req, rep, name, aid=None, role=None):
+    def on_post(req, rep, name, role=None):
         """POST endpoint for end role collection
 
         Args:
             req (Request): Falcon HTTP request object
             rep (Response): Falcon HTTP response object
+            name (str): human readable alias or prefix for identifier
             name (str): human readable alias or prefix for identifier
             aid (str): Not supported for POST.  If provided, a 404 is returned
             role (str): Not supported for POST.  If provided, a 404 is returned
@@ -1272,7 +1277,7 @@ class EndRoleCollectionEnd:
             404:
                 description: Not found. The requested identifier was not found.
         """
-        if role is not None or aid is not None:
+        if role is not None:
             raise falcon.HTTPNotFound(description="route not found")
 
         agent = req.context.agent
