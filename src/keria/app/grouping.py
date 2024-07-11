@@ -36,7 +36,7 @@ class MultisigRequestCollectionEnd:
         Parameters:
             req (falcon.Request): HTTP request object
             rep (falcon.Response): HTTP response object
-            name (str): AID of Hab to load credentials for
+            name (str): AID prefix or human-readable name of Hab to load credentials for
 
         """
         agent = req.context.agent
@@ -93,7 +93,7 @@ class MultisigJoinCollectionEnd:
         Parameters:
             req (falcon.Request): HTTP request object
             rep (falcon.Response): HTTP response object
-            name (str): AID of Hab to load credentials for
+            name (str): AID prefix or human-readable name of Hab to load credentials for
         ---
         summary: Create a multisig group request.
         description: This endpoint creates a multisig request based on the provided name.
@@ -101,7 +101,7 @@ class MultisigJoinCollectionEnd:
         - Multisig Request
         parameters:
         - in: path
-          name: name
+          name: name or prefix
           schema:
             type: string
           required: true
@@ -169,7 +169,7 @@ class MultisigJoinCollectionEnd:
         both = list(set(smids + (rmids or [])))
         for recp in both:  # Have to verify we already know all the recipients.
             if recp not in agent.hby.kevers:
-                agent.hby.deleteHab(name=name)
+                agent.hby.deleteHab(name=hab.name)
                 raise falcon.HTTPBadRequest(description=f"attempt to merge with unknown AID={recp}")
 
         sigers = [core.Siger(qb64=sig) for sig in sigs]
