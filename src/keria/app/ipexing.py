@@ -38,7 +38,7 @@ class IpexAdmitCollectionEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable name for AID
+            name (str): human readable name or prefix for AID
 
         ---
         summary: Accept a credential being issued or presented in response to an IPEX grant
@@ -166,7 +166,7 @@ class IpexGrantCollectionEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable name for AID
+            name (str): human readable name or prefix for AID
 
         ---
         summary: Reply to IPEX agree message or initiate an IPEX exchange with a credential issuance or presentation
@@ -284,7 +284,7 @@ class IpexApplyCollectionEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable name for AID
+            name (str): human readable name or prefix for AID
 
         ---
         summary: Request a credential from another party by initiating an IPEX exchange
@@ -351,7 +351,7 @@ class IpexOfferCollectionEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable name for AID
+            name (str): human readable name or prefix for AID
 
         ---
         summary: Reply to IPEX apply message or initiate an IPEX exchange with an offer for a credential with certain characteristics
@@ -418,7 +418,7 @@ class IpexAgreeCollectionEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable name for AID
+            name (str): human readable name or prefix for AID
 
         ---
         summary: Reply to IPEX offer message acknowledged willingness to accept offered credential
