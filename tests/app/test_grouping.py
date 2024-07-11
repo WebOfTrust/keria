@@ -298,6 +298,6 @@ def test_join(helpers, monkeypatch):
         res = client.simulate_post("/identifiers/mms/multisig/join", json=body)
         assert res.status_code == 400
         assert res.json == {
-            "description": "attempt to create identifier with an already used alias=mms",
+            "description": "attempt to create identifier with an already used alias or prefix mms",
             "title": "400 Bad Request",
         }
