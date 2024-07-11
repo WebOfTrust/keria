@@ -1155,6 +1155,7 @@ class EndRoleCollectionEnd:
             req (Request): falcon HTTP request object
             rep (Response): falcon HTTP response object
             name (str): human readable alias or prefix for AID
+            aid (str): aid to use instead of name
             role (str): optional role to search for
 
         ---
@@ -1170,6 +1171,12 @@ class EndRoleCollectionEnd:
             type: string
           required: false
           description: The human-readable name of the identifier or its prefix.
+        - in: path
+          name: aid
+          schema:
+            type: string
+          required: false
+          description: The identifier (AID).
         - in: path
           name: role
           schema:
@@ -1215,13 +1222,14 @@ class EndRoleCollectionEnd:
         rep.data = json.dumps(ends).encode("utf-8")
 
     @staticmethod
-    def on_post(req, rep, name, role=None):
+    def on_post(req, rep, name, aid=None, role=None):
         """POST endpoint for end role collection
 
         Args:
             req (Request): Falcon HTTP request object
             rep (Response): Falcon HTTP response object
             name (str): human readable alias or prefix for identifier
+            aid (str): Not supported for POST.  If provided, a 404 is returned
             role (str): Not supported for POST.  If provided, a 404 is returned
 
         ---
@@ -1236,6 +1244,12 @@ class EndRoleCollectionEnd:
             type: string
           required: true
           description: The human-readable name of the identifier or its prefix.
+        - in: path
+          name: aid
+          schema:
+            type: string
+          required: false
+          description: Not supported for POST. If provided, a 404 is returned.
         requestBody:
             content:
               application/json:
@@ -1258,7 +1272,7 @@ class EndRoleCollectionEnd:
             404:
                 description: Not found. The requested identifier was not found.
         """
-        if role is not None:
+        if role is not None or aid is not None:
             raise falcon.HTTPNotFound(description="route not found")
 
         agent = req.context.agent
