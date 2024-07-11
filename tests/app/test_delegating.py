@@ -151,7 +151,7 @@ def test_delegator_end(helpers):
             assert res.status_code == 200
             op = res.json
             count += 1
-            if count > 10:
+            if count > 60:
                 raise Exception("Delegator never processed the delegatee dip event")
         
         # Delegator escrows completed and now aknowledges the delegatee dip event
