@@ -653,16 +653,16 @@ class IdentifierResourceEnd:
 
         ---
         summary: Retrieve an identifier.
-        description: This endpoint retrieves an identifier by its human-readable name.
+        description: This endpoint retrieves an identifier by its prefix or human-readable name.
         tags:
         - Identifier
         parameters:
         - in: path
-          name: name
+          name: name or prefix
           schema:
             type: string
           required: true
-          description: The human-readable name of the identifier.
+          description: The human-readable name of the identifier or its prefix.
         responses:
             200:
                 description: Successfully retrieved the identifier details.
@@ -692,7 +692,7 @@ class IdentifierResourceEnd:
         Parameters:
             req (Request): falcon.Request HTTP request object
             rep (Response): falcon.Response HTTP response object
-            name (str): human readable name for Hab to rename
+            name (str): human readable name for Hab to rename or its prefix
 
         ---
         summary: Rename an identifier.
@@ -701,11 +701,11 @@ class IdentifierResourceEnd:
         - Identifier
         parameters:
         - in: path
-          name: name
+          name: name or prefix
           schema:
             type: string
           required: true
-          description: The current human-readable name of the identifier.
+          description: The current human-readable name of the identifier or its prefix.
         requestBody:
             content:
               application/json:
@@ -714,7 +714,7 @@ class IdentifierResourceEnd:
                   properties:
                     name:
                       type: string
-                      description: The new name for the identifier.
+                      description: The new human-readable name for the identifier.
                   required:
                   - name
         responses:
@@ -735,10 +735,11 @@ class IdentifierResourceEnd:
         body = req.get_media()
         newName = body.get("name")
         habord = hab.db.habs.get(keys=(hab.pre,))
+        oldName = habord.name
         habord.name = newName
         hab.db.habs.pin(keys=(hab.pre,), val=habord)
         hab.db.names.pin(keys=("", newName), val=hab.pre)
-        hab.db.names.rem(keys=("", name))
+        hab.db.names.rem(keys=("", oldName))
         hab.name = newName
         hab = agent.hby.habByName(newName)
         data = info(hab, agent.mgr, full=True)
@@ -752,19 +753,19 @@ class IdentifierResourceEnd:
         Parameters:
             req (Request): falcon.Request HTTP request object
             rep (Response): falcon.Response HTTP response object
-            name (str): human-readable name for Hab to delete
+            name (str): human-readable name or prefix for Hab to delete
         ---
         summary: Delete an identifier.
-        description: This endpoint deletes an identifier by its name.
+        description: This endpoint deletes an identifier by its name or prefix.
         tags:
         - Identifier
         parameters:
         - in: path
-          name: name
+          name: name or prefix
           schema:
             type: string
           required: true
-          description: The human-readable name of the identifier.
+          description: The human-readable name of the identifier or its prefix.
         responses:
             200:
                 description: Successfully deleted the identifier.
@@ -788,7 +789,7 @@ class IdentifierResourceEnd:
         Parameters:
             req (Request): falcon.Request HTTP request object
             rep (Response): falcon.Response HTTP response object
-            name (str): human-readable name for Hab to rotate or interact
+            name (str): human-readable name or prefix for Hab to rotate or interact
 
         ---
         summary: Process identifier events.
@@ -797,11 +798,11 @@ class IdentifierResourceEnd:
         - Identifier
         parameters:
         - in: path
-          name: name
+          name: name or prefix
           schema:
             type: string
           required: true
-          description: The human-readable name of the identifier.
+          description: The human-readable name of the identifier or its prefix.
         requestBody:
             content:
               application/json:
@@ -1036,7 +1037,7 @@ class IdentifierOOBICollectionEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human-readable name for Hab to GET
+            name (str): human-readable name or prefix for Hab to GET
         ---
         summary: Fetch OOBI URLs of an identifier.
         description: This endpoint fetches the OOBI URLs for a specific role associated with an identifier.
@@ -1044,11 +1045,11 @@ class IdentifierOOBICollectionEnd:
         - Identifier
         parameters:
         - in: path
-          name: name
+          name: name or prefix
           schema:
             type: string
           required: true
-          description: The human-readable name of the identifier.
+          description: The human-readable name of the identifier or its prefix.
         - in: query
           name: role
           schema:
@@ -1183,35 +1184,28 @@ class IdentifierOOBICollectionEnd:
 class EndRoleCollectionEnd:
 
     @staticmethod
-    def on_get(req, rep, name=None, aid=None, role=None):
+    def on_get(req, rep, name=None, role=None):
         """GET endpoint for end role collection
 
         Parameters:
             req (Request): falcon HTTP request object
             rep (Response): falcon HTTP response object
-            name (str): human readable alias for AID
-            aid (str): aid to use instead of name
+            name (str): human readable alias or prefix for AID
             role (str): optional role to search for
 
         ---
         summary: Retrieve end roles.
-        description: This endpoint retrieves the end roles associated with AID or human-readable name.
+        description: This endpoint retrieves the end roles associated with an identifier prefix or human-readable name.
                      It can also filter the end roles based on a specific role.
         tags:
         - End Role
         parameters:
         - in: path
-          name: name
+          name: name or prefix
           schema:
             type: string
           required: false
-          description: The human-readable name of the identifier.
-        - in: path
-          name: aid
-          schema:
-            type: string
-          required: false
-          description: The identifier (AID).
+          description: The human-readable name of the identifier or its prefix.
         - in: path
           name: role
           schema:
@@ -1233,12 +1227,6 @@ class EndRoleCollectionEnd:
             if hab is None:
                 raise falcon.errors.HTTPNotFound(description=f"invalid alias or prefix {name}")
             pre = hab.pre
-        elif aid is not None:
-            pre = aid
-        else:
-            raise falcon.HTTPBadRequest(
-                description="either `aid` or `name` are required in the path"
-            )
 
         if role is not None:
             keys = (
@@ -1257,34 +1245,27 @@ class EndRoleCollectionEnd:
         rep.data = json.dumps(ends).encode("utf-8")
 
     @staticmethod
-    def on_post(req, rep, name, aid=None, role=None):
+    def on_post(req, rep, name, role=None):
         """POST endpoint for end role collection
 
         Args:
             req (Request): Falcon HTTP request object
             rep (Response): Falcon HTTP response object
-            name (str): human readable alias for AID
-            aid (str): Not supported for POST.  If provided, a 404 is returned
+            name (str): human readable alias or prefix for identifier
             role (str): Not supported for POST.  If provided, a 404 is returned
 
         ---
         summary: Create an end role.
-        description: This endpoint creates an end role associated with a given identifier (AID) or name.
+        description: This endpoint creates an end role associated with a given identifier prefix or human-readable name.
         tags:
         - End Role
         parameters:
         - in: path
-          name: name
+          name: name or prefix
           schema:
             type: string
           required: true
-          description: The human-readable name of the identifier.
-        - in: path
-          name: aid
-          schema:
-            type: string
-          required: false
-          description: Not supported for POST. If provided, a 404 is returned.
+          description: The human-readable name of the identifier or its prefix.
         requestBody:
             content:
               application/json:
@@ -1307,7 +1288,7 @@ class EndRoleCollectionEnd:
             404:
                 description: Not found. The requested identifier was not found.
         """
-        if role is not None or aid is not None:
+        if role is not None:
             raise falcon.HTTPNotFound(description="route not found")
 
         agent = req.context.agent
@@ -1463,7 +1444,7 @@ class ChallengeResourceEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name: human readable name of identifier to use to sign the challenge/response
+            name: human readable name or prefix of identifier to use to sign the challenge/response
 
         ---
         summary:  Sign challenge message and forward to peer identifier
@@ -1473,11 +1454,11 @@ class ChallengeResourceEnd:
            - Challenge/Response
         parameters:
           - in: path
-            name: name
+            name: name or prefix
             schema:
               type: string
             required: true
-            description: Human readable alias for the identifier to create
+            description: Human readable alias or prefix for the identifier to create
         requestBody:
             required: true
             content:
@@ -2069,7 +2050,7 @@ class GroupMemberCollectionEnd:
         Parameters:
             req (falcon.Request): The request object.
             rep (falcon.Response): The response object.
-            name (str): The human-readable name of the identifier.
+            name (str): The human-readable name or prefix of the identifier.
 
         ---
         summary: Fetch group member information.
@@ -2078,11 +2059,11 @@ class GroupMemberCollectionEnd:
         - Group Member
         parameters:
         - in: path
-          name: name
+          name: name or prefix
           schema:
             type: string
           required: true
-          description: The human-readable name of the identifier.
+          description: The human-readable name of the identifier or its prefix.
         responses:
             200:
                 description: Successfully fetched the group member information.
