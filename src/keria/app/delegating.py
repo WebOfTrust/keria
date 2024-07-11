@@ -197,7 +197,7 @@ class DelegatorEnd:
         Parameters:
             req (Request): falcon.Request HTTP request object
             rep (Response): falcon.Response HTTP response object
-            name (str): human readable name for Hab to rename
+            name (str): human readable name or prefix for Hab to rename
 
         """
         if not name:
