@@ -1148,7 +1148,7 @@ class IdentifierOOBICollectionEnd:
 class EndRoleCollectionEnd:
 
     @staticmethod
-    def on_get(req, rep, name=None, role=None):
+    def on_get(req, rep, name=None, aid=None, role=None):
         """GET endpoint for end role collection
 
         Parameters:
@@ -1191,6 +1191,12 @@ class EndRoleCollectionEnd:
             if hab is None:
                 raise falcon.errors.HTTPNotFound(description=f"invalid alias or prefix {name}")
             pre = hab.pre
+        elif aid is not None:
+            pre = aid
+        else:
+            raise falcon.HTTPBadRequest(
+                description="`name` is required in the path"
+            )
 
         if role is not None:
             keys = (
