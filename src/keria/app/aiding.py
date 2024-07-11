@@ -1148,7 +1148,7 @@ class IdentifierOOBICollectionEnd:
 class EndRoleCollectionEnd:
 
     @staticmethod
-    def on_get(req, rep, name=None, role=None):
+    def on_get(req, rep, name=None, aid=None, role=None):
         """GET endpoint for end role collection
 
         Parameters:
