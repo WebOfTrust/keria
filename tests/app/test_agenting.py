@@ -9,27 +9,29 @@ import json
 import os
 import shutil
 import time
+import unittest
+from unittest.mock import patch, MagicMock
 
 import falcon
-import hio
 from falcon import testing
-from hio.base import doing
+import hio
+from hio.base import doing, tyming
 from hio.core import http, tcp
 from hio.help import decking
 from keri import kering
-from keri.app import habbing, configing, oobiing, querying
+from keri.app import configing, habbing, indirecting, oobiing, querying
 from keri.app.agenting import Receiptor, WitnessReceiptor
 from keri import core
 from keri.core import coring, eventing, indexing, parsing, serdering
 from keri.core.coring import MtrDex
 from keri.db import basing, dbing
+from keri.help import nowIso8601
 from keri.vc import proving
 from keri.vdr import credentialing
 
 from keria.app import agenting, aiding
 from keria.core import longrunning
 from keria.testing.testing_helper import SCRIPTS_DIR
-
 
 def test_setup_no_http():
     doers = agenting.setup(name="test", bran=None, adminPort=1234, bootPort=5678)
@@ -205,7 +207,8 @@ def test_boot_ends(helpers):
     }
 
 
-def test_witnesser(helpers):
+@patch("http.clienting.Client")
+def test_witnesser(helpers, MockClient):
     salt = b"0123456789abcdef"
     salter = core.Salter(raw=salt)
 
@@ -223,20 +226,28 @@ def test_witnesser(helpers):
         doist.recur(deeds)
 
 
-def test_submitter(helpers):
+def test_submitter(seeder, helpers):
     with helpers.openKeria() as (agency, agent, app, client), habbing.openHby(
-        name="wes", salt=core.Salter(raw=b"wess-the-witness").qb64
-    ) as wesHby:
+        name="wes", salt=core.Salter(raw=b"wess-the-witness").qb64, temp=True
+    ) as wesHby, habbing.openHby(
+        name="wan", salt=core.Salter(raw=b"wann-the-witness").qb64, temp=True
+    ) as wanHby:
+        
         wesHab = wesHby.makeHab(name="wes", transferable=False)
         assert not wesHab.kever.prefixer.transferable
-        # create non-local kevery for Wes to process nonlocal msgs
-        wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
 
-        # Add witness endpoints
-        url = "http://127.0.0.1:9999"
-        agent.hby.db.locs.put(
-            keys=(wesHab.pre, kering.Schemes.http), val=basing.LocationRecord(url=url)
+        wanPort = 5642
+        wanDoers = indirecting.setupWitness(
+            alias="wan", hby=wanHby, tcpPort=5632, httpPort=wanPort
         )
+        wanHab = wanHby.habByName(name="wan")
+        assert not wanHab.kever.prefixer.transferable
+        witHabs = [wesHab, wanHab]
+        witPrefixes = []
+        for witHab in witHabs:
+            witPrefixes.append(witHab.pre)
+
+        seeder.seedWitEnds(agent.hby.db, witHabs=witHabs)
 
         # Register the identifier endpoint so we can create an AID for the test
         end = aiding.IdentifierCollectionEnd()
@@ -249,94 +260,108 @@ def test_submitter(helpers):
 
         salt = b"0123456789abcdef"
         alias = "pal"
-        res = helpers.createAid(
-            client, name=alias, salt=salt, wits=[wesHab.pre], toad="1"
-        )
+        createAidOp = helpers.createAid(client, name=alias, salt=salt, wits=witPrefixes, toad="1")
         hab = agent.hby.habByName(alias)
         serder = hab.iserder
+
+        # no wigs yet
         dgkey = dbing.dgKey(serder.preb, hab.kever.serder.saidb)
         wigs = hab.db.getWigs(dgkey)
         assert len(wigs) == 0
 
-        witHabs = [wesHab]
+        # no id key state in wit hab yet
+        assert hab.pre not in wesHab.kvy.kevers
 
-        op = res
-        rctMsgs = None
-        while op is None or op["done"] is False:
-            if rctMsgs is None:  # get witness receipted messages
-                rctMsgs = helpers.witnessMsg(
-                    agent=agent, alias=alias, sn=0, witHabs=witHabs
-                )
+        # Intentionally manually process a single receipt from only one witness in order to reach the toad (threshold of acceptable duplicity)
+        # while at the same time setting up the opportunity to submit the KEL to the other witness, later
+        rctMsgs = helpers.witnessMsg(agent=agent, alias=alias, sn=0, witHabs=[wesHab])
+        wigs = hab.db.getWigs(dgkey)
+        assert len(wigs) == 1 # only witnessed by one witness
+        assert len(wesHab.kvy.db.getWigs(dgkey)) == 1  # only witnessed by one witness
+        assert len(wanHab.kvy.db.getWigs(dgkey)) == 0  # only witnessed by the other witness
+        assert len(wesHab.kvy.cues) == 0  # witness cues are empty
+        assert hab.pre in wesHab.kvy.kevers  # id key state in wit hab
+        assert hab.pre not in wanHab.kvy.kevers  # id key state not in wit hab yet
+        
+        witAidOp = client.simulate_get(path=f'/operations/{createAidOp["name"]}') # witnessing of created aid completed
+        assert witAidOp.json["done"] is True # succeed because toad is 1
+        assert witAidOp.json["response"]["i"] == hab.pre
 
-                wigs = hab.db.getWigs(dgkey)
-                assert len(wigs) == len(witHabs)
-
-                for witHab in witHabs:
-                    kvy = witHab.kvy
-                    assert len(kvy.db.getWigs(dgkey)) == len(witHabs)  # fully witnessed
-                    assert len(kvy.cues) == 0  # no cues
-
-            res = client.simulate_get(path=f'/operations/{op["name"]}')
-            op = res.json
-
-        res = op["response"]
-
-        # oobiery = oobiing.Oobiery(hby=agent.hby)
-
-        # oobiColEnd = agenting.OOBICollectionEnd()
-        # app.add_route("/oobi", oobiColEnd)
-        # oobiResEnd = agenting.OobiResourceEnd()
-        # app.add_route("/oobi/{alias}", oobiResEnd)
-
-        # result = client.simulate_get(path="/oobi/pal?role=witness")
-        # assert result.status == falcon.HTTP_200
-
-        # # Add controller endpoints
-        # url = "http://127.0.0.1:9999"
-        # agent.hby.db.locs.put(keys=(palPre, kering.Schemes.http), val=basing.LocationRecord(url=url))
-        # result = client.simulate_get(path="/oobi/pal?role=controller")
-        # assert result.status == falcon.HTTP_200  # Missing OOBI controller endpoints
-        # assert result.json == {
-        #     'oobis': ['http://127.0.0.1:9999/oobi/EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0/controller'],
-        #     'role': 'controller'}
-
-        # # Seed with witness endpoints
-        # seeder.seedWitEnds(agent.hby.db, witHabs=[wesHab], protocols=[kering.Schemes.http, kering.Schemes.tcp])
-
-        # result = client.simulate_get(path="/oobi/pal?role=witness")
-        # assert result.status == falcon.HTTP_200
-        # assert result.json == {
-        #     'oobis': [
-        #         'http://127.0.0.1:5644/oobi/EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0/witness/BN8t3n1lxcV0SWGJIIF'
-        #         '46fpSUqA7Mqre5KJNN3nbx3mr'],
-        #     'role': 'witness'}
-
+        # Now we will setup to 'submit' (resubmit) the KEL to both witnesses 
+        limit = 5.0
+        tock = 0.03125
+        wdoist = doing.Doist(limit=limit, tock=tock, doers=wanDoers)
+        wdoist.enter()
+        tymer = tyming.Tymer(tymth=wdoist.tymen(), duration=wdoist.limit)
         aidEnd = aiding.IdentifierResourceEnd()
         app.add_route("/identifiers/{name}/submit", aidEnd)
-        res = client.simulate_post(
+        resSubmit = client.simulate_post(
             path=f"/identifiers/{alias}/submit",
             body=json.dumps(dict(submit=alias)).encode("utf-8"),
         )
-        op = res.json
-        while not op or not "done" in op or not op["done"]:
-            submitter = agent.submitter
-            doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
-            deeds = doist.enter(doers=[submitter])
+        submitter = agent.submitter # get the submitter that was triggered by the submit request
+        sdoist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+        sdeeds = sdoist.enter(doers=[submitter])
+        submitter.recur(tyme=1.0, deeds=sdeeds) # run the submitter to get witness receipts (with WitnessReceiptor) for sn=0 of the KEL
+        assert len(submitter.doers) == 1
+        rectDoer = submitter.doers[0]
+        assert isinstance(rectDoer, WitnessReceiptor) is True
+        resSubmit = client.simulate_get(path=f'/operations/{resSubmit.json["name"]}')
+        assert resSubmit.json["done"] is False
 
-            submitter.submits.append(dict(alias=alias, code=None))
-            submitter.recur(tyme=1.0, deeds=deeds)
+        stamp = nowIso8601()  # need same time stamp or not duplicate
+        agent.witq.query(src=hab.pre, pre=wanHab.pre, stamp=stamp, wits=wanHab.kever.wits)
+        agent.witq.query(src=hab.pre, pre=wanHab.pre, stamp=stamp, wits=wanHab.kever.wits)
+        agent.witq.query(src=hab.pre, pre=wanHab.pre, stamp=stamp, wits=wanHab.kever.wits)
 
-            assert len(submitter.doers) == 1
-            rectDoer = submitter.doers[0]
-            assert isinstance(rectDoer, WitnessReceiptor) is True
+        # while not (resSubmit.json["done"] or tymer.expired):
+        submitter.recur(tyme=1.0, deeds=sdeeds) # run the submitter to check for witness receipts (with WitnessReceiptor) for sn=0 of the KEL
+        resSubmit = client.simulate_get(path=f'/operations/{resSubmit.json["name"]}')
 
-            deeds = doist.enter(doers=[submitter])
-            submitter.recur(tyme=1.0, deeds=deeds)
-            res = client.simulate_get(path=f'/operations/{op["name"]}')
-            op = res.json
+        limit = 5.0
+        tock = 0.03125
+        doist = doing.Doist(limit=limit, tock=tock)
+        doers = wanDoers + [rectDoer]
+        doist.do(doers=doers)
+        
+        # wdoist.recur() # run the witness doist to process the receipt
+        # wdoist.recur() # run the witness doist to process the receipt
+        # wdoist.recur() # run the witness doist to process the receipt
+        # rectDoer.cues.put(wanHby.habByPre(hab.iserder.preb))
+        # wdoist.exit()
+        assert hab.pre in wanHab.kvy.kevers  # id key state in wit hab
+        # Intentionally manually process a single receipt from only one witness in order to reach the toad (threshold of acceptable duplicity)
+        # while at the same time setting up the opportunity to submit the KEL to the other witness, later
+        assert len(wanHab.kvy.db.getWigs(dgkey)) == 1  # now witnessed by the other witness
+        assert len(wanHab.kvy.cues) == 0  # witness cues are empty
+        assert hab.pre in wanHab.kvy.kevers  # id key state in wit hab yet
 
         wigs = hab.db.getWigs(dgkey)
-        assert len(wigs) == 1
+        assert len(wigs) == 2
+        while True:
+            wanWigs = wanHab.db.getWigs(dgkey)
+            if len(wanWigs) == 2:
+                break
+
+        # Controller should send endpoints between witnesses.  Check for Endpoints for each other:
+        keys = (wanHab.pre, kering.Schemes.tcp)
+        said = wanHab.db.lans.get(keys=keys)
+        assert said is not None
+
+        # while True:
+        #     wilWigs = self.wilHab.db.getWigs(dgkey)
+        #     wanWigs = self.wanHab.db.getWigs(dgkey)
+        #     if len(wilWigs) == 2 and len(wanWigs) == 2:
+        #         break
+        #     yield self.tock
+
+        # # Controller should send endpoints between witnesses.  Check for Endpoints for each other:
+        # keys = (self.wanHab.pre, kering.Schemes.tcp)
+        # said = self.wilHab.db.lans.get(keys=keys)
+        # assert said is not None
+        # keys = (self.wilHab.pre, kering.Schemes.tcp)
+        # said = self.wanHab.db.lans.get(keys=keys)
+        # assert said is not None
 
         assert res.status_code == 200
         assert res.text == json.dumps(

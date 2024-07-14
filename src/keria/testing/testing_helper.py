@@ -6,11 +6,14 @@ import json
 import os
 import pathlib
 import shutil
+from urllib import parse
 from contextlib import contextmanager
 
 import falcon
 from falcon import testing
+from hio.base import doing
 from hio.core import http
+from hio.help import decking
 from keri import kering
 from keri import core
 from keri.app import keeping, habbing, configing, signing
@@ -713,7 +716,7 @@ class Helpers:
 
     @staticmethod
     @contextmanager
-    def openKeria(salter=None, cf=None, temp=True):
+    def openKeria(salter=None, cf=None, temp=True, mockWitCalls=False):
 
         serder, sigers = Helpers.controller()
         assert serder.pre == Helpers.controllerAID
