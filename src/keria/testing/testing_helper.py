@@ -778,9 +778,7 @@ class Helpers:
         return "A9XfpxIl1LcIkMhUSCCC8fgvkuX8gG9xK3SM-S8a8Y_U"
 
     @staticmethod
-    def witnessMsg(agent, alias, sn, witHabs):
-        hab = agent.hby.habByName(alias)
-        msg = hab.makeOwnEvent(sn=sn)
+    def witnessMsg(hab, msg, sn, witHabs):
         rctMsgs = []
         for i, witHab in enumerate(witHabs):
             kvy = witHab.kvy
@@ -789,7 +787,7 @@ class Helpers:
             assert kvy.kevers[hab.pre].sn == sn
             assert len(kvy.cues) >= 1  # at least queued receipt cue
             # better to find receipt cue in cues exactly
-            rctMsg = witHabs[i].processCues(kvy.cues)  # process cue returns rct msg
+            rctMsg = witHab.processCues(kvy.cues)  # process cue returns rct msg
             assert len(rctMsg) > len(msg)
             rctMsgs.append(rctMsg)
 

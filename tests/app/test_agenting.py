@@ -274,7 +274,10 @@ def test_submitter(seeder, helpers):
 
         # Intentionally manually process a single receipt from only one witness in order to reach the toad (threshold of acceptable duplicity)
         # while at the same time setting up the opportunity to submit the KEL to the other witness, later
-        rctMsgs = helpers.witnessMsg(agent=agent, alias=alias, sn=0, witHabs=[wesHab])
+        hab = agent.hby.habByName(alias)
+        sn = 0
+        msg = hab.makeOwnEvent(sn=sn)
+        rctMsgs = helpers.witnessMsg(hab=hab, msg=msg, sn=sn, witHabs=[wesHab])
         wigs = hab.db.getWigs(dgkey)
         assert len(wigs) == 1 # only witnessed by one witness
         assert len(wesHab.kvy.db.getWigs(dgkey)) == 1  # only witnessed by one witness
@@ -323,72 +326,53 @@ def test_submitter(seeder, helpers):
         doist = doing.Doist(limit=limit, tock=tock)
         doers = wanDoers + [rectDoer]
         doist.do(doers=doers)
+        doist.recur()
         
-        # wdoist.recur() # run the witness doist to process the receipt
-        # wdoist.recur() # run the witness doist to process the receipt
-        # wdoist.recur() # run the witness doist to process the receipt
-        # rectDoer.cues.put(wanHby.habByPre(hab.iserder.preb))
-        # wdoist.exit()
         assert hab.pre in wanHab.kvy.kevers  # id key state in wit hab
-        # Intentionally manually process a single receipt from only one witness in order to reach the toad (threshold of acceptable duplicity)
-        # while at the same time setting up the opportunity to submit the KEL to the other witness, later
-        assert len(wanHab.kvy.db.getWigs(dgkey)) == 1  # now witnessed by the other witness
+        assert wanHab.kvy.kevers[hab.pre].sn == 0
+        wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
+        assert len(wanHab.kvy.db.getWigs(dgkey)) == 2  # now witnessed by the other witness
         assert len(wanHab.kvy.cues) == 0  # witness cues are empty
         assert hab.pre in wanHab.kvy.kevers  # id key state in wit hab yet
+        assert wanHby.db.fullyWitnessed(hab.kever.serder)  # fully witnessed
 
+        rctMsg = wanHab.replyToOobi(aid=hab.pre, role='controller')
+        hab.psr.parse(ims=bytearray(rctMsg), kvy=hab.kvy, local=True)
+        witMsg = wanHab.replyToOobi(aid=wanHab.pre, role='controller')
+        hab.psr.parse(ims=bytearray(witMsg), kvy=hab.kvy, local=True)
+        assert wanHab.pre in hab.kvy.kevers
         wigs = hab.db.getWigs(dgkey)
         assert len(wigs) == 2
-        while True:
-            wanWigs = wanHab.db.getWigs(dgkey)
-            if len(wanWigs) == 2:
-                break
 
-        # Controller should send endpoints between witnesses.  Check for Endpoints for each other:
-        keys = (wanHab.pre, kering.Schemes.tcp)
-        said = wanHab.db.lans.get(keys=keys)
-        assert said is not None
-
-        # while True:
-        #     wilWigs = self.wilHab.db.getWigs(dgkey)
-        #     wanWigs = self.wanHab.db.getWigs(dgkey)
-        #     if len(wilWigs) == 2 and len(wanWigs) == 2:
-        #         break
-        #     yield self.tock
-
-        # # Controller should send endpoints between witnesses.  Check for Endpoints for each other:
-        # keys = (self.wanHab.pre, kering.Schemes.tcp)
-        # said = self.wilHab.db.lans.get(keys=keys)
-        # assert said is not None
-        # keys = (self.wilHab.pre, kering.Schemes.tcp)
-        # said = self.wanHab.db.lans.get(keys=keys)
-        # assert said is not None
-
-        assert res.status_code == 200
-        assert res.text == json.dumps(
+        rectDoer.cues.append(dict(pre=hab.pre, sn=0)) # append expected cue
+        submitter.recur(tyme=1.0, deeds=sdeeds)
+        resSubmit = client.simulate_get(path=f'/operations/{resSubmit.json["name"]}')
+        assert resSubmit.status_code == 200
+        assert resSubmit.text == json.dumps(
             dict(
-                name="submit.EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0",
+                name="submit.EKOrePIIU8ynKwOOLxs56ZxxQswUFNV8-cyYFt3nBJHR",
                 metadata={"alias": "pal", "sn": 0},
                 done=True,
                 error=None,
                 response={
                     "vn": [1, 0],
-                    "i": "EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0",
+                    "i": "EKOrePIIU8ynKwOOLxs56ZxxQswUFNV8-cyYFt3nBJHR",
                     "s": "0",
                     "p": "",
-                    "d": "EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0",
+                    "d": "EKOrePIIU8ynKwOOLxs56ZxxQswUFNV8-cyYFt3nBJHR",
                     "f": "0",
-                    "dt": res.json["response"]["dt"],
+                    "dt": resSubmit.json["response"]["dt"],
                     "et": "icp",
                     "kt": "1",
                     "k": ["DDNGgXzEO4LD8G1z1uD7eIDF2pDj6Y7hVx-nqhYZmU_8"],
                     "nt": "1",
                     "n": ["EHj7rmVHVkQKqnfeer068PiYvYm-WFSTVZZpFGsClfT-"],
                     "bt": "1",
-                    "b": ["BN8t3n1lxcV0SWGJIIF46fpSUqA7Mqre5KJNN3nbx3mr"],
+                    "b": ["BN8t3n1lxcV0SWGJIIF46fpSUqA7Mqre5KJNN3nbx3mr","BOigXdxpp1r43JhO--czUTwrCXzoWrIwW8i41KWDlr8s"],
                     "c": [],
                     "ee": {
                         "s": "0",
-                        "d": "EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0",
+                        "d": "EKOrePIIU8ynKwOOLxs56ZxxQswUFNV8-cyYFt3nBJHR",
                         "br": [],
                         "ba": [],
                     },
