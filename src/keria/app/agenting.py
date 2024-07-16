@@ -505,7 +505,7 @@ class Agent(doing.DoDoer):
             Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries,
                     tock=self.tocks.get("querier", 0.0)),
             Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc, vry=self.verifier,
-                     registrar=self.registrar, credentialer=self.credentialer, tock=self.tocks.get("escrower", 0.0))),
+                     registrar=self.registrar, credentialer=self.credentialer, tock=self.tocks.get("escrower", 0.0)),
             ParserDoer(kvy=self.kvy, parser=self.parser),
             Witnesser(receiptor=receiptor, witners=self.witners),
             Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),

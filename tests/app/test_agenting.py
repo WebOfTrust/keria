@@ -254,9 +254,7 @@ def test_boot_ends(helpers):
         "description": "agent for controller EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx already exists",
     }
 
-
-@patch("http.clienting.Client")
-def test_witnesser(helpers, MockClient):
+def test_witnesser():
     salt = b"0123456789abcdef"
     salter = core.Salter(raw=salt)
 
