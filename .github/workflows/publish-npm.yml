@@ -1,0 +1,61 @@
+name: Publish NPM
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        type: boolean
+        default: true
+        description: Dry run publish
+      dist-tag:
+        type: choice
+        options:
+          - dev
+          - latest
+        default: dev
+        description: Npm dist tag
+jobs:
+  publish:
+    name: Publish NPM
+    permissions:
+        contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Set package name from vars
+        if: ${{ vars.NPM_PACKAGE_NAME }}
+        run: |
+          cat package.json | jq -r '.name = "${{ vars.NPM_PACKAGE_NAME }}"' > package.json.tmp
+          mv package.json.tmp package.json
+
+      - name: Set version from commit
+        if: ${{ inputs.dist-tag == 'dev' }}
+        run: |
+          npm version --no-git-tag-version $(cat package.json | jq .version -r)-dev.$(git rev-parse --short HEAD)
+
+      - name: Create git tag
+        run: git tag $(cat package.json | jq .version -r)
+
+      - name: Publish dev package (Dry run)
+        if: ${{ inputs.dry-run == true }}
+        run: npm publish --tag "${{ inputs.dist-tag }}" --dry-run
+
+      - name: Publish dev package
+        if: ${{ inputs.dry-run == false }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+            npm publish --tag "${{ inputs.dist-tag }}"
+            git tag v$(cat package.json | jq .version -r)
+            git push origin  v$(cat package.json | jq .version -r)
