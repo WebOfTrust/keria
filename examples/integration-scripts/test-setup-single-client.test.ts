@@ -19,6 +19,9 @@ afterAll(async () => {
 
 describe('test-setup-single-client', () => {
     test('step1', async () => {
+        expect(client.agent?.pre).toEqual(
+            'EC60ue9GOpQGrLBlS9T0dO6JkBTbv3V05Y4O730QBBoc'
+        );
         expect(client.controller?.pre).toEqual(
             'EB3UGWwIMq7ppzcQ697ImQIuXlBG5jzh-baSx-YG3-tY'
         );
@@ -30,7 +33,7 @@ describe('test-setup-single-client', () => {
         switch (env.preset) {
             case 'local':
                 expect(name1_oobi).toEqual(
-                    `http://127.0.0.1:3902/oobi/${name1_id}/agent/${client.agent?.pre}`
+                    `http://127.0.0.1:3902/oobi/${name1_id}/agent/EC60ue9GOpQGrLBlS9T0dO6JkBTbv3V05Y4O730QBBoc`
                 );
                 expect(oobi.oobis[0]).toEqual(
                     `http://127.0.0.1:5642/oobi/${name1_id}/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha`
@@ -44,7 +47,7 @@ describe('test-setup-single-client', () => {
                 break;
             case 'docker':
                 expect(name1_oobi).toEqual(
-                    `http://keria:3902/oobi/${name1_id}/agent/${client.agent?.pre}`
+                    `http://keria:3902/oobi/${name1_id}/agent/EC60ue9GOpQGrLBlS9T0dO6JkBTbv3V05Y4O730QBBoc`
                 );
                 expect(oobi.oobis[0]).toEqual(
                     `http://witness-demo:5642/oobi/${name1_id}/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha`
