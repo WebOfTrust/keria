@@ -747,42 +747,6 @@ class IdentifierResourceEnd:
         rep.content_type = "application/json"
         rep.data = json.dumps(data).encode("utf-8")
 
-    def on_delete(self, req, rep, name):
-        """Identifier delete endpoint
-
-        Parameters:
-            req (Request): falcon.Request HTTP request object
-            rep (Response): falcon.Response HTTP response object
-            name (str): human-readable name for Hab to delete
-        ---
-        summary: Delete an identifier.
-        description: This endpoint deletes an identifier by its name.
-        tags:
-        - Identifier
-        parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: The human-readable name of the identifier.
-        responses:
-            200:
-                description: Successfully deleted the identifier.
-            400:
-                description: Bad request. This could be due to a missing or invalid name parameter.
-            404:
-                description: The requested identifier was not found.
-        """
-        if not name:
-            raise falcon.HTTPBadRequest(description="name is required")
-        agent = req.context.agent
-        hab = agent.hby.habByName(name)
-        if hab is None:
-            raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
-        agent.hby.deleteHab(name)
-        rep.status = falcon.HTTP_200
-
     def on_post(self, req, rep, name):
         """Identifier events endpoint
 

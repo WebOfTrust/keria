@@ -620,13 +620,6 @@ def test_identifier_collection_end(helpers):
         aid = res.json
         assert aid["name"] == "aid3Renamed"
 
-        # delete aid3renamed
-        res = client.simulate_delete(path="/identifiers/aid3Renamed")
-        assert res.status_code == 200
-        res = client.simulate_get(path="/identifiers")
-        assert res.status_code == 200
-        assert len(res.json) == 2
-
         # create member habs for group AID
         p1 = p1hby.makeHab(name="p1")
         assert p1.pre == "EBPtjiAY9ITdvScWFGeeCu3Pf6_CFFr57siQqffVt9Of"
@@ -782,8 +775,8 @@ def test_identifier_collection_end(helpers):
 
         res = client.simulate_get(path="/identifiers")
         assert res.status_code == 200
-        assert len(res.json) == 3
-        aid = res.json[2]
+        assert len(res.json) == 4
+        aid = res.json[3]
         assert aid["name"] == "multisig"
         assert aid["prefix"] == serder.pre
         group = aid["group"]
@@ -857,8 +850,8 @@ def test_identifier_collection_end(helpers):
         # Make sure keys got rotated
         res = client.simulate_get(path="/identifiers")
         assert res.status_code == 200
-        assert len(res.json) == 3
-        aid = res.json[2]
+        assert len(res.json) == 4
+        aid = res.json[3]
         assert aid["name"] == "multisig"
         assert aid["prefix"] == rserder.pre
         group = aid["group"]

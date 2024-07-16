@@ -8,6 +8,7 @@ import json
 import os
 from dataclasses import asdict
 from urllib.parse import urlparse, urljoin
+from types import MappingProxyType
 
 import falcon
 from falcon import media
@@ -381,6 +382,8 @@ class Agent(doing.DoDoer):
         self.agentHab = agentHab
         self.agency = agency
         self.caid = caid
+        self.cfd = MappingProxyType(dict(self.hby.cf.get()) if self.hby.cf is not None else dict())
+        self.tocks = MappingProxyType(self.cfd.get("tocks", {}))
 
         self.swain = delegating.Anchorer(hby=hby, proxy=agentHab)
         self.counselor = Counselor(hby=hby, swain=self.swain, proxy=agentHab)
@@ -497,54 +500,28 @@ class Agent(doing.DoDoer):
             local=True,
         )  # disable misfit escrow until we can add another parser for remote.
 
-        doers.extend(
-            [
-                Initer(agentHab=agentHab, caid=caid),
-                Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries),
-                Escrower(
-                    kvy=self.kvy,
-                    rgy=self.rgy,
-                    rvy=self.rvy,
-                    tvy=self.tvy,
-                    exc=self.exc,
-                    vry=self.verifier,
-                    registrar=self.registrar,
-                    credentialer=self.credentialer,
-                ),
-                ParserDoer(kvy=self.kvy, parser=self.parser),
-                Witnesser(receiptor=receiptor, witners=self.witners),
-                Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
-                ExchangeSender(
-                    hby=hby, agentHab=agentHab, exc=self.exc, exchanges=self.exchanges
-                ),
-                Granter(
-                    hby=hby,
-                    rgy=rgy,
-                    agentHab=agentHab,
-                    exc=self.exc,
-                    grants=self.grants,
-                ),
-                Admitter(
-                    hby=hby,
-                    witq=self.witq,
-                    psr=self.parser,
-                    agentHab=agentHab,
-                    exc=self.exc,
-                    admits=self.admits,
-                ),
-                GroupRequester(
-                    hby=hby,
-                    agentHab=agentHab,
-                    counselor=self.counselor,
-                    groups=self.groups,
-                ),
-                SeekerDoer(seeker=self.seeker, cues=self.verifier.cues),
-                ExchangeCueDoer(
-                    seeker=self.exnseeker, cues=self.exc.cues, queries=self.queries
-                ),
-                self.submitter,
-            ]
-        )
+        doers.extend([
+            Initer(agentHab=agentHab, caid=caid, tock=self.tocks.get("initer", 0.0)),
+            Querier(hby=hby, agentHab=agentHab, kvy=self.kvy, queries=self.queries,
+                    tock=self.tocks.get("querier", 0.0)),
+            Escrower(kvy=self.kvy, rgy=self.rgy, rvy=self.rvy, tvy=self.tvy, exc=self.exc, vry=self.verifier,
+                     registrar=self.registrar, credentialer=self.credentialer, tock=self.tocks.get("escrower", 0.0))),
+            ParserDoer(kvy=self.kvy, parser=self.parser),
+            Witnesser(receiptor=receiptor, witners=self.witners),
+            Delegator(agentHab=agentHab, swain=self.swain, anchors=self.anchors),
+            ExchangeSender(hby=hby, agentHab=agentHab, exc=self.exc, exchanges=self.exchanges,
+                           tock=self.tocks.get("exchangeSender", 0.0)),
+            Granter(hby=hby, rgy=rgy, agentHab=agentHab, exc=self.exc, grants=self.grants,
+                    tock=self.tocks.get("granter", 0.0)),
+            Admitter(hby=hby, witq=self.witq, psr=self.parser, agentHab=agentHab, exc=self.exc, admits=self.admits,
+                     tock=self.tocks.get("admitter", 0.0)),
+            GroupRequester(hby=hby, agentHab=agentHab, counselor=self.counselor, groups=self.groups,
+                           tock=self.tocks.get("groupRequester", 0.0)),
+            SeekerDoer(seeker=self.seeker, cues=self.verifier.cues, tock=self.tocks.get("seeker", 0.0)),
+            ExchangeCueDoer(seeker=self.exnseeker, cues=self.exc.cues, queries=self.queries,
+                            tock=self.tocks.get("exchangecue", 0.0)),
+            self.submitter,
+        ])
 
         super(Agent, self).__init__(doers=doers, always=True, **opts)
 
@@ -579,10 +556,11 @@ class Agent(doing.DoDoer):
 
 class ParserDoer(doing.Doer):
 
-    def __init__(self, kvy, parser):
+    def __init__(self, kvy, parser, tock=0.0):
         self.kvy = kvy
         self.parser = parser
-        super(ParserDoer, self).__init__()
+        self.tock = tock
+        super(ParserDoer, self).__init__(tock=self.tock)
 
     def recur(self, tyme=None):
         if self.parser.ims:
@@ -595,10 +573,11 @@ class ParserDoer(doing.Doer):
 
 class Witnesser(doing.Doer):
 
-    def __init__(self, receiptor, witners):
+    def __init__(self, receiptor, witners, tock=0.0):
         self.receiptor = receiptor
         self.witners = witners
-        super(Witnesser, self).__init__()
+        self.tock = tock
+        super(Witnesser, self).__init__(tock=self.tock)
 
     def recur(self, tyme=None):
         while True:
@@ -619,11 +598,12 @@ class Witnesser(doing.Doer):
 
 class Delegator(doing.Doer):
 
-    def __init__(self, agentHab, swain, anchors):
+    def __init__(self, agentHab, swain, anchors, tock=0.0):
         self.agentHab = agentHab
         self.swain = swain
         self.anchors = anchors
-        super(Delegator, self).__init__()
+        self.tock = tock
+        super(Delegator, self).__init__(tock=self.tock)
 
     def recur(self, tyme=None):
         if self.anchors:
@@ -636,12 +616,13 @@ class Delegator(doing.Doer):
 
 class ExchangeSender(doing.DoDoer):
 
-    def __init__(self, hby, agentHab, exc, exchanges):
+    def __init__(self, hby, agentHab, exc, exchanges, tock=0.0):
         self.hby = hby
         self.agentHab = agentHab
         self.exc = exc
         self.exchanges = exchanges
-        super(ExchangeSender, self).__init__(always=True)
+        self.tock = tock
+        super(ExchangeSender, self).__init__(always=True, tock=self.tock)
 
     def recur(self, tyme, deeds=None):
         if self.exchanges:
@@ -677,13 +658,14 @@ class ExchangeSender(doing.DoDoer):
 
 class Granter(doing.DoDoer):
 
-    def __init__(self, hby, rgy, agentHab, exc, grants):
+    def __init__(self, hby, rgy, agentHab, exc, grants, tock=0.0):
         self.hby = hby
         self.rgy = rgy
         self.agentHab = agentHab
         self.exc = exc
         self.grants = grants
-        super(Granter, self).__init__(always=True)
+        self.tock = tock
+        super(Granter, self).__init__(always=True, tock=self.tock)
 
     def recur(self, tyme, deeds=None):
         if self.grants:
@@ -727,14 +709,15 @@ class Granter(doing.DoDoer):
 
 class Admitter(doing.Doer):
 
-    def __init__(self, hby, witq, psr, agentHab, exc, admits):
+    def __init__(self, hby, witq, psr, agentHab, exc, admits, tock=0.0):
         self.hby = hby
         self.agentHab = agentHab
         self.witq = witq
         self.psr = psr
         self.exc = exc
         self.admits = admits
-        super(Admitter, self).__init__()
+        self.tock = tock
+        super(Admitter, self).__init__(tock=self.tock)
 
     def recur(self, tyme):
         if self.admits:
@@ -776,11 +759,11 @@ class Admitter(doing.Doer):
 
 class SeekerDoer(doing.Doer):
 
-    def __init__(self, seeker, cues):
+    def __init__(self, seeker, cues, tock=0.0):
         self.seeker = seeker
         self.cues = cues
-
-        super(SeekerDoer, self).__init__()
+        self.tock = tock
+        super(SeekerDoer, self).__init__(tock=self.tock)
 
     def recur(self, tyme=None):
         if self.cues:
@@ -799,12 +782,12 @@ class SeekerDoer(doing.Doer):
 
 class ExchangeCueDoer(doing.Doer):
 
-    def __init__(self, seeker, cues, queries):
+    def __init__(self, seeker, cues, queries, tock=0.0):
         self.seeker = seeker
         self.cues = cues
         self.queries = queries
-
-        super(ExchangeCueDoer, self).__init__()
+        self.tock = tock
+        super(ExchangeCueDoer, self).__init__(tock=self.tock)
 
     def recur(self, tyme=None):
         if self.cues:
@@ -825,10 +808,11 @@ class ExchangeCueDoer(doing.Doer):
 
 
 class Initer(doing.Doer):
-    def __init__(self, agentHab, caid):
+    def __init__(self, agentHab, caid, tock=0.0):
         self.agentHab = agentHab
         self.caid = caid
-        super(Initer, self).__init__()
+        self.tock = tock
+        super(Initer, self).__init__(tock=self.tock)
 
     def recur(self, tyme):
         """Prints Agent name and prefix"""
@@ -841,13 +825,13 @@ class Initer(doing.Doer):
 
 class GroupRequester(doing.Doer):
 
-    def __init__(self, hby, agentHab, counselor, groups):
+    def __init__(self, hby, agentHab, counselor, groups, tock=0.0):
         self.hby = hby
         self.agentHab = agentHab
         self.counselor = counselor
         self.groups = groups
-
-        super(GroupRequester, self).__init__()
+        self.tock = tock
+        super(GroupRequester, self).__init__(tock=self.tock)
 
     def recur(self, tyme):
         """Checks cue for group proceccing requests and processes any with Counselor"""
@@ -869,13 +853,13 @@ class GroupRequester(doing.Doer):
 
 class Querier(doing.DoDoer):
 
-    def __init__(self, hby, agentHab, queries, kvy):
+    def __init__(self, hby, agentHab, queries, kvy, tock=0.0):
         self.hby = hby
         self.agentHab = agentHab
         self.queries = queries
         self.kvy = kvy
-
-        super(Querier, self).__init__(always=True)
+        self.tock = tock
+        super(Querier, self).__init__(always=True, tock=self.tock)
 
     def recur(self, tyme, deeds=None):
         """Processes query reqests submitting any on the cue"""
@@ -908,7 +892,7 @@ class Querier(doing.DoDoer):
 
 
 class Escrower(doing.Doer):
-    def __init__(self, kvy, rgy, rvy, tvy, exc, vry, registrar, credentialer):
+    def __init__(self, kvy, rgy, rvy, tvy, exc, vry, registrar, credentialer, tock=0.0):
         """Recuring process or escrows for all components in an Agent
 
         Parameters:
@@ -929,8 +913,9 @@ class Escrower(doing.Doer):
         self.vry = vry
         self.registrar = registrar
         self.credentialer = credentialer
+        self.tock = tock
 
-        super(Escrower, self).__init__()
+        super(Escrower, self).__init__(tock=self.tock)
 
     def recur(self, tyme):
         """Process all escrows once per loop."""
@@ -944,7 +929,6 @@ class Escrower(doing.Doer):
         self.vry.processEscrows()
         self.registrar.processEscrows()
         self.credentialer.processEscrows()
-
         return False
 
 
