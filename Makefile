@@ -1,6 +1,6 @@
 .PHONY: build-keria
 build-keria:
-	@docker buildx build --platform=linux/amd64 --no-cache -f images/keria.dockerfile --tag 2byrds/keria:0.3.0-dev1 .
+	@docker buildx build --platform=linux/amd64 --no-cache -f images/keria.dockerfile --tag weboftrust/keria:0.2.0-dev2 .
 
 publish-keria:
-	@docker push 2byrds/keria --all-tags
+	@docker push weboftrust/keria --all-tags
