@@ -1901,7 +1901,7 @@ def test_rotation(helpers):
                 "ncodes": [MtrDex.Ed25519_Seed],
             },
         }
-        res = client.simulate_put(path=f"/agent/{controllerAID}?type=ixn", body=json.dumps(body))
+        res = client.simulate_put(path=f"/agent/{aid1['name']}/events", body=json.dumps(bodybad))
         assert res.status_code == 400
 
 
