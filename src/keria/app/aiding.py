@@ -757,7 +757,7 @@ class IdentifierResourceEnd:
 
         ---
         summary: Process identifier events.
-        description: This endpoint handles the 'rot' or 'ixn' events of an identifier based on the provided request.
+        description: This endpoint handles the 'rot' or 'ixn' events of an identifier, or the request to resubmit the KEL, based on the provided request.
         tags:
         - Identifier
         parameters:
@@ -779,11 +779,16 @@ class IdentifierResourceEnd:
                     ixn:
                       type: object
                       description: The interaction event details.
+                    submit:
+                      type: object
+                      description: The request to resubmit event details to witnesses.
                   oneOf:
                   - required:
                     - rot
                   - required:
                     - ixn
+                  - required:
+                    - submit
         responses:
             200:
               description: Successfully processed the identifier's event.

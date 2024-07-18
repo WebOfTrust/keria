@@ -18,7 +18,6 @@ from hio.help import decking
 
 from keri import kering
 from keri import core
-from keri.app.indirecting import MailboxDirector
 from keri.app.notifying import Notifier
 from keri.app.storing import Mailboxer
 

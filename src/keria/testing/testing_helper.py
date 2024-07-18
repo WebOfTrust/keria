@@ -716,7 +716,7 @@ class Helpers:
 
     @staticmethod
     @contextmanager
-    def openKeria(salter=None, cf=None, temp=True, mockWitCalls=False):
+    def openKeria(salter=None, cf=None, temp=True):
 
         serder, sigers = Helpers.controller()
         assert serder.pre == Helpers.controllerAID

@@ -1,4 +1,4 @@
-FROM weboftrust/keri:1.2.0-dev8
+FROM weboftrust/keri:1.2.0-dev10
 
 WORKDIR /usr/local/var
 

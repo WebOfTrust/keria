@@ -350,7 +350,7 @@ def test_identifier_collection_end(helpers):
         assert res.json == {"title": "AID with name aid1 already incepted"}
 
         # Try to resubmit with the proper endpoint, but w/o witnesses
-        submitBody = {"submit": "rock and roll"}
+        submitBody = {"submit": "aid1"}
         res = client.simulate_post(
             path=f"/identifiers/{body['name']}/submit", body=json.dumps(submitBody)
         )
@@ -555,7 +555,7 @@ def test_identifier_collection_end(helpers):
         agent0 = mhab["state"]
 
         # Try to resubmit with the proper endpoint, w/ witnesses
-        submitBody = {"submit": "rock and roll"}
+        submitBody = {"submit": "aid3"}
         res = client.simulate_post(
             path=f"/identifiers/{body['name']}/submit", body=json.dumps(submitBody)
         )
