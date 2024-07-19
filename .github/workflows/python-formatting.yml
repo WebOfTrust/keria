@@ -26,15 +26,3 @@ jobs:
 
     - name: Run black
       run: black --check .
-
-    - name: Post comment on PR if formatting fails
-      if: failure()
-      uses: actions/github-script@v3
-      with:
-        script: |
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: `Formatting check failed. Please run \`black .\` to format your code. For more details, please check the 'Checks' tab of this PR.`
-          });
