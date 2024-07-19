@@ -27,15 +27,16 @@ jobs:
     - name: Run black
       run: black --check .
 
-    - name: Run black to auto-format
+    - name: Post comment on PR if formatting fails
       if: failure()
-      run: black .
-
-    - name: Commit and push changes
-      if: failure()
-      run: |
-        git config --global user.name 'github-actions[bot]'
-        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-        git add .
-        git commit -m 'Auto-format code with black'
-        git push
+      uses: actions/github-script@v3
+      with:
+        script: |
+          const { execSync } = require('child_process');
+          const result = execSync('black --check .', { encoding: 'utf-8' });
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `Formatting check failed. Please run \`black .\` to format your code.\n\n\`\`\`\n${result}\n\`\`\``
+          });
