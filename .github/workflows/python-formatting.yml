@@ -30,3 +30,12 @@ jobs:
     - name: Run black to auto-format
       if: failure()
       run: black .
+
+    - name: Commit and push changes
+      if: failure()
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        git add .
+        git commit -m 'Auto-format code with black'
+        git push
