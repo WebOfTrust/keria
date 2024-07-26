@@ -46,7 +46,37 @@ class OOBIEnd:
             aid: qb64 identifier prefix of OOBI
             role: requested role for OOBI rpy message
             eid: qb64 identifier prefix of participant in role
-
+        ---
+        summary: Retrieve OOBI resource.
+        description: This endpoint retrieves the OOBI resource based on the provided aid, role, and eid.
+        tags:
+        - OOBI Resource
+        parameters:
+        - in: path
+          name: aid
+          schema:
+            type: string
+          required: false
+          description: The qb64 identifier prefix of OOBI.
+        - in: path
+          name: role
+          schema:
+            type: string
+          required: false
+          description: The requested role for OOBI rpy message.
+        - in: path
+          name: eid
+          schema:
+            type: string
+          required: false
+          description: The qb64 identifier prefix of participant in role.
+        responses:
+            200:
+                description: Successfully retrieved the OOBI resource.
+            400:
+                description: Bad request. This could be due to invalid or missing parameters.
+            404:
+                description: The requested OOBI resource was not found.
         """
         if not aid:
             if self.default is None:

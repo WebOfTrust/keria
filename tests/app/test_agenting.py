@@ -9,6 +9,8 @@ import json
 import os
 import shutil
 
+import pytest
+
 import falcon
 import hio
 from falcon import testing
@@ -60,6 +62,52 @@ def test_load_ends(helpers):
         assert isinstance(end, agenting.KeyEventCollectionEnd)
         (end, *_) = app._router.find("/queries")
         assert isinstance(end, agenting.QueryCollectionEnd)
+
+
+def test_load_tocks_config(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        agenting.loadEnds(app=app)
+        assert app._router is not None
+
+        assert agent.cfd == {
+            "dt": "2022-01-20T12:57:59.823350+00:00",
+            "keria": {
+                "dt": "2022-01-20T12:57:59.823350+00:00",
+                "curls": ["http://127.0.0.1:3902/"]
+            },
+            "EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx": {
+                "dt": "2022-01-20T12:57:59.823350+00:00",
+                "curls": ["http://127.0.0.1:3902/"]
+            },
+            "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9": {
+                "dt": "2022-01-20T12:57:59.823350+00:00",
+                "curls": ["http://127.0.0.1:3902/"]
+            },
+            "tocks": {
+                "initer": 0.0,
+                "escrower": 1.0
+            }
+        }
+
+        assert agent.tocks == {
+            "initer": 0.0,
+            "escrower": 1.0
+        }
+
+        escrower_doer = next((doer for doer in agent.doers if isinstance(doer, agenting.Escrower)), None)
+        assert escrower_doer is not None
+        assert escrower_doer.tock == 1.0
+
+        initer_doer = next((doer for doer in agent.doers if isinstance(doer, agenting.Initer)), None)
+        assert initer_doer is not None
+        assert initer_doer.tock == 0.0
+
+        querier_doer = next((doer for doer in agent.doers if isinstance(doer, agenting.Querier)), None)
+        assert querier_doer is not None
+        assert querier_doer.tock == 0.0
+
+        with pytest.raises(TypeError):
+            agent.tocks["initer"] = 1.0 # agent.tocks is read-only
 
 
 def test_agency():

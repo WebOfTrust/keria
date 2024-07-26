@@ -422,6 +422,35 @@ class Helpers:
         signers = creator.create(pidx=pidx, ridx=ridx, tier=coring.Tiers.low, temp=False, count=1)
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
         return serder, sigers
+    
+    @staticmethod
+    def createRotate(aid, salt, signers, pidx, ridx, kidx, wits, toad):
+        salter = core.Salter(raw=salt)
+        creator = keeping.SaltyCreator(salt=salter.qb64, stem="signify:aid", tier=coring.Tiers.low)
+        encrypter = core.Encrypter(verkey=signers[0].verfer.qb64)
+        sxlt = encrypter.encrypt(salter.qb64).qb64
+
+        rsigners = creator.create(pidx=pidx, ridx=ridx, tier=coring.Tiers.low, temp=False, count=1)
+        rnsigners = creator.create(pidx=pidx, ridx=ridx+1, tier=coring.Tiers.low, temp=False, count=1)
+
+        rkeys = [signer.verfer.qb64 for signer in rsigners]
+        rndigs = [coring.Diger(ser=nsigner.verfer.qb64b) for nsigner in rnsigners]
+
+        serder = eventing.rotate(pre=aid["prefix"],
+                                 keys=rkeys,
+                                 dig=aid["prefix"],
+                                 ndigs=[diger.qb64 for diger in rndigs],
+                                 wits=wits,
+                                 toad=toad
+                                 )
+        sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in rsigners]
+        body = {
+            'rot': serder.ked,
+            'sigs': sigers,
+            'salty': {'stem': 'signify:aid', 'pidx': pidx, 'tier': 'low', 'sxlt': sxlt, 'transferable': True, 'kidx': kidx,
+                      'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}
+        }
+        return body
 
     @staticmethod
     def sign(bran, pidx, ridx, ser):

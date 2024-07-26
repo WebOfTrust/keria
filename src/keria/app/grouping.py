@@ -10,10 +10,12 @@ import falcon
 from keri import core
 from keri.app import habbing
 from keri.core import coring, eventing, serdering
+from keri.help import ogler
 from keri.kering import SerializeError
 
 from keria.core import httping, longrunning
 
+logger = ogler.getLogger()
 
 def loadEnds(app):
     msrCol = MultisigRequestCollectionEnd()
@@ -70,8 +72,10 @@ class MultisigRequestCollectionEnd:
         # now get rid of the event so we can pass it as atc to send
         del ims[:serder.size]
 
-        smids = hab.db.signingMembers(pre=hab.pre)
-        smids.remove(hab.mhab.pre)
+        slist = hab.db.signingMembers(pre=hab.pre)
+        smids = slist
+        if hab.mhab.pre in smids:
+            smids.remove(hab.mhab.pre)
 
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=smids, topic='multisig'))
 
@@ -90,7 +94,52 @@ class MultisigJoinCollectionEnd:
             req (falcon.Request): HTTP request object
             rep (falcon.Response): HTTP response object
             name (str): AID of Hab to load credentials for
-
+        ---
+        summary: Create a multisig group request.
+        description: This endpoint creates a multisig request based on the provided name.
+        tags:
+        - Multisig Request
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The AID of Hab to load credentials for.
+        requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    rot:
+                      type: object
+                      description: The rotation event.
+                    sigs:
+                      type: array
+                      items:
+                        type: string
+                      description: List of signatures for the rotation event.
+                    gid:
+                      type: string
+                      description: The group identifier.
+                    smids:
+                      type: array
+                      items:
+                        type: string
+                      description: List of signing member identifiers.
+                    rmids:
+                      type: array
+                      items:
+                        type: string
+                      description: List of recipient member identifiers.
+        responses:
+            202:
+                description: Successfully created the multisig request.
+            400:
+                description: Bad request. Bad request. This could be due to missing or invalid parameters.
+            404:
+                description: The requested identifier was not found.
         """
         agent = req.context.agent
 
@@ -104,6 +153,12 @@ class MultisigJoinCollectionEnd:
 
         # Get the rot, sigs and recipients  from the request
         rot = httping.getRequiredParam(body, "rot")
+        serder = None
+        try:
+            serder = serdering.SerderKERI(sad=rot)
+        except(SerializeError) as e:
+            raise falcon.HTTPBadRequest(description=f"{e.args[0]}")
+        
         sigs = httping.getRequiredParam(body, "sigs")
 
         # Get group specific values
@@ -133,13 +188,11 @@ class MultisigJoinCollectionEnd:
 
         hab = agent.hby.joinSignifyGroupHab(gid, name=name, mhab=mhab, smids=smids, rmids=rmids)
         try:
-            hab.make(serder=serdering.SerderKERI(sad=rot), sigers=sigers)
-            agent.inceptGroup(pre=gid, mpre=mhab.pre, verfers=verfers, digers=digers)
-        except (ValueError, SerializeError) as e:
-            agent.hby.deleteHab(name=name)
-            raise falcon.HTTPBadRequest(description=f"{e.args[0]}")
+            hab.make(serder=serder, sigers=sigers)
+        except (ValueError) as e:
+            logger.info("Already incepted group, continuing...")
 
-        serder = serdering.SerderKERI(sad=rot)
+        agent.inceptGroup(pre=gid, mpre=mhab.pre, verfers=verfers, digers=digers)
         agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
         op = agent.monitor.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=serder.sn))
 
@@ -159,7 +212,25 @@ class MultisigRequestResourceEnd:
             req (falcon.Request): HTTP request object
             rep (falcon.Response): HTTP response object
             said (str): qb64 SAID of EXN multisig message.
-
+        ---
+        summary: Retrieve a specific multisig resource.
+        description: This endpoint retrieves the multisig resources based on the provided SAID.
+        tags:
+        - Multisig Resource
+        parameters:
+        - in: path
+          name: said
+          schema:
+            type: string
+          required: true
+          description: The qb64 SAID of the multisig resource to retrieve.
+        responses:
+            200:
+                description: Successfully retrieved the multisig resource.
+            400:
+                description: Bad request. This could be due to missing or invalid parameters.
+            404:
+                description: The requested multisig resource was not found.
         """
         agent = req.context.agent
         exn = agent.hby.db.exns.get(keys=(said,))

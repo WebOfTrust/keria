@@ -17,7 +17,9 @@ from keri.core import eventing, coring, serdering
 from keri.db import dbing, koming
 from keri.help import helping
 
-# long running operationt types
+from keria.app import delegating
+
+# long running operation types
 Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole challenge exchange '
                                 'done')
 
@@ -249,22 +251,37 @@ class Monitor:
             if op.oid not in self.hby.kevers:
                 raise kering.ValidationError(f"long running {op.type} operation identifier {op.oid} not found")
 
-            if "sn" not in op.metadata:
-                raise kering.ValidationError(f"invalid long running {op.type} operation, metadata missing 'sn' field")
-
             kever = self.hby.kevers[op.oid]
-            sn = op.metadata["sn"]
-            seqner = coring.Seqner(sn=sn)
-            sdig = self.hby.db.getKeLast(key=dbing.snKey(pre=op.oid, sn=sn))
+            
+            reqsn = "sn"
+            reqtee = "teepre"
+            anchor = "anchor"
+            required = [reqsn, reqtee]
+            if reqsn in op.metadata: #delegatee detects successful delegation
+                sn = op.metadata["sn"]
+                seqner = coring.Seqner(sn=sn)
+                sdig = self.hby.db.getKeLast(key=dbing.snKey(pre=op.oid, sn=sn))
 
-            if self.swain.complete(kever.prefixer, seqner):
-                evt = self.hby.db.getEvt(dbing.dgKey(pre=kever.prefixer.qb64, dig=bytes(sdig)))
-                serder = serdering.SerderKERI(raw=bytes(evt))
+                if self.swain.complete(kever.prefixer, seqner):
+                    evt = self.hby.db.getEvt(dbing.dgKey(pre=kever.prefixer.qb64, dig=bytes(sdig)))
+                    serder = serdering.SerderKERI(raw=bytes(evt))
 
-                operation.done = True
-                operation.response = serder.ked
+                    operation.done = True
+                    operation.response = serder.ked
+                else:
+                    operation.done = False
+            elif reqtee in op.metadata: #delegator detects delegatee delegation success
+                teepre = op.metadata[reqtee]
+                anc = op.metadata[anchor]
+                if teepre in self.hby.kevers: # delegatee dip has been processed by the delegator
+                    operation.done = True
+                    operation.response = op.metadata[reqtee]
+                else:
+                    hab = self.hby.habByPre(kever.prefixer.qb64)
+                    delegating.approveDelegation(hab,anc)
+                    operation.done = False
             else:
-                operation.done = False
+                raise falcon.HTTPBadRequest(description=f"longrunning operation type {op.type} requires one of {required}, but are missing from request")
 
         elif op.type in (OpTypes.group, ):
             if "sn" not in op.metadata:
@@ -427,11 +444,23 @@ class OperationCollectionEnd:
             description: filter list of long running operations by type
         responses:
             200:
+              description: list of long running operations
               content:
                   application/json:
                     schema:
                         type: array
-
+                        items:
+                          properties:
+                            name:
+                              type: string
+                            metadata:
+                              type: object
+                            done:
+                              type: boolean
+                            error:
+                              type: object
+                            response:
+                              type: object
         """
         agent = req.context.agent
         type = req.params.get("type")
@@ -454,6 +483,23 @@ class OperationResourceEnd:
             req (Request):  Falcon HTTP Request object
             rep (Response): Falcon HTTP Response object
             name (str): Long running operation resource name to load
+        ---
+        summary: Retrieve a specific long running operation.
+        description: This endpoint retrieves the status of a long running operation by its name.
+        tags:
+        - Operation
+        parameters:
+          - in: path
+            name: name
+            schema:
+              type: string
+            required: true
+            description: The name of the long running operation to retrieve.
+        responses:
+          200:
+              description: Successfully retrieved the status of the long running operation.
+          404:
+            description: The requested long running operation was not found.
 
         """
         agent = req.context.agent
@@ -472,7 +518,25 @@ class OperationResourceEnd:
             req (Request):  Falcon HTTP Request object
             rep (Response): Falcon HTTP Response object
             name (str): Long running operation resource name to load
-
+        ---
+        summary: Remove a specific long running operation.
+        description: This endpoint removes a long running operation by its name.
+        tags:
+        - Operation
+        parameters:
+          - in: path
+            name: name
+            schema:
+              type: string
+            required: true
+            description: The name of the long running operation to remove.
+        responses:
+          204:
+              description: Successfully removed the long running operation.
+          404:
+              description: The requested long running operation was not found.
+          500:
+              description: Internal server error. This could be due to an issue with removing the operation.
         """
 
         agent = req.context.agent
