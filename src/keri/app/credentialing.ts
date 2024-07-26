@@ -776,7 +776,7 @@ export class Ipex {
                 '/ipex/grant',
                 data,
                 embeds,
-                undefined,
+                args.recipient,
                 args.datetime,
                 args.agree
             );
@@ -832,7 +832,7 @@ export class Ipex {
                 '/ipex/admit',
                 data,
                 {},
-                undefined,
+                '',
                 datetime,
                 grant
             );

@@ -156,13 +156,13 @@ test('salty', async () => {
     const events = client1.keyEvents();
     const log = await events.get(aid['prefix']);
     assert.equal(log.length, 3);
-    let serder = new signify.Serder(log[0]);
+    let serder = new signify.Serder(log[0]['ked']);
     assert.equal(serder.pre, icp.pre);
     assert.equal(serder.ked['d'], icp.ked['d']);
-    serder = new signify.Serder(log[1]);
+    serder = new signify.Serder(log[1]['ked']);
     assert.equal(serder.pre, rot.pre);
     assert.equal(serder.ked['d'], rot.ked['d']);
-    serder = new signify.Serder(log[2]);
+    serder = new signify.Serder(log[2]['ked']);
     assert.equal(serder.pre, ixn.pre);
     assert.equal(serder.ked['d'], ixn.ked['d']);
 

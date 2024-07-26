@@ -3,9 +3,12 @@ import signify from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
 import {
     assertOperations,
+    getOrCreateContact,
     resolveOobi,
     waitOperation,
 } from './utils/test-util';
+import { retry } from './utils/retry';
+import { step } from './utils/test-step';
 
 const { url, bootUrl } = resolveEnvironment();
 
@@ -55,12 +58,12 @@ test('delegation', async () => {
         ],
     });
     await waitOperation(client1, await icpResult1.op());
-    const aid1 = await client1.identifiers().get('delegator');
+    const ator = await client1.identifiers().get('delegator');
     const rpyResult1 = await client1
         .identifiers()
         .addEndRole('delegator', 'agent', client1!.agent!.pre);
     await waitOperation(client1, await rpyResult1.op());
-    console.log("Delegator's AID:", aid1.prefix);
+    console.log("Delegator's AID:", ator.prefix);
 
     // Client 2 resolves delegator OOBI
     console.log('Client 2 resolving delegator OOBI');
@@ -71,25 +74,35 @@ test('delegation', async () => {
     // Client 2 creates delegate AID
     const icpResult2 = await client2
         .identifiers()
-        .create('delegate', { delpre: aid1.prefix });
+        .create('delegate', { delpre: ator.prefix });
     const op2 = await icpResult2.op();
     const delegatePrefix = op2.name.split('.')[1];
     console.log("Delegate's prefix:", delegatePrefix);
     console.log('Delegate waiting for approval...');
 
-    // Client 1 approves deletation
+    // Client 1 approves delegation
     const anchor = {
         i: delegatePrefix,
         s: '0',
         d: delegatePrefix,
     };
-    const ixnResult1 = await client1
-        .identifiers()
-        .interact('delegator', anchor);
-    await waitOperation(client1, await ixnResult1.op());
-    console.log('Delegator approved delegation');
 
-    let op3 = await client2.keyStates().query(aid1.prefix, '1');
+    await step('delegator approves delegation', async () => {
+        const result = await retry(async () => {
+            const apprDelRes = await client1
+                .delegations()
+                .approve('delegator', anchor);
+            await waitOperation(client1, await apprDelRes.op());
+            console.log('Delegator approve delegation submitted');
+            return apprDelRes;
+        });
+        assert.equal(
+            JSON.stringify(result.serder.ked.a[0]),
+            JSON.stringify(anchor)
+        );
+    });
+
+    const op3 = await client2.keyStates().query(ator.prefix, '1');
     await waitOperation(client2, op3);
 
     // Client 2 check approval
@@ -99,4 +112,17 @@ test('delegation', async () => {
     console.log('Delegation approved for aid:', aid2.prefix);
 
     await assertOperations(client1, client2);
-}, 60000);
+    const rpyResult2 = await client2
+        .identifiers()
+        .addEndRole('delegate', 'agent', client2!.agent!.pre);
+    await waitOperation(client2, await rpyResult2.op());
+    const oobis = await client2.oobis().get('delegate');
+
+    console.log(oobis);
+    await getOrCreateContact(
+        client1,
+        'delegate',
+        oobis.oobis[0].split('/agent/')[0]
+    );
+    // console.log(res);
+}, 600000);

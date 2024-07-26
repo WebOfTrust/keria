@@ -1,10 +1,11 @@
 import { CreateIdentiferArgs, SignifyClient } from 'signify-ts';
 import {
+    assertOperations,
     getOrCreateClients,
     getOrCreateContact,
     getOrCreateIdentifier,
-} from './utils/test-setup';
-import { assertOperations, waitOperation } from './utils/test-util';
+    waitOperation,
+} from './utils/test-util';
 import { resolveEnvironment } from './utils/resolve-env';
 
 let client1: SignifyClient, client2: SignifyClient;

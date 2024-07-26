@@ -26,7 +26,7 @@ services:
             - 7723:7723
 
     keria:
-        image: ${KERIA_IMAGE:-weboftrust/keria}:${KERIA_IMAGE_TAG:-0.1.3}
+        image: ${KERIA_IMAGE:-weboftrust/keria}:${KERIA_IMAGE_TAG:-0.2.0-dev3}
         environment:
             - KERI_AGENT_CORS=1
             - KERI_URL=http://keria:3902
@@ -34,17 +34,19 @@ services:
             - PYTHONIOENCODING=UTF-8
         volumes:
             - ./config/keria.json:/keria/config/keri/cf/keria.json
-        entrypoint: keria
-        command:
-            - start
-            - --config-dir
-            - /keria/config
-            - --config-file
-            - keria
-            - --name
-            - agent
+        entrypoint:
+            [
+                'keria',
+                'start',
+                '--config-dir',
+                '/keria/config',
+                '--config-file',
+                'keria',
+                '--name',
+                'agent',
+            ]
         healthcheck:
-            test: ['CMD', 'curl', '-f', 'http://localhost:3902/spec.yaml']
+            test: ['CMD', 'wget', '--spider', 'http://keria:3902/spec.yaml']
             interval: 2s
             timeout: 3s
             retries: 5

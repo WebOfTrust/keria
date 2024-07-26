@@ -63,7 +63,7 @@ test('challenge', async () => {
         client1,
         await icpResult1.op()
     );
-    let rpyResult1 = await client1
+    const rpyResult1 = await client1
         .identifiers()
         .addEndRole('alice', 'agent', client1!.agent!.pre);
     await waitOperation(client1, await rpyResult1.op());
@@ -81,7 +81,7 @@ test('challenge', async () => {
         client2,
         await icpResult2.op()
     );
-    let rpyResult2 = await client2
+    const rpyResult2 = await client2
         .identifiers()
         .addEndRole('bob', 'agent', client2!.agent!.pre);
     await waitOperation(client2, await rpyResult2.op());

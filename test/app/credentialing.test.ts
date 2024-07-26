@@ -419,13 +419,14 @@ describe('Ipex', () => {
         });
 
         assert.deepStrictEqual(grant.ked, {
-            v: 'KERI10JSON0004b1_',
+            v: 'KERI10JSON0004e5_',
             t: 'exn',
-            d: 'ECO262mMZcwP94aY0cUl5IL6LOK_R_Md1irVDdQEwtHl',
+            d: 'EPVuNFwXTG56BvNtGjeyxncY-MfZMXOAgEtsmIvktkdb',
             i: 'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK',
             p: '',
             dt: '2023-08-23T15:16:07.553000+00:00',
             r: '/ipex/grant',
+            rp: 'ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k',
             q: {},
             a: { m: '', i: 'ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k' },
             e: {
@@ -465,7 +466,7 @@ describe('Ipex', () => {
         });
 
         assert.deepStrictEqual(gsigs, [
-            'AAAebNnWRghQuqDS0nXjy1MYht4D1_Sk_tozU0dikS-bOmmGV4AB3Ekt_sl04D7fIgkFGPQJ9gNhqNNS_uxsjNQE',
+            'AADGVl57V4gcKYPO_Dn4UuYIdHI62vEQP--U3pnsl8oCqiqQbRqjw2E_7PHBy5-U78de5rhfF4UZQBFeub5evO8M',
         ]);
         assert.equal(
             end,
@@ -508,20 +509,21 @@ describe('Ipex', () => {
         );
 
         assert.deepStrictEqual(admit.ked, {
-            v: 'KERI10JSON000111_',
+            v: 'KERI10JSON000120_',
             t: 'exn',
-            d: 'EB7FkJBteJSZVV_dsjd0dmx6ORoRO6hJY91HR0z-x9tF',
+            d: 'EHMPkdV7QJ3a4RoDg43ffa7ytO6VbvEE4WiIbfcYvZNe',
             i: 'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK',
-            p: 'ECO262mMZcwP94aY0cUl5IL6LOK_R_Md1irVDdQEwtHl',
+            p: 'EPVuNFwXTG56BvNtGjeyxncY-MfZMXOAgEtsmIvktkdb',
             dt: '2023-08-23T15:16:07.553000+00:00',
             r: '/ipex/admit',
+            rp: '',
             q: {},
-            a: { m: '' },
+            a: { m: '', i: '' },
             e: {},
         });
 
         assert.deepStrictEqual(asigs, [
-            'AAD6NAWzEr_KonMJhKL32JLTVZ2_xwVNMqlr-ovAwoIQS5IEWZ8POd4rbWO49-8NqK8GedjUyii3y9o1b0QkYzQJ',
+            'AADpPFED69bio-P5KtvUO46hkGzN-gGr2ob83jq_AGrmRcwUWIy71iClQ0YggT75T-ORwEIN4dIvIABv7z1r6UIH',
         ]);
 
         await ipex.submitAdmit('multisig', admit, asigs, aend, [holder]);

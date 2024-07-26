@@ -1,10 +1,11 @@
 import { CreateIdentiferArgs, SignifyClient } from 'signify-ts';
 import {
+    assertOperations,
     getOrCreateClients,
     getOrCreateContact,
     getOrCreateIdentifier,
-} from './utils/test-setup';
-import { assertOperations, waitOperation } from './utils/test-util';
+    waitOperation,
+} from './utils/test-util';
 
 let delegator: SignifyClient, delegate: SignifyClient;
 let name1_id: string, name1_oobi: string;

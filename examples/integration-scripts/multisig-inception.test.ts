@@ -1,10 +1,11 @@
 import signify from 'signify-ts';
 import {
+    getOrCreateClient,
+    getOrCreateIdentifier,
     resolveOobi,
     waitForNotifications,
     waitOperation,
 } from './utils/test-util';
-import { getOrCreateClient, getOrCreateIdentifier } from './utils/test-setup';
 import {
     acceptMultisigIncept,
     startMultisigIncept,

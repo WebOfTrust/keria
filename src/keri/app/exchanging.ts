@@ -38,7 +38,7 @@ export class Exchanges {
         route: string,
         payload: Dict<any>,
         embeds: Dict<any>,
-        recipient?: string,
+        recipient: string,
         datetime?: string,
         dig?: string
     ): Promise<[Serder, string[], string]> {
@@ -79,20 +79,23 @@ export class Exchanges {
         embeds: Dict<any>,
         recipients: string[]
     ): Promise<any> {
-        const [exn, sigs, atc] = await this.createExchangeMessage(
-            sender,
-            route,
-            payload,
-            embeds
-        );
-        return await this.sendFromEvents(
-            name,
-            topic,
-            exn,
-            sigs,
-            atc,
-            recipients
-        );
+        for (const recipient of recipients) {
+            const [exn, sigs, atc] = await this.createExchangeMessage(
+                sender,
+                route,
+                payload,
+                embeds,
+                recipient
+            );
+            return await this.sendFromEvents(
+                name,
+                topic,
+                exn,
+                sigs,
+                atc,
+                recipients
+            );
+        }
     }
 
     /**
@@ -146,7 +149,7 @@ export function exchange(
     route: string,
     payload: Dict<any>,
     sender: string,
-    recipient?: string,
+    recipient: string,
     date?: string,
     dig?: string,
     modifiers?: Dict<any>,
@@ -192,9 +195,7 @@ export function exchange(
 
     const attrs = {} as Dict<any>;
 
-    if (recipient !== undefined) {
-        attrs['i'] = recipient;
-    }
+    attrs['i'] = recipient;
 
     const a = {
         ...attrs,
@@ -206,6 +207,7 @@ export function exchange(
         t: ilk,
         d: '',
         i: sender,
+        rp: recipient,
         p: p,
         dt: dt,
         r: route,

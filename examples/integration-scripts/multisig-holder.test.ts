@@ -3,12 +3,12 @@ import signify, { SignifyClient, Operation, CredentialData } from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env';
 import {
     assertOperations,
-    markNotification,
-    waitForNotifications,
+    getOrCreateClient,
+    getOrCreateIdentifier,
+    waitAndMarkNotification,
     waitOperation,
     warnNotifications,
 } from './utils/test-util';
-import { getOrCreateClient, getOrCreateIdentifier } from './utils/test-setup';
 import {
     acceptMultisigIncept,
     startMultisigIncept,
@@ -136,7 +136,7 @@ test('multisig', async function run() {
 
     console.log(`Starting multisig end role authorization for agent ${eid1}`);
 
-    let stamp = createTimestamp();
+    const stamp = createTimestamp();
 
     let endRoleRes = await client1
         .identifiers()
@@ -433,18 +433,6 @@ test('multisig', async function run() {
     await assertOperations(client1, client2, client3);
     await warnNotifications(client1, client2, client3);
 }, 360000);
-
-async function waitAndMarkNotification(client: SignifyClient, route: string) {
-    const notes = await waitForNotifications(client, route);
-
-    await Promise.all(
-        notes.map(async (note) => {
-            await markNotification(client, note);
-        })
-    );
-
-    return notes[notes.length - 1]?.a.d ?? '';
-}
 
 async function createAID(client: SignifyClient, name: string, wits: string[]) {
     await getOrCreateIdentifier(client, name);

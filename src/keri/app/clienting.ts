@@ -8,6 +8,7 @@ import { Contacts, Challenges } from './contacting';
 import { Agent, Controller } from './controller';
 import { Oobis, Operations, KeyEvents, KeyStates } from './coring';
 import { Credentials, Ipex, Registries, Schemas } from './credentialing';
+import { Delegations } from './delegating';
 import { Escrows } from './escrowing';
 import { Exchanges } from './exchanging';
 import { Groups } from './grouping';
@@ -468,5 +469,13 @@ export class SignifyClient {
      */
     exchanges(): Exchanges {
         return new Exchanges(this);
+    }
+
+    /**
+     * Get delegations resource
+     * @returns {Delegations}
+     */
+    delegations(): Delegations {
+        return new Delegations(this);
     }
 }

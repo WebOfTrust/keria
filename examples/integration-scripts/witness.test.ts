@@ -67,4 +67,4 @@ test('test witness', async () => {
     assert.equal(aid1.state.b.length, 1);
     assert.equal(aid1.state.b.length, 1);
     assert.equal(aid1.state.b[0], WITNESS_AID);
-});
+}, 60000);

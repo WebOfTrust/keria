@@ -1,10 +1,10 @@
 import { SignifyClient } from 'signify-ts';
 import {
+    assertOperations,
     getOrCreateClients,
     getOrCreateContact,
     getOrCreateIdentifier,
-} from './utils/test-setup';
-import { assertOperations } from './utils/test-util';
+} from './utils/test-util';
 
 let client1: SignifyClient, client2: SignifyClient;
 let name1_id: string, name1_oobi: string;
