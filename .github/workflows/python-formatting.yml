@@ -25,4 +25,4 @@ jobs:
       run: pip install autopep8
 
     - name: Run autopep8
-      run: autopep8 diff --exit-code .
+      run: autopep8 --diff --exit-code -r .
