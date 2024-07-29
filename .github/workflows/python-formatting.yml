@@ -21,8 +21,8 @@ jobs:
       with:
         python-version: '3.x'
 
-    - name: Install black
-      run: pip install black
+    - name: Install autopep8
+      run: pip install autopep8
 
-    - name: Run black
-      run: black --check .
+    - name: Run autopep8
+      run: autopep8 diff --exit-code .
