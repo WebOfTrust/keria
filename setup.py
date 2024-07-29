@@ -73,16 +73,16 @@ setup(
         "resolver",
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
-    python_requires='>=3.10.4',
+    python_requires='>=3.12.2',
     install_requires=[
-        'hio>=0.6.9',
-        'keri>=1.1.6',
+        'hio>=0.6.14',
+        'keri>=1.1.8',
         'mnemonic>=0.20',
         'multicommand>=1.0.0',
-        'falcon>=3.1.0',
+        'falcon>=3.1.3',
         'http_sfv>=0.9.8',
         'dataclasses_json>=0.5.7',
-        'apispec>=6.3.0',
+        'apispec>=6.6.0',
     ],
     extras_require={
         # eg:
