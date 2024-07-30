@@ -14,7 +14,7 @@ Setup
 ~~~~~
 
 -  Ensure `Python <https://www.python.org/downloads/>`__
-   ``version 3.10.4+`` is installed
+   ``version 3.12.2+`` is installed
 -  Install `Keripy
    dependency <https://github.com/WebOfTrust/keripy#dependencies>`__
    (``libsodium 1.0.18+``)
