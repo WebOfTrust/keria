@@ -311,7 +311,6 @@ class IpexApplyCollectionEnd:
 
         ked = httping.getRequiredParam(body, "exn")
         sigs = httping.getRequiredParam(body, "sigs")
-        atc = httping.getRequiredParam(body, "atc")
         rec = httping.getRequiredParam(body, "rec")
 
         route = ked['r']
@@ -320,6 +319,7 @@ class IpexApplyCollectionEnd:
             case "/ipex/apply":
                 op = IpexApplyCollectionEnd.sendApply(agent, hab, ked, sigs, rec)
             case "/multisig/exn":
+                atc = httping.getRequiredParam(body, "atc")
                 op = IpexApplyCollectionEnd.sendMultisigExn(agent, hab, ked, sigs, atc, rec)
             case _:
                 raise falcon.HTTPBadRequest(description=f"invalid message route {route}")
@@ -542,7 +542,6 @@ class IpexAgreeCollectionEnd:
 
         ked = httping.getRequiredParam(body, "exn")
         sigs = httping.getRequiredParam(body, "sigs")
-        atc = httping.getRequiredParam(body, "atc")
         rec = httping.getRequiredParam(body, "rec")
 
         route = ked['r']
@@ -551,6 +550,7 @@ class IpexAgreeCollectionEnd:
             case "/ipex/agree":
                 op = IpexAgreeCollectionEnd.sendAgree(agent, hab, ked, sigs, rec)
             case "/multisig/exn":
+                atc = httping.getRequiredParam(body, "atc")
                 op = IpexAgreeCollectionEnd.sendMultisigExn(agent, hab, ked, sigs, atc, rec)
             case _:
                 raise falcon.HTTPBadRequest(description=f"invalid route {route}")
