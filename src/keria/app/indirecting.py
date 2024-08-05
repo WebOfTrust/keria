@@ -9,7 +9,7 @@ import falcon
 from keri.app import httping
 from keri.core import eventing
 from keri.core.coring import Ilks, Sadder
-from keri.kering import Protocols
+from keri.kering import Protocols, Kinds
 
 CESR_DESTINATION_HEADER = "CESR-DESTINATION"
 
@@ -78,7 +78,7 @@ class HttpEnd:
         rep.set_header('connection', "close")
 
         cr = httping.parseCesrHttpRequest(req=req)
-        serder = Sadder(ked=cr.payload, kind=eventing.Serials.json)
+        serder = Sadder(ked=cr.payload, kind=Kinds.json)
         msg = bytearray(serder.raw)
         msg.extend(cr.attachments.encode("utf-8"))
 
