@@ -293,7 +293,7 @@ def test_identifier_collection_end(helpers):
 
         salter = core.Salter(raw=salt)
         encrypter = core.Encrypter(verkey=signers[0].verfer.qb64)
-        sxlt = encrypter.encrypt(salter.qb64).qb64
+        sxlt = encrypter.encrypt(ser=salter.qb64).qb64
 
         body = {'name': 'aid1',
                 'icp': serder.ked,
@@ -782,8 +782,8 @@ def test_identifier_collection_end(helpers):
                                  ndigs=[diger.qb64 for diger in ndigs])
 
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
-        prxs = [encrypter.encrypt(matter=signer).qb64 for signer in signers]
-        nxts = [encrypter.encrypt(matter=signer).qb64 for signer in nsigners]
+        prxs = [encrypter.encrypt(prim=signer).qb64 for signer in signers]
+        nxts = [encrypter.encrypt(prim=signer).qb64 for signer in nsigners]
 
         body = {'rot': serder.ked,
                 'sigs': sigers,
@@ -872,8 +872,8 @@ def test_identifier_collection_end(helpers):
                                  )
 
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
-        prxs = [encrypter.encrypt(matter=signer).qb64 for signer in signers]
-        nxts = [encrypter.encrypt(matter=signer).qb64 for signer in nsigners]
+        prxs = [encrypter.encrypt(prim=signer).qb64 for signer in signers]
+        nxts = [encrypter.encrypt(prim=signer).qb64 for signer in nsigners]
 
         body = {'rot': serder.ked,
                 'sigs': sigers,
@@ -913,7 +913,7 @@ def test_identifier_collection_end(helpers):
 
         salter = core.Salter(raw=salt)
         encrypter = core.Encrypter(verkey=signers[0].verfer.qb64)
-        sxlt = encrypter.encrypt(salter.qb64).qb64
+        sxlt = encrypter.encrypt(ser=salter.qb64).qb64
 
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
 
@@ -1307,7 +1307,7 @@ def test_identifier_resource_end(helpers):
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
         salter = core.Salter(raw=salt)
         encrypter = core.Encrypter(verkey=signers[0].verfer.qb64)
-        sxlt = encrypter.encrypt(salter.qb64).qb64
+        sxlt = encrypter.encrypt(ser=salter.qb64).qb64
 
         body = {'name': 'aid1',
                 'icp': serder.ked,
@@ -1589,7 +1589,7 @@ def test_rotation(helpers):
 
         salter = core.Salter(raw=salt)
         encrypter = core.Encrypter(verkey=signers1[0].verfer.qb64)
-        sxlt = encrypter.encrypt(salter.qb64).qb64
+        sxlt = encrypter.encrypt(ser=salter.qb64).qb64
 
         bodyid1 = {'name': 'aid1',
                 'icp': serder1.ked,
