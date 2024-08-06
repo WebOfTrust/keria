@@ -1,0 +1,28 @@
+name: Enforce Python Code Formatting
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  format-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out the repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.12.2'
+
+    - name: Install autopep8
+      run: pip install autopep8
+
+    - name: Run autopep8
+      run: autopep8 --ignore=E501 --diff --exit-code -r .
