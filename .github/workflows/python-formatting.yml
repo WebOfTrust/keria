@@ -25,4 +25,4 @@ jobs:
       run: pip install autopep8
 
     - name: Run autopep8
-      run: autopep8 --in-place --ignore=E501 --diff --exit-code -r .
+      run: autopep8 --ignore=E501 --diff --exit-code -r .
