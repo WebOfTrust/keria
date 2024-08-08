@@ -847,7 +847,7 @@ def test_identifier_collection_end(helpers):
                 }
         res = client.simulate_post(path="/identifiers/randybad/events", body=json.dumps(body))
         assert res.status_code == 404
-        assert res.json == {'title': 'No AID with name randybad found'}
+        assert res.json == {'title': 'No AID with name or prefix randybad found'}
 
         body = {
             'sigs': sigers,
@@ -1322,7 +1322,7 @@ def test_identifier_resource_end(helpers):
 
         res = client.simulate_get(path="/identifiers/bad")
         assert res.status_code == 404
-        assert res.json == {'description': 'bad is not a valid identifier name', 'title': '404 Not Found'}
+        assert res.json == {'description': 'bad is not a valid identifier name or prefix', 'title': '404 Not Found'}
 
         res = client.simulate_get(path="/identifiers/aid1")
         assert res.status_code == 200

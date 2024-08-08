@@ -38,7 +38,7 @@ class IpexAdmitCollectionEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable name for AID
+            name (str): human readable name or prefix for AID
 
         ---
         summary: Accept a credential being issued or presented in response to an IPEX grant
@@ -52,9 +52,9 @@ class IpexAdmitCollectionEnd:
         """
         agent = req.context.agent
         # Get the hab
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
 
         body = req.get_media()
 
@@ -166,7 +166,7 @@ class IpexGrantCollectionEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable name for AID
+            name (str): human readable name or prefix for AID
 
         ---
         summary: Reply to IPEX agree message or initiate an IPEX exchange with a credential issuance or presentation
@@ -179,9 +179,9 @@ class IpexGrantCollectionEnd:
 
         """
         agent = req.context.agent
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
 
         body = req.get_media()
 
@@ -284,7 +284,7 @@ class IpexApplyCollectionEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable name for AID
+            name (str): human readable name or prefix for AID
 
         ---
         summary: Request a credential from another party by initiating an IPEX exchange
@@ -298,9 +298,9 @@ class IpexApplyCollectionEnd:
         """
         agent = req.context.agent
         # Get the hab
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
 
         body = req.get_media()
 
@@ -351,7 +351,7 @@ class IpexOfferCollectionEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable name for AID
+            name (str): human readable name or prefix for AID
 
         ---
         summary: Reply to IPEX apply message or initiate an IPEX exchange with an offer for a credential with certain characteristics
@@ -364,9 +364,9 @@ class IpexOfferCollectionEnd:
 
         """
         agent = req.context.agent
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
 
         body = req.get_media()
 
@@ -418,7 +418,7 @@ class IpexAgreeCollectionEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human readable name for AID
+            name (str): human readable name or prefix for AID
 
         ---
         summary: Reply to IPEX offer message acknowledged willingness to accept offered credential
@@ -431,9 +431,9 @@ class IpexAgreeCollectionEnd:
 
         """
         agent = req.context.agent
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
 
         body = req.get_media()
 
