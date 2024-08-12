@@ -374,9 +374,9 @@ class Helpers:
 
         creator = keeping.RandyCreator()
         signers = creator.create(count=count)
-        prxs = [encrypter.encrypt(matter=signer).qb64 for signer in signers]
+        prxs = [encrypter.encrypt(prim=signer).qb64 for signer in signers]
         nsigners = creator.create(count=count)
-        nxts = [encrypter.encrypt(matter=signer).qb64 for signer in nsigners]
+        nxts = [encrypter.encrypt(prim=signer).qb64 for signer in nsigners]
 
         keys = [signer.verfer.qb64 for signer in signers]
         ndigs = [coring.Diger(ser=nsigner.verfer.qb64b) for nsigner in nsigners]
@@ -428,7 +428,7 @@ class Helpers:
         salter = core.Salter(raw=salt)
         creator = keeping.SaltyCreator(salt=salter.qb64, stem="signify:aid", tier=coring.Tiers.low)
         encrypter = core.Encrypter(verkey=signers[0].verfer.qb64)
-        sxlt = encrypter.encrypt(salter.qb64).qb64
+        sxlt = encrypter.encrypt(ser=salter.qb64).qb64
 
         rsigners = creator.create(pidx=pidx, ridx=ridx, tier=coring.Tiers.low, temp=False, count=1)
         rnsigners = creator.create(pidx=pidx, ridx=ridx+1, tier=coring.Tiers.low, temp=False, count=1)
