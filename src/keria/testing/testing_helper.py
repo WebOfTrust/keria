@@ -6,14 +6,11 @@ import json
 import os
 import pathlib
 import shutil
-from urllib import parse
 from contextlib import contextmanager
 
 import falcon
 from falcon import testing
-from hio.base import doing
 from hio.core import http
-from hio.help import decking
 from keri import kering
 from keri import core
 from keri.app import keeping, habbing, configing, signing
@@ -30,11 +27,7 @@ from keri.vdr.credentialing import Regery, Registrar
 
 from keria.app import agenting, indirecting
 
-SCRIPTS_DIR = str(
-    pathlib.Path(
-        str(pathlib.Path(__file__).parent.resolve()), "../../../tests/scripts"
-    ).resolve()
-)
+SCRIPTS_DIR = str(pathlib.Path(str(pathlib.Path(__file__).parent.resolve()), "../../../tests/scripts").resolve())
 
 WitnessUrls = {
     "wan:tcp": "tcp://127.0.0.1:5632/",
@@ -49,7 +42,7 @@ WitnessUrls = {
 class DbSeed:
     @staticmethod
     def seedWitEnds(db, witHabs, protocols=None):
-        """Add endpoint and location records for well known test witnesses
+        """ Add endpoint and location records for well known test witnesses
 
         Args:
             db (Baser): database to add records
@@ -72,180 +65,109 @@ class DbSeed:
             msgs = bytearray()
             for hab in witHabs:
                 url = WitnessUrls[f"{hab.name}:{scheme}"]
-                msgs.extend(
-                    hab.makeEndRole(
-                        eid=hab.pre,
-                        role=kering.Roles.controller,
-                        stamp=helping.nowIso8601(),
-                    )
-                )
+                msgs.extend(hab.makeEndRole(eid=hab.pre,
+                                            role=kering.Roles.controller,
+                                            stamp=helping.nowIso8601()))
 
-                msgs.extend(
-                    hab.makeLocScheme(
-                        url=url, scheme=scheme, stamp=helping.nowIso8601()
-                    )
-                )
+                msgs.extend(hab.makeLocScheme(url=url,
+                                              scheme=scheme,
+                                              stamp=helping.nowIso8601()))
                 psr.parse(ims=msgs)
 
     @staticmethod
     def seedSchema(db):
-        sad = {
-            "$id": "EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao",
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "Qualified vLEI Issuer Credential",
-            "description": "A vLEI Credential issued by GLEIF to Qualified vLEI Issuers which allows the Qualified "
-            "vLEI Issuers to issue, verify and revoke Legal Entity vLEI Credentials and Legal "
-            "Entity Official Organizational Role vLEI Credentials",
-            "type": "object",
-            "credentialType": "QualifiedvLEIIssuervLEICredential",
-            "version": "1.0.0",
-            "properties": {
-                "v": {"description": "Version", "type": "string"},
-                "d": {"description": "Credential SAID", "type": "string"},
-                "u": {"description": "One time use nonce", "type": "string"},
-                "i": {"description": "GLEIF Issuee AID", "type": "string"},
-                "ri": {"description": "Credential status registry", "type": "string"},
-                "s": {"description": "Schema SAID", "type": "string"},
-                "a": {
-                    "oneOf": [
-                        {"description": "Attributes block SAID", "type": "string"},
-                        {
-                            "$id": "ELGgI0fkloqKWREXgqUfgS0bJybP1LChxCO3sqPSFHCj",
-                            "description": "Attributes block",
-                            "type": "object",
-                            "properties": {
-                                "d": {
-                                    "description": "Attributes block SAID",
-                                    "type": "string",
-                                },
-                                "i": {
-                                    "description": "QVI Issuee AID",
-                                    "type": "string",
-                                },
-                                "dt": {
-                                    "description": "Issuance date time",
-                                    "type": "string",
-                                    "format": "date-time",
-                                },
-                                "LEI": {
-                                    "description": "LEI of the requesting Legal Entity",
-                                    "type": "string",
-                                    "format": "ISO 17442",
-                                },
-                                "gracePeriod": {
-                                    "description": "Allocated grace period",
-                                    "type": "integer",
-                                    "default": 90,
-                                },
-                            },
-                            "additionalProperties": False,
-                            "required": ["i", "dt", "LEI"],
-                        },
-                    ]
-                },
-                "r": {
-                    "oneOf": [
-                        {"description": "Rules block SAID", "type": "string"},
-                        {
-                            "$id": "ECllqarpkZrSIWCb97XlMpEZZH3q4kc--FQ9mbkFMb_5",
-                            "description": "Rules block",
-                            "type": "object",
-                            "properties": {
-                                "d": {
-                                    "description": "Rules block SAID",
-                                    "type": "string",
-                                },
-                                "usageDisclaimer": {
-                                    "description": "Usage Disclaimer",
-                                    "type": "object",
-                                    "properties": {
-                                        "l": {
-                                            "description": "Associated legal language",
-                                            "type": "string",
-                                            "const": "Usage of a valid, unexpired, and non-revoked "
-                                            "vLEI Credential, as defined in the "
-                                            "associated Ecosystem Governance Framework, "
-                                            "does not assert that the Legal Entity is "
-                                            "trustworthy, honest, reputable in its "
-                                            "business dealings, safe to do business with, "
-                                            "or compliant with any laws or that an "
-                                            "implied or expressly intended purpose will "
-                                            "be fulfilled.",
-                                        }
-                                    },
-                                },
-                                "issuanceDisclaimer": {
-                                    "description": "Issuance Disclaimer",
-                                    "type": "object",
-                                    "properties": {
-                                        "l": {
-                                            "description": "Associated legal language",
-                                            "type": "string",
-                                            "const": "All information in a valid, unexpired, "
-                                            "and non-revoked vLEI Credential, as defined "
-                                            "in the associated Ecosystem Governance "
-                                            "Framework, is accurate as of the date the "
-                                            "validation process was complete. The vLEI "
-                                            "Credential has been issued to the legal "
-                                            "entity or person named in the vLEI "
-                                            "Credential as the subject; and the qualified "
-                                            "vLEI Issuer exercised reasonable care to "
-                                            "perform the validation process set forth in "
-                                            "the vLEI Ecosystem Governance Framework.",
-                                        }
-                                    },
-                                },
-                            },
-                            "additionalProperties": False,
-                            "required": ["d", "usageDisclaimer", "issuanceDisclaimer"],
-                        },
-                    ]
-                },
-            },
-            "additionalProperties": False,
-            "required": ["i", "ri", "s", "d"],
-        }
+        sad = {'$id': 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao',
+               '$schema': 'http://json-schema.org/draft-07/schema#', 'title': 'Qualified vLEI Issuer Credential',
+               'description': 'A vLEI Credential issued by GLEIF to Qualified vLEI Issuers which allows the Qualified '
+                              'vLEI Issuers to issue, verify and revoke Legal Entity vLEI Credentials and Legal '
+                              'Entity Official Organizational Role vLEI Credentials',
+               'type': 'object', 'credentialType': 'QualifiedvLEIIssuervLEICredential', 'version': '1.0.0',
+               'properties': {'v': {'description': 'Version', 'type': 'string'},
+                              'd': {'description': 'Credential SAID', 'type': 'string'},
+                              'u': {'description': 'One time use nonce', 'type': 'string'},
+                              'i': {'description': 'GLEIF Issuee AID', 'type': 'string'},
+                              'ri': {'description': 'Credential status registry', 'type': 'string'},
+                              's': {'description': 'Schema SAID', 'type': 'string'}, 'a': {
+                       'oneOf': [{'description': 'Attributes block SAID', 'type': 'string'},
+                                 {'$id': 'ELGgI0fkloqKWREXgqUfgS0bJybP1LChxCO3sqPSFHCj',
+                                  'description': 'Attributes block', 'type': 'object',
+                                  'properties': {'d': {'description': 'Attributes block SAID', 'type': 'string'},
+                                                 'i': {'description': 'QVI Issuee AID', 'type': 'string'},
+                                                 'dt': {'description': 'Issuance date time', 'type': 'string',
+                                                        'format': 'date-time'},
+                                                 'LEI': {'description': 'LEI of the requesting Legal Entity',
+                                                         'type': 'string', 'format': 'ISO 17442'},
+                                                 'gracePeriod': {'description': 'Allocated grace period',
+                                                                 'type': 'integer', 'default': 90}},
+                                  'additionalProperties': False, 'required': ['i', 'dt', 'LEI']}]}, 'r': {
+                       'oneOf': [{'description': 'Rules block SAID', 'type': 'string'},
+                                 {'$id': 'ECllqarpkZrSIWCb97XlMpEZZH3q4kc--FQ9mbkFMb_5', 'description': 'Rules block',
+                                  'type': 'object',
+                                  'properties': {'d': {'description': 'Rules block SAID', 'type': 'string'},
+                                                 'usageDisclaimer': {'description': 'Usage Disclaimer',
+                                                                     'type': 'object', 'properties': {
+                                                         'l': {'description': 'Associated legal language',
+                                                               'type': 'string',
+                                                               'const': 'Usage of a valid, unexpired, and non-revoked '
+                                                                        'vLEI Credential, as defined in the '
+                                                                        'associated Ecosystem Governance Framework, '
+                                                                        'does not assert that the Legal Entity is '
+                                                                        'trustworthy, honest, reputable in its '
+                                                                        'business dealings, safe to do business with, '
+                                                                        'or compliant with any laws or that an '
+                                                                        'implied or expressly intended purpose will '
+                                                                        'be fulfilled.'}}},
+                                                 'issuanceDisclaimer': {'description': 'Issuance Disclaimer',
+                                                                        'type': 'object', 'properties': {
+                                                         'l': {'description': 'Associated legal language',
+                                                               'type': 'string',
+                                                               'const': 'All information in a valid, unexpired, '
+                                                                        'and non-revoked vLEI Credential, as defined '
+                                                                        'in the associated Ecosystem Governance '
+                                                                        'Framework, is accurate as of the date the '
+                                                                        'validation process was complete. The vLEI '
+                                                                        'Credential has been issued to the legal '
+                                                                        'entity or person named in the vLEI '
+                                                                        'Credential as the subject; and the qualified '
+                                                                        'vLEI Issuer exercised reasonable care to '
+                                                                        'perform the validation process set forth in '
+                                                                        'the vLEI Ecosystem Governance Framework.'}}}},
+                                  'additionalProperties': False,
+                                  'required': ['d', 'usageDisclaimer', 'issuanceDisclaimer']}]}},
+               'additionalProperties': False, 'required': ['i', 'ri', 's', 'd']}
         _, sad = coring.Saider.saidify(sad, label=coring.Saids.dollar)
         schemer = scheming.Schemer(sed=sad)
         # NEW: "EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao"
         db.schema.pin(schemer.said, schemer)
 
         # OLD: "E1MCiPag0EWlqeJGzDA9xxr1bUSUR4fZXtqHDrwdXgbk"
-        sad = {
-            "$id": "",
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "Legal Entity vLEI Credential",
-            "description": "A vLEI Credential issued by a Qualified vLEI issuer to a Legal Entity",
-            "credentialType": "LegalEntityvLEICredential",
-            "properties": {
-                "v": {"type": "string"},
-                "d": {"type": "string"},
-                "i": {"type": "string"},
-                "ri": {"description": "credential status registry", "type": "string"},
-                "s": {"description": "schema SAID", "type": "string"},
-                "a": {
-                    "description": "data block",
-                    "properties": {
-                        "d": {"type": "string"},
-                        "i": {"type": "string"},
-                        "dt": {
-                            "description": "issuance date " "time",
-                            "format": "date-time",
-                            "type": "string",
-                        },
-                        "LEI": {"type": "string"},
-                    },
-                    "additionalProperties": False,
-                    "required": ["i", "dt", "LEI"],
-                    "type": "object",
-                },
-                "e": {"description": "edges block", "type": "object"},
-                "r": {"type": "object", "description": "rules block"},
-            },
-            "additionalProperties": False,
-            "required": ["i", "ri", "s", "d", "e", "r"],
-            "type": "object",
-        }
+        sad = {'$id': '',
+               '$schema': 'http://json-schema.org/draft-07/schema#', 'title': 'Legal Entity vLEI Credential',
+               'description': 'A vLEI Credential issued by a Qualified vLEI issuer to a Legal Entity',
+               'credentialType': 'LegalEntityvLEICredential',
+               'properties': {'v': {'type': 'string'}, 'd': {'type': 'string'}, 'i': {'type': 'string'},
+                              'ri': {'description': 'credential status registry', 'type': 'string'},
+                              's': {'description': 'schema SAID', 'type': 'string'}, 'a': {'description': 'data block',
+                                                                                           'properties': {
+                                                                                               'd': {'type': 'string'},
+                                                                                               'i': {'type': 'string'},
+                                                                                               'dt': {
+                                                                                                   'description':
+                                                                                                       'issuance date '
+                                                                                                       'time',
+                                                                                                   'format':
+                                                                                                       'date-time',
+                                                                                                   'type': 'string'},
+                                                                                               'LEI': {
+                                                                                                   'type': 'string'}},
+                                                                                           'additionalProperties':
+                                                                                               False,
+                                                                                           'required': ['i', 'dt',
+                                                                                                        'LEI'],
+                                                                                           'type': 'object'},
+                              'e': {'description': 'edges block', 'type': 'object'},
+                              'r': {'type': 'object', 'description': 'rules block'}}, 'additionalProperties': False,
+               'required': ['i', 'ri', 's', 'd', 'e', 'r'], 'type': 'object'}
 
         _, sad = coring.Saider.saidify(sad, label=coring.Saids.dollar)
         schemer = scheming.Schemer(sed=sad)
@@ -253,144 +175,109 @@ class DbSeed:
         db.schema.pin(schemer.said, schemer)
 
         # OLD: "ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI"
-        sad = {
-            "$id": "",
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "GLEIF vLEI Credential",
-            "description": "The vLEI Credential issued to GLEIF",
-            "credentialType": "GLEIFvLEICredential",
-            "type": "object",
-            "properties": {
-                "v": {"type": "string"},
-                "d": {"type": "string"},
-                "i": {"type": "string"},
-                "ri": {"description": "credential status registry", "type": "string"},
-                "s": {"description": "schema SAID", "type": "string"},
-                "a": {
-                    "description": "data block",
-                    "properties": {
-                        "d": {"type": "string"},
-                        "i": {"type": "string"},
-                        "dt": {
-                            "description": "issuance date " "time",
-                            "format": "date-time",
-                            "type": "string",
-                        },
-                        "LEI": {"type": "string"},
-                    },
-                    "additionalProperties": False,
-                    "required": ["d", "dt", "LEI"],
-                    "type": "object",
-                },
-                "e": {"type": "object"},
-            },
-            "additionalProperties": False,
-            "required": ["d", "i", "ri"],
-        }
+        sad = {'$id': '',
+               '$schema': 'http://json-schema.org/draft-07/schema#', 'title': 'GLEIF vLEI Credential',
+               'description': 'The vLEI Credential issued to GLEIF', 'credentialType': 'GLEIFvLEICredential',
+               'type': 'object',
+               'properties': {'v': {'type': 'string'}, 'd': {'type': 'string'}, 'i': {'type': 'string'},
+                              'ri': {'description': 'credential status registry', 'type': 'string'},
+                              's': {'description': 'schema SAID', 'type': 'string'}, 'a': {'description': 'data block',
+                                                                                           'properties': {
+                                                                                               'd': {'type': 'string'},
+                                                                                               'i': {'type': 'string'},
+                                                                                               'dt': {
+                                                                                                   'description':
+                                                                                                       'issuance date '
+                                                                                                       'time',
+                                                                                                   'format':
+                                                                                                       'date-time',
+                                                                                                   'type': 'string'},
+                                                                                               'LEI': {
+                                                                                                   'type': 'string'}},
+                                                                                           'additionalProperties':
+                                                                                               False,
+                                                                                           'required': ['d', 'dt',
+                                                                                                        'LEI'],
+                                                                                           'type': 'object'},
+                              'e': {'type': 'object'}}, 'additionalProperties': False, 'required': ['d', 'i', 'ri']}
         _, sad = coring.Saider.saidify(sad, label=coring.Saids.dollar)
         schemer = scheming.Schemer(sed=sad)
         # NEW: EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC
         db.schema.pin(schemer.said, schemer)
 
         # OLD: EPz3ZvjQ_8ZwRKzfA5xzbMW8v8ZWLZhvOn2Kw1Nkqo_Q
-        sad = {
-            "$id": "",
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "Legal Entity vLEI Credential",
-            "description": "A vLEI Credential issued by a Qualified vLEI issuer to a Legal Entity",
-            "credentialType": "LegalEntityvLEICredential",
-            "properties": {
-                "v": {"type": "string"},
-                "d": {"type": "string"},
-                "i": {"type": "string"},
-                "ri": {"description": "credential status registry", "type": "string"},
-                "s": {"description": "schema SAID", "type": "string"},
-                "a": {
-                    "description": "data block",
-                    "properties": {
-                        "d": {"type": "string"},
-                        "i": {"type": "string"},
-                        "dt": {
-                            "description": "issuance date " "time",
-                            "format": "date-time",
-                            "type": "string",
-                        },
-                        "LEI": {"type": "string"},
-                    },
-                    "additionalProperties": False,
-                    "required": ["i", "dt", "LEI"],
-                    "type": "object",
-                },
-                "e": {
-                    "description": "edges block",
-                    "properties": {
-                        "d": {"description": "SAID of edges block", "type": "string"},
-                        "qualifiedvLEIIssuervLEICredential": {
-                            "description": "node SAID of issuer credential",
-                            "properties": {"n": {"type": "string"}},
-                            "additionalProperties": False,
-                            "required": ["n"],
-                            "type": "object",
-                        },
-                    },
-                    "additionalProperties": False,
-                    "required": ["d", "qualifiedvLEIIssuervLEICredential"],
-                    "type": "object",
-                },
-                "r": {
-                    "type": "array",
-                    "items": {"type": "object"},
-                    "description": "rules block",
-                    "minItems": 0,
-                },
-            },
-            "additionalProperties": False,
-            "required": ["i", "ri", "s", "d", "e", "r"],
-            "type": "object",
-        }
+        sad = {'$id': '', '$schema':
+            'http://json-schema.org/draft-07/schema#', 'title': 'Legal Entity vLEI Credential',
+               'description': 'A vLEI Credential issued by a Qualified vLEI issuer to a Legal Entity',
+               'credentialType': 'LegalEntityvLEICredential',
+               'properties': {'v': {'type': 'string'}, 'd': {'type': 'string'}, 'i': {'type': 'string'},
+                              'ri': {'description': 'credential status registry', 'type': 'string'},
+                              's': {'description': 'schema SAID', 'type': 'string'}, 'a': {'description': 'data block',
+                                                                                           'properties': {
+                                                                                               'd': {'type': 'string'},
+                                                                                               'i': {'type': 'string'},
+                                                                                               'dt': {
+                                                                                                   'description':
+                                                                                                       'issuance date '
+                                                                                                       'time',
+                                                                                                   'format':
+                                                                                                       'date-time',
+                                                                                                   'type': 'string'},
+                                                                                               'LEI': {
+                                                                                                   'type': 'string'}},
+                                                                                           'additionalProperties':
+                                                                                               False,
+                                                                                           'required': ['i', 'dt',
+                                                                                                        'LEI'],
+                                                                                           'type': 'object'},
+                              'e': {'description': 'edges block',
+                                    'properties': {'d': {'description': 'SAID of edges block', 'type': 'string'},
+                                                   'qualifiedvLEIIssuervLEICredential': {
+                                                       'description': 'node SAID of issuer credential',
+                                                       'properties': {'n': {'type': 'string'}},
+                                                       'additionalProperties': False, 'required': ['n'],
+                                                       'type': 'object'}}, 'additionalProperties': False,
+                                    'required': ['d', 'qualifiedvLEIIssuervLEICredential'], 'type': 'object'},
+                              'r': {'type': 'array', 'items': {'type': 'object'}, 'description': 'rules block',
+                                    'minItems': 0}}, 'additionalProperties': False,
+               'required': ['i', 'ri', 's', 'd', 'e', 'r'], 'type': 'object'}
         _, sad = coring.Saider.saidify(sad, label=coring.Saids.dollar)
         schemer = scheming.Schemer(sed=sad)
         # NEW: ED892b40P_GcESs3wOcc2zFvL_GVi2Ybzp9isNTZKqP0
         db.schema.pin(schemer.said, schemer)
 
         # OLD: EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao
-        sad = {
-            "$id": "",
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "Qualified vLEI Issuer Credential",
-            "description": "A vLEI Credential issued by GLEIF to Qualified vLEI Issuers which allows the Qualified "
-            "vLEI Issuers to issue, verify and revoke Legal Entity vLEI Credentials and Legal "
-            "Entity Official Organizational Role vLEI Credentials",
-            "credentialType": "QualifiedvLEIIssuervLEICredential",
-            "properties": {
-                "v": {"type": "string"},
-                "d": {"type": "string"},
-                "i": {"type": "string"},
-                "ri": {"description": "credential status registry", "type": "string"},
-                "s": {"description": "schema SAID", "type": "string"},
-                "a": {
-                    "description": "data block",
-                    "properties": {
-                        "d": {"type": "string"},
-                        "i": {"type": "string"},
-                        "dt": {
-                            "description": "issuance date " "time",
-                            "format": "date-time",
-                            "type": "string",
-                        },
-                        "LEI": {"type": "string"},
-                        "gracePeriod": {"default": 90, "type": "integer"},
-                    },
-                    "additionalProperties": False,
-                    "required": ["i", "dt", "LEI"],
-                    "type": "object",
-                },
-                "e": {"type": "object"},
-            },
-            "additionalProperties": False,
-            "required": ["i", "ri", "s", "d"],
-            "type": "object",
-        }
+        sad = {'$id': '',
+               '$schema': 'http://json-schema.org/draft-07/schema#', 'title': 'Qualified vLEI Issuer Credential',
+               'description': 'A vLEI Credential issued by GLEIF to Qualified vLEI Issuers which allows the Qualified '
+                              'vLEI Issuers to issue, verify and revoke Legal Entity vLEI Credentials and Legal '
+                              'Entity Official Organizational Role vLEI Credentials',
+               'credentialType': 'QualifiedvLEIIssuervLEICredential',
+               'properties': {'v': {'type': 'string'}, 'd': {'type': 'string'}, 'i': {'type': 'string'},
+                              'ri': {'description': 'credential status registry', 'type': 'string'},
+                              's': {'description': 'schema SAID', 'type': 'string'}, 'a': {'description': 'data block',
+                                                                                           'properties': {
+                                                                                               'd': {'type': 'string'},
+                                                                                               'i': {'type': 'string'},
+                                                                                               'dt': {
+                                                                                                   'description':
+                                                                                                       'issuance date '
+                                                                                                       'time',
+                                                                                                   'format':
+                                                                                                       'date-time',
+                                                                                                   'type': 'string'},
+                                                                                               'LEI': {
+                                                                                                   'type': 'string'},
+                                                                                               'gracePeriod': {
+                                                                                                   'default': 90,
+                                                                                                   'type': 'integer'}},
+                                                                                           'additionalProperties':
+                                                                                               False,
+                                                                                           'required': ['i', 'dt',
+                                                                                                        'LEI'],
+                                                                                           'type': 'object'},
+                              'e': {'type': 'object'}}, 'additionalProperties': False,
+               'required': ['i', 'ri', 's', 'd'], 'type': 'object'}
 
         _, sad = coring.Saider.saidify(sad, label=coring.Saids.dollar)
         schemer = scheming.Schemer(sed=sad)
@@ -405,26 +292,26 @@ class Helpers:
     def remove_test_dirs(name, kdir="/usr/local/var/keri"):
         # if os.path.exists(f'{kdir}/adb/TheAgency'):
         #     shutil.rmtree(f'{kdir}/adb/TheAgency')
-        if os.path.exists(f"{kdir}/cf/{name}.json"):
-            os.remove(f"{kdir}/cf/{name}.json")
-        if os.path.exists(f"{kdir}/cf/{name}"):
-            shutil.rmtree(f"{kdir}/cf/{name}")
-        if os.path.exists(f"{kdir}/db/{name}"):
-            shutil.rmtree(f"{kdir}/db/{name}")
-        if os.path.exists(f"{kdir}/ks/{name}"):
-            shutil.rmtree(f"{kdir}/ks/{name}")
-        if os.path.exists(f"{kdir}/mbx/{name}"):
-            shutil.rmtree(f"{kdir}/mbx/{name}")
-        if os.path.exists(f"{kdir}/not/{name}"):
-            shutil.rmtree(f"{kdir}/not/{name}")
-        if os.path.exists(f"{kdir}/opr/{name}"):
-            shutil.rmtree(f"{kdir}/opr/{name}")
-        if os.path.exists(f"{kdir}/reg/{name}"):
-            shutil.rmtree(f"{kdir}/reg/{name}")
-        if os.path.exists(f"{kdir}/reg/agent-{name}"):
-            shutil.rmtree(f"{kdir}/reg/agent-{name}")
-        if os.path.exists(f"{kdir}/rks/{name}"):
-            shutil.rmtree(f"{kdir}/rks/{name}")
+        if os.path.exists(f'{kdir}/cf/{name}.json'):
+            os.remove(f'{kdir}/cf/{name}.json')
+        if os.path.exists(f'{kdir}/cf/{name}'):
+            shutil.rmtree(f'{kdir}/cf/{name}')
+        if os.path.exists(f'{kdir}/db/{name}'):
+            shutil.rmtree(f'{kdir}/db/{name}')
+        if os.path.exists(f'{kdir}/ks/{name}'):
+            shutil.rmtree(f'{kdir}/ks/{name}')
+        if os.path.exists(f'{kdir}/mbx/{name}'):
+            shutil.rmtree(f'{kdir}/mbx/{name}')
+        if os.path.exists(f'{kdir}/not/{name}'):
+            shutil.rmtree(f'{kdir}/not/{name}')
+        if os.path.exists(f'{kdir}/opr/{name}'):
+            shutil.rmtree(f'{kdir}/opr/{name}')
+        if os.path.exists(f'{kdir}/reg/{name}'):
+            shutil.rmtree(f'{kdir}/reg/{name}')
+        if os.path.exists(f'{kdir}/reg/agent-{name}'):
+            shutil.rmtree(f'{kdir}/reg/agent-{name}')
+        if os.path.exists(f'{kdir}/rks/{name}'):
+            shutil.rmtree(f'{kdir}/rks/{name}')
 
     @staticmethod
     def server(agency, httpPort=3902):
@@ -437,9 +324,7 @@ class Helpers:
 
     @staticmethod
     def controller():
-        serder, signers = Helpers.incept(
-            bran=b"0123456789abcdefghijk", stem="signify:controller", pidx=0
-        )
+        serder, signers = Helpers.incept(bran=b'0123456789abcdefghijk', stem="signify:controller", pidx=0)
         sigers = [signers[0].sign(ser=serder.raw, index=0)]
         return serder, sigers
 
@@ -449,41 +334,31 @@ class Helpers:
             wits = []
 
         salter = core.Salter(raw=bran)
-        creator = keeping.SaltyCreator(
-            salt=salter.qb64, stem=stem, tier=coring.Tiers.low
-        )
+        creator = keeping.SaltyCreator(salt=salter.qb64, stem=stem, tier=coring.Tiers.low)
 
-        signers = creator.create(
-            pidx=pidx, ridx=0, tier=coring.Tiers.low, temp=False, count=count
-        )
-        nsigners = creator.create(
-            pidx=pidx, ridx=1, tier=coring.Tiers.low, temp=False, count=count
-        )
+        signers = creator.create(pidx=pidx, ridx=0, tier=coring.Tiers.low, temp=False, count=count)
+        nsigners = creator.create(pidx=pidx, ridx=1, tier=coring.Tiers.low, temp=False, count=count)
 
         keys = [signer.verfer.qb64 for signer in signers]
         ndigs = [coring.Diger(ser=nsigner.verfer.qb64b) for nsigner in nsigners]
 
         if delpre is not None:
-            serder = eventing.delcept(
-                delpre=delpre,
-                keys=keys,
-                isith=sith,
-                nsith=sith,
-                ndigs=[diger.qb64 for diger in ndigs],
-                code=coring.MtrDex.Blake3_256,
-                toad=toad,
-                wits=wits,
-            )
+            serder = eventing.delcept(delpre=delpre,
+                                      keys=keys,
+                                      isith=sith,
+                                      nsith=sith,
+                                      ndigs=[diger.qb64 for diger in ndigs],
+                                      code=coring.MtrDex.Blake3_256,
+                                      toad=toad,
+                                      wits=wits)
         else:
-            serder = eventing.incept(
-                keys=keys,
-                isith=sith,
-                nsith=sith,
-                ndigs=[diger.qb64 for diger in ndigs],
-                code=coring.MtrDex.Blake3_256,
-                toad=toad,
-                wits=wits,
-            )
+            serder = eventing.incept(keys=keys,
+                                     isith=sith,
+                                     nsith=sith,
+                                     ndigs=[diger.qb64 for diger in ndigs],
+                                     code=coring.MtrDex.Blake3_256,
+                                     toad=toad,
+                                     wits=wits)
 
         return serder, signers
 
@@ -506,15 +381,13 @@ class Helpers:
         keys = [signer.verfer.qb64 for signer in signers]
         ndigs = [coring.Diger(ser=nsigner.verfer.qb64b) for nsigner in nsigners]
 
-        serder = eventing.incept(
-            keys=keys,
-            isith=sith,
-            nsith=sith,
-            ndigs=[diger.qb64 for diger in ndigs],
-            code=coring.MtrDex.Blake3_256,
-            toad=toad,
-            wits=wits,
-        )
+        serder = eventing.incept(keys=keys,
+                                 isith=sith,
+                                 nsith=sith,
+                                 ndigs=[diger.qb64 for diger in ndigs],
+                                 code=coring.MtrDex.Blake3_256,
+                                 toad=toad,
+                                 wits=wits)
 
         return serder, signers, prxs, nxts
 
@@ -530,15 +403,13 @@ class Helpers:
         keys = [signer.verfer.qb64 for signer in signers]
         ndigs = [coring.Diger(ser=nsigner.verfer.qb64b) for nsigner in nsigners]
 
-        serder = eventing.incept(
-            keys=keys,
-            isith=sith,
-            nsith=sith,
-            ndigs=[diger.qb64 for diger in ndigs],
-            code=coring.MtrDex.Blake3_256,
-            toad=toad,
-            wits=wits,
-        )
+        serder = eventing.incept(keys=keys,
+                                 isith=sith,
+                                 nsith=sith,
+                                 ndigs=[diger.qb64 for diger in ndigs],
+                                 code=coring.MtrDex.Blake3_256,
+                                 toad=toad,
+                                 wits=wits)
 
         return serder, signers
 
@@ -546,78 +417,53 @@ class Helpers:
     def interact(pre, bran, pidx, ridx, sn, dig, data):
         serder = eventing.interact(pre=pre, dig=dig, sn=sn, data=data)
         salter = core.Salter(raw=bran)
-        creator = keeping.SaltyCreator(
-            salt=salter.qb64, stem="signify:aid", tier=coring.Tiers.low
-        )
+        creator = keeping.SaltyCreator(salt=salter.qb64, stem="signify:aid", tier=coring.Tiers.low)
 
-        signers = creator.create(
-            pidx=pidx, ridx=ridx, tier=coring.Tiers.low, temp=False, count=1
-        )
+        signers = creator.create(pidx=pidx, ridx=ridx, tier=coring.Tiers.low, temp=False, count=1)
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
         return serder, sigers
-
+    
     @staticmethod
     def createRotate(aid, salt, signers, pidx, ridx, kidx, wits, toad):
         salter = core.Salter(raw=salt)
-        creator = keeping.SaltyCreator(
-            salt=salter.qb64, stem="signify:aid", tier=coring.Tiers.low
-        )
+        creator = keeping.SaltyCreator(salt=salter.qb64, stem="signify:aid", tier=coring.Tiers.low)
         encrypter = core.Encrypter(verkey=signers[0].verfer.qb64)
         sxlt = encrypter.encrypt(salter.qb64).qb64
 
-        rsigners = creator.create(
-            pidx=pidx, ridx=ridx, tier=coring.Tiers.low, temp=False, count=1
-        )
-        rnsigners = creator.create(
-            pidx=pidx, ridx=ridx + 1, tier=coring.Tiers.low, temp=False, count=1
-        )
+        rsigners = creator.create(pidx=pidx, ridx=ridx, tier=coring.Tiers.low, temp=False, count=1)
+        rnsigners = creator.create(pidx=pidx, ridx=ridx+1, tier=coring.Tiers.low, temp=False, count=1)
 
         rkeys = [signer.verfer.qb64 for signer in rsigners]
         rndigs = [coring.Diger(ser=nsigner.verfer.qb64b) for nsigner in rnsigners]
 
-        serder = eventing.rotate(
-            pre=aid["prefix"],
-            keys=rkeys,
-            dig=aid["prefix"],
-            ndigs=[diger.qb64 for diger in rndigs],
-            wits=wits,
-            toad=toad,
-        )
+        serder = eventing.rotate(pre=aid["prefix"],
+                                 keys=rkeys,
+                                 dig=aid["prefix"],
+                                 ndigs=[diger.qb64 for diger in rndigs],
+                                 wits=wits,
+                                 toad=toad
+                                 )
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in rsigners]
         body = {
-            "rot": serder.ked,
-            "sigs": sigers,
-            "salty": {
-                "stem": "signify:aid",
-                "pidx": pidx,
-                "tier": "low",
-                "sxlt": sxlt,
-                "transferable": True,
-                "kidx": kidx,
-                "icodes": [MtrDex.Ed25519_Seed],
-                "ncodes": [MtrDex.Ed25519_Seed],
-            },
+            'rot': serder.ked,
+            'sigs': sigers,
+            'salty': {'stem': 'signify:aid', 'pidx': pidx, 'tier': 'low', 'sxlt': sxlt, 'transferable': True, 'kidx': kidx,
+                      'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}
         }
         return body
 
     @staticmethod
     def sign(bran, pidx, ridx, ser):
         salter = core.Salter(raw=bran)
-        creator = keeping.SaltyCreator(
-            salt=salter.qb64, stem="signify:aid", tier=coring.Tiers.low
-        )
+        creator = keeping.SaltyCreator(salt=salter.qb64, stem="signify:aid", tier=coring.Tiers.low)
 
-        signers = creator.create(
-            pidx=pidx, ridx=ridx, tier=coring.Tiers.low, temp=False, count=1
-        )
+        signers = creator.create(pidx=pidx, ridx=ridx, tier=coring.Tiers.low, temp=False, count=1)
         sigers = [signer.sign(ser=ser, index=0).qb64 for signer in signers]
         return sigers
 
     @staticmethod
     def createAid(client, name, salt, wits=None, toad="0", delpre=None):
-        serder, signers = Helpers.incept(
-            salt, "signify:aid", pidx=0, wits=wits, toad=toad, delpre=delpre
-        )
+        serder, signers = Helpers.incept(salt, "signify:aid", pidx=0, wits=wits, toad=toad, delpre=delpre)
         assert len(signers) == 1
 
         salter = core.Salter(raw=salt)
@@ -626,21 +472,13 @@ class Helpers:
 
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
 
-        body = {
-            "name": name,
-            "icp": serder.ked,
-            "sigs": sigers,
-            "salty": {
-                "stem": "signify:aid",
-                "pidx": 0,
-                "tier": "low",
-                "sxlt": sxlt,
-                "transferable": True,
-                "kidx": 0,
-                "icodes": [MtrDex.Ed25519_Seed],
-                "ncodes": [MtrDex.Ed25519_Seed],
-            },
-        }
+        body = {'name': name,
+                'icp': serder.ked,
+                'sigs': sigers,
+                "salty": {
+                    'stem': 'signify:aid', 'pidx': 0, 'tier': 'low', 'sxlt': sxlt, 'transferable': True, 'kidx': 0,
+                    'icodes': [MtrDex.Ed25519_Seed], 'ncodes': [MtrDex.Ed25519_Seed]}
+                }
 
         res = client.simulate_post(path="/identifiers", body=json.dumps(body))
         assert res.status_code == 200 or res.status_code == 202
@@ -662,28 +500,20 @@ class Helpers:
     def createRegistry(client, agent, salt, doist, deeds):
         op = Helpers.createAid(client, "issuer", salt)
         aid = op["response"]
-        pre = aid["i"]
+        pre = aid['i']
         assert pre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
 
         nonce = Salter().qb64
-        regser = veventing.incept(
-            pre,
-            baks=[],
-            toad="0",
-            nonce=nonce,
-            cnfg=[TraitCodex.NoBackers],
-            code=coring.MtrDex.Blake3_256,
-        )
-        anchor = dict(i=regser.ked["i"], s=regser.ked["s"], d=regser.said)
-        serder, sigers = Helpers.interact(
-            pre=pre, bran=salt, pidx=0, ridx=0, dig=aid["d"], sn="1", data=[anchor]
-        )
-        body = dict(
-            name="test", alias="test", vcp=regser.ked, ixn=serder.ked, sigs=sigers
-        )
-        result = client.simulate_post(
-            path="/identifiers/issuer/registries", body=json.dumps(body).encode("utf-8")
-        )
+        regser = veventing.incept(pre,
+                                  baks=[],
+                                  toad="0",
+                                  nonce=nonce,
+                                  cnfg=[TraitCodex.NoBackers],
+                                  code=coring.MtrDex.Blake3_256)
+        anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)
+        serder, sigers = Helpers.interact(pre=pre, bran=salt, pidx=0, ridx=0, dig=aid['d'], sn='1', data=[anchor])
+        body = dict(name="test", alias="test", vcp=regser.ked, ixn=serder.ked, sigs=sigers)
+        result = client.simulate_post(path="/identifiers/issuer/registries", body=json.dumps(body).encode("utf-8"))
         op = result.json
         metadata = op["metadata"]
 
@@ -722,29 +552,21 @@ class Helpers:
         assert serder.pre == Helpers.controllerAID
 
         if salter is None:
-            salt = b"0123456789abcdef"
+            salt = b'0123456789abcdef'
             salter = core.Salter(raw=salt)
 
         if cf is None:
-            cf = configing.Configer(
-                name="keria", headDirPath=SCRIPTS_DIR, reopen=True, clear=False
-            )
+            cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, reopen=True, clear=False)
 
         with habbing.openHby(name="keria", salt=salter.qb64, temp=temp, cf=cf) as hby:
             ims = eventing.messagize(serder, sigers=sigers)
             parsing.Parser(kvy=hby.kvy).parseOne(ims=ims)
 
             agency = agenting.Agency(name="agency", bran=None, temp=True)
-            agentHab = hby.makeHab(
-                serder.pre, ns="agent", transferable=True, delpre=serder.pre
-            )
+            agentHab = hby.makeHab(serder.pre, ns="agent", transferable=True, delpre=serder.pre)
 
-            rgy = credentialing.Regery(
-                hby=hby, name=agentHab.name, base=hby.base, temp=True
-            )
-            agent = agenting.Agent(
-                hby=hby, rgy=rgy, agentHab=agentHab, agency=agency, caid=serder.pre
-            )
+            rgy = credentialing.Regery(hby=hby, name=agentHab.name, base=hby.base, temp=True)
+            agent = agenting.Agent(hby=hby, rgy=rgy, agentHab=agentHab, agency=agency, caid=serder.pre)
             agency.agents[serder.pre] = agent
 
             app = falcon.App()
@@ -798,7 +620,6 @@ class Helpers:
 
         return rctMsgs
 
-
 class Issuer:
     LE = "ENTAoj2oNBFpaniRswwPcca9W1ElEeH2V7ahw68HV4G5"
     QVI = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
@@ -811,7 +632,7 @@ class Issuer:
         self.verifier = verifying.Verifier(hby=hby, reger=self.rgy.reger)
 
     def createRegistry(self, pre, name):
-        conf = dict(nonce="AGu8jwfkyvVXQ2nqEb5yVigEtR31KSytcpe2U2f7NArr")
+        conf = dict(nonce='AGu8jwfkyvVXQ2nqEb5yVigEtR31KSytcpe2U2f7NArr')
         hab = self.hby.habs[pre]
 
         registry = self.rgy.makeRegistry(name=name, prefix=pre, **conf)
@@ -828,10 +649,7 @@ class Issuer:
         self.rgy.processEscrows()
         self.registrar.processEscrows()
 
-        assert (
-            self.rgy.reger.ctel.get(keys=(registry.regk, coring.Seqner(sn=0).qb64))
-            is not None
-        )
+        assert self.rgy.reger.ctel.get(keys=(registry.regk, coring.Seqner(sn=0).qb64)) is not None
 
     def issueLegalEntityvLEI(self, reg, issuer, issuee, LEI):
         registry = self.rgy.registryByName(reg)
@@ -843,14 +661,11 @@ class Issuer:
         )
 
         # Create the Creder and issue the credentials
-        creder = proving.credential(
-            issuer=issuer.pre,
-            schema=self.LE,
-            data=credSubject,
-            status=registry.regk,
-            source={},
-            rules={},
-        )
+        creder = proving.credential(issuer=issuer.pre,
+                                    schema=self.LE,
+                                    data=credSubject,
+                                    status=registry.regk,
+                                    source={}, rules={})
 
         iserder = registry.issue(said=creder.said, dt=self.date)
 
@@ -888,9 +703,10 @@ class Issuer:
         )
 
         # Create the Creder and issue the credentials
-        creder = proving.credential(
-            issuer=issuer.pre, schema=self.QVI, data=credSubject, status=registry.regk
-        )
+        creder = proving.credential(issuer=issuer.pre,
+                                    schema=self.QVI,
+                                    data=credSubject,
+                                    status=registry.regk)
 
         iserder = registry.issue(said=creder.said, dt=self.date)
 
@@ -925,7 +741,7 @@ class MockAgentMiddleware:
         self.agent = agent
 
     def process_request(self, req, _):
-        """Process request to ensure has a valid signature from caid
+        """ Process request to ensure has a valid signature from caid
 
         Parameters:
             req: Http request object
