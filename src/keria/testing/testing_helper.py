@@ -468,7 +468,7 @@ class Helpers:
 
         salter = core.Salter(raw=salt)
         encrypter = core.Encrypter(verkey=signers[0].verfer.qb64)
-        sxlt = encrypter.encrypt(salter.qb64).qb64
+        sxlt = encrypter.encrypt(ser=salter.qb64).qb64
 
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
 
