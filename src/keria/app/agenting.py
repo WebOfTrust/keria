@@ -1245,7 +1245,6 @@ class Submitter(doing.DoDoer):
         self.hby = hby
         self.submits = submits
         self.witRec = witRec
-        self.origForce = witRec.force
 
         super(Submitter, self).__init__(always=True)
 
@@ -1276,7 +1275,6 @@ class Submitter(doing.DoDoer):
 
                     if len(doer.cues) == 0:
                         print("Re-submit received all witness receipts for", cue["pre"])
-                        doer.force = self.origForce
                         self.doers.remove(doer)
 
         return super(Submitter, self).recur(tyme, deeds)
