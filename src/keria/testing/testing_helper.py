@@ -374,9 +374,9 @@ class Helpers:
 
         creator = keeping.RandyCreator()
         signers = creator.create(count=count)
-        prxs = [encrypter.encrypt(prim=signer).qb64 for signer in signers]
+        prxs = [encrypter.encrypt(matter=signer).qb64 for signer in signers]
         nsigners = creator.create(count=count)
-        nxts = [encrypter.encrypt(prim=signer).qb64 for signer in nsigners]
+        nxts = [encrypter.encrypt(matter=signer).qb64 for signer in nsigners]
 
         keys = [signer.verfer.qb64 for signer in signers]
         ndigs = [coring.Diger(ser=nsigner.verfer.qb64b) for nsigner in nsigners]
