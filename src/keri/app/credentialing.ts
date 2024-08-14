@@ -98,6 +98,85 @@ export interface RevokeCredentialResult {
     op: Operation;
 }
 
+export interface IpexApplyArgs {
+    /**
+     * Alias for the IPEX sender AID
+     */
+    senderName: string;
+
+    /**
+     * Prefix of the IPEX recipient AID
+     */
+    recipient: string;
+
+    /**
+     * Message to send
+     */
+    message?: string;
+
+    /**
+     * SAID of schema to apply for
+     */
+    schemaSaid: string;
+
+    /**
+     * Optional attributes for selective disclosure
+     */
+    attributes?: Record<string, unknown>;
+    datetime?: string;
+}
+
+export interface IpexOfferArgs {
+    /**
+     * Alias for the IPEX sender AID
+     */
+    senderName: string;
+
+    /**
+     * Prefix of the IPEX recipient AID
+     */
+    recipient: string;
+
+    /**
+     * Message to send
+     */
+    message?: string;
+
+    /**
+     * ACDC to offer
+     */
+    acdc: Serder;
+
+    /**
+     * Optional qb64 SAID of apply message this offer is responding to
+     */
+    applySaid?: string;
+    datetime?: string;
+}
+
+export interface IpexAgreeArgs {
+    /**
+     * Alias for the IPEX sender AID
+     */
+    senderName: string;
+
+    /**
+     * Prefix of the IPEX recipient AID
+     */
+    recipient: string;
+
+    /**
+     * Message to send
+     */
+    message?: string;
+
+    /**
+     * qb64 SAID of offer message this agree is responding to
+     */
+    offerSaid: string;
+    datetime?: string;
+}
+
 export interface IpexGrantArgs {
     /**
      * Alias for the IPEX sender AID
@@ -117,7 +196,7 @@ export interface IpexGrantArgs {
     /**
      * qb64 SAID of agree message this grant is responding to
      */
-    agree?: string;
+    agreeSaid?: string;
     datetime?: string;
     acdc: Serder;
     acdcAttachment?: string;
@@ -125,6 +204,29 @@ export interface IpexGrantArgs {
     issAttachment?: string;
     anc: Serder;
     ancAttachment?: string;
+}
+
+export interface IpexAdmitArgs {
+    /**
+     * Alias for the IPEX sender AID
+     */
+    senderName: string;
+
+    /**
+     * Prefix of the IPEX recipient AID
+     */
+    recipient: string;
+
+    /**
+     * Message to send
+     */
+    message?: string;
+
+    /**
+     * qb64 SAID of agree message this admit is responding to
+     */
+    grantSaid: string;
+    datetime?: string;
 }
 
 /**
@@ -736,13 +838,145 @@ export class Ipex {
     }
 
     /**
+     * Create an IPEX apply EXN message
+     */
+    async apply(args: IpexApplyArgs): Promise<[Serder, string[], string]> {
+        const hab = await this.client.identifiers().get(args.senderName);
+        const data = {
+            m: args.message ?? '',
+            s: args.schemaSaid,
+            a: args.attributes ?? {},
+        };
+
+        return this.client
+            .exchanges()
+            .createExchangeMessage(
+                hab,
+                '/ipex/apply',
+                data,
+                {},
+                args.recipient,
+                args.datetime,
+                undefined
+            );
+    }
+
+    async submitApply(
+        name: string,
+        exn: Serder,
+        sigs: string[],
+        recp: string[]
+    ): Promise<any> {
+        const body = {
+            exn: exn.ked,
+            sigs,
+            rec: recp,
+        };
+
+        const response = await this.client.fetch(
+            `/identifiers/${name}/ipex/apply`,
+            'POST',
+            body
+        );
+
+        return response.json();
+    }
+
+    /**
+     * Create an IPEX offer EXN message
+     */
+    async offer(args: IpexOfferArgs): Promise<[Serder, string[], string]> {
+        const hab = await this.client.identifiers().get(args.senderName);
+        const data = {
+            m: args.message ?? '',
+        };
+
+        return this.client
+            .exchanges()
+            .createExchangeMessage(
+                hab,
+                '/ipex/offer',
+                data,
+                { acdc: [args.acdc, undefined] },
+                args.recipient,
+                args.datetime,
+                args.applySaid
+            );
+    }
+
+    async submitOffer(
+        name: string,
+        exn: Serder,
+        sigs: string[],
+        atc: string,
+        recp: string[]
+    ): Promise<any> {
+        const body = {
+            exn: exn.ked,
+            sigs,
+            atc,
+            rec: recp,
+        };
+
+        const response = await this.client.fetch(
+            `/identifiers/${name}/ipex/offer`,
+            'POST',
+            body
+        );
+
+        return response.json();
+    }
+
+    /**
+     * Create an IPEX agree EXN message
+     */
+    async agree(args: IpexAgreeArgs): Promise<[Serder, string[], string]> {
+        const hab = await this.client.identifiers().get(args.senderName);
+        const data = {
+            m: args.message ?? '',
+        };
+
+        return this.client
+            .exchanges()
+            .createExchangeMessage(
+                hab,
+                '/ipex/agree',
+                data,
+                {},
+                args.recipient,
+                args.datetime,
+                args.offerSaid
+            );
+    }
+
+    async submitAgree(
+        name: string,
+        exn: Serder,
+        sigs: string[],
+        recp: string[]
+    ): Promise<any> {
+        const body = {
+            exn: exn.ked,
+            sigs,
+            rec: recp,
+        };
+
+        const response = await this.client.fetch(
+            `/identifiers/${name}/ipex/agree`,
+            'POST',
+            body
+        );
+
+        return response.json();
+    }
+
+    /**
      * Create an IPEX grant EXN message
      */
     async grant(args: IpexGrantArgs): Promise<[Serder, string[], string]> {
         const hab = await this.client.identifiers().get(args.senderName);
         const data = {
             m: args.message ?? '',
-            i: args.recipient,
         };
 
         let atc = args.ancAttachment;
@@ -778,7 +1012,7 @@ export class Ipex {
                 embeds,
                 args.recipient,
                 args.datetime,
-                args.agree
+                args.agreeSaid
             );
     }
 
@@ -807,22 +1041,11 @@ export class Ipex {
 
     /**
      * Create an IPEX admit EXN message
-     * @async
-     * @param {string} name Name or alias of the identifier
-     * @param {string} message accompany human readable description of the credential being admitted
-     * @param {string} grant qb64 SAID of grant message this admit is responding to
-     * @param {string} datetime Optional datetime to set for the credential
-     * @returns {Promise<[Serder, string[], string]>} A promise to the long-running operation
      */
-    async admit(
-        name: string,
-        message: string,
-        grant: string,
-        datetime?: string
-    ): Promise<[Serder, string[], string]> {
-        const hab = await this.client.identifiers().get(name);
+    async admit(args: IpexAdmitArgs): Promise<[Serder, string[], string]> {
+        const hab = await this.client.identifiers().get(args.senderName);
         const data: any = {
-            m: message,
+            m: args.message,
         };
 
         return this.client
@@ -832,9 +1055,9 @@ export class Ipex {
                 '/ipex/admit',
                 data,
                 {},
-                '',
-                datetime,
-                grant
+                args.recipient,
+                args.datetime,
+                args.grantSaid
             );
     }
 

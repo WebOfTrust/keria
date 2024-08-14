@@ -1079,9 +1079,12 @@ test('multisig', async function run() {
     console.log('Holder received exchange message with the grant message');
     res = await client4.exchanges().get(msgSaid);
 
-    const [admit, asigs, aend] = await client4
-        .ipex()
-        .admit('holder', '', res.exn.d);
+    const [admit, asigs, aend] = await client4.ipex().admit({
+        senderName: 'holder',
+        message: '',
+        grantSaid: res.exn.d,
+        recipient: m['prefix'],
+    });
 
     op4 = await client4
         .ipex()

@@ -157,9 +157,13 @@ export async function admitMultisig(
         '/exn/ipex/grant'
     );
 
-    const [admit, sigs, end] = await client
-        .ipex()
-        .admit(multisigAID.name, '', grantMsgSaid, timestamp);
+    const [admit, sigs, end] = await client.ipex().admit({
+        senderName: multisigAID.name,
+        message: '',
+        grantSaid: grantMsgSaid,
+        recipient: recipientAID.prefix,
+        datetime: timestamp,
+    });
 
     await client
         .ipex()
