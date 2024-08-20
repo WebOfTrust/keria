@@ -34,6 +34,7 @@ def loadEnds(app, agency, authn):
     aidEnd = IdentifierResourceEnd()
     app.add_route("/identifiers/{name}", aidEnd)
     app.add_route("/identifiers/{name}/events", aidEnd)
+    app.add_route("/identifiers/{name}/submit", aidEnd)
 
     aidOOBIsEnd = IdentifierOOBICollectionEnd()
     app.add_route("/identifiers/{name}/oobis", aidOOBIsEnd)
@@ -756,7 +757,7 @@ class IdentifierResourceEnd:
 
         ---
         summary: Process identifier events.
-        description: This endpoint handles the 'rot' or 'ixn' events of an identifier based on the provided request.
+        description: This endpoint handles the 'rot' or 'ixn' events of an identifier, or the request to resubmit the KEL, based on the provided request.
         tags:
         - Identifier
         parameters:
@@ -778,11 +779,16 @@ class IdentifierResourceEnd:
                     ixn:
                       type: object
                       description: The interaction event details.
+                    submit:
+                      type: object
+                      description: The request to resubmit event details to witnesses.
                   oneOf:
                   - required:
                     - rot
                   - required:
                     - ixn
+                  - required:
+                    - submit
         responses:
             200:
               description: Successfully processed the identifier's event.
@@ -798,6 +804,8 @@ class IdentifierResourceEnd:
                 op = self.rotate(agent, name, body)
             elif body.get("ixn") is not None:
                 op = self.interact(agent, name, body)
+            elif body.get("submit") is not None:
+                op = self.submit_id(agent, name, body)
             else:
                 raise falcon.HTTPBadRequest(
                     title="invalid request",
@@ -956,7 +964,23 @@ class IdentifierResourceEnd:
             metadata=dict(response=serder.ked),
         )
         return op
+    
+    
+    @staticmethod
+    def submit_id(agent, name, body):
+        hab = agent.hby.habByName(name)
+        if hab is None:
+            raise falcon.HTTPNotFound(title=f"No AID {name} found")
 
+        code = body.get("code")
+
+        if hab.kever.wits:
+            agent.submits.append(dict(alias=name,code=code))
+            op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.submit,
+                                      metadata=dict(alias=name,sn=hab.kever.sn))
+            return op
+
+        raise falcon.HTTPBadRequest(title=f"invalid identifier submitted, {name} has no witnesses")
 
 def info(hab, rm, full=False):
     data = dict(

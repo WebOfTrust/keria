@@ -309,11 +309,13 @@ class Agent(doing.DoDoer):
         self.exchanges = decking.Deck()
         self.grants = decking.Deck()
         self.admits = decking.Deck()
+        self.submits = decking.Deck()
 
         receiptor = agenting.Receiptor(hby=hby)
         self.witq = agenting.WitnessInquisitor(hby=self.hby)
         self.witPub = agenting.WitnessPublisher(hby=self.hby)
         self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
+        self.witSubmitDoer = agenting.WitnessReceiptor(hby=self.hby, force=True)
 
         self.rep = storing.Respondant(hby=hby, cues=self.cues, mbx=Mailboxer(name=self.hby.name, temp=self.hby.temp))
 
@@ -341,8 +343,9 @@ class Agent(doing.DoDoer):
         self.exc = exchanging.Exchanger(hby=hby, handlers=handlers)
         grouping.loadHandlers(exc=self.exc, mux=self.mux)
         protocoling.loadHandlers(hby=self.hby, exc=self.exc, notifier=self.notifier)
+        self.submitter = Submitter(hby=hby, submits=self.submits, witRec=self.witSubmitDoer)
         self.monitor = longrunning.Monitor(hby=hby, swain=self.swain, counselor=self.counselor, temp=hby.temp,
-                                           registrar=self.registrar, credentialer=self.credentialer, exchanger=self.exc)
+                                           registrar=self.registrar, credentialer=self.credentialer, submitter=self.submitter, exchanger=self.exc)
 
         self.rvy = routing.Revery(db=hby.db, cues=self.cues)
         self.kvy = eventing.Kevery(db=hby.db,
@@ -386,6 +389,7 @@ class Agent(doing.DoDoer):
             SeekerDoer(seeker=self.seeker, cues=self.verifier.cues, tock=self.tocks.get("seeker", 0.0)),
             ExchangeCueDoer(seeker=self.exnseeker, cues=self.exc.cues, queries=self.queries,
                             tock=self.tocks.get("exchangecue", 0.0)),
+            self.submitter,
         ])
 
         super(Agent, self).__init__(doers=doers, always=True, **opts)
@@ -1232,3 +1236,45 @@ class QueryCollectionEnd:
         rep.status = falcon.HTTP_202
         rep.content_type = "application/json"
         rep.data = op.to_json().encode("utf-8")
+
+class Submitter(doing.DoDoer):
+    def __init__(self, hby, submits, witRec):
+        """
+        Process to re-submit the last event from the KEL to the witnesses for receipts and to propogate it to each witness
+        """
+        self.hby = hby
+        self.submits = submits
+        self.witRec = witRec
+
+        super(Submitter, self).__init__(always=True)
+
+    def recur(self, tyme, deeds=None):
+        """Processes submit reqests submitting any on the cue"""
+        if self.submits:
+            msg = self.submits.popleft()
+            alias = msg["alias"]
+            hab = self.hby.habByName(name=alias)
+            sn = hab.kever.sn
+            if hab and hab.kever.wits:
+                auths = {}
+                if hasattr(msg, "code"):
+                    code = msg["code"]
+                    if code:
+                        for wit in hab.kever.wits:
+                            auths[wit] = f"{code}#{helping.nowIso8601()}"
+                witDoer = self.witRec
+                witDoer.force = True
+                self.extend([witDoer])
+                print("Re-submit waiting for witness receipts...")
+                witDoer.msgs.append(dict(pre=hab.pre, sn=sn))
+
+        else:
+            for doer in self.doers:
+                if doer.cues:
+                    cue = doer.cues.popleft()
+
+                    if len(doer.cues) == 0:
+                        print("Re-submit received all witness receipts for", cue["pre"])
+                        self.doers.remove(doer)
+
+        return super(Submitter, self).recur(tyme, deeds)

@@ -187,6 +187,7 @@ class MultisigJoinCollectionEnd:
                                                     " signing member list must contain a local identifier'")
 
         hab = agent.hby.joinSignifyGroupHab(gid, name=name, mhab=mhab, smids=smids, rmids=rmids)
+        
         try:
             hab.make(serder=serder, sigers=sigers)
         except (ValueError) as e:
