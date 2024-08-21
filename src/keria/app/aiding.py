@@ -654,16 +654,16 @@ class IdentifierResourceEnd:
 
         ---
         summary: Retrieve an identifier.
-        description: This endpoint retrieves an identifier by its human-readable name.
+        description: This endpoint retrieves an identifier by its prefix or human-readable name.
         tags:
         - Identifier
         parameters:
         - in: path
-          name: name
+          name: name or prefix
           schema:
             type: string
           required: true
-          description: The human-readable name of the identifier.
+          description: The human-readable name of the identifier or its prefix.
         responses:
             200:
                 description: Successfully retrieved the identifier details.
@@ -676,10 +676,10 @@ class IdentifierResourceEnd:
             raise falcon.HTTPBadRequest(description="name is required")
 
         agent = req.context.agent
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
             raise falcon.HTTPNotFound(
-                description=f"{name} is not a valid identifier name"
+                description=f"{name} is not a valid identifier name or prefix"
             )
 
         data = info(hab, agent.mgr, full=True)
@@ -693,7 +693,7 @@ class IdentifierResourceEnd:
         Parameters:
             req (Request): falcon.Request HTTP request object
             rep (Response): falcon.Response HTTP response object
-            name (str): human readable name for Hab to rename
+            name (str): human readable name for Hab to rename or its prefix
 
         ---
         summary: Rename an identifier.
@@ -702,11 +702,11 @@ class IdentifierResourceEnd:
         - Identifier
         parameters:
         - in: path
-          name: name
+          name: name or prefix
           schema:
             type: string
           required: true
-          description: The current human-readable name of the identifier.
+          description: The current human-readable name of the identifier or its prefix.
         requestBody:
             content:
               application/json:
@@ -715,7 +715,7 @@ class IdentifierResourceEnd:
                   properties:
                     name:
                       type: string
-                      description: The new name for the identifier.
+                      description: The new human-readable name for the identifier.
                   required:
                   - name
         responses:
@@ -729,17 +729,18 @@ class IdentifierResourceEnd:
         if not name:
             raise falcon.HTTPBadRequest(description="name is required")
         agent = req.context.agent
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
 
         if hab is None:
-            raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
+            raise falcon.HTTPNotFound(title=f"No AID with name or prefix {name} found")
         body = req.get_media()
         newName = body.get("name")
         habord = hab.db.habs.get(keys=(hab.pre,))
+        oldName = habord.name
         habord.name = newName
         hab.db.habs.pin(keys=(hab.pre,), val=habord)
         hab.db.names.pin(keys=("", newName), val=hab.pre)
-        hab.db.names.rem(keys=("", name))
+        hab.db.names.rem(keys=("", oldName))
         hab.name = newName
         hab = agent.hby.habByName(newName)
         data = info(hab, agent.mgr, full=True)
@@ -753,7 +754,7 @@ class IdentifierResourceEnd:
         Parameters:
             req (Request): falcon.Request HTTP request object
             rep (Response): falcon.Response HTTP response object
-            name (str): human-readable name for Hab to rotate or interact
+            name (str): human-readable name or prefix for Hab to rotate or interact
 
         ---
         summary: Process identifier events.
@@ -762,11 +763,11 @@ class IdentifierResourceEnd:
         - Identifier
         parameters:
         - in: path
-          name: name
+          name: name or prefix
           schema:
             type: string
           required: true
-          description: The human-readable name of the identifier.
+          description: The human-readable name of the identifier or its prefix.
         requestBody:
             content:
               application/json:
@@ -821,9 +822,9 @@ class IdentifierResourceEnd:
 
     @staticmethod
     def rotate(agent, name, body):
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(title=f"No AID with name {name} found")
+            raise falcon.HTTPNotFound(title=f"No AID with name or prefix {name} found")
 
         rot = body.get("rot")
         if rot is None:
@@ -918,7 +919,7 @@ class IdentifierResourceEnd:
 
     @staticmethod
     def interact(agent, name, body):
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
             raise falcon.HTTPNotFound(title=f"No AID {name} found")
 
@@ -1024,7 +1025,7 @@ class IdentifierOOBICollectionEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name (str): human-readable name for Hab to GET
+            name (str): human-readable name or prefix for Hab to GET
         ---
         summary: Fetch OOBI URLs of an identifier.
         description: This endpoint fetches the OOBI URLs for a specific role associated with an identifier.
@@ -1032,11 +1033,11 @@ class IdentifierOOBICollectionEnd:
         - Identifier
         parameters:
         - in: path
-          name: name
+          name: name or prefix
           schema:
             type: string
           required: true
-          description: The human-readable name of the identifier.
+          description: The human-readable name of the identifier or its prefix.
         - in: query
           name: role
           schema:
@@ -1055,9 +1056,9 @@ class IdentifierOOBICollectionEnd:
         if not name:
             raise falcon.HTTPBadRequest(description="name is required")
 
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if not hab:
-            raise falcon.HTTPNotFound(description="invalid alias {name}")
+            raise falcon.HTTPNotFound(description="invalid alias or prefix {name}")
 
         if "role" not in req.params:
             raise falcon.HTTPBadRequest(description="role parameter required")
@@ -1177,23 +1178,24 @@ class EndRoleCollectionEnd:
         Parameters:
             req (Request): falcon HTTP request object
             rep (Response): falcon HTTP response object
-            name (str): human readable alias for AID
+            name (str): human readable alias or prefix for AID
+            aid (str): aid to use instead of name
             aid (str): aid to use instead of name
             role (str): optional role to search for
 
         ---
         summary: Retrieve end roles.
-        description: This endpoint retrieves the end roles associated with AID or human-readable name.
+        description: This endpoint retrieves the end roles associated with an identifier prefix or human-readable name.
                      It can also filter the end roles based on a specific role.
         tags:
         - End Role
         parameters:
         - in: path
-          name: name
+          name: name or prefix
           schema:
             type: string
           required: false
-          description: The human-readable name of the identifier.
+          description: The human-readable name of the identifier or its prefix.
         - in: path
           name: aid
           schema:
@@ -1217,15 +1219,15 @@ class EndRoleCollectionEnd:
         agent = req.context.agent
 
         if name is not None:
-            hab = agent.hby.habByName(name)
+            hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
             if hab is None:
-                raise falcon.errors.HTTPNotFound(description=f"invalid alias {name}")
+                raise falcon.errors.HTTPNotFound(description=f"invalid alias or prefix {name}")
             pre = hab.pre
         elif aid is not None:
             pre = aid
         else:
             raise falcon.HTTPBadRequest(
-                description="either `aid` or `name` are required in the path"
+                description="name or prefix is required in the path"
             )
 
         if role is not None:
@@ -1251,22 +1253,22 @@ class EndRoleCollectionEnd:
         Args:
             req (Request): Falcon HTTP request object
             rep (Response): Falcon HTTP response object
-            name (str): human readable alias for AID
+            name (str): human readable alias or prefix for identifier
             aid (str): Not supported for POST.  If provided, a 404 is returned
             role (str): Not supported for POST.  If provided, a 404 is returned
 
         ---
         summary: Create an end role.
-        description: This endpoint creates an end role associated with a given identifier (AID) or name.
+        description: This endpoint creates an end role associated with a given identifier prefix or human-readable name.
         tags:
         - End Role
         parameters:
         - in: path
-          name: name
+          name: name or prefix
           schema:
             type: string
           required: true
-          description: The human-readable name of the identifier.
+          description: The human-readable name of the identifier or its prefix.
         - in: path
           name: aid
           schema:
@@ -1310,9 +1312,9 @@ class EndRoleCollectionEnd:
         role = data["role"]
         eid = data["eid"]
 
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.errors.HTTPNotFound(description=f"invalid alias {name}")
+            raise falcon.errors.HTTPNotFound(description=f"invalid alias or prefix {name}")
 
         if pre != hab.pre:
             raise falcon.errors.HTTPBadRequest(
@@ -1451,7 +1453,7 @@ class ChallengeResourceEnd:
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            name: human readable name of identifier to use to sign the challenge/response
+            name: human readable name or prefix of identifier to use to sign the challenge/response
 
         ---
         summary:  Sign challenge message and forward to peer identifier
@@ -1461,11 +1463,11 @@ class ChallengeResourceEnd:
            - Challenge/Response
         parameters:
           - in: path
-            name: name
+            name: name or prefix
             schema:
               type: string
             required: true
-            description: Human readable alias for the identifier to create
+            description: Human readable alias or prefix for the identifier to create
         requestBody:
             required: true
             content:
@@ -1486,9 +1488,9 @@ class ChallengeResourceEnd:
               description: Success submission of signed challenge/response
         """
         agent = req.context.agent
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPBadRequest(description="no matching Hab for alias {name}")
+            raise falcon.HTTPBadRequest(description="no matching Hab for alias or prefix {name}")
 
         body = req.get_media()
         if "exn" not in body or "sig" not in body or "recipient" not in body:
@@ -2057,7 +2059,7 @@ class GroupMemberCollectionEnd:
         Parameters:
             req (falcon.Request): The request object.
             rep (falcon.Response): The response object.
-            name (str): The human-readable name of the identifier.
+            name (str): The human-readable name or prefix of the identifier.
 
         ---
         summary: Fetch group member information.
@@ -2066,11 +2068,11 @@ class GroupMemberCollectionEnd:
         - Group Member
         parameters:
         - in: path
-          name: name
+          name: name or prefix
           schema:
             type: string
           required: true
-          description: The human-readable name of the identifier.
+          description: The human-readable name of the identifier or its prefix.
         responses:
             200:
                 description: Successfully fetched the group member information.
@@ -2081,9 +2083,9 @@ class GroupMemberCollectionEnd:
         """
         agent = req.context.agent
 
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.errors.HTTPNotFound(description=f"invalid alias {name}")
+            raise falcon.errors.HTTPNotFound(description=f"invalid alias or prefix {name}")
 
         if not isinstance(hab, habbing.SignifyGroupHab):
             raise falcon.HTTPBadRequest(

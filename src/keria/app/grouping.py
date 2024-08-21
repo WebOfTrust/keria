@@ -36,7 +36,7 @@ class MultisigRequestCollectionEnd:
         Parameters:
             req (falcon.Request): HTTP request object
             rep (falcon.Response): HTTP response object
-            name (str): AID of Hab to load credentials for
+            name (str): AID prefix or human-readable name of Hab to load credentials for
 
         """
         agent = req.context.agent
@@ -44,13 +44,13 @@ class MultisigRequestCollectionEnd:
         body = req.get_media()
 
         # Get the hab
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(description=f"alias or prefix {name} is not a valid reference to an identifier")
 
         # ...and make sure we're a Group
         if not isinstance(hab, habbing.SignifyGroupHab):
-            raise falcon.HTTPBadRequest(description=f"hab for alias {name} is not a multisig")
+            raise falcon.HTTPBadRequest(description=f"hab for alias or prefix {name} is not a multisig")
 
         # grab all of the required parameters
         ked = httping.getRequiredParam(body, "exn")
@@ -93,7 +93,7 @@ class MultisigJoinCollectionEnd:
         Parameters:
             req (falcon.Request): HTTP request object
             rep (falcon.Response): HTTP response object
-            name (str): AID of Hab to load credentials for
+            name (str): AID prefix or human-readable name of Hab to load credentials for
         ---
         summary: Create a multisig group request.
         description: This endpoint creates a multisig request based on the provided name.
@@ -101,7 +101,7 @@ class MultisigJoinCollectionEnd:
         - Multisig Request
         parameters:
         - in: path
-          name: name
+          name: name or prefix
           schema:
             type: string
           required: true
@@ -144,9 +144,9 @@ class MultisigJoinCollectionEnd:
         agent = req.context.agent
 
         # Get the hab
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is not None:
-            raise falcon.HTTPBadRequest(description=f"attempt to create identifier with an already used alias={name}")
+            raise falcon.HTTPBadRequest(description=f"attempt to create identifier with an already used alias or prefix {name}")
 
         agent = req.context.agent
         body = req.get_media()
@@ -169,7 +169,7 @@ class MultisigJoinCollectionEnd:
         both = list(set(smids + (rmids or [])))
         for recp in both:  # Have to verify we already know all the recipients.
             if recp not in agent.hby.kevers:
-                agent.hby.deleteHab(name=name)
+                agent.hby.deleteHab(name=hab.name)
                 raise falcon.HTTPBadRequest(description=f"attempt to merge with unknown AID={recp}")
 
         sigers = [core.Siger(qb64=sig) for sig in sigs]
