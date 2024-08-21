@@ -75,7 +75,7 @@ setup(
     ],
     python_requires='>=3.12.2',
     install_requires=[
-        'hio>=0.6.12',
+        'hio>=0.6.14',
         'keri==1.2.0.dev11',
         'mnemonic>=0.21',
         'multicommand>=1.0.0',
