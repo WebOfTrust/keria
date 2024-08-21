@@ -1328,6 +1328,10 @@ def test_identifier_resource_end(helpers):
         assert res.status_code == 200
         assert res.json['prefix'] == 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY'
 
+        res = client.simulate_get(path="/identifiers/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY")
+        assert res.status_code == 200
+        assert res.json['prefix'] == 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY'
+
 
 def test_oobi_ends(helpers):
     with helpers.openKeria() as (agency, agent, app, client):
