@@ -77,7 +77,7 @@ setup(
     install_requires=[
         'hio>=0.6.12',
         'keri==1.2.0.dev11',
-        'mnemonic>=0.20',
+        'mnemonic>=0.21',
         'multicommand>=1.0.0',
         'falcon>=3.1.3',
         'http_sfv>=0.9.8',
