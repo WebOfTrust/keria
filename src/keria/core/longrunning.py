@@ -20,12 +20,12 @@ from keri.help import helping
 from keria.app import delegating
 
 # long running operation types
-Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole challenge exchange '
+Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole challenge exchange submit '
                                 'done')
 
 OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation', group='group', query='query',
                   registry='registry', credential='credential', endrole='endrole', challenge='challenge',
-                  exchange='exchange', done='done')
+                  exchange='exchange', submit='submit', done='done')
 
 
 @dataclass_json
@@ -94,7 +94,7 @@ class Monitor:
 
     """
 
-    def __init__(self, hby, swain, counselor=None, registrar=None, exchanger=None, credentialer=None, opr=None,
+    def __init__(self, hby, swain, counselor=None, registrar=None, exchanger=None, credentialer=None, submitter=None, opr=None,
                  temp=False):
         """ Create long running operation monitor
 
@@ -110,6 +110,7 @@ class Monitor:
         self.registrar = registrar
         self.exchanger = exchanger
         self.credentialer = credentialer
+        self.submitter = submitter
         self.opr = opr if opr is not None else Operator(name=hby.name, temp=temp)
 
     def submit(self, oid, typ, metadata=None):
@@ -411,6 +412,26 @@ class Monitor:
                 operation.response = dict(exn=exn.ked)
             else:
                 operation.done = False
+
+        elif op.type in (OpTypes.submit,):
+            kever = self.hby.kevers[op.oid]
+            if kever and len(self.submitter.submits) == 0 and len(self.submitter.doers) == 0:
+                operation.done = True
+                operation.response = asdict(kever.state())
+            else:
+                start = helping.fromIso8601(op.start)
+                dtnow = helping.nowUTC()
+                if (dtnow - start) > datetime.timedelta(
+                    seconds=eventing.Kevery.TimeoutPWE
+                ):
+                    operation.done = True
+                    operation.error = Status(
+                        code=408,  # Using HTTP error codes here for lack of a better alternative
+                        message=f"long running {op.type} for {op.oid} operation timed out before "
+                        f"receiving sufficient witness receipts",
+                    )
+                else:
+                    operation.done = False
 
         elif op.type in (OpTypes.done, ):
             operation.done = True

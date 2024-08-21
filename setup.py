@@ -34,7 +34,7 @@ from setuptools import setup
 
 setup(
     name='keria',
-    version='0.2.0-dev0',  # also change in src/keria/__init__.py
+    version='0.2.0-dev3',  # also change in src/keria/__init__.py
     license='Apache Software License 2.0',
     description='KERIA: KERI Agent in the cloud',
     long_description="KERIA: KERI Agent in the cloud.",
@@ -82,7 +82,7 @@ setup(
         'falcon>=3.1.3',
         'http_sfv>=0.9.8',
         'dataclasses_json>=0.5.7',
-        'apispec>=6.3.0',
+        'apispec>=6.6.0',
     ],
     extras_require={
         # eg:
