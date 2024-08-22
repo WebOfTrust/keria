@@ -17,7 +17,9 @@ from keria.db import basing as abase
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Copy HabitatRecord smid and rmid data')
+parser = argparse.ArgumentParser(
+    description='Migrates existing public key/next key digest data from First Seen Event logs to signing member IDs '
+                '(smids) and rotation member IDs (rmids) on SignifyGroupHabs')
 parser.set_defaults(handler=lambda args: handler(args),
                     transferable=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
