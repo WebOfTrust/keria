@@ -118,11 +118,11 @@ test('delegation', async () => {
     await waitOperation(client2, await rpyResult2.op());
     const oobis = await client2.oobis().get('delegate');
 
-    console.log(oobis);
-    await getOrCreateContact(
+    const contactId = await getOrCreateContact(
         client1,
         'delegate',
         oobis.oobis[0].split('/agent/')[0]
     );
-    // console.log(res);
+
+    expect(contactId).toEqual(aid2.prefix);
 }, 600000);
