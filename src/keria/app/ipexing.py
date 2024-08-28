@@ -145,14 +145,10 @@ class IpexAdmitCollectionEnd:
 
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=rec, topic='credential'))
 
-        embeds = grant.ked['e']
-        acdc = embeds["acdc"]
-        issr = acdc['i']
-
         serder = serdering.SerderKERI(sad=admitked)
         ims = bytearray(serder.raw) + pathed['exn']
         agent.hby.psr.parseOne(ims=ims)
-        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=[issr], topic="credential"))
+        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=[grant.ked['i']], topic="credential"))
         agent.admits.append(dict(said=admitked['d'], pre=hab.pre))
 
         return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
