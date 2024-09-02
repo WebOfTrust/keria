@@ -924,8 +924,10 @@ def test_multisig(seeder, helpers):
 
         data = json.dumps(body).encode("utf-8")
         res = client0.simulate_post(path="/identifiers/issuer/ipex/grant", body=data)
-
         assert res.status_code == 200
+
+        agent0.exchanges.popleft()  # The multisig/exn
+        assert agent0.exchanges.popleft()["rec"][0] == holderPre  # The grant
 
         # Package up the GRANT into a multisig/exn from participant 1 to send to participant 0
         multiExnSerder, end = exchanging.exchange(route="/multisig/exn",
@@ -944,6 +946,9 @@ def test_multisig(seeder, helpers):
         data = json.dumps(body).encode("utf-8")
         res = client1.simulate_post(path="/identifiers/issuer/ipex/grant", body=data)
         assert res.status_code == 200
+
+        agent1.exchanges.popleft()  # The multisig/exn
+        assert agent1.exchanges.popleft()["rec"][0] == holderPre  # The grant
 
         # Wait until the GRANT has been persisted by Agent0
         while agent0.exc.complete(said=grantSerder.said) is not True:
@@ -996,8 +1001,10 @@ def test_multisig(seeder, helpers):
 
         data = json.dumps(body).encode("utf-8")
         res = hclient0.simulate_post(path="/identifiers/holder/ipex/admit", body=data)
-
         assert res.status_code == 200
+
+        hagent0.exchanges.popleft()  # The multisig/exn
+        assert hagent0.exchanges.popleft()["rec"][0] == issuerPre  # The admit
 
         # Package up the ADMIT into a multisig/exn from participant 1 to send to participant 0
         multiExnSerder, end = exchanging.exchange(route="/multisig/exn",
@@ -1016,6 +1023,9 @@ def test_multisig(seeder, helpers):
         data = json.dumps(body).encode("utf-8")
         res = hclient1.simulate_post(path="/identifiers/holder/ipex/admit", body=data)
         assert res.status_code == 200
+
+        hagent1.exchanges.popleft()  # The multisig/exn
+        assert hagent1.exchanges.popleft()["rec"][0] == issuerPre  # The admit
 
         # Wait until the ADMIT has been persisted by Hagent0
         while hagent0.exc.complete(said=admitSerder.said) is not True:
@@ -1073,6 +1083,9 @@ def test_multisig(seeder, helpers):
         res = vclient0.simulate_post(path="/identifiers/verifier/ipex/apply", body=data)
         assert res.status_code == 200
 
+        vagent0.exchanges.popleft()  # The multisig/exn
+        assert vagent0.exchanges.popleft()["rec"][0] == holderPre  # The apply
+
         multiExnSerder1, end = exchanging.exchange(route="/multisig/exn",
                                                    payload=dict(),
                                                    sender=vpre1,
@@ -1089,6 +1102,9 @@ def test_multisig(seeder, helpers):
         data = json.dumps(body).encode("utf-8")
         res = vclient1.simulate_post(path="/identifiers/verifier/ipex/apply", body=data)
         assert res.status_code == 200
+
+        vagent1.exchanges.popleft()  # The multisig/exn
+        assert vagent1.exchanges.popleft()["rec"][0] == holderPre  # The apply
 
         while vagent0.exc.complete(said=applySerder.said) is not True:
             doist.recur(deeds=deeds)
@@ -1138,6 +1154,9 @@ def test_multisig(seeder, helpers):
         res = hclient0.simulate_post(path="/identifiers/holder/ipex/offer", body=data)
         assert res.status_code == 200
 
+        hagent0.exchanges.popleft()  # The multisig/exn
+        assert hagent0.exchanges.popleft()["rec"][0] == verifierPre  # The offer
+
         multiExnSerder1, end = exchanging.exchange(route="/multisig/exn",
                                                    payload=dict(),
                                                    sender=hpre1,
@@ -1154,6 +1173,9 @@ def test_multisig(seeder, helpers):
         data = json.dumps(body).encode("utf-8")
         res = hclient1.simulate_post(path="/identifiers/holder/ipex/offer", body=data)
         assert res.status_code == 200
+
+        hagent1.exchanges.popleft()  # The multisig/exn
+        assert hagent1.exchanges.popleft()["rec"][0] == verifierPre  # The offer
 
         while hagent0.exc.complete(said=offerSerder.said) is not True:
             doist.recur(deeds=deeds)
@@ -1202,6 +1224,9 @@ def test_multisig(seeder, helpers):
         res = vclient0.simulate_post(path="/identifiers/verifier/ipex/agree", body=data)
         assert res.status_code == 200
 
+        vagent0.exchanges.popleft()  # The multisig/exn
+        assert vagent0.exchanges.popleft()["rec"][0] == holderPre  # The agree
+
         multiExnSerder1, end = exchanging.exchange(route="/multisig/exn",
                                                    payload=dict(),
                                                    sender=vpre1,
@@ -1218,6 +1243,9 @@ def test_multisig(seeder, helpers):
         data = json.dumps(body).encode("utf-8")
         res = vclient1.simulate_post(path="/identifiers/verifier/ipex/agree", body=data)
         assert res.status_code == 200
+
+        vagent1.exchanges.popleft()  # The multisig/exn
+        assert vagent1.exchanges.popleft()["rec"][0] == holderPre  # The agree
 
         while vagent0.exc.complete(said=agreeSerder.said) is not True:
             doist.recur(deeds=deeds)
@@ -1271,8 +1299,10 @@ def test_multisig(seeder, helpers):
 
         data = json.dumps(body).encode("utf-8")
         res = hclient0.simulate_post(path="/identifiers/holder/ipex/grant", body=data)
-
         assert res.status_code == 200
+
+        hagent0.exchanges.popleft()  # The multisig/exn
+        assert hagent0.exchanges.popleft()["rec"][0] == verifierPre  # The grant
 
         multiExnSerder1, end = exchanging.exchange(route="/multisig/exn",
                                                    payload=dict(),
@@ -1290,6 +1320,9 @@ def test_multisig(seeder, helpers):
         data = json.dumps(body).encode("utf-8")
         res = hclient1.simulate_post(path="/identifiers/holder/ipex/grant", body=data)
         assert res.status_code == 200
+
+        hagent1.exchanges.popleft()  # The multisig/exn
+        assert hagent1.exchanges.popleft()["rec"][0] == verifierPre  # The grant
 
         while hagent0.exc.complete(said=grantSerder.said) is not True:
             doist.recur(deeds=deeds)
@@ -1337,6 +1370,9 @@ def test_multisig(seeder, helpers):
         res = vclient0.simulate_post(path="/identifiers/verifier/ipex/admit", body=data)
         assert res.status_code == 200
 
+        vagent0.exchanges.popleft()  # The multisig/exn
+        assert vagent0.exchanges.popleft()["rec"][0] == holderPre  # The admit
+
         multiExnSerder1, end = exchanging.exchange(route="/multisig/exn",
                                                    payload=dict(),
                                                    sender=vpre1,
@@ -1353,6 +1389,9 @@ def test_multisig(seeder, helpers):
         data = json.dumps(body).encode("utf-8")
         res = vclient1.simulate_post(path="/identifiers/verifier/ipex/admit", body=data)
         assert res.status_code == 200
+
+        vagent1.exchanges.popleft()  # The multisig/exn
+        assert vagent1.exchanges.popleft()["rec"][0] == holderPre  # The admit
 
         while vagent0.exc.complete(said=admitSerder.said) is not True:
             doist.recur(deeds=deeds)
