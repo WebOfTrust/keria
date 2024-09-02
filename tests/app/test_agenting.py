@@ -625,8 +625,8 @@ def test_submitter(seeder, helpers):
         assert resSubmit.status_code == 200
         assert resSubmit.text == json.dumps(
             dict(
-                name="submit.EKOrePIIU8ynKwOOLxs56ZxxQswUFNV8-cyYFt3nBJHR",
-                metadata={"alias": "pal", "sn": 0},
+                name="submit.EKOrePIIU8ynKwOOLxs56ZxxQswUFNV8-cyYFt3nBJHR.pal",
+                metadata={"pre": "EKOrePIIU8ynKwOOLxs56ZxxQswUFNV8-cyYFt3nBJHR", "alias": "pal", "sn": 0},
                 done=True,
                 error=None,
                 response={

@@ -459,7 +459,8 @@ def test_identifier_collection_end(helpers):
         assert res.status_code == 200
         assert res.json["metadata"]["alias"] == "aid3"
         assert res.json["metadata"]["sn"] == 0
-        assert res.json["name"] == "submit.EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1"
+        assert res.json["metadata"]["pre"] == "EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1"
+        assert res.json["name"] == "submit.EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1.aid3"
 
         # rotate aid3
         salter = core.Salter(raw=salt)

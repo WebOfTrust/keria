@@ -159,13 +159,13 @@ def test_operations(helpers):
         assert len(res.json) == 0
 
         op = agent.monitor.status(
-            longrunning.Op(type='query', oid=recp, start=helping.nowIso8601(), metadata={'sn': '0'}))
-        assert op.name == f"query.{recp}"
+            longrunning.Op(type='query', oid=f"{recp}.0", start=helping.nowIso8601(), metadata={'pre': recp, 'sn': '0'}))
+        assert op.name == f"query.{recp}.0"
         assert op.done is True
 
         op = agent.monitor.status(
-            longrunning.Op(type='query', oid=recp, start=helping.nowIso8601(), metadata={'sn': '4'}))
-        assert op.name == f"query.{recp}"
+            longrunning.Op(type='query', oid=f"{recp}.4", start=helping.nowIso8601(), metadata={'pre': recp, 'sn': '4'}))
+        assert op.name == f"query.{recp}.4"
         assert op.done is False
 
 

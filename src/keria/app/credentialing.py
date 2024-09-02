@@ -183,8 +183,8 @@ class RegistryCollectionEnd:
         seqner = coring.Seqner(sn=ixn.sn)
         prefixer = coring.Prefixer(qb64=ixn.pre)
         agent.registrar.incept(hab, registry, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=ixn.said))
-        op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.registry,
-                                  metadata=dict(anchor=anchor, depends=op))
+        op = agent.monitor.submit(registry.regk, longrunning.OpTypes.registry,
+                                  metadata=dict(pre=hab.kever.prefixer.qb64, anchor=anchor, depends=op))
 
         rep.status = falcon.HTTP_202
         rep.data = op.to_json().encode("utf-8")
@@ -604,7 +604,7 @@ class CredentialCollectionEnd:
             agent.credentialer.validate(creder)
             agent.registrar.issue(regk, iserder, anc)
             agent.credentialer.issue(creder=creder, serder=iserder)
-            op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.credential,
+            op = agent.monitor.submit(creder.said, longrunning.OpTypes.credential,
                                       metadata=dict(ced=creder.sad, depends=op))
 
         except kering.ConfigurationError as e:
