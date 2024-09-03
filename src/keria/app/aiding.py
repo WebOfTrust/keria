@@ -552,7 +552,7 @@ class IdentifierCollectionEnd:
                     )
                 )
                 op = agent.monitor.submit(
-                    serder.pre, longrunning.OpTypes.group, metadata=dict(sn=0)
+                    serder.pre, longrunning.OpTypes.group, metadata=dict(pre=hab.pre, sn=0)
                 )
 
                 rep.content_type = "application/json"
@@ -622,7 +622,7 @@ class IdentifierCollectionEnd:
                     op = agent.monitor.submit(
                         hab.kever.prefixer.qb64,
                         longrunning.OpTypes.witness,
-                        metadata=dict(sn=0),
+                        metadata=dict(pre=hab.pre, sn=0),
                     )
                     rep.status = falcon.HTTP_202
                     rep.data = op.to_json().encode("utf-8")
@@ -632,7 +632,7 @@ class IdentifierCollectionEnd:
                     op = agent.monitor.submit(
                         hab.kever.prefixer.qb64,
                         longrunning.OpTypes.done,
-                        metadata=dict(response=serder.ked),
+                        metadata=dict(pre=hab.pre, response=serder.ked),
                     )
                     rep.data = op.to_json().encode("utf-8")
 
@@ -887,7 +887,7 @@ class IdentifierResourceEnd:
                 )
             )
             op = agent.monitor.submit(
-                serder.pre, longrunning.OpTypes.group, metadata=dict(sn=serder.sn)
+                serder.said, longrunning.OpTypes.group, metadata=dict(pre=hab.pre, sn=serder.sn)
             )
 
             return op
@@ -895,7 +895,7 @@ class IdentifierResourceEnd:
         if hab.kever.delpre:
             agent.anchors.append(dict(alias=name, pre=hab.pre, sn=serder.sn))
             op = agent.monitor.submit(
-                hab.kever.prefixer.qb64,
+                serder.said,
                 longrunning.OpTypes.delegation,
                 metadata=dict(pre=hab.pre, sn=serder.sn),
             )
@@ -904,14 +904,14 @@ class IdentifierResourceEnd:
         if hab.kever.wits:
             agent.witners.append(dict(serder=serder))
             op = agent.monitor.submit(
-                hab.kever.prefixer.qb64,
+                serder.said,
                 longrunning.OpTypes.witness,
-                metadata=dict(sn=serder.sn),
+                metadata=dict(pre=hab.pre, sn=serder.sn),
             )
             return op
 
         op = agent.monitor.submit(
-            hab.kever.prefixer.qb64,
+            serder.said,
             longrunning.OpTypes.done,
             metadata=dict(response=serder.ked),
         )
@@ -945,7 +945,7 @@ class IdentifierResourceEnd:
         if "group" in body:
             agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers))
             op = agent.monitor.submit(
-                serder.pre, longrunning.OpTypes.group, metadata=dict(sn=serder.sn)
+                serder.said, longrunning.OpTypes.group, metadata=dict(pre=hab.pre, sn=serder.sn)
             )
 
             return op
@@ -953,20 +953,19 @@ class IdentifierResourceEnd:
         if hab.kever.wits:
             agent.witners.append(dict(serder=serder))
             op = agent.monitor.submit(
-                hab.kever.prefixer.qb64,
+                serder.said,
                 longrunning.OpTypes.witness,
-                metadata=dict(sn=serder.sn),
+                metadata=dict(pre=hab.pre, sn=serder.sn),
             )
             return op
 
         op = agent.monitor.submit(
-            hab.kever.prefixer.qb64,
+            serder.said,
             longrunning.OpTypes.done,
             metadata=dict(response=serder.ked),
         )
         return op
-    
-    
+
     @staticmethod
     def submit_id(agent, name, body):
         hab = agent.hby.habByName(name)
@@ -976,9 +975,9 @@ class IdentifierResourceEnd:
         code = body.get("code")
 
         if hab.kever.wits:
-            agent.submits.append(dict(alias=name,code=code))
+            agent.submits.append(dict(alias=name, code=code))
             op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.submit,
-                                      metadata=dict(alias=name,sn=hab.kever.sn))
+                                      metadata=dict(alias=name, sn=hab.kever.sn))
             return op
 
         raise falcon.HTTPBadRequest(title=f"invalid identifier submitted, {name} has no witnesses")

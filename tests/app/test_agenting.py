@@ -448,6 +448,52 @@ def test_querier(helpers):
         assert qryDoer.pre == "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
 
 
+def test_query_ends(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        queryEnd = agenting.QueryCollectionEnd()
+        app.add_route("/queries", queryEnd)
+
+        result = client.simulate_post(path="/queries")
+        assert result.status == falcon.HTTP_400
+
+        result = client.simulate_post(path="/queries", body=json.dumps(dict()))
+        assert result.status == falcon.HTTP_400
+
+        body = dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9")
+        result = client.simulate_post(path="/queries", body=json.dumps(body))
+        assert result.status == falcon.HTTP_202
+        assert result.json == {'done': False,
+                               'error': None,
+                               'metadata': {'pre': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9'},
+                               'name': 'query.EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9',
+                               'response': None}
+        assert len(agent.queries) == 1
+
+        snbody = dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9", sn="2")
+        result = client.simulate_post(path="/queries", body=json.dumps(snbody))
+        assert result.status == falcon.HTTP_202
+        assert result.json == {'done': False,
+                               'error': None,
+                               'metadata': {'pre': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9', 'sn': '2'},
+                               'name': 'query.EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9.2',
+                               'response': None}
+        assert len(agent.queries) == 2
+
+        ancbody = dict(
+            pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9",
+            anchor={"i": "EKQSWRXh_JHX61NdrL6wJ8ELMwG4zFY8y-sU1nymYzXZ", "s": "1", "d": "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"}
+        )
+        result = client.simulate_post(path="/queries", body=json.dumps(ancbody))
+        assert result.status == falcon.HTTP_202
+        assert result.json == {'done': False,
+                               'error': None,
+                               'metadata': {'pre': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9',
+                                            'anchor': {'i': 'EKQSWRXh_JHX61NdrL6wJ8ELMwG4zFY8y-sU1nymYzXZ', 's': '1', 'd': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY'}},
+                               'name': 'query.EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9.EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                               'response': None}
+        assert len(agent.queries) == 3
+
+
 class MockServerTls:
     def __init__(self,  certify, keypath, certpath, cafilepath, port):
         pass

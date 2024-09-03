@@ -101,7 +101,7 @@ class IpexAdmitCollectionEnd:
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=rec, topic='credential'))
         agent.admits.append(dict(said=ked['d'], pre=hab.pre))
 
-        return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
+        return agent.monitor.submit(serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
 
     @staticmethod
     def sendMultisigExn(agent, hab, ked, sigs, atc, rec):
@@ -151,7 +151,7 @@ class IpexAdmitCollectionEnd:
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=[admitked['a']['i']], topic="credential"))
         agent.admits.append(dict(said=admitked['d'], pre=hab.pre))
 
-        return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
+        return agent.monitor.submit(serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
 
 
 class IpexGrantCollectionEnd:
@@ -226,7 +226,7 @@ class IpexGrantCollectionEnd:
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=rec, topic='credential'))
         agent.grants.append(dict(said=ked['d'], pre=hab.pre, rec=rec))
 
-        return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
+        return agent.monitor.submit(serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
 
     @staticmethod
     def sendMultisigExn(agent, hab, ked, sigs, atc, rec):
@@ -273,7 +273,7 @@ class IpexGrantCollectionEnd:
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=[grantRec], topic="credential"))
         agent.grants.append(dict(said=grant['d'], pre=hab.pre, rec=[grantRec]))
 
-        return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
+        return agent.monitor.submit(serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
 
 
 class IpexApplyCollectionEnd:
@@ -343,7 +343,7 @@ class IpexApplyCollectionEnd:
         agent.hby.psr.parseOne(ims=bytearray(ims))
 
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=rec, topic='credential'))
-        return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
+        return agent.monitor.submit(serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
 
     @staticmethod
     def sendMultisigExn(agent, hab, ked, sigs, atc, rec):
@@ -387,7 +387,7 @@ class IpexApplyCollectionEnd:
         agent.hby.psr.parseOne(ims=ims)
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=[applyRec], topic="credential"))
 
-        return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
+        return agent.monitor.submit(serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
 
 
 class IpexOfferCollectionEnd:
@@ -457,7 +457,7 @@ class IpexOfferCollectionEnd:
         agent.hby.psr.parseOne(ims=bytearray(ims))
 
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=rec, topic='credential'))
-        return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
+        return agent.monitor.submit(serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
 
     @staticmethod
     def sendMultisigExn(agent, hab, ked, sigs, atc, rec):
@@ -505,7 +505,7 @@ class IpexOfferCollectionEnd:
         agent.hby.psr.parseOne(ims=ims)
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=[offerRec], topic="credential"))
 
-        return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
+        return agent.monitor.submit(serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
 
 
 class IpexAgreeCollectionEnd:
@@ -574,7 +574,7 @@ class IpexAgreeCollectionEnd:
         agent.hby.psr.parseOne(ims=bytearray(ims))
 
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=rec, topic='credential'))
-        return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
+        return agent.monitor.submit(serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
 
     @staticmethod
     def sendMultisigExn(agent, hab, ked, sigs, atc, rec):
@@ -622,4 +622,4 @@ class IpexAgreeCollectionEnd:
         agent.hby.psr.parseOne(ims=ims)
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=[agreeRec], topic="credential"))
 
-        return agent.monitor.submit(serder.pre, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
+        return agent.monitor.submit(serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))

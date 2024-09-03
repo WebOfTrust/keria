@@ -191,14 +191,15 @@ class Monitor:
         )
 
         if op.type in (OpTypes.witness,):
-            if op.oid not in self.hby.kevers:
-                raise kering.ValidationError(f"long running {op.type} operation identifier {op.oid} not found")
+            if "pre" not in op.metadata or "sn" not in op.metadata:
+                raise kering.ValidationError(f"invalid long running {op.type} operation, metadata missing required fields ('pre', 'sn')")
 
-            if "sn" not in op.metadata:
-                raise kering.ValidationError(f"invalid long running {op.type} operation, metadata missing 'sn' field")
+            pre = op.metadata["pre"]
+            if pre not in self.hby.kevers:
+                raise kering.ValidationError(f"identifier {pre} not found for long running {op.oid} ({op.type})")
 
             sn = op.metadata["sn"]
-            kever = self.hby.kevers[op.oid]
+            kever = self.hby.kevers[pre]
             sdig = self.hby.db.getKeLast(key=dbing.snKey(pre=kever.prefixer.qb64b, sn=sn))
             if sdig is not None:
 
@@ -217,7 +218,7 @@ class Monitor:
                     if (dtnow - start) > datetime.timedelta(seconds=eventing.Kevery.TimeoutPWE):
                         operation.done = True
                         operation.error = Status(code=408,  # Using HTTP error codes here for lack of a better alternative
-                                                 message=f"long running {op.type} for {op.oid} operation timed out before "
+                                                 message=f"long running {op.type} for {op.oid} (pre: {pre}) operation timed out before "
                                                          f"receiving sufficient witness receipts")
                     else:
                         operation.done = False
@@ -249,10 +250,14 @@ class Monitor:
                 operation.done = False
 
         elif op.type in (OpTypes.delegation, ):
-            if op.oid not in self.hby.kevers:
-                raise kering.ValidationError(f"long running {op.type} operation identifier {op.oid} not found")
+            if "pre" not in op.metadata:
+                raise kering.ValidationError(f"invalid long running {op.type} operation, metadata missing required field 'pre'")
 
-            kever = self.hby.kevers[op.oid]
+            pre = op.metadata["pre"]
+            if pre not in self.hby.kevers:
+                raise kering.ValidationError(f"long running {op.type} operation identifier {pre} not found (oid: {op.oid})")
+
+            kever = self.hby.kevers[pre]
             
             reqsn = "sn"
             reqtee = "teepre"
@@ -261,7 +266,7 @@ class Monitor:
             if reqsn in op.metadata: #delegatee detects successful delegation
                 sn = op.metadata["sn"]
                 seqner = coring.Seqner(sn=sn)
-                sdig = self.hby.db.getKeLast(key=dbing.snKey(pre=op.oid, sn=sn))
+                sdig = self.hby.db.getKeLast(key=dbing.snKey(pre=pre, sn=sn))
 
                 if self.swain.complete(kever.prefixer, seqner):
                     evt = self.hby.db.getEvt(dbing.dgKey(pre=kever.prefixer.qb64, dig=bytes(sdig)))
@@ -285,14 +290,15 @@ class Monitor:
                 raise falcon.HTTPBadRequest(description=f"longrunning operation type {op.type} requires one of {required}, but are missing from request")
 
         elif op.type in (OpTypes.group, ):
-            if "sn" not in op.metadata:
-                raise kering.ValidationError(f"invalid long running {op.type} operation, metadata missing 'sn' field")
+            if "pre" not in op.metadata or "sn" not in op.metadata:
+                raise kering.ValidationError(f"invalid long running {op.type} operation, metadata missing required fields ('pre', 'sn')")
 
-            prefixer = coring.Prefixer(qb64=op.oid)
+            pre = op.metadata["pre"]
+            prefixer = coring.Prefixer(qb64=pre)
             seqner = coring.Seqner(sn=op.metadata["sn"])
 
             if self.counselor.complete(prefixer, seqner):
-                sdig = self.hby.db.getKeLast(key=dbing.snKey(pre=op.oid, sn=seqner.sn))
+                sdig = self.hby.db.getKeLast(key=dbing.snKey(pre=pre, sn=seqner.sn))
                 evt = self.hby.db.getEvt(dbing.dgKey(pre=prefixer.qb64, dig=bytes(sdig)))
                 serder = serdering.SerderKERI(raw=bytes(evt))
 
@@ -302,11 +308,15 @@ class Monitor:
                 operation.done = False
 
         elif op.type in (OpTypes.query, ):
-            if op.oid not in self.hby.kevers:
+            if "pre" not in op.metadata:
+                raise kering.ValidationError(f"invalid long running {op.type} operation, metadata missing required field 'pre'")
+
+            pre = op.metadata["pre"]
+            if pre not in self.hby.kevers:
                 operation.done = False
 
             else:
-                kever = self.hby.kevers[op.oid]
+                kever = self.hby.kevers[pre]
                 if "sn" in op.metadata:
                     sn = int(op.metadata['sn'], 16)
                     if kever.sn >= sn:
@@ -316,14 +326,14 @@ class Monitor:
                         operation.done = False
                 elif "anchor" in op.metadata:
                     anchor = op.metadata["anchor"]
-                    if self.hby.db.findAnchoringSealEvent(op.oid, seal=anchor) is not None:
+                    if self.hby.db.findAnchoringSealEvent(pre, seal=anchor) is not None:
                         operation.done = True
                         operation.response = asdict(kever.state())
                     else:
                         operation.done = False
                 else:
                     ksn = None
-                    for (_, saider) in self.hby.db.knas.getItemIter(keys=(op.oid,)):
+                    for (_, saider) in self.hby.db.knas.getItemIter(keys=(pre,)):
                         ksn = self.hby.db.ksns.get(keys=(saider.qb64,))
                         break
 
@@ -334,15 +344,17 @@ class Monitor:
                         operation.done = False
 
         elif op.type in (OpTypes.registry, ):
-            if op.oid not in self.hby.kevers:
+            if "pre" not in op.metadata or "anchor" not in op.metadata:
                 raise kering.ValidationError(
-                    f"long running {op.type} operation identifier {op.oid} not found")
-            if "anchor" not in op.metadata:
+                    f"invalid long running {op.type} operation, metadata missing required fields ('pre', 'anchor')")
+
+            pre = op.metadata["pre"]
+            if pre not in self.hby.kevers:
                 raise kering.ValidationError(
-                    f"invalid long running {op.type} operation, metadata missing 'anchor' field")
+                    f"identifier {pre} for long running {op.type} operation {op.oid} not found")
 
             anchor = op.metadata["anchor"]
-            if self.hby.db.findAnchoringSealEvent(op.oid, seal=anchor) is not None:
+            if self.hby.db.findAnchoringSealEvent(pre, seal=anchor) is not None:
                 operation.done = True
                 operation.response = dict(anchor=anchor)
             else:
@@ -361,21 +373,16 @@ class Monitor:
                 operation.done = False
 
         elif op.type in (OpTypes.exchange,):
-            if "said" not in op.metadata:
-                raise kering.ValidationError(
-                    f"invalid long running {op.type} operation, metadata missing 'said' field")
-
-            said = op.metadata["said"]
-            if self.exchanger.complete(said):
+            if self.exchanger.complete(op.oid):
                 operation.done = True
-                operation.response = dict(said=said)
+                operation.response = dict(said=op.oid)
             else:
                 operation.done = False
 
         elif op.type in (OpTypes.endrole, ):
             if "cid" not in op.metadata or "role" not in op.metadata or "eid" not in op.metadata:
                 raise kering.ValidationError(
-                    f"invalid long running {op.type} operation, metadata missing 'ced' field")
+                    f"invalid long running {op.type} operation, metadata missing required fields ('cid', 'role', 'eid')")
 
             cid = op.metadata['cid']
             role = op.metadata['role']
@@ -396,7 +403,7 @@ class Monitor:
 
             if "words" not in op.metadata:
                 raise kering.ValidationError(
-                    f"invalid long running {op.type} operation, metadata missing 'ced' field")
+                    f"invalid long running {op.type} operation, metadata missing 'words' field")
 
             found = False
             words = op.metadata["words"]

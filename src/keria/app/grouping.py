@@ -195,7 +195,7 @@ class MultisigJoinCollectionEnd:
 
         agent.inceptGroup(pre=gid, mpre=mhab.pre, verfers=verfers, digers=digers)
         agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
-        op = agent.monitor.submit(serder.pre, longrunning.OpTypes.group, metadata=dict(sn=serder.sn))
+        op = agent.monitor.submit(serder.said, longrunning.OpTypes.group, metadata=dict(pre=serder.pre, sn=serder.sn))
 
         rep.content_type = "application/json"
         rep.status = falcon.HTTP_202

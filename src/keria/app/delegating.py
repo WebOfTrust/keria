@@ -216,9 +216,9 @@ class DelegatorEnd:
         
         # successful approval returns the delegatee prefix
         teepre = approveDelegation(hab, anc)
-        adop = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.delegation,
-                                    metadata=dict(teepre=teepre, anchor=anc, depends=op))
-        
+        adop = agent.monitor.submit(anc["d"], longrunning.OpTypes.delegation,
+                                    metadata=dict(pre=hab.kever.prefixer.qb64, teepre=teepre, anchor=anc, depends=op))
+
         try:
             rep.status = falcon.HTTP_200
             rep.content_type = "application/json"

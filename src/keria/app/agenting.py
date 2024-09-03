@@ -1218,20 +1218,21 @@ class QueryCollectionEnd:
         pre = httping.getRequiredParam(body, "pre")
         qry = dict(pre=pre)
 
-        meta = dict()
+        oid = pre
         if "anchor" in body:
-            meta["anchor"] = body["anchor"]
+            qry["anchor"] = body["anchor"]
+            oid = f"{pre}.{body["anchor"]["d"]}"
         elif "sn" in body:
-            meta["sn"] = body["sn"]
+            qry["sn"] = body["sn"]
+            oid = f"{pre}.{body["sn"]}"
         else:  # Must reset key state so we know when we have a new update.
             for (keys, saider) in agent.hby.db.knas.getItemIter(keys=(pre,)):
                 agent.hby.db.knas.rem(keys)
                 agent.hby.db.ksns.rem((saider.qb64,))
                 agent.hby.db.ksns.rem((saider.qb64,))
 
-        qry.update(meta)
         agent.queries.append(qry)
-        op = agent.monitor.submit(pre, longrunning.OpTypes.query, metadata=meta)
+        op = agent.monitor.submit(oid, longrunning.OpTypes.query, metadata=qry)
 
         rep.status = falcon.HTTP_202
         rep.content_type = "application/json"
