@@ -421,10 +421,7 @@ class Monitor:
                 operation.done = False
 
         elif op.type in (OpTypes.submit,):
-            if "pre" not in op.metadata:
-                raise kering.ValidationError(f"invalid long running {op.type} operation, metadata missing 'pre' field")
-
-            kever = self.hby.kevers[op.metadata["pre"]]
+            kever = self.hby.kevers[op.oid]
             if kever and len(self.submitter.submits) == 0 and len(self.submitter.doers) == 0:
                 operation.done = True
                 operation.response = asdict(kever.state())

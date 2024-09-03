@@ -271,12 +271,6 @@ def test_operation_bad_metadata(helpers):
             agent.monitor.status(challengeop)
         assert str(err.value) == "invalid long running challenge operation, metadata missing 'words' field"
 
-        # Submit
-        submitop = longrunning.Op(type=longrunning.OpTypes.submit, oid="EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1",
-                                start=helping.nowIso8601(), metadata={})
-        with pytest.raises(ValidationError) as err:
-            agent.monitor.status(submitop)
-        assert str(err.value) == "invalid long running submit operation, metadata missing 'pre' field"
 
 def test_error(helpers):
     with helpers.openKeria() as (agency, agent, app, client):

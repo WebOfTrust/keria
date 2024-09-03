@@ -965,23 +965,19 @@ class IdentifierResourceEnd:
             metadata=dict(response=serder.ked),
         )
         return op
-    
-    
+
     @staticmethod
     def submit_id(agent, name, body):
         hab = agent.hby.habByName(name)
         if hab is None:
             raise falcon.HTTPNotFound(title=f"No AID {name} found")
 
-        oid = f"{hab.kever.prefixer.qb64}.{name}"
         code = body.get("code")
-        if code:
-            oid += f".{code}"
 
         if hab.kever.wits:
-            agent.submits.append(dict(alias=name,code=code))
-            op = agent.monitor.submit(oid, longrunning.OpTypes.submit,
-                                      metadata=dict(pre=hab.pre, alias=name, sn=hab.kever.sn))
+            agent.submits.append(dict(alias=name, code=code))
+            op = agent.monitor.submit(hab.kever.prefixer.qb64, longrunning.OpTypes.submit,
+                                      metadata=dict(alias=name, sn=hab.kever.sn))
             return op
 
         raise falcon.HTTPBadRequest(title=f"invalid identifier submitted, {name} has no witnesses")
