@@ -382,7 +382,7 @@ class Monitor:
         elif op.type in (OpTypes.endrole, ):
             if "cid" not in op.metadata or "role" not in op.metadata or "eid" not in op.metadata:
                 raise kering.ValidationError(
-                    f"invalid long running {op.type} operation, metadata missing 'ced' field")
+                    f"invalid long running {op.type} operation, metadata missing required fields ('cid', 'role', 'eid')")
 
             cid = op.metadata['cid']
             role = op.metadata['role']
