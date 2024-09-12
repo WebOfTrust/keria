@@ -281,6 +281,8 @@ class IdentifierCollectionEnd:
             name = ".".join(name)  # detupleize the database key name
 
             hab = agent.hby.habByName(name)
+            if hab is None:
+                continue
             data = info(hab, agent.mgr)
             res.append(data)
 
