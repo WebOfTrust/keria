@@ -245,7 +245,7 @@ export class SaltyKeeper implements Keeper {
     ) {
         // # Salter is the entered passcode and used for enc/dec of salts for each AID
         this.salter = salter;
-        const signer = this.salter.signer(undefined, (transferable = false));
+        const signer = this.salter.signer(code, transferable, undefined, tier);
 
         this.aeid = signer.verfer.qb64;
 
@@ -490,7 +490,7 @@ export class RandyKeeper implements Keeper {
         this.count = count;
         this.ncount = ncount;
 
-        const signer = this.salter.signer(undefined, (transferable = false));
+        const signer = this.salter.signer(code, transferable);
         this.aeid = signer.verfer.qb64;
 
         this.encrypter = new Encrypter({}, b(this.aeid));

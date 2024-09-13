@@ -154,7 +154,7 @@ describe('delegate', () => {
                 icodes: ['A'],
                 ncodes: ['A'],
                 dcode: 'E',
-                transferable: false,
+                transferable: true,
             },
         };
         assert.equal(

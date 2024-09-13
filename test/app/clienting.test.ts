@@ -393,7 +393,7 @@ describe('SignifyClient', () => {
             lastHeaders
                 .get(HEADER_SIG_INPUT)
                 ?.endsWith(
-                    ';keyid="BPmhSfdhCPxr3EqjxzEtF8TVy0YX7ATo0Uc8oo2cnmY9";alg="ed25519"'
+                    ';keyid="DPmhSfdhCPxr3EqjxzEtF8TVy0YX7ATo0Uc8oo2cnmY9";alg="ed25519"'
                 ),
             true
         );
@@ -407,7 +407,7 @@ describe('SignifyClient', () => {
             .split(';keyid=')[0];
         const data = `"@method": POST\n"@path": /test\n"signify-resource": ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK\n"signify-timestamp": ${lastHeaders.get(
             HEADER_SIG_TIME
-        )}\n"@signature-params: (@method @path signify-resource signify-timestamp);created=${created};keyid=BPmhSfdhCPxr3EqjxzEtF8TVy0YX7ATo0Uc8oo2cnmY9;alg=ed25519"`;
+        )}\n"@signature-params: (@method @path signify-resource signify-timestamp);created=${created};keyid=DPmhSfdhCPxr3EqjxzEtF8TVy0YX7ATo0Uc8oo2cnmY9;alg=ed25519"`;
 
         if (data) {
             const raw = new TextEncoder().encode(data);

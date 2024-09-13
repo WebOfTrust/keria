@@ -110,7 +110,6 @@ describe('Aiding', () => {
         assert.equal(lastCall.path, '/identifiers');
         assert.equal(lastCall.method, 'POST');
         assert.equal(lastCall.body.name, 'aid1');
-        console.log(lastCall.body);
         assert.deepEqual(lastCall.body.icp, {
             v: 'KERI10JSON0000fd_',
             t: 'icp',
