@@ -16,7 +16,7 @@ describe('int to b64 and back', () => {
         });
 
         // verify all Codes have hs > 0 and ss > 0 and fs = hs + ss and not fs % 4
-        Counter.Sizes.forEach((val, _) => {
+        Counter.Sizes.forEach((val) => {
             assert.equal(
                 val.hs > 0 &&
                     val.ss > 0 &&

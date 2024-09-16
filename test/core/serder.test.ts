@@ -1,10 +1,4 @@
-import {
-    deversify,
-    Dict,
-    Ilks,
-    Serials,
-    Version,
-} from '../../src/keri/core/core';
+import { deversify, Ilks, Serials, Version } from '../../src/keri/core/core';
 import { strict as assert } from 'assert';
 import { Salter, Tier } from '../../src/keri/core/salter';
 import { MtrDex } from '../../src/keri/core/matter';
@@ -72,7 +66,7 @@ describe('Serder', () => {
             b: [],
             c: [],
             a: [],
-        } as Dict<any>;
+        };
 
         const serder = new Serder(ked0);
         assert.equal(
@@ -92,9 +86,12 @@ describe('Serder', () => {
         aid0 = new Prefixer({ code: MtrDex.Blake3_256 }, ked0);
         assert.equal(aid0.qb64, 'ECHOi6qRaswNpvytpCtpvEh2cB2aLAwVHBLFinno3YVW');
 
-        const ked1 = ked0;
-        ked1.a = { n: 'Lenksjö' };
-        const serder1 = new Serder(ked1);
+        const serder1 = new Serder({
+            ...ked0,
+            a: {
+                n: 'Lenksjö',
+            },
+        });
         assert.equal(serder1.ked.v, 'KERI10JSON000139_');
     });
 });

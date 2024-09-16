@@ -7,7 +7,6 @@ import { Saider } from '../../src/keri/core/saider';
 import { Diger } from '../../src/keri/core/diger';
 import { b, d, Ilks } from '../../src/keri/core/core';
 import { Siger } from '../../src/keri/core/siger';
-import { randomBytes } from 'crypto';
 
 describe('key event function', () => {
     it('incept should create inception events', async () => {

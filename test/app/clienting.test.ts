@@ -360,18 +360,18 @@ describe('SignifyClient', () => {
             'EGFi9pCcRaLK8dPh5S7JP9Em62fBMiR1l4gW1ZazuuAO'
         );
 
-        let heads = new Headers();
+        const heads = new Headers();
         heads.set('Content-Type', 'application/json');
-        let treqInit = {
+        const treqInit = {
             headers: heads,
             method: 'POST',
             body: JSON.stringify({ foo: true }),
         };
-        let turl = 'http://example.com/test';
-        let treq = await client.createSignedRequest('aid1', turl, treqInit);
-        let tres = await fetch(treq);
+        const turl = 'http://example.com/test';
+        const treq = await client.createSignedRequest('aid1', turl, treqInit);
+        await fetch(treq);
         lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
-        let resReq = lastCall[0] as Request;
+        const resReq = lastCall[0] as Request;
         assert.equal(resReq.url, 'http://example.com/test');
         assert.equal(resReq.method, 'POST');
         lastBody = await resReq.json();
@@ -398,7 +398,7 @@ describe('SignifyClient', () => {
             true
         );
 
-        let aid = await client.identifiers().get('aid1');
+        const aid = await client.identifiers().get('aid1');
         const keeper = client.manager!.get(aid);
         const signer = keeper.signers[0];
         const created = lastHeaders

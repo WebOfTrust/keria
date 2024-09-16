@@ -1,10 +1,4 @@
-import {
-    Dict,
-    Ident,
-    Serials,
-    versify,
-    Versionage,
-} from '../../src/keri/core/core';
+import { Ident, Serials, versify, Versionage } from '../../src/keri/core/core';
 import { strict as assert } from 'assert';
 import { MtrDex } from '../../src/keri/core/matter';
 import libsodium from 'libsodium-wrappers-sumo';
@@ -30,8 +24,8 @@ describe('Saider', () => {
                 i: 'EB0_D51cTh_q6uOQ-byFiv5oNXZ-cxdqCqBAa4JmBLtb',
                 name: 'John Jones',
                 role: 'Founder',
-            } as Dict<any>,
-        } as Dict<any>;
+            },
+        };
         const saider = new Saider({}, sad4); // default version string code, kind, and label
         assert.equal(saider.code, code);
         assert.equal(

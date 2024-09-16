@@ -158,7 +158,7 @@ describe('delegate', () => {
             },
         };
         assert.equal(
-            lastCall[1]!.body?.toString()!,
+            lastCall[1]?.body?.toString(),
             JSON.stringify(expectedBody)
         );
     });

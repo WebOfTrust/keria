@@ -2,7 +2,6 @@ import { strict as assert } from 'assert';
 import {
     b,
     d,
-    Dict,
     Diger,
     exchange,
     Ilks,
@@ -234,7 +233,7 @@ describe('exchange', () => {
             b: [],
             c: [],
             a: [],
-        } as Dict<any>;
+        };
 
         const serder = new Serder(ked0);
         const siger = skp0.sign(b(serder.raw), 0);
@@ -251,13 +250,13 @@ describe('exchange', () => {
             s: '0',
             bt: toad.toString(16),
             b: [],
-        } as Dict<any>;
+        };
         const vcp = new Serder(ked1);
 
         const embeds = {
             icp: [serder, siger.qb64],
             vcp: [vcp, undefined],
-        } as Dict<any>;
+        };
 
         [exn, end] = exchange(
             '/multisig/vcp',
@@ -373,7 +372,7 @@ describe('exchange', () => {
             b: [],
             c: [],
             a: [],
-        } as Dict<any>;
+        };
 
         const serder = new Serder(ked0);
 

@@ -548,7 +548,7 @@ describe('Ipex', () => {
         const ipex = client.ipex();
 
         const holder = 'ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k';
-        const [_, acdc] = Saider.saidify(mockCredential.sad);
+        const [, acdc] = Saider.saidify(mockCredential.sad);
 
         // Create iss
         const vs = versify(Ident.KERI, undefined, Serials.JSON, 0);
@@ -562,7 +562,7 @@ describe('Ipex', () => {
             dt: mockCredential.sad.a.dt,
         };
 
-        const [issSaider, iss] = Saider.saidify(_iss);
+        const [, iss] = Saider.saidify(_iss);
         const iserder = new Serder(iss);
         const anc = interact({
             pre: mockCredential.sad.i,
@@ -848,7 +848,7 @@ describe('Ipex', () => {
         const ipex = client.ipex();
 
         const holder = 'ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k';
-        const [_, acdc] = Saider.saidify(mockCredential.sad);
+        const [, acdc] = Saider.saidify(mockCredential.sad);
 
         const [offer, offerSigs, offerEnd] = await ipex.offer({
             senderName: 'multisig',
@@ -898,7 +898,7 @@ describe('Ipex', () => {
         await ipex.submitOffer('multisig', offer, offerSigs, offerEnd, [
             holder,
         ]);
-        let lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
+        const lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
         assert.equal(
             lastCall[0],
             'http://127.0.0.1:3901/identifiers/multisig/ipex/offer'

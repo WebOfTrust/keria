@@ -1,6 +1,5 @@
 import libsodium from 'libsodium-wrappers-sumo';
 import {
-    Dict,
     Ident,
     Ilks,
     Serials,
@@ -50,7 +49,7 @@ describe('Prefixer', () => {
             wt: toad.toString(16), // hex string no leading zeros lowercase
             w: wits, // list of qb64 may be empty
             c: cnfg, // list of config ordered mappings may be empty
-        } as Dict<any>;
+        };
 
         prefixer = new Prefixer({ code: MtrDex.Blake3_256 }, ked);
         assert.equal(
