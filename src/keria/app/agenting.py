@@ -741,7 +741,7 @@ class Escrower(doing.Doer):
         self.vry = vry
         self.registrar = registrar
         self.credentialer = credentialer
-        self.tock = 5.0
+        self.tock = 1.0
 
         super(Escrower, self).__init__(tock=self.tock)
 
