@@ -793,8 +793,8 @@ def test_identifier_collection_end(helpers):
                                  ndigs=[diger.qb64 for diger in ndigs])
 
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
-        prxs = [encrypter.encrypt(matter=signer).qb64 for signer in signers]
-        nxts = [encrypter.encrypt(matter=signer).qb64 for signer in nsigners]
+        prxs = [encrypter.encrypt(prim=signer).qb64 for signer in signers]
+        nxts = [encrypter.encrypt(prim=signer).qb64 for signer in nsigners]
 
         body = {'rot': serder.ked,
                 'sigs': sigers,
@@ -883,8 +883,8 @@ def test_identifier_collection_end(helpers):
                                  )
 
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
-        prxs = [encrypter.encrypt(matter=signer).qb64 for signer in signers]
-        nxts = [encrypter.encrypt(matter=signer).qb64 for signer in nsigners]
+        prxs = [encrypter.encrypt(prim=signer).qb64 for signer in signers]
+        nxts = [encrypter.encrypt(prim=signer).qb64 for signer in nsigners]
 
         body = {'rot': serder.ked,
                 'sigs': sigers,

@@ -374,9 +374,9 @@ class Helpers:
 
         creator = keeping.RandyCreator()
         signers = creator.create(count=count)
-        prxs = [encrypter.encrypt(matter=signer).qb64 for signer in signers]
+        prxs = [encrypter.encrypt(prim=signer).qb64 for signer in signers]
         nsigners = creator.create(count=count)
-        nxts = [encrypter.encrypt(matter=signer).qb64 for signer in nsigners]
+        nxts = [encrypter.encrypt(prim=signer).qb64 for signer in nsigners]
 
         keys = [signer.verfer.qb64 for signer in signers]
         ndigs = [coring.Diger(ser=nsigner.verfer.qb64b) for nsigner in nsigners]
@@ -422,7 +422,7 @@ class Helpers:
         signers = creator.create(pidx=pidx, ridx=ridx, tier=coring.Tiers.low, temp=False, count=1)
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
         return serder, sigers
-    
+
     @staticmethod
     def createRotate(aid, salt, signers, pidx, ridx, kidx, wits, toad):
         salter = core.Salter(raw=salt)
