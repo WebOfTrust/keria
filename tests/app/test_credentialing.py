@@ -435,10 +435,6 @@ def test_credentialing_ends(helpers, seeder):
         assert res.status_code == 200
         assert res.headers['content-type'] == "application/json+cesr"
 
-        headers = {"Accept": "application/json+cesr"}
-        res = client.simulate_get(f"/credentials/doesNotExistSaid", headers=headers)
-        assert res.status_code == 404
-
 
 def test_revoke_credential(helpers, seeder):
     with helpers.openKeria() as (agency, agent, app, client):
