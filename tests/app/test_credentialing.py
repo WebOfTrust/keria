@@ -430,6 +430,11 @@ def test_credentialing_ends(helpers, seeder):
         assert res.headers['content-type'] == "application/json"
         assert res.json['sad']['d'] == saids[0]
 
+        res = client.simulate_get(f"/credentials/EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy")
+        assert res.status_code == 404
+        assert res.json == {'description': f"credential for said EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy not found.",
+                            'title': '404 Not Found'}
+
         headers = {"Accept": "application/json+cesr"}
         res = client.simulate_get(f"/credentials/{saids[0]}", headers=headers)
         assert res.status_code == 200
