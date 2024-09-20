@@ -14,16 +14,17 @@ import pytest
 import falcon
 import hio
 from falcon import testing
-from hio.base import doing
+from hio.base import doing, tyming
 from hio.core import http, tcp
 from hio.help import decking
 from keri import kering
-from keri.app import habbing, configing, oobiing, querying
-from keri.app.agenting import Receiptor
+from keri.app import habbing, configing, indirecting, oobiing, querying
+from keri.app.agenting import Receiptor, WitnessReceiptor
 from keri import core
 from keri.core import coring, serdering
 from keri.core.coring import MtrDex
-from keri.db import basing
+from keri.db import basing, dbing
+from keri.help import nowIso8601
 from keri.vc import proving
 from keri.vdr import credentialing
 
@@ -447,6 +448,52 @@ def test_querier(helpers):
         assert qryDoer.pre == "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
 
 
+def test_query_ends(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        queryEnd = agenting.QueryCollectionEnd()
+        app.add_route("/queries", queryEnd)
+
+        result = client.simulate_post(path="/queries")
+        assert result.status == falcon.HTTP_400
+
+        result = client.simulate_post(path="/queries", body=json.dumps(dict()))
+        assert result.status == falcon.HTTP_400
+
+        body = dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9")
+        result = client.simulate_post(path="/queries", body=json.dumps(body))
+        assert result.status == falcon.HTTP_202
+        assert result.json == {'done': False,
+                               'error': None,
+                               'metadata': {'pre': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9'},
+                               'name': 'query.EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9',
+                               'response': None}
+        assert len(agent.queries) == 1
+
+        snbody = dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9", sn="2")
+        result = client.simulate_post(path="/queries", body=json.dumps(snbody))
+        assert result.status == falcon.HTTP_202
+        assert result.json == {'done': False,
+                               'error': None,
+                               'metadata': {'pre': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9', 'sn': '2'},
+                               'name': 'query.EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9.2',
+                               'response': None}
+        assert len(agent.queries) == 2
+
+        ancbody = dict(
+            pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9",
+            anchor={"i": "EKQSWRXh_JHX61NdrL6wJ8ELMwG4zFY8y-sU1nymYzXZ", "s": "1", "d": "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"}
+        )
+        result = client.simulate_post(path="/queries", body=json.dumps(ancbody))
+        assert result.status == falcon.HTTP_202
+        assert result.json == {'done': False,
+                               'error': None,
+                               'metadata': {'pre': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9',
+                                            'anchor': {'i': 'EKQSWRXh_JHX61NdrL6wJ8ELMwG4zFY8y-sU1nymYzXZ', 's': '1', 'd': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY'}},
+                               'name': 'query.EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9.EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
+                               'response': None}
+        assert len(agent.queries) == 3
+
+
 class MockServerTls:
     def __init__(self,  certify, keypath, certpath, cafilepath, port):
         pass
@@ -499,3 +546,158 @@ def test_seeker_doer(helpers):
         result = seeker.recur()
         assert result is False
         assert len(cues) == 1
+
+def test_submitter(seeder, helpers):
+    with helpers.openKeria() as (agency, agent, app, client), habbing.openHby(
+        name="wes", salt=core.Salter(raw=b"wess-the-witness").qb64, temp=True
+    ) as wesHby, habbing.openHby(
+        name="wan", salt=core.Salter(raw=b"wann-the-witness").qb64, temp=True
+    ) as wanHby:
+        
+        wesHab = wesHby.makeHab(name="wes", transferable=False)
+        assert not wesHab.kever.prefixer.transferable
+
+        wanPort = 5642
+        wanDoers = indirecting.setupWitness(
+            alias="wan", hby=wanHby, tcpPort=5632, httpPort=wanPort
+        )
+        wanHab = wanHby.habByName(name="wan")
+        assert not wanHab.kever.prefixer.transferable
+        witHabs = [wesHab, wanHab]
+        witPrefixes = []
+        for witHab in witHabs:
+            witPrefixes.append(witHab.pre)
+
+        seeder.seedWitEnds(agent.hby.db, witHabs=witHabs)
+
+        # Register the identifier endpoint so we can create an AID for the test
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+
+        opColEnd = longrunning.OperationCollectionEnd()
+        app.add_route("/operations", opColEnd)
+        opResEnd = longrunning.OperationResourceEnd()
+        app.add_route("/operations/{name}", opResEnd)
+
+        salt = b"0123456789abcdef"
+        alias = "pal"
+        createAidOp = helpers.createAid(client, name=alias, salt=salt, wits=witPrefixes, toad="1")
+        hab = agent.hby.habByName(alias)
+        serder = hab.iserder
+
+        # no wigs yet
+        dgkey = dbing.dgKey(serder.preb, hab.kever.serder.saidb)
+        wigs = hab.db.getWigs(dgkey)
+        assert len(wigs) == 0
+
+        # no id key state in wit hab yet
+        assert hab.pre not in wesHab.kvy.kevers
+
+        # Intentionally manually process a single receipt from only one witness in order to reach the toad (threshold of acceptable duplicity)
+        # while at the same time setting up the opportunity to submit the KEL to the other witness, later
+        hab = agent.hby.habByName(alias)
+        sn = 0
+        msg = hab.makeOwnEvent(sn=sn)
+        rctMsgs = helpers.witnessMsg(hab=hab, msg=msg, sn=sn, witHabs=[wesHab])
+        wigs = hab.db.getWigs(dgkey)
+        assert len(wigs) == 1 # only witnessed by one witness
+        assert len(wesHab.kvy.db.getWigs(dgkey)) == 1  # only witnessed by one witness
+        assert len(wanHab.kvy.db.getWigs(dgkey)) == 0  # only witnessed by the other witness
+        assert len(wesHab.kvy.cues) == 0  # witness cues are empty
+        assert hab.pre in wesHab.kvy.kevers  # id key state in wit hab
+        assert hab.pre not in wanHab.kvy.kevers  # id key state not in wit hab yet
+        
+        witAidOp = client.simulate_get(path=f'/operations/{createAidOp["name"]}') # witnessing of created aid completed
+        assert witAidOp.json["done"] is True # succeed because toad is 1
+        assert witAidOp.json["response"]["i"] == hab.pre
+
+        # Now we will setup to 'submit' (resubmit) the KEL to both witnesses 
+        limit = 5.0
+        tock = 0.03125
+        wdoist = doing.Doist(limit=limit, tock=tock, doers=wanDoers)
+        wdoist.enter()
+        tymer = tyming.Tymer(tymth=wdoist.tymen(), duration=wdoist.limit)
+        aidEnd = aiding.IdentifierResourceEnd()
+        app.add_route("/identifiers/{name}/submit", aidEnd)
+        resSubmit = client.simulate_post(
+            path=f"/identifiers/{alias}/submit",
+            body=json.dumps(dict(submit=alias)).encode("utf-8"),
+        )
+        submitter = agent.submitter # get the submitter that was triggered by the submit request
+        sdoist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+        sdeeds = sdoist.enter(doers=[submitter])
+        submitter.recur(tyme=1.0, deeds=sdeeds) # run the submitter to get witness receipts (with WitnessReceiptor) for sn=0 of the KEL
+        assert len(submitter.doers) == 1
+        rectDoer = submitter.doers[0]
+        assert isinstance(rectDoer, WitnessReceiptor) is True
+        resSubmit = client.simulate_get(path=f'/operations/{resSubmit.json["name"]}')
+        assert resSubmit.json["done"] is False
+
+        stamp = nowIso8601()  # need same time stamp or not duplicate
+        agent.witq.query(src=hab.pre, pre=wanHab.pre, stamp=stamp, wits=wanHab.kever.wits)
+        agent.witq.query(src=hab.pre, pre=wanHab.pre, stamp=stamp, wits=wanHab.kever.wits)
+        agent.witq.query(src=hab.pre, pre=wanHab.pre, stamp=stamp, wits=wanHab.kever.wits)
+
+        # while not (resSubmit.json["done"] or tymer.expired):
+        submitter.recur(tyme=1.0, deeds=sdeeds) # run the submitter to check for witness receipts (with WitnessReceiptor) for sn=0 of the KEL
+        resSubmit = client.simulate_get(path=f'/operations/{resSubmit.json["name"]}')
+
+        limit = 5.0
+        tock = 0.03125
+        doist = doing.Doist(limit=limit, tock=tock)
+        doers = wanDoers + [rectDoer]
+        doist.do(doers=doers)
+        doist.recur()
+        
+        assert hab.pre in wanHab.kvy.kevers  # id key state in wit hab
+        assert wanHab.kvy.kevers[hab.pre].sn == 0
+        wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
+        assert len(wanHab.kvy.db.getWigs(dgkey)) == 2  # now witnessed by the other witness
+        assert len(wanHab.kvy.cues) == 0  # witness cues are empty
+        assert hab.pre in wanHab.kvy.kevers  # id key state in wit hab yet
+        assert wanHby.db.fullyWitnessed(hab.kever.serder)  # fully witnessed
+
+        rctMsg = wanHab.replyToOobi(aid=hab.pre, role='controller')
+        hab.psr.parse(ims=bytearray(rctMsg), kvy=hab.kvy, local=True)
+        witMsg = wanHab.replyToOobi(aid=wanHab.pre, role='controller')
+        hab.psr.parse(ims=bytearray(witMsg), kvy=hab.kvy, local=True)
+        assert wanHab.pre in hab.kvy.kevers
+        wigs = hab.db.getWigs(dgkey)
+        assert len(wigs) == 2
+
+        rectDoer.cues.append(dict(pre=hab.pre, sn=0)) # append expected cue
+        submitter.recur(tyme=1.0, deeds=sdeeds)
+        resSubmit = client.simulate_get(path=f'/operations/{resSubmit.json["name"]}')
+        assert resSubmit.status_code == 200
+        assert resSubmit.text == json.dumps(
+            dict(
+                name="submit.EKOrePIIU8ynKwOOLxs56ZxxQswUFNV8-cyYFt3nBJHR",
+                metadata={"alias": "pal", "sn": 0},
+                done=True,
+                error=None,
+                response={
+                    "vn": [1, 0],
+                    "i": "EKOrePIIU8ynKwOOLxs56ZxxQswUFNV8-cyYFt3nBJHR",
+                    "s": "0",
+                    "p": "",
+                    "d": "EKOrePIIU8ynKwOOLxs56ZxxQswUFNV8-cyYFt3nBJHR",
+                    "f": "0",
+                    "dt": resSubmit.json["response"]["dt"],
+                    "et": "icp",
+                    "kt": "1",
+                    "k": ["DDNGgXzEO4LD8G1z1uD7eIDF2pDj6Y7hVx-nqhYZmU_8"],
+                    "nt": "1",
+                    "n": ["EHj7rmVHVkQKqnfeer068PiYvYm-WFSTVZZpFGsClfT-"],
+                    "bt": "1",
+                    "b": ["BN8t3n1lxcV0SWGJIIF46fpSUqA7Mqre5KJNN3nbx3mr","BOigXdxpp1r43JhO--czUTwrCXzoWrIwW8i41KWDlr8s"],
+                    "c": [],
+                    "ee": {
+                        "s": "0",
+                        "d": "EKOrePIIU8ynKwOOLxs56ZxxQswUFNV8-cyYFt3nBJHR",
+                        "br": [],
+                        "ba": [],
+                    },
+                    "di": "",
+                },
+            )
+        )

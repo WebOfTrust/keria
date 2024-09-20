@@ -161,7 +161,7 @@ def test_registry_end(helpers, seeder):
         body = dict(name="test", alias="test", vcp=regser.ked, ixn=serder.ked, sigs=sigers)
         result = client.simulate_post(path="/identifiers/bad_test/registries", body=json.dumps(body).encode("utf-8"))
         assert result.status == falcon.HTTP_404
-        assert result.json == {'description': 'alias is not a valid reference to an identifier',
+        assert result.json == {'description': 'bad_test is not a valid reference to an identifier',
                               'title': '404 Not Found'}
 
         # Try with bad identifier name
@@ -199,7 +199,7 @@ def test_registry_end(helpers, seeder):
 
         result = client.simulate_get(path="/identifiers/not_test/registries")
         assert result.status == falcon.HTTP_404
-        assert result.json == {'description': 'name is not a valid reference to an identifier', 'title': '404 Not Found'}
+        assert result.json == {'description': 'not_test is not a valid reference to an identifier', 'title': '404 Not Found'}
 
         # Test Operation Resource
         result = client.simulate_get(path=f"/operations/{op['name']}")
@@ -291,7 +291,7 @@ def test_issue_credential(helpers, seeder):
         
         result = client.simulate_post(path="/identifiers/badname/credentials", body=json.dumps(body).encode("utf-8"))
         assert result.status_code == 404
-        assert result.json == {'description': "name is not a valid reference to an identifier",
+        assert result.json == {'description': "badname is not a valid reference to an identifier",
                                'title': '404 Not Found'}
         
         result = client.simulate_post(path="/identifiers/issuer/credentials", body=json.dumps(body).encode("utf-8"))
@@ -515,7 +515,7 @@ def test_revoke_credential(helpers, seeder):
         
         result = client.simulate_post(path="/identifiers/badname/credentials", body=json.dumps(body).encode("utf-8"))
         assert result.status_code == 404
-        assert result.json == {'description': "name is not a valid reference to an identifier",
+        assert result.json == {'description': "badname is not a valid reference to an identifier",
                                'title': '404 Not Found'}
         
         result = client.simulate_post(path="/identifiers/issuer/credentials", body=json.dumps(body).encode("utf-8"))
@@ -551,7 +551,7 @@ def test_revoke_credential(helpers, seeder):
             sigs=sigers)
         res = client.simulate_delete(path=f"/identifiers/badname/credentials/{creder.said}", body=json.dumps(body).encode("utf-8"))
         assert res.status_code == 404
-        assert res.json == {'description': "name is not a valid reference to an identifier",
+        assert res.json == {'description': "badname is not a valid reference to an identifier",
                             'title': '404 Not Found'}
         
         res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{regser.said}", body=json.dumps(body).encode("utf-8"))

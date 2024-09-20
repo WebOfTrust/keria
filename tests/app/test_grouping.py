@@ -290,14 +290,14 @@ def test_join(helpers, monkeypatch):
         assert res.json == {
             "done": False,
             "error": None,
-            "metadata": {"sn": 3},
-            "name": "group.EDWg3-rB5FTpcckaYdBcexGmbLIO6AvAwjaJTBlXUn_I",
+            "metadata": {"pre": "EDWg3-rB5FTpcckaYdBcexGmbLIO6AvAwjaJTBlXUn_I", "sn": 3},
+            "name": "group.EPKCBT0rSgFKTDRjynYzOTsYWo7fDNElTxFbRZZW9f6R",
             "response": None,
         }
 
         res = client.simulate_post("/identifiers/mms/multisig/join", json=body)
         assert res.status_code == 400
         assert res.json == {
-            "description": "attempt to create identifier with an already used alias=mms",
+            "description": "attempt to create identifier with an already used alias or prefix mms",
             "title": "400 Bad Request",
         }

@@ -1,5 +1,6 @@
 from keri.help import helping
 
+import pytest
 from keria.app import aiding
 from keri.kering import ValidationError
 from keria.core import longrunning
@@ -159,14 +160,116 @@ def test_operations(helpers):
         assert len(res.json) == 0
 
         op = agent.monitor.status(
-            longrunning.Op(type='query', oid=recp, start=helping.nowIso8601(), metadata={'sn': '0'}))
-        assert op.name == f"query.{recp}"
+            longrunning.Op(type=longrunning.OpTypes.query, oid=f"{recp}.0", start=helping.nowIso8601(), metadata={'pre': recp, 'sn': '0'}))
+        assert op.name == f"query.{recp}.0"
         assert op.done is True
 
         op = agent.monitor.status(
-            longrunning.Op(type='query', oid=recp, start=helping.nowIso8601(), metadata={'sn': '4'}))
-        assert op.name == f"query.{recp}"
+            longrunning.Op(type=longrunning.OpTypes.query, oid=f"{recp}.4", start=helping.nowIso8601(), metadata={'pre': recp, 'sn': '4'}))
+        assert op.name == f"query.{recp}.4"
         assert op.done is False
+
+
+def test_operation_bad_metadata(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        # Witness
+        witop = longrunning.Op(type=longrunning.OpTypes.witness, oid="EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1",
+                               start=helping.nowIso8601(), metadata={})
+
+        with pytest.raises(ValidationError) as err:
+            witop.metadata = {"pre": "EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1"}
+            agent.monitor.status(witop)
+        assert str(err.value) == "invalid long running witness operation, metadata missing required fields ('pre', 'sn')"
+
+        with pytest.raises(ValidationError) as err:
+            witop.metadata = {"sn": "0"}
+            agent.monitor.status(witop)
+        assert str(err.value) == "invalid long running witness operation, metadata missing required fields ('pre', 'sn')"
+
+        # Oobi
+        oobiop = longrunning.Op(type=longrunning.OpTypes.oobi, oid="oobioid",
+                               start=helping.nowIso8601(), metadata={})
+        with pytest.raises(ValidationError) as err:
+            agent.monitor.status(oobiop)
+        assert str(err.value) == "invalid OOBI long running operation, missing oobi"
+
+        # Delegation
+        delop = longrunning.Op(type=longrunning.OpTypes.delegation, oid="EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1",
+                                start=helping.nowIso8601(), metadata={})
+        with pytest.raises(ValidationError) as err:
+            agent.monitor.status(delop)
+        assert str(err.value) == "invalid long running delegation operation, metadata missing required field 'pre'"
+
+        # Group
+        groupop = longrunning.Op(type=longrunning.OpTypes.group, oid="EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1",
+                               start=helping.nowIso8601(), metadata={})
+
+        with pytest.raises(ValidationError) as err:
+            groupop.metadata = {"pre": "EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1"}
+            agent.monitor.status(groupop)
+        assert str(err.value) == "invalid long running group operation, metadata missing required fields ('pre', 'sn')"
+
+        with pytest.raises(ValidationError) as err:
+            groupop.metadata = {"sn": "0"}
+            agent.monitor.status(groupop)
+        assert str(err.value) == "invalid long running group operation, metadata missing required fields ('pre', 'sn')"
+
+        # Query
+        queryop = longrunning.Op(type=longrunning.OpTypes.query, oid="EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1",
+                               start=helping.nowIso8601(), metadata={})
+        with pytest.raises(ValidationError) as err:
+            agent.monitor.status(queryop)
+        assert str(err.value) == "invalid long running query operation, metadata missing required field 'pre'"
+
+        # Registry
+        registryop = longrunning.Op(type=longrunning.OpTypes.registry, oid="EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1",
+                                 start=helping.nowIso8601(), metadata={})
+
+        with pytest.raises(ValidationError) as err:
+            registryop.metadata = {"pre": "EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1"}
+            agent.monitor.status(registryop)
+        assert str(err.value) == "invalid long running registry operation, metadata missing required fields ('pre', 'anchor')"
+
+        with pytest.raises(ValidationError) as err:
+            registryop.metadata = {"anchor":
+                                       {"i": "EKQSWRXh_JHX61NdrL6wJ8ELMwG4zFY8y-sU1nymYzXZ",
+                                        "s": "1",
+                                        "d": "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"}}
+            agent.monitor.status(registryop)
+        assert str(err.value) == "invalid long running registry operation, metadata missing required fields ('pre', 'anchor')"
+
+        # Credential
+        credop = longrunning.Op(type=longrunning.OpTypes.credential, oid="EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1",
+                               start=helping.nowIso8601(), metadata={})
+        with pytest.raises(ValidationError) as err:
+            agent.monitor.status(credop)
+        assert str(err.value) == "invalid long running credential operation, metadata missing 'ced' field"
+
+        # End role
+        endop = longrunning.Op(type=longrunning.OpTypes.endrole, oid="EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1",
+                               start=helping.nowIso8601(), metadata={})
+
+        with pytest.raises(ValidationError) as err:
+            witop.metadata = {"cid": "EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1", "role": "agent"}
+            agent.monitor.status(endop)
+        assert str(err.value) == "invalid long running endrole operation, metadata missing required fields ('cid', 'role', 'eid')"
+
+        with pytest.raises(ValidationError) as err:
+            witop.metadata = {"cid": "EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1", "eid": "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"}
+            agent.monitor.status(endop)
+        assert str(err.value) == "invalid long running endrole operation, metadata missing required fields ('cid', 'role', 'eid')"
+
+        with pytest.raises(ValidationError) as err:
+            witop.metadata = {"role": "agent", "eid": "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"}
+            agent.monitor.status(endop)
+        assert str(err.value) == "invalid long running endrole operation, metadata missing required fields ('cid', 'role', 'eid')"
+
+        # Challenge
+        challengeop = longrunning.Op(type=longrunning.OpTypes.challenge, oid="EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1",
+                                  start=helping.nowIso8601(), metadata={})
+        with pytest.raises(ValidationError) as err:
+            agent.monitor.status(challengeop)
+        assert str(err.value) == "invalid long running challenge operation, metadata missing 'words' field"
 
 
 def test_error(helpers):

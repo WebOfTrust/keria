@@ -374,9 +374,9 @@ class Helpers:
 
         creator = keeping.RandyCreator()
         signers = creator.create(count=count)
-        prxs = [encrypter.encrypt(matter=signer).qb64 for signer in signers]
+        prxs = [encrypter.encrypt(prim=signer).qb64 for signer in signers]
         nsigners = creator.create(count=count)
-        nxts = [encrypter.encrypt(matter=signer).qb64 for signer in nsigners]
+        nxts = [encrypter.encrypt(prim=signer).qb64 for signer in nsigners]
 
         keys = [signer.verfer.qb64 for signer in signers]
         ndigs = [coring.Diger(ser=nsigner.verfer.qb64b) for nsigner in nsigners]
@@ -422,13 +422,13 @@ class Helpers:
         signers = creator.create(pidx=pidx, ridx=ridx, tier=coring.Tiers.low, temp=False, count=1)
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
         return serder, sigers
-    
+
     @staticmethod
     def createRotate(aid, salt, signers, pidx, ridx, kidx, wits, toad):
         salter = core.Salter(raw=salt)
         creator = keeping.SaltyCreator(salt=salter.qb64, stem="signify:aid", tier=coring.Tiers.low)
         encrypter = core.Encrypter(verkey=signers[0].verfer.qb64)
-        sxlt = encrypter.encrypt(salter.qb64).qb64
+        sxlt = encrypter.encrypt(ser=salter.qb64).qb64
 
         rsigners = creator.create(pidx=pidx, ridx=ridx, tier=coring.Tiers.low, temp=False, count=1)
         rnsigners = creator.create(pidx=pidx, ridx=ridx+1, tier=coring.Tiers.low, temp=False, count=1)
@@ -468,7 +468,7 @@ class Helpers:
 
         salter = core.Salter(raw=salt)
         encrypter = core.Encrypter(verkey=signers[0].verfer.qb64)
-        sxlt = encrypter.encrypt(salter.qb64).qb64
+        sxlt = encrypter.encrypt(ser=salter.qb64).qb64
 
         sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
 
@@ -599,6 +599,26 @@ class Helpers:
     def mockRandomNonce():
         return "A9XfpxIl1LcIkMhUSCCC8fgvkuX8gG9xK3SM-S8a8Y_U"
 
+    @staticmethod
+    def witnessMsg(hab, msg, sn, witHabs):
+        rctMsgs = []
+        for i, witHab in enumerate(witHabs):
+            kvy = witHab.kvy
+            witHab.psr.parse(ims=bytearray(msg), kvy=kvy, local=True)
+            # accepted event with cam sigs since own witness
+            assert kvy.kevers[hab.pre].sn == sn
+            assert len(kvy.cues) >= 1  # at least queued receipt cue
+            # better to find receipt cue in cues exactly
+            rctMsg = witHab.processCues(kvy.cues)  # process cue returns rct msg
+            assert len(rctMsg) > len(msg)
+            rctMsgs.append(rctMsg)
+
+        for rMsg in rctMsgs:  # process rct msgs from all witnesses
+            hab.psr.parse(ims=bytearray(rMsg), kvy=hab.kvy, local=True)
+        for whab in witHabs:
+            assert whab.pre in hab.kvy.kevers
+
+        return rctMsgs
 
 class Issuer:
     LE = "ENTAoj2oNBFpaniRswwPcca9W1ElEeH2V7ahw68HV4G5"
