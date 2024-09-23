@@ -36,7 +36,7 @@ All Agent db access is through the associated Agent.
 
 ### Setup
 
-* Ensure [Python](https://www.python.org/downloads/) `version 3.12.14+` is installed
+* Ensure [Python](https://www.python.org/downloads/) `version 3.12.2+` is installed
 * Install [Keripy dependency](https://github.com/WebOfTrust/keripy#dependencies) (`libsodium 1.0.18+`)
 
 
@@ -84,4 +84,3 @@ You can see a [working example here](https://github.com/WebOfTrust/signify-ts/bl
     ```bash
       pytest tests/
     ```
-
