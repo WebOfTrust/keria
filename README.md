@@ -36,7 +36,7 @@ All Agent db access is through the associated Agent.
 
 ### Setup
 
-* Ensure [Python](https://www.python.org/downloads/) `version 3.12.1+` is installed
+* Ensure [Python](https://www.python.org/downloads/) `version 3.12.2+` is installed
 * Install [Keripy dependency](https://github.com/WebOfTrust/keripy#dependencies) (`libsodium 1.0.18+`)
 
 
