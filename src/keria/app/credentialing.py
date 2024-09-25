@@ -43,6 +43,9 @@ def loadEnds(app, identifierResource):
     queryCollectionEnd = CredentialQueryCollectionEnd()
     app.add_route("/credentials/query", queryCollectionEnd)
 
+    credentialVerificationEnd = CredentialVerificationCollectionEnd()
+    app.add_route("/credentials/verify", credentialVerificationEnd)
+
 
 class RegistryCollectionEnd:
     """
@@ -405,6 +408,69 @@ class SchemaCollectionEnd:
 
         rep.status = falcon.HTTP_200
         rep.data = json.dumps(data).encode("utf-8")
+
+
+class CredentialVerificationCollectionEnd:
+    @staticmethod
+    def on_post(req, rep):
+        """ Verify credential endpoint (no IPEX)
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        ---
+        summary: Verify a credential without IPEX
+        description: Verify a credential without using IPEX (TEL should be updated separately)
+        tags:
+           - Credentials
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  required:
+                    - acdc
+                    - iss
+                  properties:
+                    acdc:
+                      type: object
+                      description: KED of ACDC
+                    iss:
+                      type: object
+                      description: KED of issuing event in VC TEL
+        responses:
+           202:
+              description: Credential accepted for parsing
+              content:
+                  application/json:
+                    schema:
+                        description: long running operation of credential processing
+                        type: object
+           404:
+              description: Malformed ACDC or iss event
+        """
+        agent = req.context.agent
+        body = req.get_media()
+
+        try:
+            creder = serdering.SerderACDC(sad=httping.getRequiredParam(body, "acdc"))
+            iserder = serdering.SerderKERI(sad=httping.getRequiredParam(body, "iss"))
+        except (kering.ValidationError, json.decoder.JSONDecodeError) as e:
+            rep.status = falcon.HTTP_400
+            rep.text = e.args[0]
+            return
+
+        prefixer = coring.Prefixer(qb64=iserder.pre)
+        seqner = coring.Seqner(sn=iserder.sn)
+        saider = coring.Saider(qb64=iserder.said)
+
+        agent.parser.ims.extend(signing.serialize(creder, prefixer, seqner, saider))
+        op = agent.monitor.submit(creder.said, longrunning.OpTypes.credential,
+                                  metadata=dict(ced=creder.sad))
+        rep.status = falcon.HTTP_202
+        rep.data = op.to_json().encode("utf-8")
 
 
 class CredentialQueryCollectionEnd:
