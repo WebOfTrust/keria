@@ -43,8 +43,8 @@ def loadEnds(app, identifierResource):
     queryCollectionEnd = CredentialQueryCollectionEnd()
     app.add_route("/credentials/query", queryCollectionEnd)
 
-    credentialProcessEnd = CredentialProcessCollectionEnd()
-    app.add_route("/credentials/process", credentialProcessEnd)
+    credentialVerificationEnd = CredentialVerificationCollectionEnd()
+    app.add_route("/credentials/verify", credentialVerificationEnd)
 
 
 class RegistryCollectionEnd:
@@ -410,18 +410,18 @@ class SchemaCollectionEnd:
         rep.data = json.dumps(data).encode("utf-8")
 
 
-class CredentialProcessCollectionEnd:
+class CredentialVerificationCollectionEnd:
     @staticmethod
     def on_post(req, rep):
-        """ Process credential endpoint
+        """ Verify credential endpoint (no IPEX)
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
 
         ---
-        summary: Process or parse a credential
-        description: Process or parse a credential without using IPEX
+        summary: Verify a credential without IPEX
+        description: Verify a credential without using IPEX (TEL should be updated separately)
         tags:
            - Credentials
         requestBody:

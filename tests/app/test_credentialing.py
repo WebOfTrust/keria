@@ -321,15 +321,15 @@ def test_issue_credential(helpers, seeder):
         agent1.parser.parse(ims=agent.rgy.reger.cloneTvtAt(creder.said))
         assert agent1.rgy.tevers[registry["regk"]].vcSn(creder.said) is not None
 
-        credProcessEnd = credentialing.CredentialProcessCollectionEnd()
-        app1.add_route("/credentials/process", credProcessEnd)
+        credVerifyEnd = credentialing.CredentialVerificationCollectionEnd()
+        app1.add_route("/credentials/verify", credVerifyEnd)
 
         body = dict(acdc=creder.sad, iss=regser.ked)  # still has changed LEI
-        result = client1.simulate_post(path="/credentials/process", body=json.dumps(body).encode("utf-8"))
+        result = client1.simulate_post(path="/credentials/verify", body=json.dumps(body).encode("utf-8"))
         assert result.status_code == 400
 
         body["acdc"]["a"]["LEI"] = "254900DA0GOGCFVWB618"  # change back
-        result = client1.simulate_post(path="/credentials/process", body=json.dumps(body).encode("utf-8"))
+        result = client1.simulate_post(path="/credentials/verify", body=json.dumps(body).encode("utf-8"))
         assert result.status_code == 202
 
         deeds = doist.enter(doers=[agent1])
