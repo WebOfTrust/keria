@@ -223,7 +223,8 @@ def test_registry_end(helpers, seeder):
 
 
 def test_issue_credential(helpers, seeder):
-    with helpers.openKeria() as (agency, agent, app, client):
+    with (helpers.openKeria() as (agency, agent, app, client),
+          helpers.openKeria() as (agency1, agent1, app1, client1)):
         idResEnd = aiding.IdentifierResourceEnd()
         app.add_route("/identifiers/{name}", idResEnd)
         registryEnd = credentialing.RegistryCollectionEnd(idResEnd)
@@ -238,6 +239,7 @@ def test_issue_credential(helpers, seeder):
         app.add_route("/identifiers/{name}/endroles", endRolesEnd)
 
         seeder.seedSchema(agent.hby.db)
+        seeder.seedSchema(agent1.hby.db)
 
         # create the server that will receive the credential issuance messages
         serverDoer = helpers.server(agency)
@@ -293,7 +295,7 @@ def test_issue_credential(helpers, seeder):
         assert result.status_code == 404
         assert result.json == {'description': "badname is not a valid reference to an identifier",
                                'title': '404 Not Found'}
-        
+
         result = client.simulate_post(path="/identifiers/issuer/credentials", body=json.dumps(body).encode("utf-8"))
         op = result.json
 
@@ -308,6 +310,32 @@ def test_issue_credential(helpers, seeder):
         body["acdc"]["a"]["LEI"] = "ACDC10JSON000197_"
         result = client.simulate_post(path="/identifiers/issuer/credentials", body=json.dumps(body).encode("utf-8"))
         assert result.status_code == 400
+
+        # Try to load into another agent after TEL query without IPEX
+        agent1.parser.parse(ims=agent.hby.habByName("issuer").replay())
+        assert iaid in agent1.hby.kevers
+
+        agent1.parser.parse(ims=agent.rgy.reger.cloneTvtAt(registry["regk"]))
+        assert registry["regk"] in agent1.rgy.tevers
+
+        agent1.parser.parse(ims=agent.rgy.reger.cloneTvtAt(creder.said))
+        assert agent1.rgy.tevers[registry["regk"]].vcSn(creder.said) is not None
+
+        credProcessEnd = credentialing.CredentialProcessCollectionEnd()
+        app1.add_route("/credentials/process", credProcessEnd)
+
+        body = dict(acdc=creder.sad, iss=regser.ked)  # still has changed LEI
+        result = client1.simulate_post(path="/credentials/process", body=json.dumps(body).encode("utf-8"))
+        assert result.status_code == 400
+
+        body["acdc"]["a"]["LEI"] = "254900DA0GOGCFVWB618"  # change back
+        result = client1.simulate_post(path="/credentials/process", body=json.dumps(body).encode("utf-8"))
+        assert result.status_code == 202
+
+        deeds = doist.enter(doers=[agent1])
+        while not agent1.rgy.reger.creds.get(keys=(creder.said,)):
+            doist.recur(deeds=deeds)
+
 
 def test_credentialing_ends(helpers, seeder):
     salt = b'0123456789abcdef'
