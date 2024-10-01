@@ -804,7 +804,7 @@ class Escrower(doing.Doer):
     
 class Releaser(doing.Doer):
     KERIAReleaserTimeOut = "KERIA_RELEASER_TIMEOUT"
-    TimeoutRel = int(os.getenv(KERIAReleaserTimeOut or 1*60*60))
+    TimeoutRel = int(os.getenv(KERIAReleaserTimeOut, "86400"))
     def __init__(self, agency):
         """ Check open agents and close if idle for more than TimeoutRel seconds
         Parameters:
