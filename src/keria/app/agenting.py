@@ -786,7 +786,7 @@ class Releaser(doing.Doer):
         """ Check open agents and close if idle for more than TimeoutRel seconds
 
         Parameters:
-            agents (dict): dictionary of agents keyed by caid
+            agency (Agency): KERIA manager of agents
  
         """
         self.tock = 60.0
