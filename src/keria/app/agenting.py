@@ -232,7 +232,7 @@ class Agency(doing.DoDoer):
 
         del self.agents[agent.caid]
 
-    def close(self, agent):
+    def shut(self, agent):
         logger.info(f"closing idle agent {agent.caid}")
         self.remove(agent.doers)
         self.remove([agent])
@@ -828,7 +828,7 @@ class Releaser(doing.Doer):
                     idle.append(caid)
 
             for caid in idle:
-                self.agency.close(self.agents[caid])
+                self.agency.shut(self.agents[caid])
             yield self.tock
 
 def loadEnds(app):
