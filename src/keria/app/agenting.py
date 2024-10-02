@@ -234,7 +234,7 @@ class Agency(doing.DoDoer):
 
     def shut(self, agent):
         logger.info(f"closing idle agent {agent.caid}")
-        self.remove(agent.doers)
+        agent.remove(agent.doers)
         self.remove([agent])
         del self.agents[agent.caid]
         agent.hby.ks.close(clear=False)
@@ -246,7 +246,6 @@ class Agency(doing.DoDoer):
         agent.registrar.rgy.close()
         agent.mgr.rb.close(clear=False)
         agent.hby.close(clear=False)
-
 
     def get(self, caid):
         if caid in self.agents:
