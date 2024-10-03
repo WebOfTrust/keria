@@ -193,6 +193,9 @@ def test_agency():
         if os.path.exists(f'/usr/local/var/keri/adb/{base}'):
             shutil.rmtree(f'/usr/local/var/keri/adb/{base}')
 
+        agency.shut(agent)
+        assert caid not in agency.agents
+        assert len(agent.doers) == 0
 
 def test_boot_ends(helpers):
     agency = agenting.Agency(name="agency", bran=None, temp=True)

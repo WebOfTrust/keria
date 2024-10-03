@@ -6,6 +6,7 @@ keria.app.agenting module
 """
 import json
 import os
+import datetime
 from dataclasses import asdict
 from urllib.parse import urlparse, urljoin
 from types import MappingProxyType
@@ -175,7 +176,7 @@ class Agency(doing.DoDoer):
         self.agents = dict()
 
         self.adb = adb if adb is not None else basing.AgencyBaser(name="TheAgency", base=base, reopen=True, temp=temp)
-        super(Agency, self).__init__(doers=[], always=True)
+        super(Agency, self).__init__(doers=[Releaser(self)], always=True)
 
     def create(self, caid, salt=None):
         ks = keeping.Keeper(name=caid,
@@ -231,9 +232,26 @@ class Agency(doing.DoDoer):
 
         del self.agents[agent.caid]
 
+    def shut(self, agent):
+        logger.info(f"closing idle agent {agent.caid}")
+        agent.remove(agent.doers)
+        self.remove([agent])
+        del self.agents[agent.caid]
+        agent.hby.ks.close(clear=False)
+        agent.seeker.close(clear=False)
+        agent.exnseeker.close(clear=False)
+        agent.monitor.opr.close(clear=False)
+        agent.notifier.noter.close(clear=False)
+        agent.rep.mbx.close(clear=False)
+        agent.registrar.rgy.close()
+        agent.mgr.rb.close(clear=False)
+        agent.hby.close(clear=False)
+
     def get(self, caid):
         if caid in self.agents:
-            return self.agents[caid]
+            agent = self.agents[caid]
+            agent.last = helping.nowUTC()
+            return agent
 
         aaid = self.adb.agnt.get(keys=(caid,))
         if aaid is None:
@@ -292,6 +310,8 @@ class Agent(doing.DoDoer):
         self.caid = caid
         self.cfd = MappingProxyType(dict(self.hby.cf.get()) if self.hby.cf is not None else dict())
         self.tocks = MappingProxyType(self.cfd.get("tocks", {}))
+
+        self.last = helping.nowUTC()
 
         self.swain = delegating.Anchorer(hby=hby, proxy=agentHab)
         self.counselor = Counselor(hby=hby, swain=self.swain, proxy=agentHab)
@@ -782,7 +802,33 @@ class Escrower(doing.Doer):
         self.registrar.processEscrows()
         self.credentialer.processEscrows()
         return False
+    
+class Releaser(doing.Doer):
+    KERIAReleaserTimeOut = "KERIA_RELEASER_TIMEOUT"
+    TimeoutRel = int(os.getenv(KERIAReleaserTimeOut, "86400"))
+    def __init__(self, agency):
+        """ Check open agents and close if idle for more than TimeoutRel seconds
+        Parameters:
+            agency (Agency): KERIA agent manager
+ 
+        """
+        self.tock = 60.0
+        self.agents = agency.agents
+        self.agency = agency
 
+        super(Releaser, self).__init__(tock=self.tock)
+
+    def recur(self, tyme=None):
+        while True:
+            idle = []
+            for caid in self.agents:
+                now = helping.nowUTC()
+                if (now - self.agents[caid].last) > datetime.timedelta(seconds=self.TimeoutRel):
+                    idle.append(caid)
+
+            for caid in idle:
+                self.agency.shut(self.agents[caid])
+            yield self.tock
 
 def loadEnds(app):
     opColEnd = longrunning.OperationCollectionEnd()
