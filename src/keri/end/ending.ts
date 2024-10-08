@@ -6,94 +6,94 @@ export const TRUTHY = [true, 1, '?1', 'yes', 'true', 'True', 'on'];
 
 export class Signage {
     constructor(
-        markers: any,
-        indexed?: boolean,
-        signer?: string,
-        ordinal?: string,
-        digest?: string,
-        kind?: string
-    ) {
-        this.markers = markers;
-        this.indexed = indexed;
-        this.signer = signer;
-        this.ordinal = ordinal;
-        this.digest = digest;
-        this.kind = kind;
-    }
-    public markers: any;
-    public indexed: boolean | undefined = false;
-    public signer: string | undefined;
-    public ordinal: string | undefined;
-    public digest: string | undefined;
-    public kind: string | undefined;
+        public readonly markers:
+            | (Siger | Cigar)[]
+            | Map<string, string | Siger | Cigar>,
+        public readonly indexed?: boolean,
+        public readonly signer?: string,
+        public readonly ordinal?: string,
+        public readonly digest?: string,
+        public readonly kind?: string
+    ) {}
 }
 
-export function signature(signages: Array<Signage>): Headers {
-    const values = new Array<string>();
+export function signature(signages: Signage[]): Headers {
+    const values: string[] = [];
 
     for (const signage of signages) {
-        let markers: Array<Siger | Cigar>;
-        let indexed = signage.indexed;
-        const signer = signage.signer;
-        const ordinal = signage.ordinal;
-        const digest = signage.digest;
-        const kind = signage.kind;
-        let tags: Array<string>;
+        let markers: Array<string | Siger | Cigar>;
+        let tags: string[];
 
         if (signage.markers instanceof Map) {
-            tags = Array.from(signage.markers.keys());
             markers = Array.from(signage.markers.values());
+            tags = Array.from(signage.markers.keys());
         } else {
             markers = signage.markers as Array<Siger | Cigar>;
-            tags = new Array<string>();
-        }
-
-        if (indexed == undefined) {
-            indexed = markers[0] instanceof Siger;
+            tags = [];
         }
 
         const items = new Array<string>();
-        const tag = 'indexed';
+        const indexed = signage.indexed ?? markers[0] instanceof Siger;
 
-        let val = indexed ? '?1' : '?0';
-        items.push(`${tag}="${val}"`);
-
-        if (signer != undefined) {
-            items.push(`signer="${signer}"`);
-        }
-        if (ordinal != undefined) {
-            items.push(`ordinal="${ordinal}"`);
-        }
-        if (digest != undefined) {
-            items.push(`digest="${digest}"`);
-        }
-        if (kind != undefined) {
-            items.push(`kind="${kind}"`);
+        if (indexed) {
+            items.push('indexed="?1"');
+        } else {
+            items.push('indexed="?0"');
         }
 
-        markers.forEach((marker, idx) => {
-            let tag: string;
-            if (tags != undefined && tags.length > idx) {
-                tag = tags[idx];
-            } else if (marker instanceof Siger) {
-                if (!indexed)
-                    throw new Error(
-                        `Indexed signature marker ${marker} when indexed False.`
-                    );
+        if (signage.signer != undefined) {
+            items.push(`signer="${signage.signer}"`);
+        }
+        if (signage.ordinal != undefined) {
+            items.push(`ordinal="${signage.ordinal}"`);
+        }
+        if (signage.digest != undefined) {
+            items.push(`digest="${signage.digest}"`);
+        }
+        if (signage.kind != undefined) {
+            items.push(`kind="${signage.kind}"`);
+        }
 
-                tag = marker.index.toString();
-            } else {
-                // Must be a Cigar
-                if (indexed)
-                    throw new Error(
-                        `Unindexed signature marker ${marker} when indexed True.`
-                    );
-                tag = marker.verfer!.qb64;
-            }
+        items.push(
+            ...markers.map((marker, idx) => {
+                let tag: string | undefined = undefined;
+                let val: string;
 
-            val = marker.qb64;
-            items.push(`${tag}="${val}"`);
-        });
+                if (tags != undefined && tags.length > idx) {
+                    tag = tags[idx];
+                }
+
+                if (marker instanceof Siger) {
+                    if (!indexed) {
+                        throw new Error(
+                            `Indexed signature marker ${marker} when indexed False.`
+                        );
+                    }
+
+                    tag = tag ?? marker.index.toString();
+                    val = marker.qb64;
+                } else if (marker instanceof Cigar) {
+                    if (indexed) {
+                        throw new Error(
+                            `Unindexed signature marker ${marker} when indexed True.`
+                        );
+                    }
+                    if (!marker.verfer) {
+                        throw new Error(
+                            `Indexed signature marker is missing verfer`
+                        );
+                    }
+
+                    tag = tag ?? marker.verfer.qb64;
+                    val = marker.qb64;
+                } else {
+                    tag = tag ?? idx.toString();
+                    val = marker;
+                }
+
+                return `${tag}="${val}"`;
+            })
+        );
 
         values.push(items.join(';'));
     }
@@ -104,8 +104,7 @@ export function signature(signages: Array<Signage>): Headers {
 export function designature(value: string) {
     const values = value.replace(' ', '').split(',');
 
-    const signages = new Array<Signage>();
-    values.forEach((val) => {
+    const signages = values.map((val) => {
         const dict = new Map<string, string>();
         val.split(';').forEach((v) => {
             const splits = v.split('=', 2);
@@ -147,23 +146,21 @@ export function designature(value: string) {
             kind = 'CESR';
         }
 
-        let markers: Map<string, string | Siger | Cigar>;
         if (kind == 'CESR') {
-            markers = new Map<string, Siger | Cigar>();
-            dict.forEach((val, key) => {
-                if (indexed) {
-                    markers.set(key, new Siger({ qb64: val as string }));
-                } else {
-                    markers.set(key, new Cigar({ qb64: val as string }));
-                }
-            });
-        } else {
-            markers = dict;
-        }
+            const markers = new Map<string, Siger | Cigar>();
 
-        signages.push(
-            new Signage(markers, indexed, signer, ordinal, digest, kind)
-        );
+            for (const [key, val] of dict.entries()) {
+                if (indexed) {
+                    markers.set(key, new Siger({ qb64: val }));
+                } else {
+                    markers.set(key, new Cigar({ qb64: val }));
+                }
+            }
+
+            return new Signage(markers, indexed, signer, ordinal, digest, kind);
+        } else {
+            return new Signage(dict, indexed, signer, ordinal, digest, kind);
+        }
     });
 
     return signages;

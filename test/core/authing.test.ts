@@ -20,11 +20,19 @@ describe('Authenticater.verify', () => {
             ['Content-Type', 'application/json'],
             [
                 'Signature',
-                'indexed="?0";signify="0BDLh8QCytVBx1YMam4Vt8s4b9HAW1dwfE4yU5H_w1V6gUvPBoVGWQlIMdC16T3WFWHDHCbMcuceQzrr6n9OULsK"',
+                [
+                    'indexed="?0"',
+                    'signify="0BDLh8QCytVBx1YMam4Vt8s4b9HAW1dwfE4yU5H_w1V6gUvPBoVGWQlIMdC16T3WFWHDHCbMcuceQzrr6n9OULsK"',
+                ].join(';'),
             ],
             [
                 'Signature-Input',
-                'signify=("signify-resource" "@method" "@path" "signify-timestamp");created=1684715820;keyid="EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei";alg="ed25519"',
+                [
+                    'signify=("signify-resource" "@method" "@path" "signify-timestamp")',
+                    'created=1684715820',
+                    'keyid="EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei"',
+                    'alg="ed25519"',
+                ].join(';'),
             ],
             [
                 'Signify-Resource',
@@ -52,7 +60,7 @@ describe('Authenticater.sign', () => {
         const aaid = 'DDK2N5_fVCWIEO9d8JLhk7hKrkft6MbtkUhaHQsmABHY';
         const verfer = new Verfer({ qb64: aaid });
 
-        let headers = new Headers([
+        const headers = new Headers([
             ['Content-Type', 'application/json'],
             ['Content-Length', '256'],
             ['Connection', 'close'],
@@ -67,17 +75,23 @@ describe('Authenticater.sign', () => {
         );
 
         const authn = new Authenticater(signer, verfer);
-        headers = authn.sign(headers, 'POST', '/boot');
+        const result = authn.sign(headers, 'POST', '/boot');
 
-        assert.equal(headers.has('Signature-Input'), true);
-        assert.equal(headers.has('Signature'), true);
-        assert.equal(
-            headers.get('Signature-Input'),
-            'signify=("@method" "@path" "signify-resource" "signify-timestamp");created=1609459200;keyid="DN54yRad_BTqgZYUSi_NthRBQrxSnqQdJXWI5UHcGOQt";alg="ed25519"'
-        );
-        assert.equal(
-            headers.get('Signature'),
-            'indexed="?0";signify="0BChvN_BWAf-mgEuTnWfNnktgHdWOuOh9cWc4o0GFWuZOwra3DyJT5dJ_6BX7AANDOTnIlAKh5Sg_9qGQXHjj5oJ"'
-        );
+        assert.equal(result.has('Signature-Input'), true);
+        assert.equal(result.has('Signature'), true);
+
+        const expectedSignatureInput = [
+            'signify=("@method" "@path" "signify-resource" "signify-timestamp")',
+            'created=1609459200',
+            'keyid="DN54yRad_BTqgZYUSi_NthRBQrxSnqQdJXWI5UHcGOQt"',
+            'alg="ed25519"',
+        ].join(';');
+        assert.equal(result.get('Signature-Input'), expectedSignatureInput);
+
+        const expectedSignature = [
+            'indexed="?0"',
+            'signify="0BChvN_BWAf-mgEuTnWfNnktgHdWOuOh9cWc4o0GFWuZOwra3DyJT5dJ_6BX7AANDOTnIlAKh5Sg_9qGQXHjj5oJ"',
+        ].join(';');
+        assert.equal(result.get('Signature'), expectedSignature);
     });
 });

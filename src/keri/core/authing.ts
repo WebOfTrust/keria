@@ -77,8 +77,9 @@ export class Authenticater {
             items.push(`"@signature-params: ${params}"`);
             const ser = items.join('\n');
             const signage = designature(signature!);
-            const cig = signage[0].markers.get(input.name);
-            if (!this._verfer.verify(cig.raw, ser)) {
+            const markers = signage[0].markers as Map<string, Siger | Cigar>;
+            const cig = markers.get(input.name);
+            if (!cig || !this._verfer.verify(cig.raw, ser)) {
                 throw new Error(`Signature for ${input.keyid} invalid.`);
             }
         });

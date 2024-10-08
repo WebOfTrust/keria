@@ -12,7 +12,6 @@
             "files": [
                 "src/keri/app/**",
                 "src/keri/core/**",
-                "src/keri/end/**",
                 "examples/integration-scripts/**"
             ],
             "rules": {
