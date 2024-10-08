@@ -71,44 +71,6 @@ const mockGetAID = {
     windexes: [],
 };
 
-const mockCredential = {
-    sad: {
-        v: 'ACDC10JSON000197_',
-        d: 'EMwcsEMUEruPXVwPCW7zmqmN8m0I3CihxolBm-RDrsJo',
-        i: 'EMQQpnSkgfUOgWdzQTWfrgiVHKIDAhvAZIPQ6z3EAfz1',
-        ri: 'EGK216v1yguLfex4YRFnG7k1sXRjh3OKY7QqzdKsx7df',
-        s: 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao',
-        a: {
-            d: 'EK0GOjijKd8_RLYz9qDuuG29YbbXjU8yJuTQanf07b6P',
-            i: 'EKvn1M6shPLnXTb47bugVJblKMuWC0TcLIePP8p98Bby',
-            dt: '2023-08-23T15:16:07.553000+00:00',
-            LEI: '5493001KJTIIGC8Y1R17',
-        },
-    },
-    pre: 'EMQQpnSkgfUOgWdzQTWfrgiVHKIDAhvAZIPQ6z3EAfz1',
-    sadsigers: [
-        {
-            path: '-',
-            pre: 'EMQQpnSkgfUOgWdzQTWfrgiVHKIDAhvAZIPQ6z3EAfz1',
-            sn: 0,
-            d: 'EMQQpnSkgfUOgWdzQTWfrgiVHKIDAhvAZIPQ6z3EAfz1',
-        },
-    ],
-    sadcigars: [],
-    chains: [],
-    status: {
-        v: 'KERI10JSON000135_',
-        i: 'EMwcsEMUEruPXVwPCW7zmqmN8m0I3CihxolBm-RDrsJo',
-        s: '0',
-        d: 'ENf3IEYwYtFmlq5ZzoI-zFzeR7E3ZNRN2YH_0KAFbdJW',
-        ri: 'EGK216v1yguLfex4YRFnG7k1sXRjh3OKY7QqzdKsx7df',
-        ra: {},
-        a: { s: 2, d: 'EIpgyKVF0z0Pcn2_HgbWhEKmJhOXFeD4SA62SrxYXOLt' },
-        dt: '2023-08-23T15:16:07.553000+00:00',
-        et: 'iss',
-    },
-};
-
 fetchMock.mockResponse((req) => {
     if (req.url.startsWith(url + '/agent')) {
         return Promise.resolve({ body: mockConnect, init: { status: 202 } });
@@ -143,9 +105,7 @@ fetchMock.mockResponse((req) => {
             req.method,
             requrl.pathname.split('?')[0]
         );
-        const body = req.url.startsWith(url + '/identifiers/aid1/credentials')
-            ? mockCredential
-            : mockGetAID;
+        const body = mockGetAID;
 
         return Promise.resolve({
             body: JSON.stringify(body),
