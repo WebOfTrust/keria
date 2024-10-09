@@ -890,8 +890,8 @@ class BootEnd:
         caid = icp.pre
 
         if self.agency.get(caid=caid) is not None:
-            raise falcon.HTTPBadRequest(title="agent already exists",
-                                        description=f"agent for controller {caid} already exists")
+            raise falcon.HTTPConflict(title="agent already exists",
+                                      description=f"agent for controller {caid} already exists")
 
         agent = self.agency.create(caid=caid)
 
