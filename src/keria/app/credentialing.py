@@ -34,7 +34,10 @@ def loadEnds(app, identifierResource):
 
     credentialCollectionEnd = CredentialCollectionEnd(identifierResource)
     app.add_route("/identifiers/{name}/credentials", credentialCollectionEnd)
-    
+
+    credentialRegistryResEnd = CredentialRegistryResourceEnd()
+    app.add_route("/registries/{ri}/{vci}", credentialRegistryResEnd)
+
     credentialResourceEnd = CredentialResourceEnd()
     app.add_route("/credentials/{said}", credentialResourceEnd)
     credentialResourceDelEnd = CredentialResourceDeleteEnd(identifierResource)
@@ -890,6 +893,58 @@ class CredentialResourceDeleteEnd:
 
         rep.status = falcon.HTTP_200
         rep.data = op.to_json().encode("utf-8")
+
+
+class CredentialRegistryResourceEnd:
+    @staticmethod
+    def on_get(req, rep, ri, vci):
+        """ Get credential registry state
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        ---
+        summary: Get credential registry state
+        description: Get credential registry state from any known Tever (does not need be controlled by us)
+        tags:
+           - Credentials
+        parameters:
+           - in: path
+             name: ri
+             schema:
+               type: string
+             required: true
+             description: SAID of management TEL
+           - in: path
+             name: vci
+             schema:
+               type: string
+             required: true
+             description: SAID of credential
+        responses:
+           200:
+              description: Credential registry state
+              content:
+                  application/json:
+                    schema:
+                        description: Credential registry state
+                        type: object
+           404:
+              description: Unknown management registry or credential
+        """
+        agent = req.context.agent
+        if ri not in agent.tvy.tevers:
+            raise falcon.HTTPNotFound(description=f"registry {ri} not found")
+        tever = agent.tvy.tevers[ri]
+
+        state = tever.vcState(vci)
+        if not state:
+            raise falcon.HTTPNotFound(description=f"credential {vci} not found in registry {ri}")
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(asdict(state)).encode("utf-8")
 
 
 def signPaths(hab, pather, sigers):
