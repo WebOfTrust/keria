@@ -224,7 +224,7 @@ def test_boot_ends(helpers):
     assert rep.status_code == 202
 
     rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"))
-    assert rep.status_code == 400
+    assert rep.status_code == 409
     assert rep.json == {
         'title': 'agent already exists',
         'description': 'agent for controller EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx already exists'
