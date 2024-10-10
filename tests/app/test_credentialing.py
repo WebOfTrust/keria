@@ -350,6 +350,8 @@ def test_credentialing_ends(helpers, seeder):
         app.add_route("/credentials/query", credResEnd)
         credResEnd = credentialing.CredentialResourceEnd()
         app.add_route("/credentials/{said}", credResEnd)
+        credentialRegistryResEnd = credentialing.CredentialRegistryResourceEnd()
+        app.add_route("/registries/{ri}/{vci}", credentialRegistryResEnd)
 
         assert hab.pre == "EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze"
 
@@ -468,6 +470,23 @@ def test_credentialing_ends(helpers, seeder):
         assert res.status_code == 200
         assert res.headers['content-type'] == "application/json+cesr"
 
+        res = client.simulate_get(f"/registries/{registry.regk}/{saids[0]}")
+        assert res.status_code == 200
+        assert res.json == {'vn': [1, 0], 'i': 'EIO9uC3K6MvyjFD-RB3RYW3dfL49kCyz3OPqv3gi1dek', 's': '0',
+                            'd': 'EBVaw6pCqfMIiZGkA6qevzRUGsxTRuZXxl6YG1neeCGF', 'ri': 'EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4',
+                            'ra': {}, 'a': {'s': 3, 'd': 'EO_rknKiU14E0I-rN6yttRE0OSDKaQpVSozAcghjS4dj'},
+                            'dt': '2021-06-27T21:26:21.233257+00:00', 'et': 'iss'}
+
+        res = client.simulate_get(f"/registries/{registry.regk}/EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy")
+        assert res.status_code == 404
+        assert res.json == {'description': f"credential EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy not found in registry EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4",
+                            'title': '404 Not Found'}
+
+        res = client.simulate_get(f"/registries/EBVaw6pCqfMIiZGkA6qevzRUGsxTRuZXxl6YG1neeCGF/{saids[0]}")
+        assert res.status_code == 404
+        assert res.json == {'description': f"registry EBVaw6pCqfMIiZGkA6qevzRUGsxTRuZXxl6YG1neeCGF not found",
+                            'title': '404 Not Found'}
+
 
 def test_revoke_credential(helpers, seeder):
     with helpers.openKeria() as (agency, agent, app, client):
@@ -489,6 +508,8 @@ def test_revoke_credential(helpers, seeder):
         app.add_route("/identifiers/{name}/credentials/{said}", credResDelEnd)
         credResEnd = credentialing.CredentialQueryCollectionEnd()
         app.add_route("/credentials/query", credResEnd)
+        credentialRegistryResEnd = credentialing.CredentialRegistryResourceEnd()
+        app.add_route("/registries/{ri}/{vci}", credentialRegistryResEnd)
 
         seeder.seedSchema(agent.hby.db)
 
@@ -635,3 +656,8 @@ def test_revoke_credential(helpers, seeder):
         assert len(res.json) == 1
         assert res.json[0]['sad']['d'] == creder.said
         assert res.json[0]['status']['s'] == "1"
+
+        res = client.simulate_get(f"/registries/{registry["regk"]}/{creder.said}")
+        assert res.status_code == 200
+        assert res.json["s"] == "1"
+        assert res.json["et"] == "rev"
