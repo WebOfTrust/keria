@@ -79,7 +79,15 @@ def test_exchange_end(helpers):
         assert len(agent.exchanges) == 1
 
         doist.recur(deeds=deeds)
+        assert len(agent.exchanges) == 0
 
+        # Use prefix instead of alias to send again
+        res = client.simulate_post(path="/identifiers/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/exchanges", json=body)
+        assert res.status_code == 202
+        assert res.json == cexn.ked
+        assert len(agent.exchanges) == 1
+
+        doist.recur(deeds=deeds)
         assert len(agent.exchanges) == 0
         agent.exnseeker.index(cexn.said)
 
