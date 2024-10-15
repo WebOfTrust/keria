@@ -34,7 +34,7 @@ class ExchangeCollectionEnd:
         Args:
             req (Request): falcon HTTP request object
             rep (Response): falcon HTTP response object
-            name (str): human readable alias for AID context
+            name (str): human readable name or prefix for AID context
         ---
         summary: Post an exchange message for an identifier.
         description: This endpoint posts an exchange message to a specific named identifier.
@@ -85,9 +85,9 @@ class ExchangeCollectionEnd:
         body = req.get_media()
 
         # Get the hab
-        hab = agent.hby.habByName(name)
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"alias={name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
 
         # Get the exn, sigs, additional attachments and recipients  from the request
         ked = httping.getRequiredParam(body, "exn")
