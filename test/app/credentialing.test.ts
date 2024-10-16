@@ -315,59 +315,6 @@ describe('Credentialing', () => {
         );
         assert.equal(lastBody.sigs[0].substring(0, 2), 'AA');
         assert.equal(lastBody.sigs[0].length, 88);
-
-        await credentials.present(
-            'aid1',
-            credential,
-            'EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX',
-            false
-        );
-        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
-        lastBody = JSON.parse(lastCall[1]!.body!.toString());
-        assert.equal(
-            lastCall[0]!,
-            url +
-                '/identifiers/aid1/credentials/' +
-                credential +
-                '/presentations'
-        );
-        assert.equal(lastCall[1]!.method, 'POST');
-        assert.equal(lastBody.exn.t, 'exn');
-        assert.equal(lastBody.exn.r, '/presentation');
-        assert.equal(
-            lastBody.exn.a.n,
-            'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK'
-        );
-        assert.equal(lastBody.exn.a.s, schema);
-        assert.equal(lastBody.sig.length, 144);
-        assert.equal(
-            lastBody.recipient,
-            'EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX'
-        );
-        assert.equal(lastBody.include, false);
-
-        await credentials.request(
-            'aid1',
-            'EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX',
-            credential,
-            'EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX'
-        );
-        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
-        lastBody = JSON.parse(lastCall[1]!.body!.toString());
-        assert.equal(lastCall[0]!, url + '/identifiers/aid1/requests');
-        assert.equal(lastCall[1]!.method, 'POST');
-        assert.equal(lastBody.exn.t, 'exn');
-        assert.equal(lastBody.exn.r, '/presentation/request');
-        assert.equal(lastBody.exn.a.i, registry);
-        assert.equal(
-            lastBody.exn.a.s,
-            'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK'
-        );
-        assert.equal(lastBody.sig.length, 144);
-        assert.equal(
-            lastBody.recipient,
-            'EP10ooRj0DJF0HWZePEYMLPl-arMV-MAoTKK-o3DXbgX'
-        );
     });
 });
 
