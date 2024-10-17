@@ -168,5 +168,14 @@ test('salty', async () => {
 
     await assertOperations(client1);
 
+    aid = await client1.identifiers().update('aid3', { name: 'aid4' });
+    assert.equal(aid.name, 'aid4');
+    aid = await client1.identifiers().get('aid4');
+    assert.equal(aid.name, 'aid4');
+    aids = await client1.identifiers().list(2, 2);
+    assert.equal(aids.aids.length, 1);
+    aid = aids.aids[0];
+    assert.equal(aid.name, 'aid4');
+
     console.log('Salty test passed');
 }, 30000);

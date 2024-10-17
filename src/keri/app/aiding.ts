@@ -7,7 +7,6 @@ import { MtrDex } from '../core/matter';
 import { Serder } from '../core/serder';
 import { parseRangeHeaders } from '../core/httping';
 import { KeyManager } from '../core/keeping';
-import { Operation } from './coring';
 import { HabState } from '../core/state';
 
 /** Arguments required to create an identfier */
@@ -67,6 +66,13 @@ export interface IdentifierDeps {
     manager: KeyManager | null;
 }
 
+/**
+ * Updatable information for a managed identifier
+ */
+export interface IdentifierInfo {
+    name: string;
+}
+
 /** Identifier */
 export class Identifier {
     public client: IdentifierDeps;
@@ -110,14 +116,28 @@ export class Identifier {
     /**
      * Get information for a managed identifier
      * @async
-     * @param {string} name Name or alias of the identifier
-     * @returns {Promise<any>} A promise to the identifier information
+     * @param {string} name Prefix or alias of the identifier
+     * @returns {Promise<HabState>} A promise to the identifier information
      */
     async get(name: string): Promise<HabState> {
         const path = `/identifiers/${encodeURIComponent(name)}`;
         const data = null;
         const method = 'GET';
         const res = await this.client.fetch(path, method, data);
+        return await res.json();
+    }
+
+    /**
+     * Update managed identifier
+     * @async
+     * @param {string} name Prefix or alias of the identifier
+     * @param {IdentifierInfo} info Information to update for the given identifier
+     * @returns {Promise<HabState>} A promise to the identifier information after updating
+     */
+    async update(name: string, info: IdentifierInfo): Promise<HabState> {
+        const path = `/identifiers/${name}`;
+        const method = 'PUT';
+        const res = await this.client.fetch(path, method, info);
         return await res.json();
     }
 
@@ -253,7 +273,7 @@ export class Identifier {
     /**
      * Generate an interaction event in a managed identifier
      * @async
-     * @param {string} name Name or alias of the identifier
+     * @param {string} name Prefix or alias of the identifier
      * @param {any} [data] Option data to be anchored in the interaction event
      * @returns {Promise<EventResult>} A promise to the interaction event result
      */

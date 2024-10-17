@@ -369,6 +369,15 @@ describe('Aiding', () => {
         assert.deepEqual(lastCall.body.randy.transferable, true);
     });
 
+    it('Can rename identifier', async () => {
+        client.fetch.mockResolvedValue(Response.json({}));
+        await client.identifiers().update('aid1', { name: 'aid2' });
+        const lastCall = client.getLastMockRequest();
+        assert.equal(lastCall.path, '/identifiers/aid1');
+        assert.equal(lastCall.method, 'PUT');
+        assert.equal(lastCall.body.name, 'aid2');
+    });
+
     describe('Group identifiers', () => {
         it('Can Rotate group', async () => {
             const member1 = await createMockIdentifierState(
