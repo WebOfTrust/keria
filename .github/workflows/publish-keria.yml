@@ -1,4 +1,3 @@
-
 name: Publish Docker image
 
 on:
@@ -24,7 +23,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: WebOfTrust/keria
+          images: weboftrust/keria
 
       - name: Set up Docker buildx
         id: buildx
@@ -45,8 +44,8 @@ jobs:
           file: images/keria.dockerfile
           push: true
           tags: |
-            WebOfTrust/keria:${{ github.event.inputs.version }}
-            WebOfTrust/keria:latest
+            weboftrust/keria:${{ github.event.inputs.version }}
+            weboftrust/keria:latest
           labels: ${{ github.event.inputs.version }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
