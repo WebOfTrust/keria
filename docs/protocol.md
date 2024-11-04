@@ -280,7 +280,7 @@ Signify clients must sign all requests to the KERIA Admin Interface using the la
 Document `Signify-Resource` and `Signify-Timestamp` headers here.
 
 ### Signature Input Header
-Document the `Signagture-Input` header here with link to https://httpwg.org/http-extensions/draft-ietf-httpbis-message-signatures.html
+Document the `Signature-Input` header here with link to https://httpwg.org/http-extensions/draft-ietf-httpbis-message-signatures.html
 
 ### Signature Header
 Docuemnt the signing method and `Signature` header.
