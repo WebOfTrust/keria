@@ -229,6 +229,26 @@ export interface IpexAdmitArgs {
     datetime?: string;
 }
 
+export type CredentialState = {
+    vn: [number, number];
+    i: string;
+    s: string;
+    d: string;
+    ri: string;
+    a: { s: number; d: string };
+    dt: string;
+    et: string;
+} & (
+    | {
+          et: 'iss' | 'rev';
+          ra: Record<string, never>;
+      }
+    | {
+          et: 'bis' | 'brv';
+          ra: { i: string; s: string; d: string };
+      }
+);
+
 /**
  * Credentials
  */
@@ -283,6 +303,20 @@ export class Credentials {
         const res = await this.client.fetch(path, method, null, headers);
 
         return includeCESR ? await res.text() : await res.json();
+    }
+
+    /**
+     * Get the state of a credential
+     * @async
+     * @param {string} ri - management registry identifier
+     * @param {string} said - SAID of the credential
+     * @returns {Promise<CredentialState>} A promise to the credential registry state
+     */
+    async state(ri: string, said: string): Promise<CredentialState> {
+        const path = `/registries/${ri}/${said}`;
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, null);
+        return res.json();
     }
 
     /**

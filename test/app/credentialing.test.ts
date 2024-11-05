@@ -315,6 +315,16 @@ describe('Credentialing', () => {
         );
         assert.equal(lastBody.sigs[0].substring(0, 2), 'AA');
         assert.equal(lastBody.sigs[0].length, 88);
+
+        await credentials.state(mockCredential.sad.ri, mockCredential.sad.d);
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
+        assert.equal(
+            lastCall[0]!,
+            url +
+                '/registries/EGK216v1yguLfex4YRFnG7k1sXRjh3OKY7QqzdKsx7df/EMwcsEMUEruPXVwPCW7zmqmN8m0I3CihxolBm-RDrsJo'
+        );
+        assert.equal(lastCall[1]!.method, 'GET');
+        assert.equal(lastCall[1]!.body, null);
     });
 });
 
