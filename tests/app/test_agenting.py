@@ -722,5 +722,3 @@ def test_config_ends(helpers):
         assert res.status == falcon.HTTP_200
         assert res.json == {'iurls':
                             ['http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller&tag=witness']}
-
-        agent.cf
