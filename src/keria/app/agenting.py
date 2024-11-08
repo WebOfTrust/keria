@@ -1332,27 +1332,28 @@ class Submitter(doing.DoDoer):
 
 class ConfigResourceEnd:
 
-    """ Config GET endpoint
-
-    Parameters:
-        req (Request): falcon.Request HTTP request
-        rep (Response): falcon.Response HTTP response
-
-    ---
-    summary: Retrieve agent configuration
-    description:  Retrieve agent configuration file as JSON
-    tags:
-      - Config
-    responses:
-       200:
-          description: Configuration dict as JSON
-
-    """
     @staticmethod
     def on_get(req, rep):
+        """ Config GET endpoint
+
+        Parameters:
+            req (Request): falcon.Request HTTP request
+            rep (Response): falcon.Response HTTP response
+
+        ---
+        summary: Retrieve agent configuration
+        description:  Retrieve agent configuration (only necessary fields are exposed)
+        tags:
+          - Config
+        responses:
+           200:
+              description: Subset of configuration dict as JSON
+
+        """
         agent = req.context.agent
         config = agent.hby.cf.get()
+        subset = {key: config[key] for key in ["iurls"] if key in config}
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
-        rep.data = json.dumps(config).encode("utf-8")
+        rep.data = json.dumps(subset).encode("utf-8")
