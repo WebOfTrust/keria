@@ -850,6 +850,9 @@ def loadEnds(app):
     queryEnd = QueryCollectionEnd()
     app.add_route("/queries", queryEnd)
 
+    configEnd = ConfigResourceEnd()
+    app.add_route("/config", configEnd)
+
 
 class BootEnd:
     """ Resource class for creating datastore in cloud ahab """
@@ -1325,3 +1328,32 @@ class Submitter(doing.DoDoer):
                         self.doers.remove(doer)
 
         return super(Submitter, self).recur(tyme, deeds)
+
+
+class ConfigResourceEnd:
+
+    @staticmethod
+    def on_get(req, rep):
+        """ Config GET endpoint
+
+        Parameters:
+            req (Request): falcon.Request HTTP request
+            rep (Response): falcon.Response HTTP response
+
+        ---
+        summary: Retrieve agent configuration
+        description:  Retrieve agent configuration (only necessary fields are exposed)
+        tags:
+          - Config
+        responses:
+           200:
+              description: Subset of configuration dict as JSON
+
+        """
+        agent = req.context.agent
+        config = agent.hby.cf.get()
+        subset = {key: config[key] for key in ["iurls"] if key in config}
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(subset).encode("utf-8")

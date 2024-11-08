@@ -63,6 +63,8 @@ def test_load_ends(helpers):
         assert isinstance(end, agenting.KeyEventCollectionEnd)
         (end, *_) = app._router.find("/queries")
         assert isinstance(end, agenting.QueryCollectionEnd)
+        (end, *_) = app._router.find("/config")
+        assert isinstance(end, agenting.ConfigResourceEnd)
 
 
 def test_load_tocks_config(helpers):
@@ -84,6 +86,9 @@ def test_load_tocks_config(helpers):
                 "dt": "2022-01-20T12:57:59.823350+00:00",
                 "curls": ["http://127.0.0.1:3902/"]
             },
+            "iurls": [
+                "http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller&tag=witness"
+            ],
             "tocks": {
                 "initer": 0.0,
                 "escrower": 1.0
@@ -356,6 +361,9 @@ def test_oobi_ends(seeder, helpers):
         b = json.dumps(data).encode("utf-8")
         result = client.simulate_post(path="/oobi", body=b)
         assert result.status == falcon.HTTP_501
+
+        # initiated from keria.json config file (iurls), so remove
+        oobiery.hby.db.oobis.rem(keys=("http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller&tag=witness",))
 
         data = dict(url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/")
         b = json.dumps(data).encode("utf-8")
@@ -704,3 +712,13 @@ def test_submitter(seeder, helpers):
                 },
             )
         )
+
+
+def test_config_ends(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        configEnd = agenting.ConfigResourceEnd()
+        app.add_route("/config", configEnd)
+        res = client.simulate_get(path="/config")
+        assert res.status == falcon.HTTP_200
+        assert res.json == {'iurls':
+                            ['http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller&tag=witness']}
