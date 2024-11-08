@@ -850,6 +850,9 @@ def loadEnds(app):
     queryEnd = QueryCollectionEnd()
     app.add_route("/queries", queryEnd)
 
+    configEnd = ConfigResourceEnd()
+    app.add_route("/config", configEnd)
+
 
 class BootEnd:
     """ Resource class for creating datastore in cloud ahab """
@@ -1325,3 +1328,31 @@ class Submitter(doing.DoDoer):
                         self.doers.remove(doer)
 
         return super(Submitter, self).recur(tyme, deeds)
+
+
+class ConfigResourceEnd:
+
+    """ Config GET endpoint
+
+    Parameters:
+        req (Request): falcon.Request HTTP request
+        rep (Response): falcon.Response HTTP response
+
+    ---
+    summary: Retrieve agent configuration
+    description:  Retrieve agent configuration file as JSON
+    tags:
+      - Config
+    responses:
+       200:
+          description: Configuration dict as JSON
+
+    """
+    @staticmethod
+    def on_get(req, rep):
+        agent = req.context.agent
+        config = agent.hby.cf.get()
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(config).encode("utf-8")

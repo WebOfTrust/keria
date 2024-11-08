@@ -63,6 +63,8 @@ def test_load_ends(helpers):
         assert isinstance(end, agenting.KeyEventCollectionEnd)
         (end, *_) = app._router.find("/queries")
         assert isinstance(end, agenting.QueryCollectionEnd)
+        (end, *_) = app._router.find("/config")
+        assert isinstance(end, agenting.ConfigResourceEnd)
 
 
 def test_load_tocks_config(helpers):
@@ -704,3 +706,16 @@ def test_submitter(seeder, helpers):
                 },
             )
         )
+
+
+def test_config_ends(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        configEnd = agenting.ConfigResourceEnd()
+        app.add_route("/config", configEnd)
+        res = client.simulate_get(path="/config")
+        assert res.status == falcon.HTTP_200
+        assert res.json == {'dt': '2022-01-20T12:57:59.823350+00:00',
+                            'keria': {'dt': '2022-01-20T12:57:59.823350+00:00', 'curls': ['http://127.0.0.1:3902/']},
+                            'EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx': {'dt': '2022-01-20T12:57:59.823350+00:00', 'curls': ['http://127.0.0.1:3902/']},
+                            'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9': {'dt': '2022-01-20T12:57:59.823350+00:00', 'curls': ['http://127.0.0.1:3902/']},
+                            'tocks': {'initer': 0, 'escrower': 1}}
