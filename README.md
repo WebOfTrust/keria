@@ -14,7 +14,7 @@ Here we detail the components of a single KERIA instance. This architecture prot
 ### Message Router
 The Message Router receives external KERI protocol messages. These are KERI protocol messages for instance coordinating multi-sig, revoking credentials, etc. It routes these messages to the appropriate Agent(s). For instance a multisig message requires asynchronous waiting (for signature responses from other participants) and the message router would route those incoming KERI protocol responses to the appropriate agents.
 From Signify client calls, this service endpoint corresponds to the *http port* (default is 3902).
-This enpoint allows all KERI clients (not just Signify) to interact in a seamless way.
+This endpoint allows all KERI clients (not just Signify) to interact in a seamless way.
 
 ### The Agency
 The Agency receives API requests (/boot requests) to provision agents. It is the central repository for initializing agents. 
