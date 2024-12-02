@@ -6,7 +6,7 @@ import { Tier } from '../core/salter';
 import { Identifier } from './aiding';
 import { Contacts, Challenges } from './contacting';
 import { Agent, Controller } from './controller';
-import { Oobis, Operations, KeyEvents, KeyStates } from './coring';
+import { Oobis, Operations, KeyEvents, KeyStates, Config } from './coring';
 import { Credentials, Ipex, Registries, Schemas } from './credentialing';
 import { Delegations } from './delegating';
 import { Escrows } from './escrowing';
@@ -477,5 +477,13 @@ export class SignifyClient {
      */
     delegations(): Delegations {
         return new Delegations(this);
+    }
+
+    /**
+     * Get agent config resource
+     * @returns {Config}
+     */
+    config(): Config {
+        return new Config(this);
     }
 }

@@ -81,6 +81,10 @@ export interface OperationsDeps {
     ): Promise<Response>;
 }
 
+export interface AgentConfig {
+    iurls?: string[];
+}
+
 /**
  * Operations
  * @remarks
@@ -275,6 +279,25 @@ export class KeyStates {
 
         const method = 'POST';
         const res = await this.client.fetch(path, method, data);
+        return await res.json();
+    }
+}
+
+export class Config {
+    public client: SignifyClient;
+
+    /**
+     * Config
+     * @param {SignifyClient} client
+     */
+    constructor(client: SignifyClient) {
+        this.client = client;
+    }
+
+    async get(): Promise<AgentConfig> {
+        const path = `/config`;
+        const method = 'GET';
+        const res = await this.client.fetch(path, method, null);
         return await res.json();
     }
 }

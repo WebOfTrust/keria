@@ -267,6 +267,23 @@ describe('Coring', () => {
             'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao'
         );
     });
+
+    it('Agent configuration', async () => {
+        await libsodium.ready;
+        const bran = '0123456789abcdefghijk';
+
+        const client = new SignifyClient(url, bran, Tier.low, boot_url);
+
+        await client.boot();
+        await client.connect();
+
+        const config = client.config();
+
+        await config.get();
+        const lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
+        assert.equal(lastCall[0]!, url + '/config');
+        assert.equal(lastCall[1]!.method, 'GET');
+    });
 });
 
 describe('Operations', () => {
