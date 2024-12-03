@@ -1,56 +1,36 @@
+x-healthcheck: &healthcheck
+    interval: 2s
+    timeout: 3s
+    retries: 5
+    start_period: 2s
+
+x-python-env: &python-env
+    PYTHONUNBUFFERED: 1
+    PYTHONIOENCODING: UTF-8
+
 services:
     vlei-server:
         image: gleif/vlei
         environment:
-            - PYTHONUNBUFFERED=1
-            - PYTHONIOENCODING=UTF-8
-        command:
-            - vLEI-server
-            - -s
-            - ./schema/acdc
-            - -c
-            - ./samples/acdc/
-            - -o
-            - ./samples/oobis/
+            <<: *python-env
+        command: vLEI-server -s ./schema/acdc -c ./samples/acdc/ -o ./samples/oobis/
         healthcheck:
-            test:
-                - CMD
-                - curl
-                - -f
-                - http://localhost:7723/oobi/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao
-            interval: 2s
-            timeout: 3s
-            retries: 5
-            start_period: 2s
+            test: curl -f http://localhost:7723/oobi/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao
+            <<: *healthcheck
         ports:
             - 7723:7723
 
     keria:
         image: ${KERIA_IMAGE:-weboftrust/keria}:${KERIA_IMAGE_TAG:-0.2.0-dev5}
         environment:
-            - KERI_AGENT_CORS=1
-            - KERI_URL=http://keria:3902
-            - PYTHONUNBUFFERED=1
-            - PYTHONIOENCODING=UTF-8
+            KERI_AGENT_CORS: 1
+            <<: *python-env
         volumes:
             - ./config/keria.json:/keria/config/keri/cf/keria.json
-        entrypoint:
-            [
-                'keria',
-                'start',
-                '--config-dir',
-                '/keria/config',
-                '--config-file',
-                'keria',
-                '--name',
-                'agent',
-            ]
+        command: --config-dir /keria/config --config-file keria --name agent
         healthcheck:
-            test: ['CMD', 'wget', '--spider', 'http://keria:3902/spec.yaml']
-            interval: 2s
-            timeout: 3s
-            retries: 5
-            start_period: 2s
+            test: wget --spider http://keria:3902/spec.yaml
+            <<: *healthcheck
         ports:
             - 3901:3901
             - 3902:3902
@@ -59,28 +39,13 @@ services:
     witness-demo:
         image: weboftrust/keri-witness-demo:1.1.0
         environment:
-            - PYTHONUNBUFFERED=1
-            - PYTHONIOENCODING=UTF-8
+            <<: *python-env
         healthcheck:
-            test: ['CMD', 'curl', '-f', 'http://localhost:5642/oobi']
-            interval: 2s
-            timeout: 3s
-            retries: 5
-            start_period: 2s
+            test: curl -f http://localhost:5642/oobi
+            <<: *healthcheck
         volumes:
             - ./config/witness-demo:/keripy/scripts/keri/cf/main
         ports:
             - 5642:5642
             - 5643:5643
             - 5644:5644
-
-    deps:
-        image: alpine
-        command: ['echo', 'Dependencies running']
-        depends_on:
-            vlei-server:
-                condition: service_healthy
-            keria:
-                condition: service_healthy
-            witness-demo:
-                condition: service_healthy

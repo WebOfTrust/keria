@@ -78,22 +78,18 @@ npm test
 The integration tests depends on a local instance of KERIA, vLEI-Server and Witness Demo. These are specified in the [Docker Compose](./docker-compose.yaml) file. To start the dependencies, use docker compose:
 
 ```bash
-docker compose up deps
+docker compose up --wait
 ```
 
 If successful, it should print someting like this:
 
 ```bash
-$ docker compose up deps
-[+] Running 5/4
+$ docker compose up --wait
+[+] Running 4/4
  ✔ Network signify-ts_default           Created                                           0.0s
- ✔ Container signify-ts-vlei-server-1   Created                                           0.1s
- ✔ Container signify-ts-keria-1         Created                                           0.1s
- ✔ Container signify-ts-witness-demo-1  Created                                           0.1s
- ✔ Container signify-ts-deps-1          Created                                           0.0s
-Attaching to signify-ts-deps-1
-signify-ts-deps-1  | Dependencies running
-signify-ts-deps-1 exited with code 0
+ ✔ Container signify-ts-vlei-server-1   Healthy                                           5.7s
+ ✔ Container signify-ts-keria-1         Healthy                                           6.2s
+ ✔ Container signify-ts-witness-demo-1  Healthy                                           6.2s
 ```
 
 It is possible to change the keria image by using environment variables. For example, to use weboftrust/keria:0.1.3, do:
@@ -101,7 +97,7 @@ It is possible to change the keria image by using environment variables. For exa
 ```bash
 export KERIA_IMAGE_TAG=0.1.3
 docker compose pull
-docker compose up deps
+docker compose up --wait
 ```
 
 To use another repository, you can do:
@@ -109,7 +105,7 @@ To use another repository, you can do:
 ```bash
 export KERIA_IMAGE=gleif/keria
 docker compose pull
-docker compose up deps
+docker compose up --wait
 ```
 
 **Important!** The integration tests runs on the build output in `dist/` directory. Make sure to run build before running the integration tests.

@@ -76,7 +76,7 @@ jobs:
       - name: Print docker compose config
         run: docker compose config
       - name: Start dependencies
-        run: docker compose up deps --pull always
+        run: docker compose up --wait --pull always
       - name: Run integration test
         run: npm run test:integration
       - name: Print logs
