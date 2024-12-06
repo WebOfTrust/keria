@@ -789,6 +789,55 @@ class CredentialResourceEnd:
 
         return out
 
+    @staticmethod
+    def on_delete(req, rep, said):
+        """ Credentials DELETE endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            said (str): SAID of credential to delete
+
+        ---
+        summary: Delete a credential from the database
+        description: Delete a credential from the database and remove any associated indices
+        tags:
+           - Credentials
+        parameters:
+           - in: path
+             name: said
+             schema:
+               type: string
+             required: true
+             description: SAID of credential to delete
+        responses:
+           204:
+              description: Credential deleted successfully
+           400:
+             description: The requested credential was not found
+        """
+        reger = req.context.agent.rgy.reger
+
+        try:
+            creder, _, _, _ = reger.cloneCred(said)
+        except kering.MissingEntryError:
+            raise falcon.HTTPNotFound(description=f"credential for said {said} not found.")
+
+        saider = coring.Saider(qb64b=said)
+
+        if not isinstance(creder.attrib, str) and 'i' in creder.attrib:
+            subj = creder.attrib["i"]
+            if subj:
+                reger.subjs.rem(keys=subj, val=saider)
+
+        reger.schms.rem(keys=creder.sad["s"], val=saider)
+        reger.issus.rem(keys=creder.sad["i"], val=saider)
+        reger.saved.rem(keys=said)
+        reger.creds.rem(keys=said)
+        reger.cancs.rem(keys=said)
+
+        rep.status = falcon.HTTP_204
+
 
 class CredentialResourceDeleteEnd:
     def __init__(self, identifierResource):
