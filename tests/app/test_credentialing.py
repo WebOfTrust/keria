@@ -495,6 +495,15 @@ def test_credentialing_ends(helpers, seeder):
         res = client.simulate_delete(f"/credentials/{saids[0]}")
         assert res.status_code == 204
 
+        res = client.simulate_get(f"/credentials/{saids[0]}")
+        assert res.status_code == 404
+        assert res.json == {'description': f"credential for said EIO9uC3K6MvyjFD-RB3RYW3dfL49kCyz3OPqv3gi1dek not found.",
+                            'title': '404 Not Found'}
+
+        res = client.simulate_post(f"/credentials/query")
+        assert res.status_code == 200
+        assert len(res.json) == 4
+
         # Check db directly to make sure all indices are gone too (GET endpoints don't cover all indices)
         assert agent.rgy.reger.creds.get(keys=saids[0]) is None
         assert agent.rgy.reger.cancs.get(keys=saids[0]) is None
