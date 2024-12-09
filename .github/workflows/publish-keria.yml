@@ -25,6 +25,10 @@ jobs:
         with:
           images: weboftrust/keria
 
+      # For multi-arch
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker buildx
         id: buildx
         uses: docker/setup-buildx-action@v3
@@ -38,10 +42,11 @@ jobs:
             keri-${{ runner.os }}-buildx-
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: images/keria.dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             weboftrust/keria:${{ github.event.inputs.version }}
