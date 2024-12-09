@@ -67,10 +67,23 @@ All Agent db access is through the associated Agent.
     ```
 
 #### Run with docker
-* Specify an entrypoint with proper configuration, for instance if you want to use the demo-witness-oobis that is under the scripts/keri/cf dir:
+
+* The easiest way to configure a keria container is with environment variables. See below example for a working docker-compose configuration
+
+```yaml
+services:
+    keria:
+        image: weboftrust/keria:latest
+        environment:
+            KERI_AGENT_CORS: 1
+            KERIA_CURLS: http://<keria-hostname>:3902/
+            KERIA_IURLS: http://<witness-demo-hostname>:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha;http://<witness-demo-hostname>:5643/oobi/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM
+        ports:
+            - 3901:3901
+            - 3902:3902
+            - 3903:3903
 ```
-ENTRYPOINT ["keria", "start",  "--config-file", "demo-witness-oobis", "--config-dir", "./scripts"]
-```
+
 You can see a [working example here](https://github.com/WebOfTrust/signify-ts/blob/main/docker-compose.yaml).
 
 ### Running Tests
