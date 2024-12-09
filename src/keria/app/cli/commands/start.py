@@ -52,7 +52,6 @@ parser.add_argument('--passcode', '-p', help='22 character encryption passcode f
 parser.add_argument('--config-file',
                     dest="configFile",
                     action='store',
-                    default="",
                     help="configuration filename")
 parser.add_argument("--config-dir",
                     dest="configDir",
@@ -70,6 +69,9 @@ parser.add_argument("--loglevel", action="store", required=False, default=os.get
 parser.add_argument("--logfile", action="store", required=False, default=None,
                     help="path of the log file. If not defined, logs will not be written to the file.")
 
+def getListVariable(name):
+    value = os.getenv(name)
+    return value.split(";") if value else None
 
 def launch(args):
     help.ogler.level = logging.getLevelName(args.loglevel)
@@ -94,7 +96,10 @@ def launch(args):
                             certpath=args.certpath,
                             cafilepath=args.cafilepath,
                             cors=os.getenv("KERI_AGENT_CORS", "false").lower() in ("true", "1"),
-                            releaseTimeout=os.getenv("KERIA_RELEASER_TIMEOUT", "86400"))
+                            releaseTimeout=int(os.getenv("KERIA_RELEASER_TIMEOUT", "86400")),
+                            curls=getListVariable("KERIA_CURLS"),
+                            iurls=getListVariable("KERIA_IURLS"),
+                            durls=getListVariable("KERIA_DURLS"))
 
     directing.runController(doers=agency, expire=0.0)
 

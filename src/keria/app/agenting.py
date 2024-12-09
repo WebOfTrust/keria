@@ -53,10 +53,10 @@ logger = ogler.getLogger()
 
 
 def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=None, configDir=None,
-          keypath=None, certpath=None, cafilepath=None, cors=False, releaseTimeout=None):
+          keypath=None, certpath=None, cafilepath=None, cors=False, releaseTimeout=None, curls=None, iurls=None, durls=None):
     """ Set up an ahab in Signify mode """
 
-    agency = Agency(name=name, base=base, bran=bran, configFile=configFile, configDir=configDir, releaseTimeout=releaseTimeout)
+    agency = Agency(name=name, base=base, bran=bran, configFile=configFile, configDir=configDir, releaseTimeout=releaseTimeout, curls=curls, iurls=iurls, durls=durls)
     bootApp = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*',
         expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input',
@@ -157,7 +157,7 @@ class Agency(doing.DoDoer):
 
     """
 
-    def __init__(self, name, bran, base="", releaseTimeout=None, configFile=None, configDir=None, adb=None, temp=False):
+    def __init__(self, name, bran, base="", releaseTimeout=None, configFile=None, configDir=None, adb=None, temp=False, curls=None, iurls=None, durls=None):
         self.name = name
         self.base = base
         self.bran = bran
@@ -165,7 +165,11 @@ class Agency(doing.DoDoer):
         self.configFile = configFile
         self.configDir = configDir
         self.cf = None
-        if self.configFile is not None:  # Load config file if creating database
+        self.curls = curls
+        self.iurls = iurls
+        self.durls = durls
+
+        if self.configFile is not None:
             self.cf = configing.Configer(name=self.configFile,
                                          base="",
                                          headDirPath=self.configDir,
@@ -184,32 +188,42 @@ class Agency(doing.DoDoer):
                             temp=self.temp,
                             reopen=True)
 
-        cf = None
-        if self.cf is not None:  # Load config file if creating database
-            data = dict(self.cf.get())
-            if "keria" in data:
-                curls = data["keria"]
-                data[f"agent-{caid}"] = curls
-                del data["keria"]
+        timestamp = nowIso8601()
+        data = dict(self.cf.get() if self.cf is not None else { "dt": timestamp })
 
-            cf = configing.Configer(name=f"{caid}",
-                                    base="",
-                                    human=False,
-                                    temp=self.temp,
-                                    reopen=True,
-                                    clear=False)
-            cf.put(data)
+        habName = f"agent-{caid}"
+        if "keria" in data:
+            data[habName] = data["keria"]
+            del data["keria"]
+
+        if self.curls is not None and isinstance(self.curls, list):
+            data[habName] = { "dt": timestamp, "curls": self.curls }
+
+        if self.iurls is not None and isinstance(self.iurls, list):
+            data["iurls"] = self.iurls
+
+        if self.durls is not None and isinstance(self.durls, list):
+            data["durls"] = self.durls
+
+        config = configing.Configer(name=f"{caid}",
+                                base="",
+                                human=False,
+                                temp=self.temp,
+                                reopen=True,
+                                clear=False)
+
+        config.put(data)
 
         # Create the Hab for the Agent with only 2 AIDs
-        agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, cf=cf, temp=self.temp, salt=salt)
-        agentHab = agentHby.makeHab(f"agent-{caid}", ns="agent", transferable=True, delpre=caid)
+        agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, cf=config, temp=self.temp, salt=salt)
+        agentHab = agentHby.makeHab(habName, ns="agent", transferable=True, delpre=caid)
         agentRgy = Regery(hby=agentHby, name=agentHab.name, base=self.base, temp=self.temp)
 
-        agent = Agent(agentHby, agentRgy, agentHab,
+        agent = Agent(hby=agentHby,
+                      rgy=agentRgy,
+                      agentHab=agentHab,
                       caid=caid,
-                      agency=self,
-                      configDir=self.configDir,
-                      configFile=self.configFile)
+                      agency=self)
 
         self.adb.agnt.pin(keys=(caid,),
                           val=coring.Prefixer(qb64=agent.pre))

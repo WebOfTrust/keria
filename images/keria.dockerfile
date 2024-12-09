@@ -52,4 +52,6 @@ EXPOSE 3903
 
 COPY src/ src/
 
-ENTRYPOINT ["keria", "start",  "--config-file", "demo-witness-oobis", "--config-dir", "./scripts"]
+ENTRYPOINT ["keria"]
+
+CMD [ "start" ]
