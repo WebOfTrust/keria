@@ -7,6 +7,7 @@ Witness command line interface
 """
 import argparse
 import logging
+import os
 
 from keri import __version__
 from keri import help
@@ -108,6 +109,8 @@ def runAgent(name="ahab", base="", bran="", admin=3901, http=3902, boot=3903, co
                                 configDir=configDir,
                                 keypath=keypath,
                                 certpath=certpath,
-                                cafilepath=cafilepath))
+                                cafilepath=cafilepath,
+                                bootPassword=os.getenv("KERIA_BOOT_PASSWORD"),
+                                bootUsername=os.getenv("KERIA_BOOT_USERNAME")))
 
     directing.runController(doers=doers, expire=expire)

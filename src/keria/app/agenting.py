@@ -4,6 +4,7 @@ KERIA
 keria.app.agenting module
 
 """
+from base64 import b64decode
 import json
 import os
 import datetime
@@ -53,7 +54,7 @@ logger = ogler.getLogger()
 
 
 def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=None, configDir=None,
-          keypath=None, certpath=None, cafilepath=None):
+          keypath=None, certpath=None, cafilepath=None, bootUsername=None, bootPassword=None):
     """ Set up an ahab in Signify mode """
 
     agency = Agency(name=name, base=base, bran=bran, configFile=configFile, configDir=configDir)
@@ -66,7 +67,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
     if not bootServer.reopen():
         raise RuntimeError(f"cannot create boot http server on port {bootPort}")
     bootServerDoer = http.ServerDoer(server=bootServer)
-    bootEnd = BootEnd(agency)
+    bootEnd = BootEnd(agency, username=bootUsername, password=bootPassword)
     bootApp.add_route("/boot", bootEnd)
     bootApp.add_route("/health", HealthEnd())
 
@@ -857,17 +858,40 @@ def loadEnds(app):
 class BootEnd:
     """ Resource class for creating datastore in cloud ahab """
 
-    def __init__(self, agency):
+    def __init__(self, agency: Agency, username: str | None = None, password: str | None = None):
         """ Provides endpoints for initializing and unlocking an agent
-
         Parameters:
             agency (Agency): Agency for managing agents
-
+            username (str): username for boot request
+            password (str): password for boot request
         """
-        self.authn = authing.Authenticater(agency=agency)
+        self.username = username
+        self.password = password
         self.agency = agency
 
-    def on_post(self, req, rep):
+    def authenticate(self, req: falcon.Request):
+        if self.username is None and self.password is None:
+            return
+
+        if req.auth is None:
+            raise falcon.HTTPUnauthorized(title="Unauthorized")
+
+        scheme, token = req.auth.split(' ')
+        if scheme != 'Basic':
+            raise falcon.HTTPUnauthorized(title="Unauthorized")
+
+        try:
+            username, password = b64decode(token).decode('utf-8').split(':')
+
+            if username == self.username and password == self.password:
+                return
+
+        except Exception:
+            raise falcon.HTTPUnauthorized(title="Unauthorized")
+
+        raise falcon.HTTPUnauthorized(title="Unauthorized")
+
+    def on_post(self, req: falcon.Request, rep: falcon.Response):
         """ Inception event POST endpoint
 
         Give me a new Agent.  Create Habery using ctrlPRE as database name, agentHab that anchors the caid and
@@ -878,6 +902,8 @@ class BootEnd:
             rep (Response): falcon.Response HTTP response object
 
         """
+
+        self.authenticate(req)
 
         body = req.get_media()
         if "icp" not in body:
