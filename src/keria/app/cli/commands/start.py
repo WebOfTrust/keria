@@ -110,7 +110,7 @@ def runAgent(name="ahab", base="", bran="", admin=3901, http=3902, boot=3903, co
                                 keypath=keypath,
                                 certpath=certpath,
                                 cafilepath=cafilepath,
-                                bootPassword=os.getenv("KERIA_BOOT_PASSWORD"),
-                                bootUsername=os.getenv("KERIA_BOOT_USERNAME")))
+                                bootPassword=os.getenv("KERIA_EXPERIMENTAL_BOOT_PASSWORD"),
+                                bootUsername=os.getenv("KERIA_EXPERIMENTAL_BOOT_USERNAME")))
 
     directing.runController(doers=doers, expire=expire)
