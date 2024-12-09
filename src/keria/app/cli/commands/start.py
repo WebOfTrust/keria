@@ -99,7 +99,9 @@ def launch(args):
                             releaseTimeout=int(os.getenv("KERIA_RELEASER_TIMEOUT", "86400")),
                             curls=getListVariable("KERIA_CURLS"),
                             iurls=getListVariable("KERIA_IURLS"),
-                            durls=getListVariable("KERIA_DURLS"))
+                            durls=getListVariable("KERIA_DURLS"),
+                            bootPassword=os.getenv("KERIA_BOOT_PASSWORD"),
+                            bootUsername=os.getenv("KERIA_BOOT_USERNAME"))
 
     directing.runController(doers=agency, expire=0.0)
 
