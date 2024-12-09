@@ -53,10 +53,10 @@ logger = ogler.getLogger()
 
 
 def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=None, configDir=None,
-          keypath=None, certpath=None, cafilepath=None):
+          keypath=None, certpath=None, cafilepath=None, cors=False, releaseTimeout=None):
     """ Set up an ahab in Signify mode """
 
-    agency = Agency(name=name, base=base, bran=bran, configFile=configFile, configDir=configDir)
+    agency = Agency(name=name, base=base, bran=bran, configFile=configFile, configDir=configDir, releaseTimeout=releaseTimeout)
     bootApp = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*',
         expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input',
@@ -77,7 +77,7 @@ def setup(name, bran, adminPort, bootPort, base='', httpPort=None, configFile=No
         allow_origins='*', allow_credentials='*',
         expose_headers=['cesr-attachment', 'cesr-date', 'content-type', 'signature', 'signature-input',
                         'signify-resource', 'signify-timestamp']))
-    if os.getenv("KERI_AGENT_CORS", "false").lower() in ("true", "1"):
+    if cors:
         app.add_middleware(middleware=httping.HandleCORS())
     app.add_middleware(authing.SignatureValidationComponent(agency=agency, authn=authn, allowed=["/agent"]))
     app.req_options.media_handlers.update(media.Handlers())
@@ -157,7 +157,7 @@ class Agency(doing.DoDoer):
 
     """
 
-    def __init__(self, name, bran, base="", configFile=None, configDir=None, adb=None, temp=False):
+    def __init__(self, name, bran, base="", releaseTimeout=None, configFile=None, configDir=None, adb=None, temp=False):
         self.name = name
         self.base = base
         self.bran = bran
@@ -176,7 +176,7 @@ class Agency(doing.DoDoer):
         self.agents = dict()
 
         self.adb = adb if adb is not None else basing.AgencyBaser(name="TheAgency", base=base, reopen=True, temp=temp)
-        super(Agency, self).__init__(doers=[Releaser(self)], always=True)
+        super(Agency, self).__init__(doers=[Releaser(self, releaseTimeout=releaseTimeout)], always=True)
 
     def create(self, caid, salt=None):
         ks = keeping.Keeper(name=caid,
@@ -804,17 +804,17 @@ class Escrower(doing.Doer):
         return False
     
 class Releaser(doing.Doer):
-    KERIAReleaserTimeOut = "KERIA_RELEASER_TIMEOUT"
-    TimeoutRel = int(os.getenv(KERIAReleaserTimeOut, "86400"))
-    def __init__(self, agency):
-        """ Check open agents and close if idle for more than TimeoutRel seconds
+    def __init__(self, agency: Agency, releaseTimeout=86400):
+        """ Check open agents and close if idle for more than releaseTimeout seconds
         Parameters:
             agency (Agency): KERIA agent manager
+            releaseTimeout (int): Timeout in seconds
  
         """
         self.tock = 60.0
         self.agents = agency.agents
         self.agency = agency
+        self.releaseTimeout = releaseTimeout
 
         super(Releaser, self).__init__(tock=self.tock)
 
@@ -823,7 +823,7 @@ class Releaser(doing.Doer):
             idle = []
             for caid in self.agents:
                 now = helping.nowUTC()
-                if (now - self.agents[caid].last) > datetime.timedelta(seconds=self.TimeoutRel):
+                if (now - self.agents[caid].last) > datetime.timedelta(seconds=self.releaseTimeout):
                     idle.append(caid)
 
             for caid in idle:
