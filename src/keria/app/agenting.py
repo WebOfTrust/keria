@@ -885,6 +885,7 @@ class BootEnd:
         self.agency = agency
 
     def authenticate(self, req: falcon.Request):
+        # Username AND Password is not set, so no need to authenticate
         if self.username is None and self.password is None:
             return
 
@@ -897,6 +898,9 @@ class BootEnd:
 
         try:
             username, password = b64decode(token).decode('utf-8').split(':')
+
+            if username is None or password is None:
+                raise falcon.HTTPUnauthorized(title="Unauthorized")
 
             if username == self.username and password == self.password:
                 return
