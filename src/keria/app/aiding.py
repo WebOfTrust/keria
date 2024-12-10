@@ -13,8 +13,7 @@ from keri import kering
 from keri import core
 from keri.app import habbing
 from keri.app.keeping import Algos
-from keri.core import coring, serdering
-from keri.core.coring import Ilks
+from keri.core import coring, serdering, eventing
 from keri.db import dbing
 from keri.help import ogler
 from mnemonic import mnemonic
@@ -999,6 +998,8 @@ def info(hab, rm, full=False):
     data.update(keeper.params(pre=hab.pre))
     if isinstance(hab, habbing.SignifyGroupHab):
         data["group"]["mhab"] = info(hab.mhab, rm, full)
+
+    data["icp_dt"] = bytes(hab.db.getDts(eventing.dgKey(hab.pre, hab.pre))).decode("utf-8")
 
     if hab.accepted and full:
         kever = hab.kevers[hab.pre]
