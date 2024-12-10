@@ -1624,6 +1624,9 @@ def test_rotation(helpers):
         assert aid["name"] == "aid1"
         assert aid["prefix"] == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
 
+        icp_dt = aid["icp_dt"]
+        assert icp_dt is not None
+
         serder2, signers2 = helpers.incept(salt, "signify:aid", pidx=1, count=3)
         sigers2 = [signer.sign(ser=serder2.raw, index=0).qb64 for signer in signers2]
 
@@ -1716,6 +1719,11 @@ def test_rotation(helpers):
         assert res.json['done'] is True
 
         res = client.simulate_get(path=f"/identifiers/{aid1['name']}")
+        assert res.status_code == 200
+
+        # Ensure rotation doesn't change dt
+        assert res.json["icp_dt"] == icp_dt
+
         mhab = res.json
         agent0 = mhab["state"]
 
