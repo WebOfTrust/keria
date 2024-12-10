@@ -10,6 +10,7 @@ from dataclasses import asdict
 import json
 import os
 import pytest
+from datetime import datetime
 
 import falcon
 from falcon import testing
@@ -1625,7 +1626,7 @@ def test_rotation(helpers):
         assert aid["prefix"] == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
 
         icp_dt = aid["icp_dt"]
-        assert icp_dt is not None
+        datetime.fromisoformat(icp_dt)  # will raise an error if the format is not a valid iso dt
 
         serder2, signers2 = helpers.incept(salt, "signify:aid", pidx=1, count=3)
         sigers2 = [signer.sign(ser=serder2.raw, index=0).qb64 for signer in signers2]
