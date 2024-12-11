@@ -5,6 +5,7 @@ keria.app.agenting module
 
 Testing the Mark II Agent
 """
+from base64 import b64encode
 import json
 import os
 import shutil
@@ -248,7 +249,7 @@ def test_agency_with_urls_from_arguments():
         assert agent.hby.cf.get()["iurls"] == iurls
         assert agent.hby.cf.get()["durls"] == durls
 
-def test_boot_ends(helpers):
+def test_unprotected_boot_ends(helpers):
     agency = agenting.Agency(name="agency", bran=None, temp=True)
     doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
     doist.enter(doers=[agency])
@@ -281,6 +282,85 @@ def test_boot_ends(helpers):
         'description': 'agent for controller EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx already exists'
     }
 
+def test_protected_boot_ends(helpers):
+    agency = agenting.Agency(name="agency", bran=None, temp=True)
+    doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+    doist.enter(doers=[agency])
+
+    serder, sigers = helpers.controller()
+    assert serder.pre == helpers.controllerAID
+
+    app = falcon.App()
+    client = testing.TestClient(app)
+
+    username = "user"
+    password = "secret"
+
+    bootEnd = agenting.BootEnd(agency, username=username, password=password)
+    app.add_route("/boot", bootEnd)
+
+    body = dict(
+        icp=serder.ked,
+        sig=sigers[0].qb64,
+        salty=dict(
+            stem='signify:aid', pidx=0, tier='low', sxlt='OBXYZ',
+            icodes=[MtrDex.Ed25519_Seed], ncodes=[MtrDex.Ed25519_Seed]
+        )
+    )
+
+    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"))
+    assert rep.status_code == 401
+
+    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": "Something test"})
+    assert rep.status_code == 401
+
+    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": "Basic user:secret"})
+    assert rep.status_code == 401
+
+    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": f"Basic {b64encode(b'test:secret').decode('utf-8')}"} )
+    assert rep.status_code == 401
+
+    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": f"Basic {b64encode(b'user').decode('utf-8')}"} )
+    assert rep.status_code == 401
+
+    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": f"Basic {b64encode(b'user:test').decode('utf-8')}"} )
+    assert rep.status_code == 401
+
+    authorization = f"Basic {b64encode(b'user:secret').decode('utf-8')}"
+    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": authorization})
+    assert rep.status_code == 202
+
+def test_misconfigured_protected_boot_ends(helpers):
+    agency = agenting.Agency(name="agency", bran=None, temp=True)
+    doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+    doist.enter(doers=[agency])
+
+    serder, sigers = helpers.controller()
+    assert serder.pre == helpers.controllerAID
+
+    app = falcon.App()
+    client = testing.TestClient(app)
+
+    # No password set, should return 401
+    bootEnd = agenting.BootEnd(agency, username="user", password=None)
+    app.add_route("/boot", bootEnd)
+
+    body = dict(
+        icp=serder.ked,
+        sig=sigers[0].qb64,
+        salty=dict(
+            stem='signify:aid', pidx=0, tier='low', sxlt='OBXYZ',
+            icodes=[MtrDex.Ed25519_Seed], ncodes=[MtrDex.Ed25519_Seed]
+        )
+    )
+
+    authorization = f"Basic {b64encode(b'user').decode('utf-8')}"
+    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": authorization})
+    assert rep.status_code == 401
+
+    authorization = f"Basic {b64encode(b'user:secret').decode('utf-8')}"
+    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": authorization})
+    assert rep.status_code == 401
 
 def test_witnesser(helpers):
     salt = b'0123456789abcdef'

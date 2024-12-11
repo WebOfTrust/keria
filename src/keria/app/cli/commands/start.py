@@ -68,6 +68,14 @@ parser.add_argument("--loglevel", action="store", required=False, default=os.get
                     help="Set log level to DEBUG | INFO | WARNING | ERROR | CRITICAL. Default is CRITICAL")
 parser.add_argument("--logfile", action="store", required=False, default=None,
                     help="path of the log file. If not defined, logs will not be written to the file.")
+parser.add_argument("--experimental-boot-password",
+                    help="Experimental password for boot endpoint. Enables HTTP Basic Authentication for the boot endpoint. Only meant to be used for testing purposes.",
+                    dest="bootPassword",
+                    default=os.getenv("KERIA_EXPERIMENTAL_BOOT_PASSWORD"))
+parser.add_argument("--experimental-boot-username",
+                    help="Experimental username for boot endpoint. Enables HTTP Basic Authentication for the boot endpoint. Only meant to be used for testing purposes.",
+                    dest="bootUsername",
+                    default=os.getenv("KERIA_EXPERIMENTAL_BOOT_USERNAME"))
 
 def getListVariable(name):
     value = os.getenv(name)
@@ -99,7 +107,9 @@ def launch(args):
                             releaseTimeout=int(os.getenv("KERIA_RELEASER_TIMEOUT", "86400")),
                             curls=getListVariable("KERIA_CURLS"),
                             iurls=getListVariable("KERIA_IURLS"),
-                            durls=getListVariable("KERIA_DURLS"))
+                            durls=getListVariable("KERIA_DURLS"),
+                            bootPassword=args.bootPassword,
+                            bootUsername=args.bootUsername)
 
     directing.runController(doers=agency, expire=0.0)
 
