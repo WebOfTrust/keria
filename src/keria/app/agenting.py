@@ -6,13 +6,13 @@ keria.app.agenting module
 """
 from base64 import b64decode
 import json
-import os
 import datetime
 from dataclasses import asdict
 from urllib.parse import urlparse, urljoin
 from types import MappingProxyType
 
 import falcon
+import lmdb
 from falcon import media
 from hio.base import doing
 from hio.core import http, tcp
@@ -249,19 +249,22 @@ class Agency(doing.DoDoer):
         del self.agents[agent.caid]
 
     def shut(self, agent):
-        logger.info(f"closing idle agent {agent.caid}")
+        logger.info(f"Shutting down agent {agent.caid}")
         agent.remove(agent.doers)
         self.remove([agent])
         del self.agents[agent.caid]
-        agent.hby.ks.close(clear=False)
-        agent.seeker.close(clear=False)
-        agent.exnseeker.close(clear=False)
-        agent.monitor.opr.close(clear=False)
-        agent.notifier.noter.close(clear=False)
-        agent.rep.mbx.close(clear=False)
-        agent.registrar.rgy.close()
-        agent.mgr.rb.close(clear=False)
-        agent.hby.close(clear=False)
+        try:
+            agent.hby.ks.close(clear=False)
+            agent.seeker.close(clear=False)
+            agent.exnseeker.close(clear=False)
+            agent.monitor.opr.close(clear=False)
+            agent.notifier.noter.close(clear=False)
+            agent.rep.mbx.close(clear=False)
+            agent.registrar.rgy.close()
+            agent.mgr.rb.close(clear=False)
+            agent.hby.close(clear=False)
+        except lmdb.Error as ex:  # Sometimes LMDB will throw an error if the DB is already closed
+            logger.error(f"Error closing databases for agent {agent.caid}: {ex}")
 
     def get(self, caid):
         if caid in self.agents:

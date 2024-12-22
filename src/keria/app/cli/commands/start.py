@@ -78,22 +78,23 @@ parser.add_argument("--experimental-boot-username",
                     dest="bootUsername",
                     default=os.getenv("KERIA_EXPERIMENTAL_BOOT_USERNAME"))
 
+logger = help.ogler.getLogger()
+
 def getListVariable(name):
     value = os.getenv(name)
     return value.split(";") if value else None
 
 def launch(args):
     help.ogler.level = logging.getLevelName(args.loglevel)
+    logger.setLevel(help.ogler.level)
     if(args.logfile != None):
         help.ogler.headDirPath = args.logfile
         help.ogler.reopen(name=args.name, temp=False, clear=True)
 
-    logger = help.ogler.getLogger()
-
     logger.info("Starting Agent for %s listening: admin/%s, http/%s, boot/%s", args.name, args.admin, args.http, args.boot)
     logger.info("PID: %s", os.getpid())
 
-    agency = agenting.setup(name=args.name or "ahab",
+    doers = agenting.setup(name=args.name or "ahab",
                             base=args.base or "",
                             bran=args.bran,
                             adminPort=args.admin,
@@ -111,16 +112,25 @@ def launch(args):
                             durls=getListVariable("KERIA_DURLS"),
                             bootPassword=args.bootPassword,
                             bootUsername=args.bootUsername)
+    agency = None
+    for doer in doers:
+        if isinstance(doer, agenting.Agency):
+            agency = doer
+            break
 
     tock = 0.03125
     doist = doing.Doist(limit=0.0, tock=tock, real=True)
 
-    def handleSignal(sig, frame):
-        logger.info("Received signal %s", signal.strsignal(sig))
+    def handle_sigterm(sig, frame):
+        agents = list(agency.agents.keys())
+        logger.info("Shutting down due to %s | stopping %s agents", signal.strsignal(sig), len(agents))
+        for caid in agents:
+            agency.shut(agency.agents[caid])
+        logger.info("Shutting down main Doist loop")
         doist.exit()
 
-    signal.signal(signal.SIGTERM, handleSignal)
+    signal.signal(signal.SIGTERM, handle_sigterm)
 
-    doist.do(doers=agency)
+    doist.do(doers=doers)
 
     logger.info("Agent %s gracefully stopped", args.name)
