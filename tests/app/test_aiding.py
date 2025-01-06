@@ -1379,7 +1379,7 @@ def test_oobi_ends(helpers):
         body = dict(rpy=rpy.ked, sigs=sigs)
         res = client.simulate_post(path=f"/identifiers/pal/endroles", json=body)
         assert res.status_code == 400
-        assert res.json == {'description': "invalid signatures for given end role reply message",
+        assert res.json == {'description': "unable to verify end role reply message",
                             'title': '400 Bad Request'}
 
         # now with correct
