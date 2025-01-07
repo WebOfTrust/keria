@@ -92,7 +92,7 @@ export class Contacts {
         const path = `/contacts/` + pre;
         const method = 'DELETE';
 
-        await this.client.fetch(path, method, null);
+        await this.client.fetch(path, method, undefined);
     }
 
     /**

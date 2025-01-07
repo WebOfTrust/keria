@@ -61,6 +61,7 @@ export interface HabState {
     transferable: boolean;
     state: State;
     windexes: unknown[];
+    icp_dt: string;
     [Algos.salty]?: SaltyState;
     [Algos.randy]?: RandyState;
     [Algos.group]?: GroupState;

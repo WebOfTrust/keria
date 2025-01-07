@@ -57,7 +57,7 @@ jobs:
     strategy:
       matrix:
         os: ['ubuntu-latest']
-        keria-version: ['0.2.0-dev5']
+        keria-version: ['0.2.0-dev6']
         node-version: ['20']
     env:
       KERIA_IMAGE_TAG: ${{ matrix.keria-version }}

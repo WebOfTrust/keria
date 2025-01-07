@@ -175,12 +175,12 @@ describe('Contacting', () => {
 
         await contacts.delete('EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao');
         lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
-        lastBody = JSON.parse(lastCall[1]!.body!.toString());
         assert.equal(
             lastCall[0]!,
             url + '/contacts/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao'
         );
         assert.equal(lastCall[1]!.method, 'DELETE');
+        assert.equal(lastCall[1]!.body, undefined);
     });
 
     it('Challenges', async () => {

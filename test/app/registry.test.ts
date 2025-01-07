@@ -70,6 +70,7 @@ describe('registry', () => {
             name: 'a name',
             transferable: true,
             windexes: [],
+            icp_dt: '2023-12-01T10:05:25.062609+00:00',
         } as HabState;
 
         when(mockedIdentifiers.get('a name')).thenResolve(hab);
@@ -79,7 +80,7 @@ describe('registry', () => {
 
         const registries = new Registries(instance(mockedClient));
 
-        assert.rejects(
+        await assert.rejects(
             async () => {
                 await registries.create({
                     name: 'a name',

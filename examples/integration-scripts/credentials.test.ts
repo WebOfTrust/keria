@@ -616,4 +616,18 @@ test('single signature credentials', async () => {
 
         assert.equal(issuerCredential.status.s, '1');
     });
+
+    await step('Holder deletes LE credential', async () => {
+        await holderClient.credentials().delete(leCredentialId);
+        await assert.rejects(
+            async () => {
+                await holderClient.credentials().get(leCredentialId);
+            },
+            {
+                name: 'Error',
+                message: `HTTP GET /credentials/${leCredentialId} - 404 Not Found - {"title": "404 Not Found", "description": "credential for said ${leCredentialId} not found."}`,
+            }
+        );
+        assert.equal((await holderClient.credentials().list()).length, 1);
+    });
 }, 90000);

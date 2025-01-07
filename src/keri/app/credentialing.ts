@@ -306,6 +306,18 @@ export class Credentials {
     }
 
     /**
+     * Delete a credential from the DB
+     * @async
+     * @param {string} said - SAID of the credential
+     * @returns {Promise<void>}
+     */
+    async delete(said: string): Promise<void> {
+        const path = `/credentials/${said}`;
+        const method = 'DELETE';
+        await this.client.fetch(path, method, undefined);
+    }
+
+    /**
      * Get the state of a credential
      * @async
      * @param {string} ri - management registry identifier

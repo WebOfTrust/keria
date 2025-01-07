@@ -325,6 +325,15 @@ describe('Credentialing', () => {
         );
         assert.equal(lastCall[1]!.method, 'GET');
         assert.equal(lastCall[1]!.body, null);
+
+        await credentials.delete(mockCredential.sad.d);
+        lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
+        assert.equal(
+            lastCall[0]!,
+            url + '/credentials/EMwcsEMUEruPXVwPCW7zmqmN8m0I3CihxolBm-RDrsJo'
+        );
+        assert.equal(lastCall[1]!.method, 'DELETE');
+        assert.equal(lastCall[1]!.body, undefined);
     });
 });
 

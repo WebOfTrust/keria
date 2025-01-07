@@ -21,13 +21,13 @@ services:
             - 7723:7723
 
     keria:
-        image: ${KERIA_IMAGE:-weboftrust/keria}:${KERIA_IMAGE_TAG:-0.2.0-dev5}
+        image: ${KERIA_IMAGE:-weboftrust/keria}:${KERIA_IMAGE_TAG:-0.2.0-dev6}
         environment:
             KERI_AGENT_CORS: 1
             <<: *python-env
         volumes:
             - ./config/keria.json:/keria/config/keri/cf/keria.json
-        command: --config-dir /keria/config --config-file keria --name agent
+        command: start --config-dir /keria/config --config-file keria --name agent
         healthcheck:
             test: wget --spider http://keria:3902/spec.yaml
             <<: *healthcheck

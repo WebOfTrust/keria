@@ -303,7 +303,9 @@ describe('SignifyClient', () => {
             headers: badAgentHeaders,
         });
         let t = async () => await client.fetch('/contacts', 'GET', undefined);
-        expect(t).rejects.toThrowError('message from a different remote agent');
+        await expect(t).rejects.toThrowError(
+            'message from a different remote agent'
+        );
 
         badAgentHeaders = {
             'signify-resource': 'EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei',
@@ -319,7 +321,7 @@ describe('SignifyClient', () => {
             headers: badAgentHeaders,
         });
         t = async () => await client.fetch('/contacts', 'GET', undefined);
-        expect(t).rejects.toThrowError(
+        await expect(t).rejects.toThrowError(
             'Signature for EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei invalid.'
         );
 

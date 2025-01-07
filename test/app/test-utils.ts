@@ -111,5 +111,6 @@ export async function createMockIdentifierState(
             c: [],
             di: serder.ked.di ?? '',
         } as State,
+        icp_dt: '2023-12-01T10:05:25.062609+00:00',
     };
 }
