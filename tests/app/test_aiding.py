@@ -1373,6 +1373,16 @@ def test_oobi_ends(helpers):
         assert res.json == {'oobis': [], 'role': 'agent'}
 
         rpy = helpers.endrole(iserder.pre, agent.agentHab.pre)
+
+        # first try with bad signatures
+        sigs = helpers.sign(b'0123456789xyzxyz', 0, 0, rpy.raw)
+        body = dict(rpy=rpy.ked, sigs=sigs)
+        res = client.simulate_post(path=f"/identifiers/pal/endroles", json=body)
+        assert res.status_code == 400
+        assert res.json == {'description': "unable to verify end role reply message",
+                            'title': '400 Bad Request'}
+
+        # now with correct
         sigs = helpers.sign(salt, 0, 0, rpy.raw)
         body = dict(rpy=rpy.ked, sigs=sigs)
 
@@ -1388,6 +1398,7 @@ def test_oobi_ends(helpers):
 
         res = client.simulate_post(path=f"/endroles/pal", json=body)
         assert res.status_code == 404
+
 
         # must be a valid aid alias
         res = client.simulate_get("/identifiers/bad/oobis")
