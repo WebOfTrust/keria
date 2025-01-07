@@ -1330,7 +1330,9 @@ class EndRoleCollectionEnd:
         )
         try:
             agent.hby.rvy.processReply(rserder, tsgs=[tsg])
-        except (kering.UnverifiedReplyError, kering.ValidationError):
+        except kering.UnverifiedReplyError:
+            pass
+        except kering.ValidationError:
             raise falcon.HTTPBadRequest(description="unable to verify end role reply message")
 
         oid = ".".join([pre, role, eid])
