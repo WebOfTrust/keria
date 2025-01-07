@@ -200,6 +200,16 @@ describe('Aiding', () => {
         assert.deepEqual(lastCall.body.salty.transferable, true);
     });
 
+    it('Should throw error if fetch call fails when creating identifier', async () => {
+        const error = new Error(`Fail ${randomUUID()}`);
+        client.fetch.mockRejectedValue(error);
+        await expect(
+            client
+                .identifiers()
+                .create('aid1', { bran: '0123456789abcdefghijk' })
+        ).rejects.toThrow(error);
+    });
+
     it('Can rotate salty identifier', async () => {
         const aid1 = await createMockIdentifierState('aid1', bran, {});
         client.fetch.mockResolvedValueOnce(Response.json(aid1));
@@ -344,6 +354,14 @@ describe('Aiding', () => {
             cid: 'ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK',
             role: 'agent',
         });
+    });
+
+    it('Should throw error if fetch call fails when adding end role', async () => {
+        const error = new Error(`Fail ${randomUUID()}`);
+        client.fetch.mockRejectedValue(error);
+        await expect(
+            client.identifiers().addEndRole('aid1', 'agent')
+        ).rejects.toThrow(error);
     });
 
     it('Can get members', async () => {

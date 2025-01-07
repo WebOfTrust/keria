@@ -266,7 +266,7 @@ export class Identifier {
         jsondata[algo] = keeper.params();
 
         this.client.pidx = this.client.pidx + 1;
-        const res = this.client.fetch('/identifiers', 'POST', jsondata);
+        const res = await this.client.fetch('/identifiers', 'POST', jsondata);
         return new EventResult(serder, sigs, res);
     }
 
@@ -447,7 +447,7 @@ export class Identifier {
             sigs: sigs,
         };
 
-        const res = this.client.fetch(
+        const res = await this.client.fetch(
             '/identifiers/' + name + '/endroles',
             'POST',
             jsondata
@@ -500,16 +500,12 @@ export class Identifier {
 export class EventResult {
     private readonly _serder: Serder;
     private readonly _sigs: string[];
-    private readonly promise: Promise<Response> | Response;
+    private readonly response: Response;
 
-    constructor(
-        serder: Serder,
-        sigs: string[],
-        promise: Promise<Response> | Response
-    ) {
+    constructor(serder: Serder, sigs: string[], response: Response) {
         this._serder = serder;
         this._sigs = sigs;
-        this.promise = promise;
+        this.response = response;
     }
 
     get serder() {
@@ -521,7 +517,6 @@ export class EventResult {
     }
 
     async op(): Promise<any> {
-        const res = await this.promise;
-        return await res.json();
+        return await this.response.json();
     }
 }
