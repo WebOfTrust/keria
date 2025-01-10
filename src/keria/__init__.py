@@ -3,5 +3,5 @@
 main package
 """
 
-__version__ = '0.2.0-dev6'  # also change in setup.py
+__version__ = '0.2.0-rc1'  # also change in setup.py
 
