@@ -1,8 +1,9 @@
 # Builder stage
-FROM python:3.12-alpine3.19 as builder
+FROM python:3.12.8-alpine3.21 AS builder
 
 # Install compilation dependencies
 RUN apk --no-cache add \
+    curl \
     bash \
     alpine-sdk \
     libffi-dev \
@@ -13,29 +14,32 @@ SHELL ["/bin/bash", "-c"]
 
 # Install Rust for blake3 dependency build
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /keria
 
 RUN python -m venv venv
 ENV PATH=/keria/venv/bin:${PATH}
-RUN pip install --upgrade pip
 
-# Copy in Python dependency files
-COPY requirements.txt setup.py ./
+RUN pip install --upgrade pip
 # "src/" dir required for installation of dependencies with setup.py
 RUN mkdir /keria/src
+# Copy in Python dependency files
+COPY requirements.txt setup.py ./
+
 # Install Python dependencies
-RUN . "$HOME/.cargo/env" && \
-    pip install -r requirements.txt
+RUN . "$HOME/.cargo/env"
+RUN pip install -r requirements.txt
 
 # Runtime stage
-FROM python:3.12-alpine3.19
+FROM python:3.12.8-alpine3.21
 
 # Install runtime dependencies
 RUN apk --no-cache add \
     bash \
-    alpine-sdk \
-    libsodium-dev
+    curl \
+    libsodium-dev \
+    gcc
 
 WORKDIR /keria
 

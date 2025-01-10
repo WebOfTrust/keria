@@ -1206,7 +1206,7 @@ class KeyEventCollectionEnd:
         pre = req.params.get("pre")
         preb = pre.encode("utf-8")
         events = []
-        for fn, dig in agent.hby.db.getFelItemPreIter(preb, fn=0):
+        for _, fn, dig in agent.hby.db.getFelItemPreIter(preb, fn=0):
             if not (raw := agent.hby.db.cloneEvtMsg(pre=preb, fn=fn, dig=dig)):
                 raise falcon.HTTPInternalServerError(f"Missing event for dig={dig}.")
 
