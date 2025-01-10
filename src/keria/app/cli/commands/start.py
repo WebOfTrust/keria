@@ -8,10 +8,11 @@ Witness command line interface
 import argparse
 import logging
 import os
+import signal
 
+from hio.base import doing
 from keri import __version__
 from keri import help
-from keri.app import directing
 
 from keria.app import agenting
 
@@ -89,8 +90,8 @@ def launch(args):
 
     logger = help.ogler.getLogger()
 
-    logger.info("******* Starting Agent for %s listening: admin/%s, http/%s "
-                ".******", args.name, args.admin, args.http)
+    logger.info("Starting Agent for %s listening: admin/%s, http/%s, boot/%s", args.name, args.admin, args.http, args.boot)
+    logger.info("PID: %s", os.getpid())
 
     agency = agenting.setup(name=args.name or "ahab",
                             base=args.base or "",
@@ -111,8 +112,15 @@ def launch(args):
                             bootPassword=args.bootPassword,
                             bootUsername=args.bootUsername)
 
-    directing.runController(doers=agency, expire=0.0)
+    tock = 0.03125
+    doist = doing.Doist(limit=0.0, tock=tock, real=True)
 
+    def handleSignal(sig, frame):
+        logger.info("Received signal %s", signal.strsignal(sig))
+        doist.exit()
 
-    logger.info("******* Ended Agent for %s listening: admin/%s, http/%s"
-                ".******", args.name, args.admin, args.http)
+    signal.signal(signal.SIGTERM, handleSignal)
+
+    doist.do(doers=agency)
+
+    logger.info("Agent %s gracefully stopped", args.name)
