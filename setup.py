@@ -92,6 +92,7 @@ setup(
     tests_require=[
         'coverage>=5.5',
         'pytest>=6.2.4',
+        'requests==2.32.3'
     ],
     setup_requires=[
     ],
