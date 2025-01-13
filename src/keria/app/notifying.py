@@ -49,6 +49,10 @@ class NotificationCollectionEnd:
         """
         agent = req.context.agent
 
+        read = req.get_param_as_bool("read")
+        route = req.get_param("route")
+        order = req.get_param("order")
+
         rng = req.get_header("Range")
         if rng is None:
             rep.status = falcon.HTTP_200
@@ -58,8 +62,13 @@ class NotificationCollectionEnd:
             rep.status = falcon.HTTP_206
             start, end = httping.parseRangeHeader(rng, "notes")
 
-        count = agent.notifier.getNoteCnt()
-        notes = agent.notifier.getNotes(start=start, end=end)
+        notes = agent.notifier.getNotes(start=0, end=-1)
+        notes = [n for n in notes if read is None or n.read == read]
+        notes = [n for n in notes if route is None or ("r" in n.attrs and n.attrs["r"] == route)]
+        notes.sort(key=lambda n: n.datetime, reverse=order == "desc")
+        count = len(notes)
+        notes = notes[start:end + 1]
+        
         out = []
         for note in notes:
             attrs = note.pad
