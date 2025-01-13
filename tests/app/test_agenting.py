@@ -283,52 +283,59 @@ def test_unprotected_boot_ends(helpers):
     }
 
 def test_protected_boot_ends(helpers):
-    agency = agenting.Agency(name="agency", bran=None, temp=True)
-    doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
-    doist.enter(doers=[agency])
+    credentials = [
+        dict(bran=b'0123456789abcdefghija', username="user", password="secret"), 
+        dict(bran=b'0123456789abcdefghijb', username="admin", password="secret with spaces"),
+        dict(bran=b'0123456789abcdefghijc', username="admin", password="secret : with colon")
+    ]
 
-    serder, sigers = helpers.controller()
-    assert serder.pre == helpers.controllerAID
+    for credential in credentials:
+        bran = credential["bran"]
+        username = credential["username"]
+        password = credential["password"]
 
-    app = falcon.App()
-    client = testing.TestClient(app)
+        agency = agenting.Agency(name="agency", bran=None, temp=True)
+        doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+        doist.enter(doers=[agency])
 
-    username = "user"
-    password = "secret"
+        serder, sigers = helpers.controller(bran=bran)
 
-    bootEnd = agenting.BootEnd(agency, username=username, password=password)
-    app.add_route("/boot", bootEnd)
+        app = falcon.App()
+        client = testing.TestClient(app)
 
-    body = dict(
-        icp=serder.ked,
-        sig=sigers[0].qb64,
-        salty=dict(
-            stem='signify:aid', pidx=0, tier='low', sxlt='OBXYZ',
-            icodes=[MtrDex.Ed25519_Seed], ncodes=[MtrDex.Ed25519_Seed]
+        bootEnd = agenting.BootEnd(agency, username=username, password=password)
+        app.add_route("/boot", bootEnd)
+
+        body = dict(
+            icp=serder.ked,
+            sig=sigers[0].qb64,
+            salty=dict(
+                stem='signify:aid', pidx=0, tier='low', sxlt='OBXYZ',
+                icodes=[MtrDex.Ed25519_Seed], ncodes=[MtrDex.Ed25519_Seed]
+            )
         )
-    )
 
-    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"))
-    assert rep.status_code == 401
+        rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"))
+        assert rep.status_code == 401
 
-    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": "Something test"})
-    assert rep.status_code == 401
+        rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": "Something test"})
+        assert rep.status_code == 401
 
-    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": "Basic user:secret"})
-    assert rep.status_code == 401
+        rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": f"Basic {username}:{password}"})
+        assert rep.status_code == 401
 
-    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": f"Basic {b64encode(b'test:secret').decode('utf-8')}"} )
-    assert rep.status_code == 401
+        rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": f"Basic {b64encode(bytes(f'test:{password}', 'utf-8')).decode('utf-8')}"} )
+        assert rep.status_code == 401
 
-    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": f"Basic {b64encode(b'user').decode('utf-8')}"} )
-    assert rep.status_code == 401
+        rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": f"Basic {b64encode(bytes(f'{username}', 'utf-8')).decode('utf-8')}"} )
+        assert rep.status_code == 401
 
-    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": f"Basic {b64encode(b'user:test').decode('utf-8')}"} )
-    assert rep.status_code == 401
+        rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": f"Basic {b64encode(bytes(f'{username}:test', 'utf-8')).decode('utf-8')}"} )
+        assert rep.status_code == 401
 
-    authorization = f"Basic {b64encode(b'user:secret').decode('utf-8')}"
-    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": authorization})
-    assert rep.status_code == 202
+        authorization = f"Basic {b64encode(bytes(f'{username}:{password}', 'utf-8')).decode('utf-8')}"
+        rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": authorization})
+        assert rep.status_code == 202
 
 def test_misconfigured_protected_boot_ends(helpers):
     agency = agenting.Agency(name="agency", bran=None, temp=True)

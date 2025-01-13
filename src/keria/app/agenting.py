@@ -884,6 +884,22 @@ class BootEnd:
         self.password = password
         self.agency = agency
 
+    def parseBasicAuth(self, req: falcon.Request):
+        schemePrefix = 'Basic '
+        if req.auth is None or not req.auth.startswith(schemePrefix):
+            return None, None
+
+        token = b64decode(req.auth[len(schemePrefix):]).decode('utf-8')
+        splitIndex = token.find(':')
+        if splitIndex == -1:
+            return None, None
+
+        username = token[:splitIndex]
+        password = token[splitIndex + 1:]
+
+        return username, password
+
+
     def authenticate(self, req: falcon.Request):
         # Username AND Password is not set, so no need to authenticate
         if self.username is None and self.password is None:
@@ -892,15 +908,8 @@ class BootEnd:
         if req.auth is None:
             raise falcon.HTTPUnauthorized(title="Unauthorized")
 
-        scheme, token = req.auth.split(' ')
-        if scheme != 'Basic':
-            raise falcon.HTTPUnauthorized(title="Unauthorized")
-
         try:
-            username, password = b64decode(token).decode('utf-8').split(':')
-
-            if username is None or password is None:
-                raise falcon.HTTPUnauthorized(title="Unauthorized")
+            username, password = self.parseBasicAuth(req)
 
             if username == self.username and password == self.password:
                 return
