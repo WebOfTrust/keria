@@ -18,7 +18,7 @@ except ImportError:
     sphinx_rtd_theme = None
 
 project = 'KERIA'
-copyright = '2023, Phil Feairheller'
+copyright = '2025, Phil Feairheller'
 author = 'Phil Feairheller'
 
 version = release = keria.__version__

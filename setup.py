@@ -24,7 +24,7 @@ Best practices for setup.py and requirements.txt
 https://caremad.io/posts/2013/07/setup-vs-requirement/
 """
 
-
+from pathlib import Path
 from glob import glob
 from os.path import basename
 from os.path import splitext
@@ -32,12 +32,19 @@ from os.path import splitext
 from setuptools import find_packages
 from setuptools import setup
 
+this_directory = Path(__file__).parent
+if (this_directory / "README.md").exists():  # If building inside a container, like in the `images/keria.dockerfile`, this file won't exist and fails the build
+    long_description = (this_directory / "README.md").read_text()
+else:
+    long_description = "KERIA: KERI Agent in the cloud."
+
 setup(
     name='keria',
-    version='0.2.0-dev6',  # also change in src/keria/__init__.py
+    version='0.2.0-rc1',  # also change in src/keria/__init__.py
     license='Apache Software License 2.0',
     description='KERIA: KERI Agent in the cloud',
-    long_description="KERIA: KERI Agent in the cloud.",
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     author='Philip S. Feairheller',
     author_email='pfeairheller@gmail.com',
     url='https://github.com/WebOfTrust/keria',
@@ -54,7 +61,7 @@ setup(
         'Operating System :: Unix',
         'Operating System :: POSIX',
         'Operating System :: Microsoft :: Windows',
-        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.12',
         'Programming Language :: Python :: Implementation :: CPython',
         # uncomment if you test on these interpreters:
         # 'Programming Language :: Python :: Implementation :: PyPy',
@@ -64,37 +71,37 @@ setup(
         'Topic :: Utilities',
     ],
     project_urls={
+        'Documentation': 'https://weboftrust.github.io/keridoc',
         'Issue Tracker': 'https://github.com/WebOfTrust/keria/issues',
+        'Source': 'https://github.com/WebOfTrust/keria',
     },
     keywords=[
         "secure attribution",
         "authentic data",
         "discovery",
-        "resolver",
-        # eg: 'keyword1', 'keyword2', 'keyword3',
+        "resolver"
     ],
     python_requires='>=3.12.2',
     install_requires=[
-        'hio>=0.6.14',
-        'keri==1.2.0.dev13',
-        'mnemonic>=0.21',
-        'multicommand>=1.0.0',
-        'falcon>=3.1.3',
-        'http_sfv>=0.9.8',
-        'dataclasses_json>=0.5.7',
-        'apispec>=6.6.0',
+        'hio==0.6.14',
+        'keri==1.2.2',
+        'mnemonic==0.21',
+        'multicommand==1.0.0',
+        'falcon==4.0.2',
+        'http_sfv==0.9.9',
+        'dataclasses_json==0.6.7',
+        'apispec==6.8.1',
     ],
     extras_require={
-        # eg:
-        #   'rst': ['docutils>=0.11'],
-        #   ':python_version=="2.6"': ['argparse'],
+        'test': ['pytest', 'coverage'],
+        'docs': ['sphinx', 'sphinx-rtd-theme']
     },
     tests_require=[
-        'coverage>=5.5',
-        'pytest>=6.2.4',
-        'requests==2.32.3'
+        'coverage>=7.6.10',
+        'pytest>=8.3.4',
     ],
     setup_requires=[
+        'setuptools==75.8.0'
     ],
     entry_points={
         'console_scripts': [

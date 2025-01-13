@@ -1,6 +1,9 @@
 .PHONY: build-keria
 
-VERSION=0.2.0-dev6
+VERSION=0.2.0-rc1
+IMAGE_NAME=weboftrust/keria
+VERSION_TAG=$(IMAGE_NAME):$(VERSION)
+LATEST_TAG=$(IMAGE_NAME):latest
 
 define DOCKER_WARNING
 In order to use the multi-platform build enable the containerd image store
@@ -11,11 +14,21 @@ To enable the feature for Docker Desktop:
 	Select Apply and Restart."
 endef
 
+build-wheel:
+	@python setup.py sdist
+
 build-keria: .warn
-	@docker build --platform=linux/amd64,linux/arm64 --no-cache -f images/keria.dockerfile -t weboftrust/keria:$(VERSION) .
+	@docker build \
+		--build-arg KERI_AGENT_CORS=false \
+		--platform=linux/amd64,linux/arm64 \
+		--no-cache \
+		-f images/keria.dockerfile \
+		-t $(LATEST_TAG) \
+		-t $(VERSION_TAG) \
+		.
 
 publish-keria:
-	@docker push weboftrust/keria:$(VERSION)
+	@docker push $(VERSION_TAG) && docker push $(LATEST_TAG)
 
 .warn:
 	@echo -e ${RED}"$$DOCKER_WARNING"${NO_COLOUR}
