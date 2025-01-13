@@ -96,6 +96,44 @@ def test_shutdown_signals():
     assert not agency_process.is_alive(), "SIGINT: Agency process did not shut down as expected."
     assert agency_process.exitcode == 0, f"SIGINT: Agency exited with non-zero exit code {agency_process.exitcode}"
 
+def test_graceful_shutdown_doer():
+    salt = b'0123456789abcdef'
+    salter = core.Salter(raw=salt)
+    cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
+    with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
+        hab = hby.makeHab(name="test")
+
+        agency = agenting.Agency(name="agency", base="", bran=None, temp=True, configFile="keria",
+                                 releaseTimeout=0, configDir=SCRIPTS_DIR)
+
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+        shutdownDoer = agenting.GracefulShutdownDoer(doist=doist, agency=agency)
+        doers = [agency, shutdownDoer]
+        doist.enter(doers=doers)
+
+        caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
+        agent = agency.create(caid, salt=salter.qb64)
+        assert agent.pre == "EIAEKYpTygdBtFHBrHKWeh0aYCdx0ZJqZtzQLFnaDB2b"
+        assert len(agency.agents) == 1, "Agent not created as expected."
+
+        assert shutdownDoer.shutdown_received is False
+        shutdownDoer.enter()
+        sigterm_handler = signal.getsignal(signal.SIGTERM)
+        assert sigterm_handler == shutdownDoer.handle_sigterm, "SIGTERM handler not set as expected."
+
+        # Call SIGTERM handler manually since can't send sigterm to self in test.
+        # See test_shutdown_signals test above for an example of sending signals.
+        shutdownDoer.handle_sigterm(signal.SIGTERM, None)
+
+        doist.do(doers=doers)
+        assert  shutdownDoer.shutdown_received is True
+
+        # shutdownDoer.shutdown_agents(agency.agents)
+        assert len(agency.agents) == 0, "Agents not shut down as expected."
+
+
 
 def test_load_ends(helpers):
     with helpers.openKeria() as (agency, agent, app, client):
