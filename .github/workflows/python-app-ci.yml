@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 pytest hio
+          pip install flake8 pytest hio requests
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Lint changes
         run: |
@@ -51,7 +51,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-cov hio
+          pip install pytest pytest-cov hio requests
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Run core KERIA tests
         run: |
