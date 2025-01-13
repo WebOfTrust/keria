@@ -3,30 +3,32 @@
 KERIA
 keria.app.agenting module
 
-Testing the Mark II Agent
+Testing the Mark II Agent (KERIA)
 """
-from base64 import b64encode
 import json
+import multiprocessing
 import os
 import shutil
-
-import pytest
+import signal
+import time
+from base64 import b64encode
 
 import falcon
 import hio
+import pytest
+import requests
 from falcon import testing
 from hio.base import doing, tyming
 from hio.core import http, tcp
 from hio.help import decking
+from keri import core
 from keri import kering
 from keri.app import habbing, configing, indirecting, oobiing, querying
 from keri.app.agenting import Receiptor, WitnessReceiptor
-from keri import core
-from keri.core import coring, serdering
+from keri.core import serdering
 from keri.core.coring import MtrDex
 from keri.db import basing, dbing
 from keri.help import nowIso8601
-from keri.vc import proving
 from keri.vdr import credentialing
 
 from keria.app import agenting, aiding
@@ -35,13 +37,102 @@ from keria.testing.testing_helper import SCRIPTS_DIR
 
 
 def test_setup_no_http():
-    doers = agenting.setup(name="test", bran=None, adminPort=1234, bootPort=5678)
+    doers = agenting.setupDoers(agenting.KERIAServerConfig(
+        name="test",
+        adminPort=1234,
+        bootPort=5678,
+        httpPort=None,
+    ))
     assert len(doers) == 3
     assert isinstance(doers[0], agenting.Agency) is True
 
 def test_setup():
-    doers = agenting.setup("test", bran=None, adminPort=1234, bootPort=5678, httpPort=9999)
+    doers = agenting.setupDoers(agenting.KERIAServerConfig(
+        name="test",
+        adminPort=1234,
+        bootPort=5678,
+        httpPort=9999,
+    ))
     assert len(doers) == 4
+
+def wait_for_server(port, timeout=10):
+    """Poll server until it responds or until timeout"""
+    url=f"http://127.0.0.1:{port}/health"
+    start_time=time.time()
+    while time.time() - start_time < timeout:
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                return True # Server is up
+        except requests.ConnectionError:
+            pass # Server not ready yet
+        time.sleep(0.25) # Retry every 1/4 second
+    return False # Timeout
+
+def test_shutdown_signals():
+    config = agenting.KERIAServerConfig(
+        adminPort=3333,
+        bootPort=4444,
+        httpPort=5555,
+    )
+
+    # Test SIGTERM
+    agency_process = multiprocessing.Process(target=agenting.runAgency, args=[config])
+    agency_process.start()
+    assert wait_for_server(config.bootPort), "Agency did not start as expected."
+
+    os.kill(agency_process.pid, signal.SIGTERM)  # Send SigTerm to the process, signal 15
+    agency_process.join(timeout=10)
+    assert not agency_process.is_alive(), "SIGTERM: Agency process did not shut down as expected."
+    assert agency_process.exitcode == 0, f"SIGTERM: Agency exited with non-zero exit code {agency_process.exitcode}"
+
+    # Test SIGINT
+    agency_process = multiprocessing.Process(target=agenting.runAgency, args=[config])
+    agency_process.start()
+    assert wait_for_server(config.bootPort), "Agency did not start as expected."
+
+    os.kill(agency_process.pid, signal.SIGINT)  # Sends SigInt to the process, signal 2
+    agency_process.join(timeout=10)
+    assert not agency_process.is_alive(), "SIGINT: Agency process did not shut down as expected."
+    assert agency_process.exitcode == 0, f"SIGINT: Agency exited with non-zero exit code {agency_process.exitcode}"
+
+def test_graceful_shutdown_doer():
+    salt = b'0123456789abcdef'
+    salter = core.Salter(raw=salt)
+    cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
+    with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
+        hab = hby.makeHab(name="test")
+
+        agency = agenting.Agency(name="agency", base="", bran=None, temp=True, configFile="keria",
+                                 releaseTimeout=0, configDir=SCRIPTS_DIR)
+
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+        shutdownDoer = agenting.GracefulShutdownDoer(doist=doist, agency=agency)
+        doers = [agency, shutdownDoer]
+        doist.enter(doers=doers)
+
+        caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
+        agent = agency.create(caid, salt=salter.qb64)
+        assert agent.pre == "EIAEKYpTygdBtFHBrHKWeh0aYCdx0ZJqZtzQLFnaDB2b"
+        assert len(agency.agents) == 1, "Agent not created as expected."
+
+        assert shutdownDoer.shutdown_received is False
+        shutdownDoer.enter()
+        sigterm_handler = signal.getsignal(signal.SIGTERM)
+        assert sigterm_handler == shutdownDoer.handle_sigterm, "SIGTERM handler not set as expected."
+
+        # Call SIGTERM handler manually since can't send sigterm to self in test.
+        # See test_shutdown_signals test above for an example of sending signals.
+        shutdownDoer.handle_sigterm(signal.SIGTERM, None)
+
+        doist.do(doers=doers)
+        assert  shutdownDoer.shutdown_received is True
+
+        # shutdownDoer.shutdown_agents(agency.agents)
+        assert len(agency.agents) == 0, "Agents not shut down as expected."
+
 
 
 def test_load_ends(helpers):

@@ -5,13 +5,8 @@ keria.cli.commands module
 
 """
 import multicommand
-from keri import help
 
-from keri.app import directing
 from keria.app.cli import commands
-
-logger = help.ogler.getLogger()
-
 
 def main():
     parser = multicommand.create_parser(commands)
@@ -22,8 +17,7 @@ def main():
         return
 
     try:
-        doers = args.handler(args)
-        directing.runController(doers=doers, expire=0.0)
+        args.handler(args)
 
     except Exception as ex:
         # print(f"ERR: {ex}")
