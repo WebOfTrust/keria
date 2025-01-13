@@ -1,16 +1,13 @@
 # -*- encoding: utf-8 -*-
 """
 KERIA
-keria.cli.keria.commands module
+keria.cli.keria.commands.start module
 
-Witness command line interface
+KERIA Agent server start command line interface (CLI) command
 """
 import argparse
-import logging
 import os
-import signal
 
-from hio.base import doing
 from keri import __version__
 from keri import help
 
@@ -78,49 +75,34 @@ parser.add_argument("--experimental-boot-username",
                     dest="bootUsername",
                     default=os.getenv("KERIA_EXPERIMENTAL_BOOT_USERNAME"))
 
+
+logger = help.ogler.getLogger()
+
+def launch(args):
+    agenting.runAgency(agenting.KERIAServerConfig(
+        name=args.name or "ahab",
+        base=args.base or "",
+        bran=args.bran,
+        adminPort=args.admin,
+        httpPort=args.http,
+        bootPort=args.boot,
+        configFile=args.configFile,
+        configDir=args.configDir,
+        keyPath=args.keypath,
+        certPath=args.certpath,
+        caFilePath=args.cafilepath,
+        logLevel=args.loglevel,
+        logFile=args.logfile,
+        cors=os.getenv("KERI_AGENT_CORS", "false").lower() in ("true", "1"),
+        releaseTimeout=int(os.getenv("KERIA_RELEASER_TIMEOUT", "86400")),
+        curls=getListVariable("KERIA_CURLS"),
+        iurls=getListVariable("KERIA_IURLS"),
+        durls=getListVariable("KERIA_DURLS"),
+        bootPassword=args.bootPassword,
+        bootUsername=args.bootUsername
+    ))
+    logger.info("Agent %s gracefully stopped", args.name)
+
 def getListVariable(name):
     value = os.getenv(name)
     return value.split(";") if value else None
-
-def launch(args):
-    help.ogler.level = logging.getLevelName(args.loglevel)
-    if(args.logfile != None):
-        help.ogler.headDirPath = args.logfile
-        help.ogler.reopen(name=args.name, temp=False, clear=True)
-
-    logger = help.ogler.getLogger()
-
-    logger.info("Starting Agent for %s listening: admin/%s, http/%s, boot/%s", args.name, args.admin, args.http, args.boot)
-    logger.info("PID: %s", os.getpid())
-
-    agency = agenting.setup(name=args.name or "ahab",
-                            base=args.base or "",
-                            bran=args.bran,
-                            adminPort=args.admin,
-                            httpPort=args.http,
-                            bootPort=args.boot,
-                            configFile=args.configFile,
-                            configDir=args.configDir,
-                            keypath=args.keypath,
-                            certpath=args.certpath,
-                            cafilepath=args.cafilepath,
-                            cors=os.getenv("KERI_AGENT_CORS", "false").lower() in ("true", "1"),
-                            releaseTimeout=int(os.getenv("KERIA_RELEASER_TIMEOUT", "86400")),
-                            curls=getListVariable("KERIA_CURLS"),
-                            iurls=getListVariable("KERIA_IURLS"),
-                            durls=getListVariable("KERIA_DURLS"),
-                            bootPassword=args.bootPassword,
-                            bootUsername=args.bootUsername)
-
-    tock = 0.03125
-    doist = doing.Doist(limit=0.0, tock=tock, real=True)
-
-    def handleSignal(sig, frame):
-        logger.info("Received signal %s", signal.strsignal(sig))
-        doist.exit()
-
-    signal.signal(signal.SIGTERM, handleSignal)
-
-    doist.do(doers=agency)
-
-    logger.info("Agent %s gracefully stopped", args.name)
