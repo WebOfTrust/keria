@@ -1,8 +1,17 @@
 {
   "name": "signify-ts",
-  "version": "0.3.0",
+  "version": "0.3.0-rc1",
   "description": "Signing at the edge for KERI, ACDC, and KERIA",
-  "keywords": ["keri","acdc","keria","signify","signify-ts","decentralized identity","authentic data","zero trust architecture"],
+  "keywords": [
+    "keri",
+    "acdc",
+    "keria",
+    "signify",
+    "signify-ts",
+    "decentralized identity",
+    "authentic data",
+    "zero trust architecture"
+  ],
   "author": "Phil Feairheller",
   "homepage": "https://github.com/WebOfTrust/signify-ts",
   "repo": {
