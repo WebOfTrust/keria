@@ -24,8 +24,8 @@ logger = ogler.getLogger()
 
 
 def loadEnds(app, agency, authn):
-    groupEnd = AgentResourceEnd(agency=agency, authn=authn)
-    app.add_route("/agent/{caid}", groupEnd)
+    agentEnd = AgentResourceEnd(agency=agency, authn=authn)
+    app.add_route("/agent/{caid}", agentEnd)
 
     aidsEnd = IdentifierCollectionEnd()
     app.add_route("/identifiers", aidsEnd)
