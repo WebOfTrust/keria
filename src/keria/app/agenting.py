@@ -173,7 +173,8 @@ def setupDoers(config: KERIAServerConfig):
         'signature',
         'signature-input',
         'signify-resource',
-        'signify-timestamp'
+        'signify-timestamp',
+        'signify-receiver'
     ]
     bootApp = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*',
