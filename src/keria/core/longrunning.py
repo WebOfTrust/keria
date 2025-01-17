@@ -20,11 +20,11 @@ from keri.help import helping
 from keria.app import delegating
 
 # long running operation types
-Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole challenge exchange submit '
-                                'done')
+Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole '
+                                'locscheme challenge exchange submit done')
 
 OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation', group='group', query='query',
-                  registry='registry', credential='credential', endrole='endrole', challenge='challenge',
+                  registry='registry', credential='credential', endrole='endrole', locscheme='locscheme', challenge='challenge',
                   exchange='exchange', submit='submit', done='done')
 
 
@@ -394,6 +394,22 @@ class Monitor:
                 serder = self.hby.db.rpys.get(keys=(saider.qb64,))
                 operation.done = True
                 operation.response = serder.ked
+            else:
+                operation.done = False
+
+        elif op.type in (OpTypes.locscheme,):
+            if "eid" not in op.metadata or "scheme" not in op.metadata or "url" not in op.metadata:
+                raise kering.ValidationError(
+                    f"invalid long running {op.type} operation, metadata missing required fields ('eid', 'scheme', 'url')")
+
+            eid = op.metadata['eid']
+            scheme = op.metadata['scheme']
+            url = op.metadata['url']
+
+            loc = self.hby.db.locs.get(keys=(eid, scheme))
+            if loc:
+                operation.done = True
+                operation.response = dict(eid=eid, scheme=scheme, url=url)
             else:
                 operation.done = False
 
