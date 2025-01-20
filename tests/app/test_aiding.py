@@ -53,6 +53,8 @@ def test_load_ends(helpers):
         assert isinstance(end, aiding.EndRoleCollectionEnd)
         (end, *_) = app._router.find("/identifiers/NAME/endroles/witness/EID")
         assert isinstance(end, aiding.EndRoleResourceEnd)
+        (end, *_) = app._router.find("/identifiers/NAME/locschemes")
+        assert isinstance(end, aiding.LocSchemeCollectionEnd)
         (end, *_) = app._router.find("/challenges")
         assert isinstance(end, aiding.ChallengeCollectionEnd)
         (end, *_) = app._router.find("/challenges/NAME")
@@ -136,6 +138,64 @@ def test_endrole_ends(helpers):
         assert ends[0] == {'cid': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
                            'role': 'agent',
                            'eid': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9'}
+
+
+def test_locscheme_ends(helpers, mockHelpingNowUTC):
+    with helpers.openKeria() as (agency, agent, app, client):
+        locSchemesEnd = aiding.LocSchemeCollectionEnd()
+        app.add_route("/identifiers/{name}/locschemes", locSchemesEnd)
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+
+        salt = b'0123456789abcdef'
+        op = helpers.createAid(client, "user1", salt)
+        aid = op["response"]
+        recp = aid['i']
+        assert recp == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+
+        rpy = helpers.locscheme(recp, "http://testurl.com")
+        sigs = ["AACOFnUk-lsVq0rLNdWCBtr51fnkXRdEzo8gnUwYF0F6xJPGL9_MXxezBc_P6e15-M1GpaHua_l3Hn4qKRMomRoM"]
+        body = dict(rpy=rpy.ked, sigs=sigs)
+
+        res = client.simulate_post(path=f"/identifiers/unknown-user/locschemes", json=body)
+        assert res.status_code == 404
+        assert res.json == {'description': 'invalid alias or prefix unknown-user',
+                            'title': '404 Not Found'}
+
+        res = client.simulate_post(path=f"/identifiers/user1/locschemes", json=body)
+        assert res.status_code == 400
+        assert res.json == {'description': 'unable to verify end role reply message',
+                            'title': '400 Bad Request'}
+
+        sigs = helpers.sign(salt, 0, 0, rpy.raw)
+        body = dict(rpy=rpy.ked, sigs=sigs)
+        res = client.simulate_post(path=f"/identifiers/user1/locschemes", json=body)
+        assert res.status_code == 202
+        op = res.json
+        assert op["done"]
+
+        keys = (recp, "http")
+        loc = agent.hby.db.locs.get(keys=keys)
+        assert loc is not None
+        assert loc.url == "http://testurl.com"
+
+        lans = agent.hby.db.lans.get(keys=keys)
+        assert lans is not None
+        assert lans.qb64 == "EEnRKmN-5cRGkGEfS0Z8VDIECsD8DBMNPpHWFBW8CO4p"
+
+        # https
+        rpy = helpers.locscheme(recp, "https://testurl.com", "https")
+        sigs = helpers.sign(salt, 0, 0, rpy.raw)
+        body = dict(rpy=rpy.ked, sigs=sigs)
+        res = client.simulate_post(path=f"/identifiers/user1/locschemes", json=body)
+        assert res.status_code == 202
+        op = res.json
+        assert op["done"]
+
+        keys = (recp, "https")
+        loc = agent.hby.db.locs.get(keys=keys)
+        assert loc is not None
+        assert loc.url == "https://testurl.com"
 
 
 def test_agent_resource(helpers, mockHelpingNowUTC):

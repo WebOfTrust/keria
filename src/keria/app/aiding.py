@@ -47,6 +47,9 @@ def loadEnds(app, agency, authn):
     endRoleEnd = EndRoleResourceEnd()
     app.add_route("/identifiers/{name}/endroles/{role}/{eid}", endRoleEnd)
 
+    locSchemesEnd = LocSchemeCollectionEnd()
+    app.add_route("/identifiers/{name}/locschemes", locSchemesEnd)
+
     rpyEscrowEnd = RpyEscrowCollectionEnd()
     app.add_route("/escrows/rpy", rpyEscrowEnd)
 
@@ -1349,6 +1352,91 @@ class EndRoleResourceEnd:
 
     def on_delete(self, req, rep):
         pass
+
+
+class LocSchemeCollectionEnd:
+
+    @staticmethod
+    def on_post(req, rep, name):
+        """POST endpoint for loc scheme collection
+
+        Args:
+            req (Request): Falcon HTTP request object
+            rep (Response): Falcon HTTP response object
+            name (str): human readable alias or prefix for identifier
+
+        ---
+        summary: Authorises a new location scheme.
+        description: This endpoint authorises a new location scheme (endpoint) for a particular endpoint identifier.
+        tags:
+        - Loc Scheme
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The human-readable name of the identifier or its prefix.
+        requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    rpy:
+                      type: object
+                      description: The reply object.
+                    sigs:
+                      type: array
+                      items:
+                        type: string
+                      description: The signatures.
+        responses:
+            202:
+                description: Accepted. The loc scheme authorisation is in progress.
+            400:
+                description: Bad request. This could be due to missing or invalid parameters.
+            404:
+                description: Not found. The requested identifier was not found.
+        """
+        agent = req.context.agent
+        body = req.get_media()
+
+        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
+        if hab is None:
+            raise falcon.errors.HTTPNotFound(description=f"invalid alias or prefix {name}")
+
+        rpy = httping.getRequiredParam(body, "rpy")
+        rsigs = httping.getRequiredParam(body, "sigs")
+
+        rserder = serdering.SerderKERI(sad=rpy)
+        data = rserder.ked["a"]
+        eid = data["eid"]
+        scheme = data["scheme"]
+        url = data["url"]
+
+        rsigers = [core.Siger(qb64=rsig) for rsig in rsigs]
+        tsg = (
+            hab.kever.prefixer,
+            coring.Seqner(sn=hab.kever.sn),
+            coring.Saider(qb64=hab.kever.serder.said),
+            rsigers,
+        )
+        try:
+            agent.hby.rvy.processReply(rserder, tsgs=[tsg])
+        except kering.UnverifiedReplyError:
+            pass
+        except kering.ValidationError:
+            raise falcon.HTTPBadRequest(description="unable to verify end role reply message")
+
+        oid = ".".join([eid, scheme])
+        op = agent.monitor.submit(
+            oid, longrunning.OpTypes.locscheme, metadata=dict(eid=eid, scheme=scheme, url=url)
+        )
+
+        rep.content_type = "application/json"
+        rep.status = falcon.HTTP_202
+        rep.data = op.to_json().encode("utf-8")
 
 
 class RpyEscrowCollectionEnd:

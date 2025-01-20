@@ -541,6 +541,11 @@ class Helpers:
         return eventing.reply(route="/end/role/add", data=data)
 
     @staticmethod
+    def locscheme(eid, url, scheme="http"):
+        data = dict(eid=eid, url=url, scheme=scheme)
+        return eventing.reply(route="/loc/scheme", data=data)
+
+    @staticmethod
     def middleware(agent):
         return MockAgentMiddleware(agent=agent)
 
