@@ -323,8 +323,8 @@ class Helpers:
         return httpServerDoer
 
     @staticmethod
-    def controller():
-        serder, signers = Helpers.incept(bran=b'0123456789abcdefghijk', stem="signify:controller", pidx=0)
+    def controller(bran=b'0123456789abcdefghijk'):
+        serder, signers = Helpers.incept(bran=bran, stem="signify:controller", pidx=0)
         sigers = [signers[0].sign(ser=serder.raw, index=0)]
         return serder, sigers
 
