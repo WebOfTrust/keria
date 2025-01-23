@@ -238,7 +238,7 @@ def serializeResponse(protocol: str, response: falcon.Response):
     ])
 
     if response.text:
-        body = response.text.strip()
+        body = response.text
     elif response.data:
         body = response.data.decode("utf-8")
     else:
