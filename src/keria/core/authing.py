@@ -117,7 +117,9 @@ class Authenticator:
 
         pubkey = pysodium.crypto_sign_pk_to_box_pk(ckever.verfers[0].raw)
         raw = pysodium.crypto_box_seal(inner, pubkey)
+
         rep.data = raw
+        rep.text = None
 
         diger = coring.Diger(ser=raw, code=MtrDex.Blake3_256)
         payload = dict(
@@ -234,5 +236,12 @@ def serializeResponse(protocol: str, response: falcon.Response):
         f"{key}: {value}" for key, value in response.headers.items()
         if key.lower() not in CORS_HEADERS
     ])
-    body = response.data.decode("utf-8") if response.data else ""
+
+    if response.text:
+        body = response.text.strip()
+    elif response.data:
+        body = response.data.decode("utf-8")
+    else:
+        body = ""
+
     return f"{status_line}\r\n{headers}\r\n\r\n{body}"
