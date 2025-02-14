@@ -33,9 +33,16 @@ export interface SiginputArgs {
     context?: string;
 }
 
+/**
+ * Generates, serializes, and signs a Signature-Input HTTP header value as a structured header
+ * @param signer
+ * @param sigInputArgs
+ */
 export function siginput(
     signer: Signer,
-    {
+    sigInputArgs: SiginputArgs
+): [Map<string, string>, Siger | Cigar] {
+    const {
         name,
         method,
         path,
@@ -46,8 +53,7 @@ export function siginput(
         alg,
         keyid,
         context,
-    }: SiginputArgs
-): [Map<string, string>, Siger | Cigar] {
+    } = sigInputArgs;
     const items = new Array<string>();
     const ifields = new Array<[string, Map<string, string>]>();
 

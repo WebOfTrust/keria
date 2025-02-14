@@ -3,21 +3,25 @@ import { anyOfClass, anything, instance, mock, when } from 'ts-mockito';
 import libsodium from 'libsodium-wrappers-sumo';
 import 'whatwg-fetch';
 import { Registries } from '../../src/keri/app/credentialing';
-import { Identifier, KeyManager, SaltyKeeper } from '../../src';
+import {
+    Identifier,
+    IdentifierManagerFactory,
+    SaltyIdentifierManager,
+} from '../../src';
 import { strict as assert } from 'assert';
-import { HabState, State } from '../../src/keri/core/state';
+import { HabState, KeyState } from '../../src/keri/core/keyState';
 
 describe('registry', () => {
     it('should create a registry', async () => {
         await libsodium.ready;
         const mockedClient = mock(SignifyClient);
         const mockedIdentifiers = mock(Identifier);
-        const mockedKeyManager = mock(KeyManager);
-        const mockedKeeper = mock(SaltyKeeper);
+        const mockedKeyManager = mock(IdentifierManagerFactory);
+        const mockedKeeper = mock(SaltyIdentifierManager);
 
         const hab = {
             prefix: 'hab prefix',
-            state: { s: '0', d: 'a digest' } as State,
+            state: { s: '0', d: 'a digest' } as KeyState,
         } as HabState;
 
         when(mockedClient.manager).thenReturn(instance(mockedKeyManager));
@@ -66,7 +70,7 @@ describe('registry', () => {
 
         const hab = {
             prefix: 'hab prefix',
-            state: { s: 0, d: 'a digest', c: ['EO'] } as unknown as State,
+            state: { s: 0, d: 'a digest', c: ['EO'] } as unknown as KeyState,
             name: 'a name',
             transferable: true,
             windexes: [],

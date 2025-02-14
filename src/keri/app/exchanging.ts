@@ -1,11 +1,11 @@
 import { SignifyClient } from './clienting';
-import { b, d, Dict, Ident, Ilks, Serials, versify } from '../core/core';
+import { b, d, Dict, Protocols, Ilks, Serials, versify } from '../core/core';
 import { Serder } from '../core/serder';
 import { nowUTC } from '../core/utils';
 import { Pather } from '../core/pather';
 import { Counter, CtrDex } from '../core/counter';
 import { Saider } from '../core/saider';
-import { HabState } from '../core/state';
+import { HabState } from '../core/keyState';
 
 /**
  * Exchanges
@@ -155,7 +155,7 @@ export function exchange(
     modifiers?: Dict<any>,
     embeds?: Dict<any>
 ): [Serder, Uint8Array] {
-    const vs = versify(Ident.KERI, undefined, Serials.JSON, 0);
+    const vs = versify(Protocols.KERI, undefined, Serials.JSON, 0);
     const ilk = Ilks.exn;
     const dt =
         date !== undefined

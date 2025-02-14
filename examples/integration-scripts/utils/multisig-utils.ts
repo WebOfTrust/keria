@@ -9,7 +9,7 @@ import signify, {
     messagize,
 } from 'signify-ts';
 import { getStates, waitAndMarkNotification } from './test-util';
-import { HabState } from '../../../src/keri/core/state';
+import { HabState } from '../../../src/keri/core/keyState';
 import assert from 'assert';
 
 export interface AcceptMultisigInceptArgs {

@@ -2,12 +2,12 @@ import {
     b,
     concat,
     Dict,
-    Ident,
+    Protocols,
     Ilks,
     Serials,
     versify,
     Version,
-    Versionage,
+    Vrsn_1_0,
 } from './core';
 import { Tholder } from './tholder';
 import { CesrNumber } from './number';
@@ -61,7 +61,7 @@ export function rotate({
     kind = undefined,
     intive = true,
 }: RotateArgs) {
-    const vs = versify(Ident.KERI, version, kind, 0);
+    const vs = versify(Protocols.KERI, version, kind, 0);
     const _ilk = ilk;
     if (_ilk != Ilks.rot && _ilk != Ilks.drt) {
         throw new Error(`Invalid ilk = ${ilk} for rot or drt.`);
@@ -76,7 +76,7 @@ export function rotate({
     if (isith == undefined) {
         _isit = Math.max(1, Math.ceil(keys.length / 2));
     } else {
-        _isit = isith as number;
+        _isit = isith as number; // TODO this type as number does not make sense when isith is a string containing weighted thresholds
     }
 
     const tholder = new Tholder({ sith: _isit });
@@ -84,6 +84,7 @@ export function rotate({
         throw new Error(`Invalid sith = ${tholder.num} less than 1.`);
     }
     if (tholder.size > keys.length) {
+        // TODO this error should say that the threshold has not been met
         throw new Error(`Invalid sith = ${tholder.num} for keys = ${keys}`);
     }
 
@@ -107,7 +108,10 @@ export function rotate({
         throw new Error(`Invalid sith = ${ntholder.num} less than 1.`);
     }
     if (ntholder.size > _ndigs.length) {
-        throw new Error(`Invalid sith = ${ntholder.num} for ndigs = ${ndigs}`);
+        // TODO this error should say that the threshold has not been met
+        throw new Error(
+            `Signing threshold failure: ${keys.length} number of signers not equal to or greater than sith = ${tholder.size} for keys = ${keys}`
+        );
     }
 
     let _wits: Array<string>;
@@ -289,13 +293,13 @@ export function incept({
     wits,
     cnfg,
     data,
-    version = Versionage,
+    version = Vrsn_1_0,
     kind = Serials.JSON,
     code,
     intive = false,
     delpre,
 }: InceptArgs) {
-    const vs = versify(Ident.KERI, version, kind, 0);
+    const vs = versify(Protocols.KERI, version, kind, 0);
     const ilk = delpre == undefined ? Ilks.icp : Ilks.dip;
     const sner = new CesrNumber({}, 0);
 
@@ -528,7 +532,7 @@ interface InteractArgs {
 
 export function interact(args: InteractArgs): Serder {
     let { pre, dig, sn, data, version, kind } = args;
-    const vs = versify(Ident.KERI, version, kind, 0);
+    const vs = versify(Protocols.KERI, version, kind, 0);
     const ilk = Ilks.ixn;
     const sner = new CesrNumber({}, sn);
 
@@ -560,7 +564,7 @@ export function reply(
     version: Version | undefined,
     kind: Serials = Serials.JSON
 ) {
-    const vs = versify(Ident.KERI, version, kind, 0);
+    const vs = versify(Protocols.KERI, version, kind, 0);
     if (data == undefined) {
         data = {};
     }

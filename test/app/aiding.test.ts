@@ -10,7 +10,7 @@ import {
     Controller,
     Identifier,
     IdentifierDeps,
-    KeyManager,
+    IdentifierManagerFactory,
     Tier,
     randomPasscode,
 } from '../../src';
@@ -19,7 +19,7 @@ import { createMockIdentifierState } from './test-utils';
 const bran = '0123456789abcdefghijk';
 
 export class MockClient implements IdentifierDeps {
-    manager: KeyManager;
+    manager: IdentifierManagerFactory;
     controller: Controller;
     pidx = 0;
 
@@ -28,7 +28,7 @@ export class MockClient implements IdentifierDeps {
 
     constructor(bran: string) {
         this.controller = new Controller(bran, Tier.low);
-        this.manager = new KeyManager(this.controller.salter);
+        this.manager = new IdentifierManagerFactory(this.controller.salter);
     }
 
     identifiers() {

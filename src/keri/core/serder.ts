@@ -2,11 +2,11 @@ import { MtrDex } from './matter';
 import {
     deversify,
     Dict,
-    Ident,
+    Protocols,
     Serials,
     versify,
     Version,
-    Versionage,
+    Vrsn_1_0,
 } from './core';
 import { Verfer } from './verfer';
 import { Diger } from './diger';
@@ -16,9 +16,9 @@ export class Serder {
     private _kind: Serials;
     private _raw: string = '';
     private _ked: Dict<any> = {};
-    private _ident: Ident = Ident.KERI;
+    private _ident: Protocols = Protocols.KERI;
     private _size: number = 0;
-    private _version: Version = Versionage;
+    private _version: Version = Vrsn_1_0;
     private readonly _code: string;
 
     constructor(
@@ -73,11 +73,11 @@ export class Serder {
     private _exhale(
         ked: Dict<any>,
         kind: Serials
-    ): [string, Ident, Serials, Dict<any>, Version] {
+    ): [string, Protocols, Serials, Dict<any>, Version] {
         return sizeify(ked, kind);
     }
 
-    get ident(): Ident {
+    get ident(): Protocols {
         return this._ident;
     }
 
@@ -138,13 +138,13 @@ export function dumps(ked: Object, kind: Serials.JSON): string {
 export function sizeify(
     ked: Dict<any>,
     kind?: Serials
-): [string, Ident, Serials, Dict<any>, Version] {
+): [string, Protocols, Serials, Dict<any>, Version] {
     if (!('v' in ked)) {
         throw new Error('Missing or empty version string');
     }
 
     const [ident, knd, version] = deversify(ked['v'] as string);
-    if (version != Versionage) {
+    if (version != Vrsn_1_0) {
         throw new Error(`unsupported version ${version.toString()}`);
     }
 

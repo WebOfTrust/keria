@@ -1,4 +1,9 @@
-import { Ident, Serials, versify, Versionage } from '../../src/keri/core/core';
+import {
+    Protocols,
+    Serials,
+    versify,
+    Vrsn_1_0,
+} from '../../src/keri/core/core';
 import { strict as assert } from 'assert';
 import { MtrDex } from '../../src/keri/core/matter';
 import libsodium from 'libsodium-wrappers-sumo';
@@ -11,7 +16,7 @@ describe('Saider', () => {
         const kind = Serials.JSON;
         const code = MtrDex.Blake3_256;
 
-        const vs = versify(Ident.KERI, Versionage, kind, 0); // vaccuous size == 0
+        const vs = versify(Protocols.KERI, Vrsn_1_0, kind, 0); // vaccuous size == 0
         assert.equal(vs, 'KERI10JSON000000_');
         const sad4 = {
             v: vs,

@@ -164,6 +164,7 @@ describe('multisig-join', () => {
             waitOperation(client3, opOobi5),
         ]);
 
+        // rotate single sig
         const [rotateResult1, rotateResult2] = await Promise.all([
             client1.identifiers().rotate(nameMember1),
             client2.identifiers().rotate(nameMember2),
@@ -309,7 +310,7 @@ describe('multisig-join', () => {
             .exchanges()
             .send(
                 nameMember1,
-                nameMultisig,
+                'multisig',
                 aid1,
                 '/multisig/rot',
                 { gid: serder1.pre, smids, rmids },

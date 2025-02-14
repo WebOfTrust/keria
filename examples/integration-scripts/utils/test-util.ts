@@ -9,7 +9,7 @@ import signify, {
     Tier,
 } from 'signify-ts';
 import { RetryOptions, retry } from './retry';
-import { HabState } from '../../../src/keri/core/state';
+import { HabState } from '../../../src/keri/core/keyState';
 import assert from 'assert';
 import { resolveEnvironment } from './resolve-env';
 

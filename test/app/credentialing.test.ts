@@ -8,7 +8,7 @@ import fetchMock from 'jest-fetch-mock';
 import 'whatwg-fetch';
 import {
     d,
-    Ident,
+    Protocols,
     Ilks,
     interact,
     Saider,
@@ -352,7 +352,7 @@ describe('Ipex', () => {
         const [, acdc] = Saider.saidify(mockCredential.sad);
 
         // Create iss
-        const vs = versify(Ident.KERI, undefined, Serials.JSON, 0);
+        const vs = versify(Protocols.KERI, undefined, Serials.JSON, 0);
         const _iss = {
             v: vs,
             t: Ilks.iss,
@@ -517,7 +517,7 @@ describe('Ipex', () => {
         const [, acdc] = Saider.saidify(mockCredential.sad);
 
         // Create iss
-        const vs = versify(Ident.KERI, undefined, Serials.JSON, 0);
+        const vs = versify(Protocols.KERI, undefined, Serials.JSON, 0);
         const _iss = {
             v: vs,
             t: Ilks.iss,

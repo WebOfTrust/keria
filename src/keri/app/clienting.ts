@@ -1,6 +1,6 @@
 import { Authenticater } from '../core/authing';
 import { HEADER_SIG_TIME } from '../core/httping';
-import { ExternalModule, KeyManager } from '../core/keeping';
+import { ExternalModule, IdentifierManagerFactory } from '../core/keeping';
 import { Tier } from '../core/salter';
 
 import { Identifier } from './aiding';
@@ -30,7 +30,10 @@ class State {
     }
 }
 
-/** SignifyClient */
+/**
+ * An in-memory key manager that can connect to a KERIA Agent and use it to
+ * receive messages and act as a proxy for multi-signature operations and delegation operations.
+ */
 export class SignifyClient {
     public controller: Controller;
     public url: string;
@@ -38,7 +41,7 @@ export class SignifyClient {
     public pidx: number;
     public agent: Agent | null;
     public authn: Authenticater | null;
-    public manager: KeyManager | null;
+    public manager: IdentifierManagerFactory | null;
     public tier: Tier;
     public bootUrl: string;
     public exteralModules: ExternalModule[];
@@ -147,7 +150,7 @@ export class SignifyClient {
         if (this.controller.serder.ked.s == 0) {
             await this.approveDelegation();
         }
-        this.manager = new KeyManager(
+        this.manager = new IdentifierManagerFactory(
             this.controller.salter,
             this.exteralModules
         );

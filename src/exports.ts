@@ -39,6 +39,6 @@ export * from './keri/core/signer';
 export * from './keri/core/tholder';
 export * from './keri/core/utils';
 export * from './keri/core/verfer';
-export * from './keri/core/state';
+export * from './keri/core/keyState';
 
 export * from './keri/end/ending';

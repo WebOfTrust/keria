@@ -1,4 +1,4 @@
-import { Ident, Saider, Serder, Serials, d, versify } from '../../src';
+import { Protocols, Saider, Serder, Serials, d, versify } from '../../src';
 import {
     serializeACDCAttachment,
     serializeIssExnAttachment,
@@ -8,7 +8,7 @@ describe(serializeIssExnAttachment, () => {
     it('serializes iss data', () => {
         const [, data] = Saider.saidify({
             d: '',
-            v: versify(Ident.KERI, undefined, Serials.JSON, 0),
+            v: versify(Protocols.KERI, undefined, Serials.JSON, 0),
         });
 
         const result = serializeIssExnAttachment(new Serder(data));
@@ -24,7 +24,7 @@ describe(serializeACDCAttachment, () => {
         const [, data] = Saider.saidify({
             i: 'EP-hA0w9X5FDonCDxQv32OTCAvcxkZxgDLOnDb3Jcn3a',
             d: '',
-            v: versify(Ident.ACDC, undefined, Serials.JSON, 0),
+            v: versify(Protocols.ACDC, undefined, Serials.JSON, 0),
             a: {
                 LEI: '123',
             },

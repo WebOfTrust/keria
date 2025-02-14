@@ -1,10 +1,10 @@
 import libsodium from 'libsodium-wrappers-sumo';
 import {
-    Ident,
+    Protocols,
     Ilks,
     Serials,
     versify,
-    Versionage,
+    Vrsn_1_0,
 } from '../../src/keri/core/core';
 import { MtrDex } from '../../src/keri/core/matter';
 import { Prefixer } from '../../src/keri/core/prefixer';
@@ -28,7 +28,7 @@ describe('Prefixer', () => {
         );
 
         // Test digest derivation from inception ked
-        const vs = versify(Ident.KERI, Versionage, Serials.JSON, 0);
+        const vs = versify(Protocols.KERI, Vrsn_1_0, Serials.JSON, 0);
         const sn = 0;
         const ilk = Ilks.icp;
         const sith = '1';

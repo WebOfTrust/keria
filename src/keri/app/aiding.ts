@@ -1,13 +1,13 @@
 import { Tier } from '../core/salter';
 import { Algos } from '../core/manager';
 import { incept, interact, reply, rotate } from '../core/eventing';
-import { b, Ilks, Serials, Versionage } from '../core/core';
+import { b, Ilks, Serials, Vrsn_1_0 } from '../core/core';
 import { Tholder } from '../core/tholder';
 import { MtrDex } from '../core/matter';
 import { Serder } from '../core/serder';
 import { parseRangeHeaders } from '../core/httping';
-import { KeyManager } from '../core/keeping';
-import { HabState } from '../core/state';
+import { IdentifierManagerFactory } from '../core/keeping';
+import { HabState } from '../core/keyState';
 
 /** Arguments required to create an identfier */
 export interface CreateIdentiferArgs {
@@ -63,7 +63,7 @@ export interface IdentifierDeps {
         headers?: Headers
     ): Promise<Response>;
     pidx: number;
-    manager: KeyManager | null;
+    manager: IdentifierManagerFactory | null;
 }
 
 /**
@@ -225,7 +225,7 @@ export class Identifier {
                 wits: wits,
                 cnfg: [],
                 data: data,
-                version: Versionage,
+                version: Vrsn_1_0,
                 kind: Serials.JSON,
                 code: dcode,
                 intive: false,
@@ -240,7 +240,7 @@ export class Identifier {
                 wits: wits,
                 cnfg: [],
                 data: data,
-                version: Versionage,
+                version: Vrsn_1_0,
                 kind: Serials.JSON,
                 code: dcode,
                 intive: false,

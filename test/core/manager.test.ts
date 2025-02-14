@@ -20,13 +20,13 @@ import { Siger } from '../../src/keri/core/siger';
 import { b } from '../../src/keri/core/core';
 import { Cigar } from '../../src/keri/core/cigar';
 import {
-    Keeper,
-    KeeperParams,
-    KeyManager,
+    IdentifierManager,
+    IdentifierManagerParams,
+    IdentifierManagerFactory,
     Prefixer,
-    RandyKeeper,
+    RandyIdentifierManager,
 } from '../../src';
-import { RandyState, State } from '../../src/keri/core/state';
+import { RandyKeyState, KeyState } from '../../src/keri/core/keyState';
 import { randomUUID } from 'crypto';
 
 describe('RandyCreator', () => {
@@ -709,31 +709,35 @@ describe('Manager', () => {
         const passcode = '0123456789abcdefghijk';
         const salter = new Salter({ raw: b(passcode) });
 
-        const manager = new KeyManager(salter, []);
+        const manager = new IdentifierManagerFactory(salter, []);
 
-        const keeper0 = manager.new(Algos.randy, 0, {}) as RandyKeeper;
+        const keeper0 = manager.new(
+            Algos.randy,
+            0,
+            {}
+        ) as RandyIdentifierManager;
         const [keys] = await keeper0.incept(false);
         const prefixes = new Prefixer({ qb64: keys[0] });
 
         const keeper1 = manager.get({
             prefix: prefixes.qb64,
             name: '',
-            state: {} as State,
-            randy: keeper0.params() as RandyState,
+            state: {} as KeyState,
+            randy: keeper0.params() as RandyKeyState,
             transferable: false,
             windexes: [],
             icp_dt: '2023-12-01T10:05:25.062609+00:00',
         });
 
-        assert(keeper0 instanceof RandyKeeper);
-        assert(keeper1 instanceof RandyKeeper);
+        assert(keeper0 instanceof RandyIdentifierManager);
+        assert(keeper1 instanceof RandyIdentifierManager);
     });
 
     it('Should throw if algo is not supported', async () => {
         const passcode = '0123456789abcdefghijk';
         const salter = new Salter({ raw: b(passcode) });
 
-        const manager = new KeyManager(salter, []);
+        const manager = new IdentifierManagerFactory(salter, []);
 
         expect(() => manager.new(randomUUID() as Algos, 0, {})).toThrow(
             'Unknown algo'
@@ -742,21 +746,21 @@ describe('Manager', () => {
             manager.get({
                 prefix: '',
                 name: '',
-                state: {} as State,
+                state: {} as KeyState,
                 transferable: false,
                 windexes: [],
                 icp_dt: '2023-12-01T10:05:25.062609+00:00',
             })
-        ).toThrow('Algo not allowed yet');
+        ).toThrow('No algo specified');
     });
 
     describe('External Module ', () => {
-        class MockModule implements jest.Mocked<Keeper> {
+        class MockModule implements jest.Mocked<IdentifierManager> {
             #params: Record<string, unknown>;
 
             constructor(
                 public pidx: number,
-                params: KeeperParams
+                params: IdentifierManagerParams
             ) {
                 this.#params = params;
             }
@@ -773,7 +777,7 @@ describe('Manager', () => {
             const passcode = '0123456789abcdefghijk';
             const salter = new Salter({ raw: b(passcode) });
 
-            const manager = new KeyManager(salter, [
+            const manager = new IdentifierManagerFactory(salter, [
                 { module: MockModule, name: 'mock', type: 'mock' },
             ]);
 
@@ -791,7 +795,7 @@ describe('Manager', () => {
             const passcode = '0123456789abcdefghijk';
             const salter = new Salter({ raw: b(passcode) });
 
-            const manager = new KeyManager(salter, []);
+            const manager = new IdentifierManagerFactory(salter, []);
 
             const param = randomUUID();
             expect(() =>
@@ -806,7 +810,7 @@ describe('Manager', () => {
             const passcode = '0123456789abcdefghijk';
             const salter = new Salter({ raw: b(passcode) });
 
-            const manager = new KeyManager(salter, [
+            const manager = new IdentifierManagerFactory(salter, [
                 { module: MockModule, name: 'mock', type: 'mock' },
             ]);
 
@@ -815,7 +819,7 @@ describe('Manager', () => {
             const keeper = manager.get({
                 name: randomUUID(),
                 prefix: '',
-                state: {} as unknown as State,
+                state: {} as unknown as KeyState,
                 windexes: [],
                 extern: {
                     extern_type: 'mock',
@@ -834,7 +838,7 @@ describe('Manager', () => {
             const passcode = '0123456789abcdefghijk';
             const salter = new Salter({ raw: b(passcode) });
 
-            const manager = new KeyManager(salter, []);
+            const manager = new IdentifierManagerFactory(salter, []);
 
             const param = randomUUID();
 
@@ -842,7 +846,7 @@ describe('Manager', () => {
                 manager.get({
                     name: randomUUID(),
                     prefix: '',
-                    state: {} as unknown as State,
+                    state: {} as unknown as KeyState,
                     windexes: [],
                     extern: {
                         extern_type: 'mock',

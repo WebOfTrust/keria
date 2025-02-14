@@ -2,9 +2,9 @@ import { randomNonce } from '../app/coring';
 import { TraitDex } from '../app/habery';
 import {
     Serials,
-    Versionage,
+    Vrsn_1_0,
     Version,
-    Ident,
+    Protocols,
     versify,
     Ilks,
 } from '../core/core';
@@ -31,11 +31,11 @@ namespace vdr {
         nonce = randomNonce(),
         baks = [],
         cnfg = [],
-        version = Versionage,
+        version = Vrsn_1_0,
         kind = Serials.JSON,
         code = MtrDex.Blake3_256,
     }: VDRInceptArgs): Serder {
-        const vs = versify(Ident.KERI, version, kind, 0);
+        const vs = versify(Protocols.KERI, version, kind, 0);
         const isn = 0;
         const ilk = Ilks.vcp;
 

@@ -1,7 +1,14 @@
 import { mnemonicToSeedSync, generateMnemonic } from 'bip39';
-import { Diger, Signer, MtrDex, Keeper, KeeperResult, Algos } from 'signify-ts';
+import {
+    Diger,
+    Signer,
+    MtrDex,
+    IdentifierManager,
+    IdentifierManagerResult,
+    Algos,
+} from 'signify-ts';
 
-export class BIP39Shim implements Keeper {
+export class BIP39Shim implements IdentifierManager {
     private icount: number;
     private ncount: number;
     private dcode: string | undefined;
@@ -49,7 +56,7 @@ export class BIP39Shim implements Keeper {
         return keys;
     }
 
-    async incept(transferable: boolean): Promise<KeeperResult> {
+    async incept(transferable: boolean): Promise<IdentifierManagerResult> {
         const signers = this.keys(this.icount, this.kidx, transferable);
         const verfers = signers.map((signer) => signer.verfer.qb64);
 
@@ -70,7 +77,7 @@ export class BIP39Shim implements Keeper {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         count: any, //number,
         transferable: boolean
-    ): Promise<KeeperResult> {
+    ): Promise<IdentifierManagerResult> {
         const signers = this.keys(
             this.ncount,
             this.kidx + this.icount,

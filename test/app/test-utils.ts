@@ -2,14 +2,18 @@ import {
     Algos,
     Controller,
     CreateIdentiferArgs,
-    KeyManager,
+    IdentifierManagerFactory,
     MtrDex,
     Serials,
     Tier,
-    Versionage,
+    Vrsn_1_0,
     incept,
 } from '../../src';
-import { EstablishmentState, HabState, State } from '../../src/keri/core/state';
+import {
+    EstablishmentState,
+    HabState,
+    KeyState,
+} from '../../src/keri/core/keyState';
 
 export async function createMockIdentifierState(
     name: string,
@@ -17,7 +21,7 @@ export async function createMockIdentifierState(
     kargs: CreateIdentiferArgs = {}
 ): Promise<HabState> {
     const controller = new Controller(bran, Tier.low);
-    const manager = new KeyManager(controller.salter);
+    const manager = new IdentifierManagerFactory(controller.salter);
     const algo = kargs.algo == undefined ? Algos.salty : kargs.algo;
 
     const transferable = kargs.transferable ?? true;
@@ -79,7 +83,7 @@ export async function createMockIdentifierState(
         wits: wits,
         cnfg: [],
         data: data,
-        version: Versionage,
+        version: Vrsn_1_0,
         kind: Serials.JSON,
         code: dcode,
         intive: false,
@@ -110,7 +114,7 @@ export async function createMockIdentifierState(
             et: '',
             c: [],
             di: serder.ked.di ?? '',
-        } as State,
+        } as KeyState,
         icp_dt: '2023-12-01T10:05:25.062609+00:00',
     };
 }

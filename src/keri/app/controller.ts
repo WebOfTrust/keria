@@ -5,7 +5,7 @@ import { Diger } from '../core/diger';
 import { incept, rotate, interact } from '../core/eventing';
 import { Serder } from '../core/serder';
 import { Tholder } from '../core/tholder';
-import { Ilks, b, Serials, Versionage } from '../core/core';
+import { Ilks, b, Serials, Vrsn_1_0 } from '../core/core';
 import { Verfer } from '../core/verfer';
 import { Encrypter } from '../core/encrypter';
 import { Decrypter } from '../core/decrypter';
@@ -89,17 +89,67 @@ export class Agent {
  * signing key represents the Account for the client on the agent
  */
 export class Controller {
+    /*
+    The bran is the combination of the first 21 characters of the passcode passed in prefixed with 'A' and '0A'.
+    Looks like: '0A' + 'A' + 'thisismysecretkeyseed'
+    Or: "0AAthisismysecretkeyseed"
+
+    This is interpreted as encoded Base64URLSafe characters when used as the salt for key generation.
+     */
     private bran: string;
+    /**
+     * The stem is the prefix for the stretched input bytes the controller's cryptographic
+     * key pairs are derived from.
+     */
     public stem: string;
+    /**
+     * The security tier for the identifiers created by this Controller.
+     */
     public tier: Tier;
+    /**
+     * The rotation index used during key generation by this Controller.
+     */
     public ridx: number;
+    /**
+     * The salter is a cryptographic salt used to derive the controller's cryptographic key pairs
+     * and is deterministically derived from the bran and the security tier.
+     */
     public salter: any;
+    /**
+     * The current signing key used to sign requests for this controller.
+     */
     public signer: any;
+    /**
+     * The next signing key of which a digest is committed to in an establishment event (inception or rotation) to become the
+     * signing key after the next rotation.
+     * @private
+     */
     private nsigner: any;
+    /**
+     * Either the current establishment event, inception or rotation, or the interaction event used for delegation approval.
+     */
     public serder: Serder;
+    /**
+     * Current public keys formatted in fully-qualified Base64.
+     * @private
+     */
     private keys: string[];
+    /**
+     * Digests of the next public keys formatted in fully-qualified Base64.
+     */
     public ndigs: string[];
 
+    /**
+     * Creates a Signify Controller starting at key index 0 that generates keys in
+     * memory based on the provided seed, or bran, the tier, and the rotation index.
+     *
+     * The rotation index is used as follows:
+     *
+     * @param bran
+     * @param tier
+     * @param ridx
+     * @param state
+     */
     constructor(
         bran: string,
         tier: Tier,
@@ -110,6 +160,13 @@ export class Controller {
         this.stem = 'signify:controller';
         this.tier = tier;
         this.ridx = ridx;
+        const codes = undefined; // Defines the types of seeds that the SaltyCreator will create. Defaults to undefined.
+        const keyCount = 1; // The number of keys to create. Defaults to 1.
+        const transferable = true; // Whether the keys are transferable. Defaults to true.
+        const code = MtrDex.Ed25519_Seed; // The type  cryptographic seed to create by default when not overiddeen by "codes".
+        const pidx = 0; // The index of this identifier prefix of all managed identifiers created for this SignifyClient Controller. Defaults to 0.
+        const kidx = 0; // The overall starting key index for the first key this rotation set of keys. This is not a local index to this set of keys but an index in the overall set of keys for all keys in this sequence.
+        // Defaults to 0. Multiply rotation index (ridx) times key count to get the overall key index.
 
         this.salter = new Salter({ qb64: this.bran, tier: this.tier });
 
@@ -119,30 +176,34 @@ export class Controller {
             this.stem
         );
 
+        // Creates the first key pair used to sign the inception event.
+        // noinspection UnnecessaryLocalVariableJS
+        const initialKeyIndex = ridx; // will be zero for inception
         this.signer = creator
             .create(
-                undefined,
-                1,
-                MtrDex.Ed25519_Seed,
-                true,
-                0,
-                this.ridx,
-                0,
-                false
+                codes,
+                keyCount,
+                code,
+                transferable,
+                pidx,
+                initialKeyIndex,
+                kidx
             )
-            .signers.pop();
+            .signers.pop(); // assumes only one key pair is created because keyCount is 1
+
+        // Creates the second key pair which a digest of the public key is committed to in the inception event.
+        const nextKeyIndex = ridx + 1;
         this.nsigner = creator
             .create(
-                undefined,
-                1,
-                MtrDex.Ed25519_Seed,
-                true,
-                0,
-                this.ridx + 1,
-                0,
-                false
+                codes,
+                keyCount,
+                code,
+                transferable,
+                pidx,
+                nextKeyIndex,
+                kidx
             )
-            .signers.pop();
+            .signers.pop(); // assumes only one key pair is created because keyCount is 1
         this.keys = [this.signer.verfer.qb64];
         this.ndigs = [
             new Diger({ code: MtrDex.Blake3_256 }, this.nsigner.verfer.qb64b)
@@ -173,7 +234,7 @@ export class Controller {
             dig: this.serder.ked['d'],
             sn: sn,
             data: [anchor],
-            version: Versionage,
+            version: Vrsn_1_0,
             kind: Serials.JSON,
         });
         return [this.signer.sign(this.serder.raw, 0).qb64];

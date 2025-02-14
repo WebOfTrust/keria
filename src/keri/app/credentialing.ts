@@ -5,11 +5,11 @@ import {
     b,
     d,
     Dict,
-    Ident,
+    Protocols,
     Ilks,
     Serials,
     versify,
-    Versionage,
+    Vrsn_1_0,
 } from '../core/core';
 import { Saider } from '../core/saider';
 import { Serder } from '../core/serder';
@@ -20,7 +20,7 @@ import {
     serializeIssExnAttachment,
 } from '../core/utils';
 import { Operation } from './coring';
-import { HabState } from '../core/state';
+import { HabState } from '../core/keyState';
 
 /** Types of credentials */
 export class CredentialTypes {
@@ -332,7 +332,7 @@ export class Credentials {
     }
 
     /**
-     * Issue a credential
+     * Creates a credential in the specified registry to be GRANTed with IPEX to the intended recipient
      */
     async issue(
         name: string,
@@ -357,7 +357,7 @@ export class Credentials {
         });
 
         const [, acdc] = Saider.saidify({
-            v: versify(Ident.ACDC, undefined, Serials.JSON, 0),
+            v: versify(Protocols.ACDC, undefined, Serials.JSON, 0),
             d: '',
             u: args.u,
             i: args.i ?? hab.prefix,
@@ -369,7 +369,7 @@ export class Credentials {
         });
 
         const [, iss] = Saider.saidify({
-            v: versify(Ident.KERI, undefined, Serials.JSON, 0),
+            v: versify(Protocols.KERI, undefined, Serials.JSON, 0),
             t: Ilks.iss,
             d: '',
             i: acdc.d,
@@ -437,7 +437,7 @@ export class Credentials {
         const hab = await this.client.identifiers().get(name);
         const pre: string = hab.prefix;
 
-        const vs = versify(Ident.KERI, undefined, Serials.JSON, 0);
+        const vs = versify(Protocols.KERI, undefined, Serials.JSON, 0);
         const dt =
             datetime ?? new Date().toISOString().replace('Z', '000+00:00');
 
@@ -641,7 +641,7 @@ export class Registries {
                 sn: sn + 1,
                 data: data,
                 dig: dig,
-                version: Versionage,
+                version: Vrsn_1_0,
                 kind: Serials.JSON,
             });
             const keeper = this.client.manager!.get(hab);

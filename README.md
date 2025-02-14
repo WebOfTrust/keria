@@ -81,7 +81,7 @@ The integration tests depends on a local instance of KERIA, vLEI-Server and Witn
 docker compose up --wait
 ```
 
-If successful, it should print someting like this:
+If successful, it should print something like this:
 
 ```bash
 $ docker compose up --wait
