@@ -92,6 +92,6 @@ describe('Serder', () => {
                 n: 'Lenksjö',
             },
         });
-        assert.equal(serder1.ked.v, 'KERI10JSON000139_');
+        assert.equal(serder1.sad.v, 'KERI10JSON000139_');
     });
 });

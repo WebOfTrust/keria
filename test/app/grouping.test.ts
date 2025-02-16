@@ -184,7 +184,7 @@ describe('Grouping', () => {
 
         await groups.join(
             'aid1',
-            { ked: {} },
+            { sad: {} },
             ['sig'],
             'ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose00',
             ['1', '2', '3'],

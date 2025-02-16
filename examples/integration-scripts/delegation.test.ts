@@ -97,7 +97,7 @@ test('delegation', async () => {
             return apprDelRes;
         });
         assert.equal(
-            JSON.stringify(result.serder.ked.a[0]),
+            JSON.stringify(result.serder.sad.a[0]),
             JSON.stringify(anchor)
         );
     });

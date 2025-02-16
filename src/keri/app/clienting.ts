@@ -88,7 +88,7 @@ export class SignifyClient {
     async boot(): Promise<Response> {
         const [evt, sign] = this.controller?.event ?? [];
         const data = {
-            icp: evt.ked,
+            icp: evt.sad,
             sig: sign.qb64,
             stem: this.controller?.stem,
             pidx: 1,
@@ -147,7 +147,7 @@ export class SignifyClient {
                 'commitment to controller AID missing in agent inception event'
             );
         }
-        if (this.controller.serder.ked.s == 0) {
+        if (this.controller.serder.sad.s == 0) {
             await this.approveDelegation();
         }
         this.manager = new IdentifierManagerFactory(
@@ -287,7 +287,7 @@ export class SignifyClient {
         const sigs = this.controller.approveDelegation(this.agent!);
 
         const data = {
-            ixn: this.controller.serder.ked,
+            ixn: this.controller.serder.sad,
             sigs: sigs,
         };
 

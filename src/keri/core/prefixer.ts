@@ -56,27 +56,27 @@ export class Prefixer extends Matter {
         }
     }
 
-    derive(ked: Dict<any>): [Uint8Array, string] {
-        if (ked['i'] != Ilks.icp) {
+    derive(sad: Dict<any>): [Uint8Array, string] {
+        if (sad['i'] != Ilks.icp) {
             throw new Error(
-                `Non-incepting ilk ${ked['i']} for prefix derivation`
+                `Non-incepting ilk ${sad['i']} for prefix derivation`
             );
         }
-        return this._derive!(ked);
+        return this._derive!(sad);
     }
 
-    verify(ked: Dict<any>, prefixed: boolean = false): boolean {
-        if (ked['i'] != Ilks.icp) {
+    verify(sad: Dict<any>, prefixed: boolean = false): boolean {
+        if (sad['i'] != Ilks.icp) {
             throw new Error(
-                `Non-incepting ilk ${ked['i']} for prefix derivation`
+                `Non-incepting ilk ${sad['i']} for prefix derivation`
             );
         }
-        return this._verify!(ked, this.qb64, prefixed);
+        return this._verify!(sad, this.qb64, prefixed);
     }
 
-    static _derive_ed25519N(ked: Dict<any>): [Uint8Array, string] {
+    static _derive_ed25519N(sad: Dict<any>): [Uint8Array, string] {
         let verfer;
-        const keys = ked['k'];
+        const keys = sad['k'];
         if (keys.length != 1) {
             throw new Error(
                 `Basic derivation needs at most 1 key got ${keys.length} keys instead`
@@ -92,21 +92,21 @@ export class Prefixer extends Matter {
             throw new Error(`Mismatch derivation code = ${verfer.code}`);
         }
 
-        const next = 'n' in ked ? ked['n'] : [];
+        const next = 'n' in sad ? sad['n'] : [];
         if (verfer.code == MtrDex.Ed25519N && next.length > 0) {
             throw new Error(
                 `Non-empty nxt = ${next} for non-transferable code = ${verfer.code}`
             );
         }
 
-        const backers = 'b' in ked ? ked['b'] : [];
+        const backers = 'b' in sad ? sad['b'] : [];
         if (verfer.code == MtrDex.Ed25519N && backers.length > 0) {
             throw new Error(
                 `Non-empty b =${backers} for non-transferable code = ${verfer.code}`
             );
         }
 
-        const anchor = 'a' in ked ? ked['a'] : [];
+        const anchor = 'a' in sad ? sad['a'] : [];
         if (verfer.code == MtrDex.Ed25519N && anchor.length > 0) {
             throw new Error(
                 `Non-empty a = ${verfer.code} for non-transferable code = ${verfer.code}`
@@ -116,9 +116,9 @@ export class Prefixer extends Matter {
         return [verfer.raw, verfer.code];
     }
 
-    static _derive_ed25519(ked: Dict<any>): [Uint8Array, string] {
+    static _derive_ed25519(sad: Dict<any>): [Uint8Array, string] {
         let verfer;
-        const keys = ked['k'];
+        const keys = sad['k'];
         if (keys.length != 1) {
             throw new Error(
                 `Basic derivation needs at most 1 key got ${keys.length} keys instead`
@@ -138,16 +138,15 @@ export class Prefixer extends Matter {
         return [verfer.raw, verfer.code];
     }
 
-    static _derive_blake3_256(ked: Dict<any>): [Uint8Array, string] {
-        const kd = ked;
-        const ilk = ked['t'];
+    static _derive_blake3_256(sad: Dict<any>): [Uint8Array, string] {
+        const ilk = sad['t'];
         if (![Ilks.icp, Ilks.dip, Ilks.vcp, Ilks.dip].includes(ilk)) {
             throw new Error(`Invalid ilk = ${ilk} to derive pre.`);
         }
 
-        kd['i'] = ''.padStart(Matter.Sizes.get(MtrDex.Blake3_256)!.fs!, Dummy);
-        kd['d'] = ked['i'];
-        const [raw] = sizeify(ked);
+        sad['i'] = ''.padStart(Matter.Sizes.get(MtrDex.Blake3_256)!.fs!, Dummy);
+        sad['d'] = sad['i'];
+        const [raw] = sizeify(sad);
         const dig = Buffer.from(
             blake3.create({ dkLen: 32 }).update(raw).digest()
         );
@@ -155,12 +154,12 @@ export class Prefixer extends Matter {
     }
 
     _verify_ed25519N(
-        ked: Dict<any>,
+        sad: Dict<any>,
         pre: string,
         prefixed: boolean = false
     ): boolean {
         try {
-            const keys = ked['k'];
+            const keys = sad['k'];
             if (keys.length != 1) {
                 return false;
             }
@@ -169,11 +168,11 @@ export class Prefixer extends Matter {
                 return false;
             }
 
-            if (prefixed && ked['i'] != pre) {
+            if (prefixed && sad['i'] != pre) {
                 return false;
             }
 
-            const next = 'n' in ked ? ked['n'] : [];
+            const next = 'n' in sad ? sad['n'] : [];
             if (next.length > 0) {
                 // must be empty
                 return false;
@@ -186,12 +185,12 @@ export class Prefixer extends Matter {
     }
 
     _verify_ed25519(
-        ked: Dict<any>,
+        sad: Dict<any>,
         pre: string,
         prefixed: boolean = false
     ): boolean {
         try {
-            const keys = ked['k'];
+            const keys = sad['k'];
             if (keys.length != 1) {
                 return false;
             }
@@ -200,7 +199,7 @@ export class Prefixer extends Matter {
                 return false;
             }
 
-            if (prefixed && ked['i'] != pre) {
+            if (prefixed && sad['i'] != pre) {
                 return false;
             }
         } catch (e) {
@@ -211,18 +210,18 @@ export class Prefixer extends Matter {
     }
 
     _verify_blake3_256(
-        ked: Dict<any>,
+        sad: Dict<any>,
         pre: string,
         prefixed: boolean = false
     ): boolean {
         try {
-            const [raw] = Prefixer._derive_blake3_256(ked);
+            const [raw] = Prefixer._derive_blake3_256(sad);
             const crymat = new Matter({ raw: raw, code: MtrDex.Blake3_256 });
             if (crymat.qb64 != pre) {
                 return false;
             }
 
-            if (prefixed && ked['i'] != pre) {
+            if (prefixed && sad['i'] != pre) {
                 return false;
             }
         } catch (e) {

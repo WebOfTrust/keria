@@ -170,7 +170,7 @@ describe('exchange', () => {
         const dt = '2023-08-30T17:22:54.183Z';
 
         let [exn, end] = exchange('/multisig/vcp', {}, 'test', '', dt);
-        assert.deepStrictEqual(exn.ked, {
+        assert.deepStrictEqual(exn.sad, {
             a: {
                 i: '',
             },
@@ -269,7 +269,7 @@ describe('exchange', () => {
             embeds
         );
 
-        assert.deepStrictEqual(exn.ked, {
+        assert.deepStrictEqual(exn.sad, {
             a: {
                 i: '',
             },

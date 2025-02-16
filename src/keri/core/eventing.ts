@@ -198,7 +198,7 @@ export function rotate({
             throw new Error(`Invalid toad = ${_toad} for wit = ${wits}`);
         }
     }
-    const _ked = {
+    const _sad = {
         v: vs,
         t: _ilk,
         d: '',
@@ -229,8 +229,8 @@ export function rotate({
         ba: adds,
         a: data != undefined ? data : [],
     };
-    const [, ked] = Saider.saidify(_ked);
-    return new Serder(ked);
+    const [, sad] = Saider.saidify(_sad);
+    return new Serder(sad);
 }
 
 export function ample(n: number, f?: number, weak = true) {
@@ -358,7 +358,7 @@ export function incept({
     cnfg = cnfg == undefined ? new Array<string>() : cnfg;
     data = data == undefined ? new Array<object>() : data;
 
-    let ked = {
+    let sad = {
         v: vs,
         t: ilk,
         d: '',
@@ -375,7 +375,7 @@ export function incept({
     } as Dict<any>;
 
     if (delpre != undefined) {
-        ked['di'] = delpre;
+        sad['di'] = delpre;
         if (code == undefined) {
             code = MtrDex.Blake3_256;
         }
@@ -390,7 +390,7 @@ export function incept({
             );
         }
     } else {
-        prefixer = new Prefixer({ code: code }, ked);
+        prefixer = new Prefixer({ code: code }, sad);
         if (delpre != undefined) {
             if (!prefixer.digestive) {
                 throw new Error(
@@ -400,14 +400,14 @@ export function incept({
         }
     }
 
-    ked['i'] = prefixer.qb64;
+    sad['i'] = prefixer.qb64;
     if (prefixer.digestive) {
-        ked['d'] = prefixer.qb64;
+        sad['d'] = prefixer.qb64;
     } else {
-        [, ked] = Saider.saidify(ked);
+        [, sad] = Saider.saidify(sad);
     }
 
-    return new Serder(ked);
+    return new Serder(sad);
 }
 
 export function messagize(
@@ -423,7 +423,7 @@ export function messagize(
 
     if (sigers == undefined && wigers == undefined && cigars == undefined) {
         throw new Error(
-            `Missing attached signatures on message = ${serder.ked}.`
+            `Missing attached signatures on message = ${serder.sad}.`
         );
     }
 
@@ -542,7 +542,7 @@ export function interact(args: InteractArgs): Serder {
 
     data = data == undefined ? new Array<any>() : data;
 
-    let ked = {
+    let sad = {
         v: vs,
         t: ilk,
         d: '',
@@ -552,9 +552,9 @@ export function interact(args: InteractArgs): Serder {
         a: data,
     } as Dict<any>;
 
-    [, ked] = Saider.saidify(ked);
+    [, sad] = Saider.saidify(sad);
 
-    return new Serder(ked);
+    return new Serder(sad);
 }
 
 export function reply(

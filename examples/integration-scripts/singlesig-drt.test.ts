@@ -55,7 +55,7 @@ describe('singlesig-drt', () => {
         kargs = {};
         result = await delegate.identifiers().rotate('delegate1', kargs);
         op = await result.op();
-        expect(op.name).toEqual(`delegation.${result.serder.ked.d}`);
+        expect(op.name).toEqual(`delegation.${result.serder.sad.d}`);
 
         // delegator approves delegate
         delegate1 = await delegate.identifiers().get('delegate1');

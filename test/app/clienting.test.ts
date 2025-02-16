@@ -204,7 +204,7 @@ describe('SignifyClient', () => {
                 '"nt":"1","n":["EIFG_uqfr1yN560LoHYHfvPAhxQ5sN6xZZT_E3h7d2tL"],' +
                 '"bt":"0","b":[],"c":[],"a":[]}'
         );
-        assert.deepEqual(client.controller.serder.ked.s, '0');
+        assert.deepEqual(client.controller.serder.sad.s, '0');
 
         const res = await client.boot();
         assert.equal(fetchMock.mock.calls[0]![0]!, boot_url + '/boot');
@@ -236,17 +236,17 @@ describe('SignifyClient', () => {
         );
 
         // validate approve delegation
-        assert.equal(client.controller.serder.ked.s, '1');
-        assert.equal(client.controller.serder.ked.t, 'ixn');
+        assert.equal(client.controller.serder.sad.s, '1');
+        assert.equal(client.controller.serder.sad.t, 'ixn');
         assert.equal(
-            client.controller.serder.ked.a[0].i,
+            client.controller.serder.sad.a[0].i,
             'EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei'
         );
         assert.equal(
-            client.controller.serder.ked.a[0].d,
+            client.controller.serder.sad.a[0].d,
             'EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei'
         );
-        assert.equal(client.controller.serder.ked.a[0].s, '0');
+        assert.equal(client.controller.serder.sad.a[0].s, '0');
 
         const data = client.data;
         assert(data[0], url);

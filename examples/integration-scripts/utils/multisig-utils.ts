@@ -311,7 +311,7 @@ export async function delegateMultisig(
     );
 
     assert.equal(
-        JSON.stringify(delResult.serder.ked.a[0]),
+        JSON.stringify(delResult.serder.sad.a[0]),
         JSON.stringify(anchor)
     );
 

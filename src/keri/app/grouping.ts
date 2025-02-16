@@ -78,7 +78,7 @@ export class Groups {
         const method = 'POST';
         const data = {
             tpc: 'multisig',
-            rot: rot.ked,
+            rot: rot.sad,
             sigs: sigs,
             gid: gid,
             smids: smids,

@@ -118,7 +118,7 @@ test('challenge', async () => {
     };
     const exn = new Serder(verifyResponse.exn);
 
-    await client1.challenges().responded(aid2.i, exn.ked.d);
+    await client1.challenges().responded(aid2.i, exn.sad.d);
     console.log('Alice marked challenge response as accepted');
 
     // Check Bob's challenge in conctats

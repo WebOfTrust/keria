@@ -23,10 +23,10 @@ describe('key event function', () => {
         let keys0 = [signer0.verfer.qb64];
         let serder = incept({ keys: keys0 }); // default nxt is empty so abandoned
         assert.equal(
-            serder.ked['i'],
+            serder.sad['i'],
             'BFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
         );
-        assert.deepStrictEqual(serder.ked['n'], []);
+        assert.deepStrictEqual(serder.sad['n'], []);
         assert.equal(
             serder.raw,
             '{"v":"KERI10JSON0000fd_","t":"icp","d":"EMW0zK3bagYPO6gx3w7Ua90f-I7x5kGIaI4X' +
@@ -34,8 +34,8 @@ describe('key event function', () => {
                 '","k":["BFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"0","n":[],"bt":' +
                 '"0","b":[],"c":[],"a":[]}'
         );
-        let saider = new Saider({ code: MtrDex.Blake3_256 }, serder.ked);
-        assert.equal(saider.verify(serder.ked), true);
+        let saider = new Saider({ code: MtrDex.Blake3_256 }, serder.sad);
+        assert.equal(saider.verify(serder.sad), true);
 
         assert.throws(() => {
             serder = incept({
@@ -67,10 +67,10 @@ describe('key event function', () => {
         keys0 = [signer0.verfer.qb64];
         serder = incept({ keys: keys0 }); // default nxt is empty so abandoned
         assert.equal(
-            serder.ked['i'],
+            serder.sad['i'],
             'DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
         );
-        assert.deepStrictEqual(serder.ked['n'], []);
+        assert.deepStrictEqual(serder.sad['n'], []);
         assert.equal(
             serder.raw,
             '{"v":"KERI10JSON0000fd_","t":"icp","d":"EPLRRJFe2FHdXKVTkSEX4xb4x-YaPFJ2Xds1' +
@@ -78,8 +78,8 @@ describe('key event function', () => {
                 '","k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"0","n":[],"bt":' +
                 '"0","b":[],"c":[],"a":[]}'
         );
-        saider = new Saider({ code: MtrDex.Blake3_256 }, serder.ked);
-        assert.equal(saider.verify(serder.ked), true);
+        saider = new Saider({ code: MtrDex.Blake3_256 }, serder.sad);
+        assert.equal(saider.verify(serder.sad), true);
 
         // (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015\x98Y\xdd\xe8')
         let seed1 = new Uint8Array([
@@ -100,17 +100,17 @@ describe('key event function', () => {
             ndigs: nxt1,
             code: MtrDex.Blake3_256,
         }); // intive false
-        assert.equal(serder0.ked['t'], Ilks.icp);
+        assert.equal(serder0.sad['t'], Ilks.icp);
         assert.equal(
-            serder0.ked['d'],
+            serder0.sad['d'],
             'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'
         );
-        assert.equal(serder0.ked['d'], serder0.ked['i']);
-        assert.equal(serder0.ked['s'], '0');
-        assert.equal(serder0.ked['kt'], '1');
-        assert.equal(serder0.ked['nt'], '1');
-        assert.deepStrictEqual(serder0.ked['n'], nxt1);
-        assert.equal(serder0.ked['bt'], '0'); // hex str
+        assert.equal(serder0.sad['d'], serder0.sad['i']);
+        assert.equal(serder0.sad['s'], '0');
+        assert.equal(serder0.sad['kt'], '1');
+        assert.equal(serder0.sad['nt'], '1');
+        assert.deepStrictEqual(serder0.sad['n'], nxt1);
+        assert.equal(serder0.sad['bt'], '0'); // hex str
         assert.equal(
             serder0.raw,
             '{"v":"KERI10JSON00012b_","t":"icp","d":"EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2' +
@@ -139,17 +139,17 @@ describe('key event function', () => {
             code: MtrDex.Blake3_256,
             intive: true,
         }); // intive true
-        assert.equal(serder0.ked['t'], Ilks.icp);
+        assert.equal(serder0.sad['t'], Ilks.icp);
         assert.equal(
-            serder0.ked['d'],
+            serder0.sad['d'],
             'EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL'
         );
-        assert.equal(serder0.ked['d'], serder0.ked['i']);
-        assert.equal(serder0.ked['s'], '0');
-        assert.equal(serder0.ked['kt'], 1);
-        assert.equal(serder0.ked['nt'], 1);
-        assert.deepStrictEqual(serder0.ked['n'], nxt1);
-        assert.equal(serder0.ked['bt'], 0);
+        assert.equal(serder0.sad['d'], serder0.sad['i']);
+        assert.equal(serder0.sad['s'], '0');
+        assert.equal(serder0.sad['kt'], 1);
+        assert.equal(serder0.sad['nt'], 1);
+        assert.deepStrictEqual(serder0.sad['n'], nxt1);
+        assert.equal(serder0.sad['bt'], 0);
         assert.equal(
             serder0.raw,
             '{"v":"KERI10JSON000125_","t":"icp","d":"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5u' +
@@ -203,12 +203,12 @@ describe('key event function', () => {
         function createRotation(sn: number) {
             return rotate({
                 keys: keys0,
-                pre: serder.ked.i,
-                ndigs: serder.ked.n,
+                pre: serder.sad.i,
+                ndigs: serder.sad.n,
                 sn,
                 isith: 1,
                 nsith: 1,
-            }).ked['s'];
+            }).sad['s'];
         }
 
         assert.equal(createRotation(1), '1');

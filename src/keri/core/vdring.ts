@@ -70,7 +70,7 @@ namespace vdr {
             }
         }
 
-        const ked = {
+        const sad = {
             v: vs,
             t: ilk,
             d: '',
@@ -83,11 +83,11 @@ namespace vdr {
             n: nonce,
         };
 
-        const prefixer = new Prefixer({ code }, ked);
-        ked.i = prefixer.qb64;
-        ked.d = prefixer.qb64;
+        const prefixer = new Prefixer({ code }, sad);
+        sad.i = prefixer.qb64;
+        sad.d = prefixer.qb64;
 
-        return new Serder(ked);
+        return new Serder(sad);
     }
 }
 

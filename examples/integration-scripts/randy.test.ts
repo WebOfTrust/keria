@@ -28,8 +28,8 @@ test('randy', async () => {
     const icp = new signify.Serder(aid);
     assert.equal(icp.verfers.length, 1);
     assert.equal(icp.digers.length, 1);
-    assert.equal(icp.ked['kt'], '1');
-    assert.equal(icp.ked['nt'], '1');
+    assert.equal(icp.sad['kt'], '1');
+    assert.equal(icp.sad['nt'], '1');
 
     let aids = await client1.identifiers().list();
     assert.equal(aids.aids.length, 1);
@@ -41,8 +41,8 @@ test('randy', async () => {
     op = await waitOperation(client1, await icpResult.op());
     let ked = op['response'];
     const ixn = new signify.Serder(ked);
-    assert.equal(ixn.ked['s'], '1');
-    assert.deepEqual([...ixn.ked['a']], [icp.pre]);
+    assert.equal(ixn.sad['s'], '1');
+    assert.deepEqual([...ixn.sad['a']], [icp.pre]);
 
     aids = await client1.identifiers().list();
     assert.equal(aids.aids.length, 1);
@@ -56,7 +56,7 @@ test('randy', async () => {
     op = await waitOperation(client1, await icpResult.op());
     ked = op['response'];
     const rot = new signify.Serder(ked);
-    assert.equal(rot.ked['s'], '2');
+    assert.equal(rot.sad['s'], '2');
     assert.equal(rot.verfers.length, 1);
     assert.equal(rot.digers.length, 1);
     assert.notEqual(rot.verfers[0].qb64, icp.verfers[0].qb64);

@@ -121,7 +121,7 @@ export class Exchanges {
         const method = 'POST';
         const data: any = {
             tpc: topic,
-            exn: exn.ked,
+            exn: exn.sad,
             sigs: sigs,
             atc: atc,
             rec: recipients,
@@ -170,7 +170,7 @@ export function exchange(
     Object.entries(ems).forEach(([key, value]) => {
         const serder = value[0];
         const atc = value[1];
-        e[key] = serder.ked;
+        e[key] = serder.sad;
 
         if (atc == undefined) {
             return;
@@ -202,7 +202,7 @@ export function exchange(
         ...payload,
     };
 
-    const _ked = {
+    const _sad = {
         v: vs,
         t: ilk,
         d: '',
@@ -215,9 +215,9 @@ export function exchange(
         a: a,
         e: e,
     };
-    const [, ked] = Saider.saidify(_ked);
+    const [, sad] = Saider.saidify(_sad);
 
-    const exn = new Serder(ked);
+    const exn = new Serder(sad);
 
     return [exn, b(end)];
 }

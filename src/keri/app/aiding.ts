@@ -251,7 +251,7 @@ export class Identifier {
         const sigs = await keeper!.sign(b(serder.raw));
         const jsondata: any = {
             name: name,
-            icp: serder.ked,
+            icp: serder.sad,
             sigs: sigs,
             proxy: proxy,
             smids:
@@ -313,7 +313,7 @@ export class Identifier {
         const sigs = await keeper.sign(b(serder.raw));
 
         const jsondata: any = {
-            ixn: serder.ked,
+            ixn: serder.sad,
             sigs: sigs,
         };
         jsondata[keeper.algo] = keeper.params();
@@ -397,7 +397,7 @@ export class Identifier {
         const sigs = await keeper.sign(b(serder.raw));
 
         const jsondata: any = {
-            rot: serder.ked,
+            rot: serder.sad,
             sigs: sigs,
             smids:
                 states != undefined
@@ -443,7 +443,7 @@ export class Identifier {
         const sigs = await keeper.sign(b(rpy.raw));
 
         const jsondata = {
-            rpy: rpy.ked,
+            rpy: rpy.sad,
             sigs: sigs,
         };
 

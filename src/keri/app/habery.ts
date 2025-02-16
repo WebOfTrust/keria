@@ -49,7 +49,7 @@ export class Hab {
     }
 
     get pre(): string {
-        return this.serder.ked['i'];
+        return this.serder.sad['i'];
     }
 }
 

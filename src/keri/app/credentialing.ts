@@ -401,7 +401,7 @@ export class Credentials {
         const body = {
             acdc: acdc,
             iss: iss,
-            ixn: anc.ked,
+            ixn: anc.sad,
             sigs,
             [keeper.algo]: keeper.params(),
         };
@@ -494,7 +494,7 @@ export class Credentials {
                 kind: undefined,
             });
             sigs = await keeper.sign(b(serder.raw));
-            ixn = serder.ked;
+            ixn = serder.sad;
         }
 
         const body = {
@@ -650,8 +650,8 @@ export class Registries {
                 hab,
                 name,
                 registryName,
-                regser.ked,
-                serder.ked,
+                regser.sad,
+                serder.sad,
                 sigs
             );
             return new RegistryResult(regser, serder, sigs, res);
@@ -787,7 +787,7 @@ export class Ipex {
         recp: string[]
     ): Promise<any> {
         const body = {
-            exn: exn.ked,
+            exn: exn.sad,
             sigs,
             rec: recp,
         };
@@ -831,7 +831,7 @@ export class Ipex {
         recp: string[]
     ): Promise<any> {
         const body = {
-            exn: exn.ked,
+            exn: exn.sad,
             sigs,
             atc,
             rec: recp,
@@ -875,7 +875,7 @@ export class Ipex {
         recp: string[]
     ): Promise<any> {
         const body = {
-            exn: exn.ked,
+            exn: exn.sad,
             sigs,
             rec: recp,
         };
@@ -943,7 +943,7 @@ export class Ipex {
         recp: string[]
     ): Promise<any> {
         const body = {
-            exn: exn.ked,
+            exn: exn.sad,
             sigs: sigs,
             atc: atc,
             rec: recp,
@@ -988,7 +988,7 @@ export class Ipex {
         recp: string[]
     ): Promise<any> {
         const body = {
-            exn: exn.ked,
+            exn: exn.sad,
             sigs: sigs,
             atc: atc,
             rec: recp,

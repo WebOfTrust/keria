@@ -384,7 +384,7 @@ describe('Ipex', () => {
             datetime: mockCredential.sad.a.dt,
         });
 
-        assert.deepStrictEqual(grant.ked, {
+        assert.deepStrictEqual(grant.sad, {
             v: 'KERI10JSON0004e5_',
             t: 'exn',
             d: 'EPVuNFwXTG56BvNtGjeyxncY-MfZMXOAgEtsmIvktkdb',
@@ -456,7 +456,7 @@ describe('Ipex', () => {
             datetime: mockCredential.sad.a.dt,
         });
 
-        assert.deepStrictEqual(ng.ked, grant.ked);
+        assert.deepStrictEqual(ng.sad, grant.sad);
         assert.deepStrictEqual(ngsigs, gsigs);
         assert.deepStrictEqual(ngend, ngend);
 
@@ -470,12 +470,12 @@ describe('Ipex', () => {
         const [admit, asigs, aend] = await ipex.admit({
             senderName: 'holder',
             message: '',
-            grantSaid: grant.ked.d,
+            grantSaid: grant.sad.d,
             recipient: holder,
             datetime: mockCredential.sad.a.dt,
         });
 
-        assert.deepStrictEqual(admit.ked, {
+        assert.deepStrictEqual(admit.sad, {
             v: 'KERI10JSON000178_',
             t: 'exn',
             d: 'EJrfQsTZhkHC6vDEwkbWISpbBk9HFLO3NuI5uByYw8tH',
@@ -548,7 +548,7 @@ describe('Ipex', () => {
             datetime: mockCredential.sad.a.dt,
         });
 
-        assert.deepStrictEqual(apply.ked, {
+        assert.deepStrictEqual(apply.sad, {
             v: 'KERI10JSON0001aa_',
             t: 'exn',
             d: 'ELjIE5cr_M2r7oUYw2pwcdNY_ZBuEgRlefaP0zSs_bXL',
@@ -586,10 +586,10 @@ describe('Ipex', () => {
             message: 'How about this',
             acdc: new Serder(acdc),
             datetime: mockCredential.sad.a.dt,
-            applySaid: apply.ked.d,
+            applySaid: apply.sad.d,
         });
 
-        assert.deepStrictEqual(offer.ked, {
+        assert.deepStrictEqual(offer.sad, {
             v: 'KERI10JSON000357_',
             t: 'exn',
             d: 'EBkyi_fhfnDWJXi4FW6t_o4F7Oep3PvSZ6E-qT716kfU',
@@ -640,10 +640,10 @@ describe('Ipex', () => {
             recipient: holder,
             message: 'OK!',
             datetime: mockCredential.sad.a.dt,
-            offerSaid: offer.ked.d,
+            offerSaid: offer.sad.d,
         });
 
-        assert.deepStrictEqual(agree.ked, {
+        assert.deepStrictEqual(agree.sad, {
             v: 'KERI10JSON00017b_',
             t: 'exn',
             d: 'EDLk56nlLrPHzhy3-5BHkhBNi-7tWUseWL_83I5QRmZ8',
@@ -680,10 +680,10 @@ describe('Ipex', () => {
             iss: iserder,
             anc,
             datetime: mockCredential.sad.a.dt,
-            agreeSaid: agree.ked.d,
+            agreeSaid: agree.sad.d,
         });
 
-        assert.deepStrictEqual(grant.ked, {
+        assert.deepStrictEqual(grant.sad, {
             v: 'KERI10JSON000511_',
             t: 'exn',
             d: 'ENwwMpAuZ3NaZqqeydm3G18EDZFWuHzeJMfzfwNkb99N',
@@ -753,10 +753,10 @@ describe('Ipex', () => {
             ancAttachment:
                 '-AABAADMtDfNihvCSXJNp1VronVojcPGo--0YZ4Kh6CAnowRnn4Or4FgZQqaqCEv6XVS413qfZoVp8j2uxTTPkItO7ED',
             datetime: mockCredential.sad.a.dt,
-            agreeSaid: agree.ked.d,
+            agreeSaid: agree.sad.d,
         });
 
-        assert.deepStrictEqual(ng.ked, grant.ked);
+        assert.deepStrictEqual(ng.sad, grant.sad);
         assert.deepStrictEqual(ngsigs, gsigs);
         assert.deepStrictEqual(ngend, ngend);
 
@@ -771,11 +771,11 @@ describe('Ipex', () => {
             senderName: 'holder',
             message: '',
             recipient: holder,
-            grantSaid: grant.ked.d,
+            grantSaid: grant.sad.d,
             datetime: mockCredential.sad.a.dt,
         });
 
-        assert.deepStrictEqual(admit.ked, {
+        assert.deepStrictEqual(admit.sad, {
             v: 'KERI10JSON000178_',
             t: 'exn',
             d: 'EPcEK9tPuLOHbLiPm_FETkIVLjHhwuUiZDRDKW6Hh0JF',
@@ -824,7 +824,7 @@ describe('Ipex', () => {
             datetime: mockCredential.sad.a.dt,
         });
 
-        assert.deepStrictEqual(offer.ked, {
+        assert.deepStrictEqual(offer.sad, {
             v: 'KERI10JSON00032a_',
             t: 'exn',
             d: 'EFmPdhVnJIrMZ0b6Nyk-4s2NP1InR3wgvBGcbxl2Cd8i',

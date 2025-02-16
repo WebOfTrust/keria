@@ -228,10 +228,10 @@ export class Controller {
     approveDelegation(_agent: Agent) {
         const seqner = new Seqner({ sn: _agent.sn });
         const anchor = { i: _agent.pre, s: seqner.snh, d: _agent.said };
-        const sn = new CesrNumber({}, undefined, this.serder.ked['s']).num + 1;
+        const sn = new CesrNumber({}, undefined, this.serder.sad['s']).num + 1;
         this.serder = interact({
             pre: this.serder.pre,
-            dig: this.serder.ked['d'],
+            dig: this.serder.sad['d'],
             sn: sn,
             data: [anchor],
             version: Vrsn_1_0,
@@ -265,7 +265,7 @@ export class Controller {
                 wits: [],
             });
         } else {
-            return new Serder({ ked: state.controller['ee'] });
+            return new Serder({ sad: state.controller['ee'] });
         }
     }
 
@@ -324,7 +324,7 @@ export class Controller {
         const rot = rotate({
             pre: this.pre,
             keys: this.keys,
-            dig: this.serder.ked['d'],
+            dig: this.serder.sad['d'],
             isith: ['1', '0'],
             nsith: '1',
             ndigs: this.ndigs,
@@ -417,7 +417,7 @@ export class Controller {
         }
 
         const data = {
-            rot: rot.ked,
+            rot: rot.sad,
             sigs: sigs,
             sxlt: sxlt,
             keys: keys,

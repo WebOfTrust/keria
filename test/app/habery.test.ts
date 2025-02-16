@@ -22,10 +22,10 @@ describe('Habery', () => {
 
         const hab = hby.makeHab('test', {});
 
-        assert.deepStrictEqual(hab.serder.ked['k'], [
+        assert.deepStrictEqual(hab.serder.sad['k'], [
             'DAQVURvW74OJH1Q0C6YLim_tdBYoXABwg6GsAlPaUJXE',
         ]);
-        assert.deepStrictEqual(hab.serder.ked['n'], [
+        assert.deepStrictEqual(hab.serder.sad['n'], [
             'ENBWnU8wNHqq9oqJIimWhxUtNDHReUXtiCwwtjg9zKY0',
         ]);
     });

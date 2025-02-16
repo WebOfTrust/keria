@@ -43,8 +43,8 @@ test('salty', async () => {
         icp.digers[0].qb64,
         'EAORnRtObOgNiOlMolji-KijC_isa3lRDpHCsol79cOc'
     );
-    assert.equal(icp.ked['kt'], '1');
-    assert.equal(icp.ked['nt'], '1');
+    assert.equal(icp.sad['kt'], '1');
+    assert.equal(icp.sad['nt'], '1');
     let aids = await client1.identifiers().list();
     assert.equal(aids.aids.length, 1);
     let aid = aids.aids.pop();
@@ -91,8 +91,8 @@ test('salty', async () => {
         icp2.digers[2].qb64,
         'ELplTAiEKdobFhlf-dh1vUb2iVDW0dYOSzs1dR7fQo60'
     );
-    assert.equal(icp2.ked['kt'], '2');
-    assert.equal(icp2.ked['nt'], '2');
+    assert.equal(icp2.sad['kt'], '2');
+    assert.equal(icp2.sad['nt'], '2');
     aids = await client1.identifiers().list();
     assert.equal(aids.aids.length, 2);
     aid = aids.aids[1];
@@ -123,8 +123,8 @@ test('salty', async () => {
     op = await waitOperation(client1, await icpResult.op());
     let ked = op['response'];
     const rot = new signify.Serder(ked);
-    assert.equal(rot.ked['d'], 'EBQABdRgaxJONrSLcgrdtbASflkvLxJkiDO0H-XmuhGg');
-    assert.equal(rot.ked['s'], '1');
+    assert.equal(rot.sad['d'], 'EBQABdRgaxJONrSLcgrdtbASflkvLxJkiDO0H-XmuhGg');
+    assert.equal(rot.sad['s'], '1');
     assert.equal(rot.verfers.length, 1);
     assert.equal(rot.digers.length, 1);
     assert.equal(
@@ -140,9 +140,9 @@ test('salty', async () => {
     op = await waitOperation(client1, await icpResult.op());
     ked = op['response'];
     const ixn = new signify.Serder(ked);
-    assert.equal(ixn.ked['d'], 'ENsmRAg_oM7Hl1S-GTRMA7s4y760lQMjzl0aqOQ2iTce');
-    assert.equal(ixn.ked['s'], '2');
-    assert.deepEqual([...ixn.ked['a']], [icp.pre]);
+    assert.equal(ixn.sad['d'], 'ENsmRAg_oM7Hl1S-GTRMA7s4y760lQMjzl0aqOQ2iTce');
+    assert.equal(ixn.sad['s'], '2');
+    assert.deepEqual([...ixn.sad['a']], [icp.pre]);
 
     aid = await client1.identifiers().get('aid1');
     const state = aid['state'];
@@ -150,21 +150,21 @@ test('salty', async () => {
     assert.equal(state['s'], '2');
     assert.equal(state['f'], '2');
     assert.equal(state['et'], 'ixn');
-    assert.equal(state['d'], ixn.ked['d']);
-    assert.equal(state['ee']['d'], rot.ked['d']);
+    assert.equal(state['d'], ixn.sad['d']);
+    assert.equal(state['ee']['d'], rot.sad['d']);
 
     const events = client1.keyEvents();
     const log = await events.get(aid['prefix']);
     assert.equal(log.length, 3);
     let serder = new signify.Serder(log[0]['ked']);
     assert.equal(serder.pre, icp.pre);
-    assert.equal(serder.ked['d'], icp.ked['d']);
+    assert.equal(serder.sad['d'], icp.sad['d']);
     serder = new signify.Serder(log[1]['ked']);
     assert.equal(serder.pre, rot.pre);
-    assert.equal(serder.ked['d'], rot.ked['d']);
+    assert.equal(serder.sad['d'], rot.sad['d']);
     serder = new signify.Serder(log[2]['ked']);
     assert.equal(serder.pre, ixn.pre);
-    assert.equal(serder.ked['d'], ixn.ked['d']);
+    assert.equal(serder.sad['d'], ixn.sad['d']);
 
     await assertOperations(client1);
 

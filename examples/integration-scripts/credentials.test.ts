@@ -163,7 +163,7 @@ test('single signature credentials', async () => {
             });
 
         await waitOperation(issuerClient, issResult.op);
-        return issResult.acdc.ked.d as string;
+        return issResult.acdc.sad.d as string;
     });
 
     await step('issuer list credentials', async () => {
@@ -529,7 +529,7 @@ test('single signature credentials', async () => {
                 });
 
             await waitOperation(holderClient, result.op);
-            return result.acdc.ked.d;
+            return result.acdc.sad.d;
         }
     );
 
