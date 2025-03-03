@@ -816,15 +816,17 @@ class CredentialResourceEnd:
            400:
              description: The requested credential was not found
         """
-        reger = req.context.agent.rgy.reger
+        agent = req.context.agent
+        reger = agent.rgy.reger
 
         try:
             creder, _, _, _ = reger.cloneCred(said)
         except kering.MissingEntryError:
             raise falcon.HTTPNotFound(description=f"credential for said {said} not found.")
 
-        saider = coring.Saider(qb64b=said)
+        agent.seeker.unindex(said)
 
+        saider = coring.Saider(qb64b=said)
         if not isinstance(creder.attrib, str) and 'i' in creder.attrib:
             subj = creder.attrib["i"]
             if subj:
