@@ -66,7 +66,7 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
                            '4AAB-a-i.5AACAA-a-LEI',
                            '4AAB-a-i.5AABAA-s.5AACAA-a-LEI']
 
-        # Test that the index tables were correctly ereated
+        # Test that the index tables were correctly created
         assert len(seeker.indexes) == 29
 
         indexes = seeker.generateIndexes(LE_SAID)
@@ -102,14 +102,14 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
                            '4AAB-a-i.5AACAA-a-LEI',
                            '4AAB-a-i.5AABAA-s.5AACAA-a-LEI']
 
-        # Assure that no knew index tables needed to be created
+        # Assure that no new index tables needed to be created
         assert len(seeker.indexes) == 29
 
         # Test with a bad credential SAID
         with pytest.raises(ValueError):
             seeker.index("EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM")
 
-        # test credemtial with "oneOf"
+        # test credential with "oneOf"
         seeker.generateIndexes(said="EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
 
         issuer.createRegistry(issuerHab.pre, name="issuer")
@@ -166,6 +166,31 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
 
         saids = seeker.find({'-i': {'$eq': issuerHab.pre}, '-a-LEI': {'$eq': 'U6452GAE5C4TVRUY9EIX'}}).sort(['-a-LEI'])
         assert list(saids) == ['ELDA-hNidE8nsNOYAg993mOLiYAew_eIgicEiK_ilb9Y']
+
+        # Try to unindex unknown credential
+        with pytest.raises(ValueError):
+            seeker.unindex("EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM")
+
+        # Unindex the last one in prep for deletion from DB
+        seeker.unindex(qvisaid)
+
+        saids = seeker.find({'-a-LEI': "ZUQA6QTJDNYPF3DLP9NH"})
+        assert list(saids) == []
+
+        saids = seeker.find({'-a-LEI': {"$eq": "ZUQA6QTJDNYPF3DLP9NH"}})
+        assert list(saids) == []
+
+        saids = seeker.find({}).sort(['-a-LEI']).skip(45).limit(5)
+        assert list(saids) == ['EI9K4digb0UgEPi0ZT4Rw1DlSSx5NewLpxl4M-XurJMO',
+                               'ELAcuTv3lYs7P6N9uP6Ob2oQ10CWhTLpGWJOht5VPvPT',
+                               'EFl7rgKSxQdEsFomKbeXfSDfGG_9QE0oDzNQ9v8DsJmJ',
+                               'EOP0GO5JXnEq8BbcRHzUOeokxV45efXzyeDzJsV8_aTn']
+
+        saids = seeker.find({'-i': {'$eq': issuerHab.pre}, '-a-LEI': {'$begins': 'Z'}}).sort(['-a-LEI'])
+        assert list(saids) == ['EOP0GO5JXnEq8BbcRHzUOeokxV45efXzyeDzJsV8_aTn']
+
+        saids = seeker.find({'-i': {'$eq': issuerHab.pre}, '-a-LEI': {'$eq': 'ZUQA6QTJDNYPF3DLP9NH'}}).sort(['-a-LEI'])
+        assert list(saids) == []
 
 
 def randomLEI():
