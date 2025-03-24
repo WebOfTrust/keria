@@ -1,5 +1,5 @@
-import { Verfer } from './verfer';
-import { Matter, MatterArgs } from './matter';
+import { Verfer } from './verfer.ts';
+import { Matter, MatterArgs } from './matter.ts';
 
 export class Cigar extends Matter {
     private _verfer: Verfer | undefined;

@@ -1,18 +1,18 @@
-import { Authenticater } from '../core/authing';
-import { HEADER_SIG_TIME } from '../core/httping';
-import { ExternalModule, IdentifierManagerFactory } from '../core/keeping';
-import { Tier } from '../core/salter';
+import { Authenticater } from '../core/authing.ts';
+import { HEADER_SIG_TIME } from '../core/httping.ts';
+import { ExternalModule, IdentifierManagerFactory } from '../core/keeping.ts';
+import { Tier } from '../core/salter.ts';
 
-import { Identifier } from './aiding';
-import { Contacts, Challenges } from './contacting';
-import { Agent, Controller } from './controller';
-import { Oobis, Operations, KeyEvents, KeyStates, Config } from './coring';
-import { Credentials, Ipex, Registries, Schemas } from './credentialing';
-import { Delegations } from './delegating';
-import { Escrows } from './escrowing';
-import { Exchanges } from './exchanging';
-import { Groups } from './grouping';
-import { Notifications } from './notifying';
+import { Identifier } from './aiding.ts';
+import { Contacts, Challenges } from './contacting.ts';
+import { Agent, Controller } from './controller.ts';
+import { Oobis, Operations, KeyEvents, KeyStates, Config } from './coring.ts';
+import { Credentials, Ipex, Registries, Schemas } from './credentialing.ts';
+import { Delegations } from './delegating.ts';
+import { Escrows } from './escrowing.ts';
+import { Exchanges } from './exchanging.ts';
+import { Groups } from './grouping.ts';
+import { Notifications } from './notifying.ts';
 
 const DEFAULT_BOOT_URL = 'http://localhost:3903';
 

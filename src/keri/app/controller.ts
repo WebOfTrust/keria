@@ -1,17 +1,17 @@
-import { SaltyCreator } from '../core/manager';
-import { Salter, Tier } from '../core/salter';
-import { MtrDex } from '../core/matter';
-import { Diger } from '../core/diger';
-import { incept, rotate, interact } from '../core/eventing';
-import { Serder } from '../core/serder';
-import { Tholder } from '../core/tholder';
-import { Ilks, b, Serials, Vrsn_1_0 } from '../core/core';
-import { Verfer } from '../core/verfer';
-import { Encrypter } from '../core/encrypter';
-import { Decrypter } from '../core/decrypter';
-import { Cipher } from '../core/cipher';
-import { Seqner } from '../core/seqner';
-import { CesrNumber } from '../core/number';
+import { SaltyCreator } from '../core/manager.ts';
+import { Salter, Tier } from '../core/salter.ts';
+import { MtrDex } from '../core/matter.ts';
+import { Diger } from '../core/diger.ts';
+import { incept, rotate, interact } from '../core/eventing.ts';
+import { Serder } from '../core/serder.ts';
+import { Tholder } from '../core/tholder.ts';
+import { Ilks, b, Serials, Vrsn_1_0 } from '../core/core.ts';
+import { Verfer } from '../core/verfer.ts';
+import { Encrypter } from '../core/encrypter.ts';
+import { Decrypter } from '../core/decrypter.ts';
+import { Cipher } from '../core/cipher.ts';
+import { Seqner } from '../core/seqner.ts';
+import { CesrNumber } from '../core/number.ts';
 
 /**
  * Agent is a custodial entity that can be used in conjuntion with a local Client to establish the

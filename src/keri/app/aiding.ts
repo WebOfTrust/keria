@@ -1,13 +1,13 @@
-import { Tier } from '../core/salter';
-import { Algos } from '../core/manager';
-import { incept, interact, reply, rotate } from '../core/eventing';
-import { b, Ilks, Serials, Vrsn_1_0 } from '../core/core';
-import { Tholder } from '../core/tholder';
-import { MtrDex } from '../core/matter';
-import { Serder } from '../core/serder';
-import { parseRangeHeaders } from '../core/httping';
-import { IdentifierManagerFactory } from '../core/keeping';
-import { HabState } from '../core/keyState';
+import { Tier } from '../core/salter.ts';
+import { Algos } from '../core/manager.ts';
+import { incept, interact, reply, rotate } from '../core/eventing.ts';
+import { b, Ilks, Serials, Vrsn_1_0 } from '../core/core.ts';
+import { Tholder } from '../core/tholder.ts';
+import { MtrDex } from '../core/matter.ts';
+import { Serder } from '../core/serder.ts';
+import { parseRangeHeaders } from '../core/httping.ts';
+import { IdentifierManagerFactory } from '../core/keeping.ts';
+import { HabState } from '../core/keyState.ts';
 
 /** Arguments required to create an identfier */
 export interface CreateIdentiferArgs {
@@ -278,7 +278,10 @@ export class Identifier {
      * @returns {Promise<EventResult>} A promise to the interaction event result
      */
     async interact(name: string, data?: any): Promise<EventResult> {
-        let { serder, sigs, jsondata } = await this.createInteract(name, data);
+        const { serder, sigs, jsondata } = await this.createInteract(
+            name,
+            data
+        );
 
         const res = await this.client.fetch(
             '/identifiers/' + name + '/events',

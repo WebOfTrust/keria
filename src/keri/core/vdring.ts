@@ -1,5 +1,5 @@
-import { randomNonce } from '../app/coring';
-import { TraitDex } from '../app/habery';
+import { randomNonce } from '../app/coring.ts';
+import { TraitDex } from '../app/habery.ts';
 import {
     Serials,
     Vrsn_1_0,
@@ -7,11 +7,11 @@ import {
     Protocols,
     versify,
     Ilks,
-} from '../core/core';
-import { ample } from './eventing';
-import { MtrDex } from './matter';
-import { Prefixer } from './prefixer';
-import { Serder } from './serder';
+} from '../core/core.ts';
+import { ample } from './eventing.ts';
+import { MtrDex } from './matter.ts';
+import { Prefixer } from './prefixer.ts';
+import { Serder } from './serder.ts';
 
 namespace vdr {
     export interface VDRInceptArgs {

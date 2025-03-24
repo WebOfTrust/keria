@@ -1,7 +1,7 @@
-import { strict as assert } from 'assert';
+import { assert, test } from 'vitest';
 import signify from 'signify-ts';
-import { resolveEnvironment } from './utils/resolve-env';
-import { assertOperations, waitOperation } from './utils/test-util';
+import { resolveEnvironment } from './utils/resolve-env.ts';
+import { assertOperations, waitOperation } from './utils/test-util.ts';
 
 const { url, bootUrl } = resolveEnvironment();
 

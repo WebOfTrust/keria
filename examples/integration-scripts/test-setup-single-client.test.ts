@@ -1,10 +1,11 @@
 import { SignifyClient } from 'signify-ts';
-import { resolveEnvironment } from './utils/resolve-env';
+import { resolveEnvironment } from './utils/resolve-env.ts';
 import {
     assertOperations,
     getOrCreateClients,
     getOrCreateIdentifier,
-} from './utils/test-util';
+} from './utils/test-util.ts';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 let client: SignifyClient;
 let name1_id: string, name1_oobi: string;
@@ -12,18 +13,17 @@ let name1_id: string, name1_oobi: string;
 beforeAll(async () => {
     // Create client with pre-defined secret. Allows working with known identifiers
     [client] = await getOrCreateClients(1, ['0ADF2TpptgqcDE5IQUF1HeTp']);
-});
-beforeAll(async () => {
     [name1_id, name1_oobi] = await getOrCreateIdentifier(client, 'name1');
 });
+
 afterAll(async () => {
     await assertOperations(client);
 });
 
 describe('test-setup-single-client', () => {
     test('step1', async () => {
-        const env = resolveEnvironment();
-        expect(client.controller?.pre).toEqual(
+        assert.equal(
+            client.controller?.pre,
             'EB3UGWwIMq7ppzcQ697ImQIuXlBG5jzh-baSx-YG3-tY'
         );
     });
@@ -31,33 +31,41 @@ describe('test-setup-single-client', () => {
     test('step2', async () => {
         const env = resolveEnvironment();
         const oobi = await client.oobis().get('name1', 'witness');
-        expect(oobi.oobis).toHaveLength(3);
+        assert.strictEqual(oobi.oobis.length, 3);
         switch (env.preset) {
             case 'local':
-                expect(name1_oobi).toEqual(
+                assert.equal(
+                    name1_oobi,
                     `http://127.0.0.1:3902/oobi/${name1_id}/agent/${client.agent?.pre}`
                 );
-                expect(oobi.oobis[0]).toEqual(
+                assert.equal(
+                    oobi.oobis[0],
                     `http://127.0.0.1:5642/oobi/${name1_id}/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha`
                 );
-                expect(oobi.oobis[1]).toEqual(
+                assert.equal(
+                    oobi.oobis[1],
                     `http://127.0.0.1:5643/oobi/${name1_id}/witness/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM`
                 );
-                expect(oobi.oobis[2]).toEqual(
+                assert.equal(
+                    oobi.oobis[2],
                     `http://127.0.0.1:5644/oobi/${name1_id}/witness/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX`
                 );
                 break;
             case 'docker':
-                expect(name1_oobi).toEqual(
+                assert.equal(
+                    name1_oobi,
                     `http://keria:3902/oobi/${name1_id}/agent/${client.agent?.pre}`
                 );
-                expect(oobi.oobis[0]).toEqual(
+                assert.equal(
+                    oobi.oobis[0],
                     `http://witness-demo:5642/oobi/${name1_id}/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha`
                 );
-                expect(oobi.oobis[1]).toEqual(
+                assert.equal(
+                    oobi.oobis[1],
                     `http://witness-demo:5643/oobi/${name1_id}/witness/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM`
                 );
-                expect(oobi.oobis[2]).toEqual(
+                assert.equal(
+                    oobi.oobis[2],
                     `http://witness-demo:5644/oobi/${name1_id}/witness/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX`
                 );
                 break;
@@ -69,7 +77,7 @@ describe('test-setup-single-client', () => {
         const config = await client.config().get();
         switch (env.preset) {
             case 'local':
-                expect(config).toEqual({
+                assert.deepEqual(config, {
                     iurls: [
                         'http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller?name=Wan&tag=witness',
                         'http://127.0.0.1:5643/oobi/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM/controller?name=Wes&tag=witness',
@@ -78,7 +86,7 @@ describe('test-setup-single-client', () => {
                 });
                 break;
             case 'docker':
-                expect(config).toEqual({
+                assert.deepEqual(config, {
                     iurls: [
                         'http://witness-demo:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller',
                         'http://witness-demo:5643/oobi/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM/controller',

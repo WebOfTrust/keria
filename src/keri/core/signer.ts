@@ -1,14 +1,14 @@
-import { EmptyMaterialError } from './kering';
+import { EmptyMaterialError } from './kering.ts';
 
 export {};
 import libsodium from 'libsodium-wrappers-sumo';
-import { Matter } from './matter';
-import { MtrDex } from './matter';
-import { Verfer } from './verfer';
-import { Cigar } from './cigar';
-import { Siger } from './siger';
-import { IdrDex } from './indexer';
-import { Buffer } from 'buffer';
+import { Matter } from './matter.ts';
+import { MtrDex } from './matter.ts';
+import { Verfer } from './verfer.ts';
+import { Cigar } from './cigar.ts';
+import { Siger } from './siger.ts';
+import { IdrDex } from './indexer.ts';
+import { concat } from './core.ts';
 
 /**
  * @description Signer is Matter subclass with method to create signature of serialization
@@ -28,6 +28,7 @@ interface SignerArgs {
 }
 
 export class Signer extends Matter {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
     private readonly _sign: Function;
     private readonly _verfer: Verfer;
 
@@ -98,7 +99,7 @@ export class Signer extends Matter {
     ) {
         const sig = libsodium.crypto_sign_detached(
             ser,
-            Buffer.concat([seed, verfer.raw])
+            concat(seed, verfer.raw)
         );
 
         if (index == null) {

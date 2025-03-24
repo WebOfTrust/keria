@@ -1,6 +1,6 @@
-import { strict as assert } from 'assert';
+import { assert, describe, it } from 'vitest';
 import { fraction } from 'mathjs';
-import { Tholder } from '../../src/keri/core/tholder';
+import { Tholder } from '../../src/keri/core/tholder.ts';
 
 describe('THolder', () => {
     it('should hold thresholds', async () => {
@@ -91,7 +91,7 @@ describe('THolder', () => {
         });
         assert.equal(tholder.weighted, true);
         assert.equal(tholder.size, 7);
-        assert.deepStrictEqual(tholder.sith, [
+        assert.deepStrictEqual<unknown>(tholder.sith, [
             ['1/2', '1/2', '1/2'],
             ['1/3', '1/3', '1/3', '1/3'],
         ]);
@@ -111,7 +111,7 @@ describe('THolder', () => {
         });
         assert.equal(tholder.weighted, true);
         assert.equal(tholder.size, 7);
-        assert.deepStrictEqual(tholder.sith, [
+        assert.deepStrictEqual<unknown>(tholder.sith, [
             ['1/2', '1/2', '1/4', '1/4', '1/4'],
             ['1', '1'],
         ]);
@@ -140,7 +140,7 @@ describe('THolder', () => {
         });
         assert.equal(tholder.weighted, true);
         assert.equal(tholder.size, 7);
-        assert.deepStrictEqual(tholder.sith, [
+        assert.deepStrictEqual<unknown>(tholder.sith, [
             ['1/2', '1/2', '1/4', '1/4', '1/4'],
             ['1', '1'],
         ]);

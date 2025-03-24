@@ -1,5 +1,5 @@
-import { BexDex, Matter, NumDex } from './matter';
-import { CesrNumber } from './number';
+import { BexDex, Matter, NumDex } from './matter.ts';
+import { CesrNumber } from './number.ts';
 import { Fraction, format, sum, fraction } from 'mathjs';
 
 export class Tholder {

@@ -1,6 +1,6 @@
-import { strict as assert } from 'assert';
+import { assert, beforeAll, afterAll, test, expect } from 'vitest';
 import { Ilks, Saider, Serder, SignifyClient } from 'signify-ts';
-import { resolveEnvironment } from './utils/resolve-env';
+import { resolveEnvironment } from './utils/resolve-env.ts';
 import {
     assertNotifications,
     assertOperations,
@@ -11,10 +11,10 @@ import {
     resolveOobi,
     waitForNotifications,
     waitOperation,
-} from './utils/test-util';
-import { retry } from './utils/retry';
-import { randomUUID } from 'crypto';
-import { step } from './utils/test-step';
+} from './utils/test-util.ts';
+import { retry } from './utils/retry.ts';
+import { randomUUID } from 'node:crypto';
+import { step } from './utils/test-step.ts';
 
 const { vleiServerUrl } = resolveEnvironment();
 
@@ -90,7 +90,7 @@ afterAll(async () => {
     );
 });
 
-test('single signature credentials', async () => {
+test('single signature credentials', { timeout: 90000 }, async () => {
     await step('Resolve schema oobis', async () => {
         await Promise.all([
             resolveOobi(issuerClient, QVI_SCHEMA_URL),
@@ -174,44 +174,55 @@ test('single signature credentials', async () => {
         assert.equal(issuerCredentials[0].status.s, '0');
     });
 
+    function assertLength(obj: unknown, length: number) {
+        assert(obj);
+        assert(typeof obj === 'object');
+        assert('length' in obj);
+        assert.strictEqual(obj.length, length);
+    }
     await step('issuer list credentials with filter', async () => {
-        expect(
+        assertLength(
             await issuerClient
                 .credentials()
-                .list({ filter: { '-i': issuerAid.prefix } })
-        ).toHaveLength(1);
+                .list({ filter: { '-i': issuerAid.prefix } }),
+            1
+        );
 
-        expect(
+        assertLength(
             await issuerClient
                 .credentials()
-                .list({ filter: { '-s': QVI_SCHEMA_SAID } })
-        ).toHaveLength(1);
+                .list({ filter: { '-s': QVI_SCHEMA_SAID } }),
+            1
+        );
 
-        expect(
+        assertLength(
             await issuerClient
                 .credentials()
-                .list({ filter: { '-a-i': holderAid.prefix } })
-        ).toHaveLength(1);
+                .list({ filter: { '-a-i': holderAid.prefix } }),
+            1
+        );
 
-        expect(
+        assertLength(
             await issuerClient.credentials().list({
                 filter: {
                     '-i': issuerAid.prefix,
                     '-s': QVI_SCHEMA_SAID,
                     '-a-i': holderAid.prefix,
                 },
-            })
-        ).toHaveLength(1);
+            }),
+            1
+        );
 
-        expect(
+        assertLength(
             await issuerClient.credentials().list({
                 filter: {
                     '-i': randomUUID(),
                     '-s': QVI_SCHEMA_SAID,
                     '-a-i': holderAid.prefix,
                 },
-            })
-        ).toHaveLength(0);
+            }),
+            0
+        );
     });
 
     await step('issuer get credential by id', async () => {
@@ -331,13 +342,13 @@ test('single signature credentials', async () => {
         const apply = await holderClient.exchanges().get(holderApplyNote.a.d);
         applySaid = apply.exn.d;
 
-        let filter: { [x: string]: any } = { '-s': apply.exn.a.s };
+        const filter: { [x: string]: any } = { '-s': apply.exn.a.s };
         for (const key in apply.exn.a.a) {
             filter[`-a-${key}`] = apply.exn.a.a[key];
         }
 
         const matchingCreds = await holderClient.credentials().list({ filter });
-        expect(matchingCreds).toHaveLength(1);
+        assert.strictEqual(matchingCreds.length, 1);
 
         await markAndRemoveNotification(holderClient, holderNotifications[0]);
 
@@ -371,8 +382,8 @@ test('single signature credentials', async () => {
             .get(verifierOfferNote.a.d);
         offerSaid = offer.exn.d;
 
-        expect(offer.exn.p).toBe(applySaid);
-        expect(offer.exn.e.acdc.a.LEI).toBe('5493001KJTIIGC8Y1R17');
+        assert.strictEqual(offer.exn.p, applySaid);
+        assert.strictEqual(offer.exn.e.acdc.a.LEI, '5493001KJTIIGC8Y1R17');
 
         await markAndRemoveNotification(verifierClient, verifierOfferNote);
 
@@ -401,7 +412,7 @@ test('single signature credentials', async () => {
         const agree = await holderClient.exchanges().get(holderAgreeNote.a.d);
         agreeSaid = agree.exn.d;
 
-        expect(agree.exn.p).toBe(offerSaid);
+        assert.strictEqual(agree.exn.p, offerSaid);
 
         await markAndRemoveNotification(holderClient, holderAgreeNote);
 
@@ -440,7 +451,7 @@ test('single signature credentials', async () => {
         assert(verifierGrantNote.a.d);
 
         const grant = await holderClient.exchanges().get(verifierGrantNote.a.d);
-        expect(grant.exn.p).toBe(agreeSaid);
+        assert.strictEqual(grant.exn.p, agreeSaid);
 
         const [admit3, sigs3, aend3] = await verifierClient.ipex().admit({
             senderName: verifierAid.name,
@@ -619,15 +630,12 @@ test('single signature credentials', async () => {
 
     await step('Holder deletes LE credential', async () => {
         await holderClient.credentials().delete(leCredentialId);
-        await assert.rejects(
-            async () => {
-                await holderClient.credentials().get(leCredentialId);
-            },
-            {
-                name: 'Error',
-                message: `HTTP GET /credentials/${leCredentialId} - 404 Not Found - {"title": "404 Not Found", "description": "credential for said ${leCredentialId} not found."}`,
-            }
+        await expect(async () => {
+            await holderClient.credentials().get(leCredentialId);
+        }).rejects.toThrowError(
+            `HTTP GET /credentials/${leCredentialId} - 404 Not Found - {"title": "404 Not Found", "description": "credential for said ${leCredentialId} not found."}`
         );
+
         assert.equal((await holderClient.credentials().list()).length, 1);
     });
-}, 90000);
+});

@@ -1,9 +1,9 @@
-import { Matter } from '../../src/keri/core/matter';
-import { strict as assert } from 'assert';
+import { Matter } from '../../src/keri/core/matter.ts';
+import { assert, describe, it } from 'vitest';
 import { blake3 } from '@noble/hashes/blake3';
 
-import { Diger } from '../../src/keri/core/diger';
-import { MtrDex } from '../../src/keri/core/matter';
+import { Diger } from '../../src/keri/core/diger.ts';
+import { MtrDex } from '../../src/keri/core/matter.ts';
 import { Buffer } from 'buffer';
 
 describe('Diger', () => {

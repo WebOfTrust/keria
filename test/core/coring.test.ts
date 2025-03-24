@@ -1,7 +1,13 @@
 import libsodium from 'libsodium-wrappers-sumo';
-import { b, d, b64ToInt, intToB64, intToB64b } from '../../src/keri/core/core';
-import { strict as assert } from 'assert';
-import { bytesToInt, intToBytes } from '../../src/keri/core/utils';
+import {
+    b,
+    d,
+    b64ToInt,
+    intToB64,
+    intToB64b,
+} from '../../src/keri/core/core.ts';
+import { assert, describe, it } from 'vitest';
+import { bytesToInt, intToBytes } from '../../src/keri/core/utils.ts';
 
 describe('int to b64 and back', () => {
     it('should encode and decode stuff', async () => {

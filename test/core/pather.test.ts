@@ -1,6 +1,6 @@
-import { strict as assert } from 'assert';
-import { Pather } from '../../src/keri/core/pather';
-import { b } from '../../src';
+import { assert, describe, it } from 'vitest';
+import { Pather } from '../../src/keri/core/pather.ts';
+import { b } from '../../src/index.ts';
 
 describe('Pather', () => {
     it('should path-ify stuff (and back again)', () => {

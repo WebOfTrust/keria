@@ -1,13 +1,13 @@
-import { Encrypter } from './encrypter';
-import { Decrypter } from './decrypter';
-import { Salter, Tier } from './salter';
-import { Signer } from './signer';
-import { Verfer } from './verfer';
-import { MtrDex } from './matter';
-import { Diger } from './diger';
-import { Cigar } from './cigar';
-import { Siger } from './siger';
-import { b } from './core';
+import { Encrypter } from './encrypter.ts';
+import { Decrypter } from './decrypter.ts';
+import { Salter, Tier } from './salter.ts';
+import { Signer } from './signer.ts';
+import { Verfer } from './verfer.ts';
+import { MtrDex } from './matter.ts';
+import { Diger } from './diger.ts';
+import { Cigar } from './cigar.ts';
+import { Siger } from './siger.ts';
+import { b } from './core.ts';
 
 /**
  * Kinds of key pair generation algorithms.
@@ -977,7 +977,7 @@ export class Manager {
     }
 
     sign(args: SignArgs) {
-        let {
+        const {
             ser,
             pubs = undefined,
             verfers = undefined,

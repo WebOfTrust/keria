@@ -1,5 +1,5 @@
-import { SignifyClient } from './clienting';
-import { parseRangeHeaders } from '../core/httping';
+import { SignifyClient } from './clienting.ts';
+import { parseRangeHeaders } from '../core/httping.ts';
 
 /**
  * Notifications

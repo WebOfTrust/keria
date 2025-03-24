@@ -1,11 +1,11 @@
 import libsodium from 'libsodium-wrappers-sumo';
-import { Signer } from '../../src/keri/core/signer';
-import { Matter, MtrDex } from '../../src/keri/core/matter';
-import { strict as assert } from 'assert';
-import { Salter } from '../../src/keri/core/salter';
-import { Decrypter } from '../../src/keri/core/decrypter';
-import { Encrypter } from '../../src/keri/core/encrypter';
-import { b } from '../../src/keri/core/core';
+import { Signer } from '../../src/keri/core/signer.ts';
+import { Matter, MtrDex } from '../../src/keri/core/matter.ts';
+import { assert, describe, it } from 'vitest';
+import { Salter } from '../../src/keri/core/salter.ts';
+import { Decrypter } from '../../src/keri/core/decrypter.ts';
+import { Encrypter } from '../../src/keri/core/encrypter.ts';
+import { b } from '../../src/keri/core/core.ts';
 
 describe('Decrypter', () => {
     it('should decrypt stuff', async () => {

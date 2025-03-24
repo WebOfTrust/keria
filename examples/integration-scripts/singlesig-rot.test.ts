@@ -1,3 +1,4 @@
+import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 import { EventResult, RotateIdentifierArgs, SignifyClient } from 'signify-ts';
 import {
     assertOperations,
@@ -5,7 +6,7 @@ import {
     getOrCreateContact,
     getOrCreateIdentifier,
     waitOperation,
-} from './utils/test-util';
+} from './utils/test-util.ts';
 
 let client1: SignifyClient, client2: SignifyClient;
 let name1_id: string, name1_oobi: string;
@@ -34,16 +35,16 @@ interface KeyState {
 
 describe('singlesig-rot', () => {
     test('step1', async () => {
-        expect(name1_id).toEqual(contact1_id);
+        assert.equal(name1_id, contact1_id);
 
         const keystate1 = await client1.keyStates().get(name1_id);
-        expect(keystate1).toHaveLength(1);
+        assert.strictEqual(keystate1.length, 1);
 
         const keystate2 = await client2.keyStates().get(contact1_id);
-        expect(keystate2).toHaveLength(1);
+        assert.strictEqual(keystate2.length, 1);
 
         // local and remote keystate sequence match
-        expect(keystate1[0].s).toEqual(keystate2[0].s);
+        assert.equal(keystate1[0].s, keystate2[0].s);
     });
     test('rot1', async () => {
         // local keystate before rot
@@ -51,8 +52,8 @@ describe('singlesig-rot', () => {
             await client1.keyStates().get(name1_id)
         ).at(0);
         expect(keystate0).not.toBeNull();
-        expect(keystate0.k).toHaveLength(1);
-        expect(keystate0.n).toHaveLength(1);
+        assert.strictEqual(keystate0.k.length, 1);
+        assert.strictEqual(keystate0.n.length, 1);
 
         // rot
         const args: RotateIdentifierArgs = {};
@@ -67,7 +68,7 @@ describe('singlesig-rot', () => {
         ).at(0);
         expect(parseInt(keystate1.s)).toBeGreaterThan(0);
         // sequence has incremented
-        expect(parseInt(keystate1.s)).toEqual(parseInt(keystate0.s) + 1);
+        assert.equal(parseInt(keystate1.s), parseInt(keystate0.s) + 1);
         // current keys changed
         expect(keystate1.k[0]).not.toEqual(keystate0.k[0]);
         // next key hashes changed
@@ -78,7 +79,7 @@ describe('singlesig-rot', () => {
             await client2.keyStates().get(contact1_id)
         ).at(0);
         // remote keystate is one behind
-        expect(parseInt(keystate2.s)).toEqual(parseInt(keystate1.s) - 1);
+        assert.equal(parseInt(keystate2.s), parseInt(keystate1.s) - 1);
 
         // refresh remote keystate
         let op = await client2
@@ -87,8 +88,8 @@ describe('singlesig-rot', () => {
         op = await waitOperation(client2, op);
         const keystate3: KeyState = op.response;
         // local and remote keystate match
-        expect(keystate3.s).toEqual(keystate1.s);
-        expect(keystate3.k[0]).toEqual(keystate1.k[0]);
-        expect(keystate3.n[0]).toEqual(keystate1.n[0]);
+        assert.equal(keystate3.s, keystate1.s);
+        assert.equal(keystate3.k[0], keystate1.k[0]);
+        assert.equal(keystate3.n[0], keystate1.n[0]);
     });
 });

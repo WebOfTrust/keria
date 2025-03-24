@@ -1,6 +1,6 @@
-import { strict as assert } from 'assert';
-import { Bexter } from '../../src/keri/core/bexter';
-import { b, MtrDex } from '../../src';
+import { assert, describe, it } from 'vitest';
+import { Bexter } from '../../src/keri/core/bexter.ts';
+import { b, MtrDex } from '../../src/index.ts';
 
 describe('Bexter', () => {
     it('should bext-ify stuff (and back again)', () => {

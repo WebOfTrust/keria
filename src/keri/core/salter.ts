@@ -1,7 +1,7 @@
-import { Signer } from './signer';
+import { Signer } from './signer.ts';
 
-import { Matter, MtrDex } from './matter';
-import { EmptyMaterialError } from './kering';
+import { Matter, MtrDex } from './matter.ts';
+import { EmptyMaterialError } from './kering.ts';
 import libsodium from 'libsodium-wrappers-sumo';
 
 /**

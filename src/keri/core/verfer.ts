@@ -1,6 +1,6 @@
 export {};
 import libsodium from 'libsodium-wrappers-sumo';
-import { Matter, MatterArgs, MtrDex } from './matter';
+import { Matter, MatterArgs, MtrDex } from './matter.ts';
 import secp256r1 from 'ecdsa-secp256r1';
 
 /**

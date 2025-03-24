@@ -1,6 +1,6 @@
 import { blake3 } from '@noble/hashes/blake3';
+import { Matter, MatterArgs, MtrDex } from './matter.ts';
 import { Buffer } from 'buffer';
-import { Matter, MatterArgs, MtrDex } from './matter';
 
 /**
  * @description : Diger is subset of Matter and is used to verify the digest of serialization
@@ -10,7 +10,10 @@ import { Matter, MatterArgs, MtrDex } from './matter';
  */
 
 export class Diger extends Matter {
-    private readonly _verify: any;
+    private readonly _verify: (
+        a: Uint8Array,
+        b: Uint8Array | Buffer
+    ) => boolean;
 
     // This constructor will assign digest verification function to ._verify
     constructor(
@@ -25,9 +28,7 @@ export class Diger extends Matter {
             }
 
             if (code === MtrDex.Blake3_256) {
-                const dig = Buffer.from(
-                    blake3.create({ dkLen: 32 }).update(ser).digest()
-                );
+                const dig = blake3.create({ dkLen: 32 }).update(ser).digest();
                 super({ raw: dig, code: code });
             } else {
                 throw new Error(`Unsupported code = ${code} for digester.`);
@@ -52,7 +53,11 @@ export class Diger extends Matter {
         return this._verify(ser, this.raw);
     }
 
-    compare(ser: Uint8Array, dig: any = null, diger: Diger | null = null) {
+    compare(
+        ser: Uint8Array,
+        dig: Uint8Array | null = null,
+        diger: Diger | null = null
+    ) {
         if (dig != null) {
             if (dig.toString() == this.qb64) {
                 return true;
@@ -74,10 +79,13 @@ export class Diger extends Matter {
         return diger.verify(ser) && this.verify(ser);
     }
 
-    blake3_256(ser: Uint8Array, dig: any) {
-        const digest = Buffer.from(
-            blake3.create({ dkLen: 32 }).update(ser).digest()
+    blake3_256(ser: Uint8Array, dig: Uint8Array | Buffer) {
+        const digest = blake3.create({ dkLen: 32 }).update(ser).digest();
+        const other = Uint8Array.from(dig);
+
+        return (
+            digest.length == other.length &&
+            digest.toString() === other.toString()
         );
-        return digest.toString() === dig.toString();
     }
 }

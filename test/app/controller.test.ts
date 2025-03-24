@@ -1,10 +1,10 @@
-import { Controller } from '../../src/keri/app/controller';
-import { strict as assert } from 'assert';
+import { Controller } from '../../src/keri/app/controller.ts';
+import { assert, describe, it } from 'vitest';
 import libsodium from 'libsodium-wrappers-sumo';
-import { openManager } from '../../src/keri/core/manager';
-import { Signer } from '../../src/keri/core/signer';
-import { MtrDex } from '../../src/keri/core/matter';
-import { Tier, randomPasscode } from '../../src';
+import { openManager } from '../../src/keri/core/manager.ts';
+import { Signer } from '../../src/keri/core/signer.ts';
+import { MtrDex } from '../../src/keri/core/matter.ts';
+import { Tier, randomPasscode } from '../../src/index.ts';
 
 describe('Controller', () => {
     it('manage account AID signing and agent verification', async () => {

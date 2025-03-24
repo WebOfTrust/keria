@@ -1,9 +1,12 @@
 import libsodium from 'libsodium-wrappers-sumo';
-import { strict as assert } from 'assert';
-import { IdrDex, Indexer } from '../../src/keri/core/indexer';
-import { b, intToB64 } from '../../src/keri/core/core';
+import { assert, describe, it } from 'vitest';
+import { IdrDex, Indexer } from '../../src/keri/core/indexer.ts';
+import { b, intToB64 } from '../../src/keri/core/core.ts';
 import { Buffer } from 'buffer';
-import { decodeBase64Url, encodeBase64Url } from '../../src/keri/core/base64';
+import {
+    decodeBase64Url,
+    encodeBase64Url,
+} from '../../src/keri/core/base64.ts';
 
 describe('Indexer', () => {
     it('should encode and decode dual indexed signatures', async () => {
@@ -219,7 +222,7 @@ describe('Indexer', () => {
         assert.equal(indexer.index, 0);
         assert.equal(indexer.ondex, 0);
         assert.notEqual(indexer.qb64, qsig64);
-        assert.notDeepStrictEqual(indexer.qb64b, qsig64b);
+        assert.notDeepEqual(indexer.qb64b, qsig64b);
 
         indexer = new Indexer({ qb64: qsig64 });
         assert.deepStrictEqual(indexer.raw, sig);

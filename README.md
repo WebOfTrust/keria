@@ -30,22 +30,22 @@ encoded strings for the initial implementation. Support for binary CESR can be a
 
 The code is built using Typescript and running code locally requires a Mac or Linux OS.
 
--   Install [Node.js](https://nodejs.org)
+- Install [Node.js](https://nodejs.org)
 
--   Install dependencies:
+- Install dependencies:
     ```bash
     npm install
     ```
 
 Typescript source files needs to be transpiled before running scripts or integration tests
 
--   Build:
+- Build:
 
     ```bash
     npm run build
     ```
 
--   ready() must be called before library is useable. Example minimum viable client code.
+- ready() must be called before library is useable. Example minimum viable client code.
 
     ```javascript
     import { randomPasscode, ready, SignifyClient, Tier } from 'signify-ts';
@@ -120,16 +120,16 @@ Use the npm script "test:integration" to run all integration tests in sequence:
 npm run test:integration
 ```
 
-Or, use execute `jest` directly to run a specific integration test, for example:
+To execute a specific integration test, you can use:
 
 ```bash
-npx jest examples/integration-scripts/credentials.test.ts
+npm run test:integration -- credentials.test.ts
 ```
 
 It is also possible to run the tests using local instances of vLEI, Keria, and witness network. Set the environment variable `TEST_ENVIRONMENT` to `local`, e.g:
 
 ```
-TEST_ENVIRONMENT=local npx jest examples/integration-scripts/credentials.test.ts
+TEST_ENVIRONMENT=local npm run test:integration credentials.test.ts
 ```
 
 This changes the discovery urls to use `localhost` instead of the hostnames inside the docker network.

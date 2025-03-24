@@ -1,9 +1,9 @@
 {
-    "include": ["src", "types"],
-    "extends": "./tsconfig.node.json",
+    "include": ["src", "types.d.ts"],
+    "extends": "./tsconfig.json",
     "compilerOptions": {
+        "rootDir": "src",
         "outDir": "dist",
-        "declaration": true,
-        "emitDeclarationOnly": true
+        "noEmit": false
     }
 }

@@ -1,11 +1,11 @@
-import { SignifyClient } from './clienting';
-import { b, d, Dict, Protocols, Ilks, Serials, versify } from '../core/core';
-import { Serder } from '../core/serder';
-import { nowUTC } from '../core/utils';
-import { Pather } from '../core/pather';
-import { Counter, CtrDex } from '../core/counter';
-import { Saider } from '../core/saider';
-import { HabState } from '../core/keyState';
+import { SignifyClient } from './clienting.ts';
+import { b, d, Dict, Protocols, Ilks, Serials, versify } from '../core/core.ts';
+import { Serder } from '../core/serder.ts';
+import { nowUTC } from '../core/utils.ts';
+import { Pather } from '../core/pather.ts';
+import { Counter, CtrDex } from '../core/counter.ts';
+import { Saider } from '../core/saider.ts';
+import { HabState } from '../core/keyState.ts';
 
 /**
  * Exchanges

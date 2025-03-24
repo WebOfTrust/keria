@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         os: [macOS-latest, ubuntu-latest]
-        node-version: ['18', '20']
+        node-version: ['18', '20', '22']
 
     steps:
       - name: Checkout repo
@@ -39,12 +39,12 @@ jobs:
       
       - name: Lint
         run: npm run lint
-      
-      - name: Test
-        run: npm test -- --coverage=true
-      
+
       - name: Build
         run: npm run build
+ 
+      - name: Test
+        run: npm test -- --coverage=true
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4

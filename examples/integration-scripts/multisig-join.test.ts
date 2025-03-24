@@ -1,11 +1,14 @@
 import signify, { Serder, SignifyClient } from 'signify-ts';
-import { getOrCreateClient, getOrCreateIdentifier } from './utils/test-setup';
+import {
+    getOrCreateClient,
+    getOrCreateIdentifier,
+} from './utils/test-setup.ts';
 import {
     markNotification,
     waitForNotifications,
     waitOperation,
-} from './utils/test-util';
-import assert from 'assert';
+} from './utils/test-util.ts';
+import { assert, beforeAll, describe, test } from 'vitest';
 
 describe('multisig-join', () => {
     const nameMember1 = 'member1';

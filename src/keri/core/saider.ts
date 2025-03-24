@@ -1,7 +1,7 @@
-import { DigiDex, Matter, MatterArgs, MtrDex } from './matter';
-import { deversify, Dict, Serials } from './core';
-import { EmptyMaterialError } from './kering';
-import { dumps, sizeify } from './serder';
+import { DigiDex, Matter, MatterArgs, MtrDex } from './matter.ts';
+import { deversify, Dict, Serials } from './core.ts';
+import { EmptyMaterialError } from './kering.ts';
+import { dumps, sizeify } from './serder.ts';
 import { Buffer } from 'buffer';
 import { blake3 } from '@noble/hashes/blake3';
 

@@ -1,12 +1,12 @@
-import { Matter } from '../../src/keri/core/matter';
+import { Matter } from '../../src/keri/core/matter.ts';
 
-import { strict as assert } from 'assert';
-import { MtrDex } from '../../src/keri/core/matter';
+import { assert, describe, it } from 'vitest';
+import { MtrDex } from '../../src/keri/core/matter.ts';
 import libsodium from 'libsodium-wrappers-sumo';
-import { Signer } from '../../src/keri/core/signer';
-import { Encrypter } from '../../src/keri/core/encrypter';
-import { Verfer } from '../../src/keri/core/verfer';
-import { d } from '../../src/keri/core/core';
+import { Signer } from '../../src/keri/core/signer.ts';
+import { Encrypter } from '../../src/keri/core/encrypter.ts';
+import { Verfer } from '../../src/keri/core/verfer.ts';
+import { d } from '../../src/keri/core/core.ts';
 
 describe('Encrypter', () => {
     it('should encrypt stuff', async () => {

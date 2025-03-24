@@ -1,4 +1,4 @@
-import { strict as assert } from 'assert';
+import { assert, test } from 'vitest';
 import signify, {
     Saider,
     CredentialSubject,
@@ -8,7 +8,7 @@ import signify, {
     Salter,
     HabState,
 } from 'signify-ts';
-import { resolveEnvironment } from './utils/resolve-env';
+import { resolveEnvironment } from './utils/resolve-env.ts';
 import {
     resolveOobi,
     waitOperation,
@@ -21,7 +21,7 @@ import {
     waitForCredential,
     admitSinglesig,
     waitAndMarkNotification,
-} from './utils/test-util';
+} from './utils/test-util.ts';
 import {
     addEndRoleMultisig,
     admitMultisig,
@@ -30,7 +30,7 @@ import {
     delegateMultisig,
     grantMultisig,
     issueCredentialMultisig,
-} from './utils/multisig-utils';
+} from './utils/multisig-utils.ts';
 
 const { vleiServerUrl, witnessIds } = resolveEnvironment();
 

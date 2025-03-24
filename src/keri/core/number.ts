@@ -1,5 +1,5 @@
-import { Matter, MatterArgs, NumDex } from './matter';
-import { bytesToInt, intToBytes } from './utils';
+import { Matter, MatterArgs, NumDex } from './matter.ts';
+import { bytesToInt, intToBytes } from './utils.ts';
 
 export class CesrNumber extends Matter {
     constructor(

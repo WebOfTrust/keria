@@ -1,6 +1,6 @@
-import { Bexter, Reb64 } from './bexter';
-import { MatterArgs, MtrDex } from './matter';
-import { EmptyMaterialError } from './kering';
+import { Bexter, Reb64 } from './bexter.ts';
+import { MatterArgs, MtrDex } from './matter.ts';
+import { EmptyMaterialError } from './kering.ts';
 
 /*
     Pather is a subclass of Bexter that provides SAD Path language specific functionality

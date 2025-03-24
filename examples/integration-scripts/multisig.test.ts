@@ -1,20 +1,18 @@
-import { strict as assert } from 'assert';
+import { assert, test } from 'vitest';
 import signify, {
     SignifyClient,
     Serder,
     IssueCredentialResult,
 } from 'signify-ts';
-import { resolveEnvironment } from './utils/resolve-env';
+import { resolveEnvironment } from './utils/resolve-env.ts';
 import {
     assertOperations,
     getOrCreateClient,
     getOrCreateIdentifier,
-    markNotification,
     waitAndMarkNotification,
-    waitForNotifications,
     waitOperation,
     warnNotifications,
-} from './utils/test-util';
+} from './utils/test-util.ts';
 
 const { vleiServerUrl } = resolveEnvironment();
 const WITNESS_AIDS = [

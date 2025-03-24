@@ -1,15 +1,15 @@
-import { Signer } from './signer';
-import { Verfer } from './verfer';
+import { Signer } from './signer.ts';
+import { Verfer } from './verfer.ts';
 import {
     desiginput,
     HEADER_SIG_INPUT,
     HEADER_SIG_TIME,
     normalize,
     siginput,
-} from './httping';
-import { Signage, signature, designature } from '../end/ending';
-import { Cigar } from './cigar';
-import { Siger } from './siger';
+} from './httping.ts';
+import { Signage, signature, designature } from '../end/ending.ts';
+import { Cigar } from './cigar.ts';
+import { Siger } from './siger.ts';
 export class Authenticater {
     static DefaultFields = [
         '@method',

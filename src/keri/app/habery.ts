@@ -1,10 +1,10 @@
-import { Algos, Manager } from '../core/manager';
-import { MtrDex } from '../core/matter';
-import { Salter } from '../core/salter';
-import { Verfer } from '../core/verfer';
-import { Diger } from '../core/diger';
-import { incept } from '../core/eventing';
-import { Serder } from '../core/serder';
+import { Algos, Manager } from '../core/manager.ts';
+import { MtrDex } from '../core/matter.ts';
+import { Salter } from '../core/salter.ts';
+import { Verfer } from '../core/verfer.ts';
+import { Diger } from '../core/diger.ts';
+import { incept } from '../core/eventing.ts';
+import { Serder } from '../core/serder.ts';
 
 export class TraitCodex {
     EstOnly: string = 'EO'; // Only allow establishment events

@@ -1,7 +1,7 @@
-import { SignifyClient } from './clienting';
+import { SignifyClient } from './clienting.ts';
 import libsodium from 'libsodium-wrappers-sumo';
-import { Salter } from '../core/salter';
-import { Matter, MtrDex } from '../core/matter';
+import { Salter } from '../core/salter.ts';
+import { Matter, MtrDex } from '../core/matter.ts';
 
 export function randomPasscode(): string {
     const raw = libsodium.randombytes_buf(16);
@@ -168,7 +168,6 @@ export class Operations {
 
         let retries = 0;
 
-        // eslint-disable-next-line no-constant-condition
         while (true) {
             op = await this.get(op.name);
 

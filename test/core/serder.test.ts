@@ -1,11 +1,11 @@
-import { deversify, Ilks, Serials, Version } from '../../src/keri/core/core';
-import { strict as assert } from 'assert';
-import { Salter, Tier } from '../../src/keri/core/salter';
-import { MtrDex } from '../../src/keri/core/matter';
-import { Diger } from '../../src/keri/core/diger';
-import { Serder } from '../../src/keri/core/serder';
+import { deversify, Ilks, Serials, Version } from '../../src/keri/core/core.ts';
+import { assert, describe, it } from 'vitest';
+import { Salter, Tier } from '../../src/keri/core/salter.ts';
+import { MtrDex } from '../../src/keri/core/matter.ts';
+import { Diger } from '../../src/keri/core/diger.ts';
+import { Serder } from '../../src/keri/core/serder.ts';
 import libsodium from 'libsodium-wrappers-sumo';
-import { Prefixer } from '../../src/keri/core/prefixer';
+import { Prefixer } from '../../src/keri/core/prefixer.ts';
 
 describe('deversify', () => {
     it('should parse a KERI event version string', async () => {

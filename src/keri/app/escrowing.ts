@@ -1,4 +1,4 @@
-import { SignifyClient } from './clienting';
+import { SignifyClient } from './clienting.ts';
 
 /**
  * Escrows

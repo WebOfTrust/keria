@@ -17,7 +17,7 @@ export async function step<T>(
         const start = Date.now();
         const response = await fn();
 
-        // Bypassing console.log to avoid the verbose log output from jest
+        // Bypassing console.log to avoid the verbose log output from test runner
         process.stdout.write(
             `Step - ${description} - finished (${Date.now() - start}ms)\n`
         );

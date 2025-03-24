@@ -1,5 +1,5 @@
-import { Matter, MatterArgs, MtrDex } from './matter';
-import { intToBytes, bytesToInt } from './utils';
+import { Matter, MatterArgs, MtrDex } from './matter.ts';
+import { intToBytes, bytesToInt } from './utils.ts';
 /**
  * @description  Seqner: subclass of Matter, cryptographic material, for ordinal numbers
  * such as sequence numbers or first seen ordering numbers.

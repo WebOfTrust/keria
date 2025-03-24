@@ -1,5 +1,5 @@
-import { strict as assert } from 'assert';
-import { CesrNumber } from '../../src/keri/core/number';
+import { assert, describe, it } from 'vitest';
+import { CesrNumber } from '../../src/keri/core/number.ts';
 
 describe('THolder', () => {
     it('should hold thresholds', async () => {

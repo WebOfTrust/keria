@@ -1,3 +1,4 @@
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { CreateIdentiferArgs, SignifyClient } from 'signify-ts';
 import {
     assertOperations,
@@ -5,8 +6,8 @@ import {
     getOrCreateContact,
     getOrCreateIdentifier,
     waitOperation,
-} from './utils/test-util';
-import { resolveEnvironment } from './utils/resolve-env';
+} from './utils/test-util.ts';
+import { resolveEnvironment } from './utils/resolve-env.ts';
 
 let client1: SignifyClient, client2: SignifyClient;
 let name1_id: string, name1_oobi: string;
@@ -34,7 +35,7 @@ describe('singlesig-dip', () => {
         let result = await client2.identifiers().create('delegate1', kargs);
         let op = await result.op();
         let delegate1 = await client2.identifiers().get('delegate1');
-        expect(op.name).toEqual(`delegation.${delegate1.prefix}`);
+        assert.equal(op.name, `delegation.${delegate1.prefix}`);
 
         delegate1 = await client2.identifiers().get('delegate1');
         let seal = {
@@ -55,10 +56,10 @@ describe('singlesig-dip', () => {
         ]);
 
         delegate1 = await client2.identifiers().get('delegate1');
-        expect(delegate1.prefix).toEqual(op.response.i);
+        assert.equal(delegate1.prefix, op.response.i);
 
         // delegate creates identifier with default witness config
-        let env = resolveEnvironment();
+        const env = resolveEnvironment();
         kargs = {
             delpre: name1_id,
             toad: env.witnessIds.length,
@@ -67,7 +68,7 @@ describe('singlesig-dip', () => {
         result = await client2.identifiers().create('delegate2', kargs);
         op = await result.op();
         let delegate2 = await client2.identifiers().get('delegate2');
-        expect(op.name).toEqual(`delegation.${delegate2.prefix}`);
+        assert.equal(op.name, `delegation.${delegate2.prefix}`);
 
         // delegator approves delegate
         delegate2 = await client2.identifiers().get('delegate2');
@@ -90,7 +91,7 @@ describe('singlesig-dip', () => {
 
         // delegate waits for completion
         delegate2 = await client2.identifiers().get('delegate2');
-        expect(delegate2.prefix).toEqual(op.response.i);
+        assert.equal(delegate2.prefix, op.response.i);
 
         // make sure query with seal is idempotent
         op = await client2.keyStates().query(name1_id, undefined, seal);

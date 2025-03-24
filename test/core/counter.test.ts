@@ -1,6 +1,6 @@
-import { Counter, CtrDex } from '../../src/keri/core/counter';
-import { strict as assert } from 'assert';
-import { b, b64ToInt, intToB64 } from '../../src/keri/core/core';
+import { Counter, CtrDex } from '../../src/keri/core/counter.ts';
+import { assert, describe, it } from 'vitest';
+import { b, b64ToInt, intToB64 } from '../../src/keri/core/core.ts';
 
 describe('int to b64 and back', () => {
     it('should encode and decode stuff', async () => {

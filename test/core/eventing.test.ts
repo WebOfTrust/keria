@@ -1,12 +1,12 @@
 import libsodium from 'libsodium-wrappers-sumo';
-import { Signer } from '../../src/keri/core/signer';
-import { strict as assert } from 'assert';
-import { MtrDex } from '../../src/keri/core/matter';
-import { incept, messagize, rotate } from '../../src/keri/core/eventing';
-import { Saider } from '../../src/keri/core/saider';
-import { Diger } from '../../src/keri/core/diger';
-import { b, d, Ilks } from '../../src/keri/core/core';
-import { Siger } from '../../src/keri/core/siger';
+import { Signer } from '../../src/keri/core/signer.ts';
+import { assert, describe, it } from 'vitest';
+import { MtrDex } from '../../src/keri/core/matter.ts';
+import { incept, messagize, rotate } from '../../src/keri/core/eventing.ts';
+import { Saider } from '../../src/keri/core/saider.ts';
+import { Diger } from '../../src/keri/core/diger.ts';
+import { b, d, Ilks } from '../../src/keri/core/core.ts';
+import { Siger } from '../../src/keri/core/siger.ts';
 
 describe('key event function', () => {
     it('incept should create inception events', async () => {

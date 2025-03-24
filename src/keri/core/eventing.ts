@@ -8,17 +8,17 @@ import {
     versify,
     Version,
     Vrsn_1_0,
-} from './core';
-import { Tholder } from './tholder';
-import { CesrNumber } from './number';
-import { Prefixer } from './prefixer';
-import { Serder } from './serder';
-import { MtrDex, NonTransDex } from './matter';
-import { Saider } from './saider';
-import { Siger } from './siger';
-import { Cigar } from './cigar';
-import { Counter, CtrDex } from './counter';
-import { Seqner } from './seqner';
+} from './core.ts';
+import { Tholder } from './tholder.ts';
+import { CesrNumber } from './number.ts';
+import { Prefixer } from './prefixer.ts';
+import { Serder } from './serder.ts';
+import { MtrDex, NonTransDex } from './matter.ts';
+import { Saider } from './saider.ts';
+import { Siger } from './siger.ts';
+import { Cigar } from './cigar.ts';
+import { Counter, CtrDex } from './counter.ts';
+import { Seqner } from './seqner.ts';
 
 const MaxIntThold = 2 ** 32 - 1;
 
@@ -418,8 +418,8 @@ export function messagize(
     cigars?: Array<Cigar>,
     pipelined: boolean = false
 ): Uint8Array {
-    let msg = new Uint8Array(b(serder.raw));
-    let atc = new Uint8Array();
+    let msg: Uint8Array = new Uint8Array(b(serder.raw));
+    let atc: Uint8Array = new Uint8Array();
 
     if (sigers == undefined && wigers == undefined && cigars == undefined) {
         throw new Error(

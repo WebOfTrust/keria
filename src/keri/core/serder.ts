@@ -1,4 +1,4 @@
-import { MtrDex } from './matter';
+import { MtrDex } from './matter.ts';
 import {
     deversify,
     Dict,
@@ -7,10 +7,10 @@ import {
     versify,
     Version,
     Vrsn_1_0,
-} from './core';
-import { Verfer } from './verfer';
-import { Diger } from './diger';
-import { CesrNumber } from './number';
+} from './core.ts';
+import { Verfer } from './verfer.ts';
+import { Diger } from './diger.ts';
+import { CesrNumber } from './number.ts';
 
 export class Serder {
     private _kind: Serials;
@@ -32,7 +32,7 @@ export class Serder {
         kind: Serials = Serials.JSON,
         code: string = MtrDex.Blake3_256
     ) {
-        let [raw, proto, eKind, eSad, version] = this._exhale(sad, kind);
+        const [raw, proto, eKind, eSad, version] = this._exhale(sad, kind);
         this._raw = raw;
         this._sad = eSad;
         this._proto = proto;
@@ -138,7 +138,7 @@ export class Serder {
     }
 }
 
-export function dumps(sad: Object, kind: Serials.JSON): string {
+export function dumps(sad: object, kind: Serials.JSON): string {
     if (kind == Serials.JSON) {
         return JSON.stringify(sad);
     } else {

@@ -1,4 +1,4 @@
-import { strict as assert } from 'assert';
+import { assert, test } from 'vitest';
 import signify from 'signify-ts';
 import {
     assertNotifications,
@@ -12,14 +12,14 @@ import {
     waitAndMarkNotification,
     waitForNotifications,
     waitOperation,
-} from './utils/test-util';
+} from './utils/test-util.ts';
 import {
     acceptMultisigIncept,
     addEndRoleMultisig,
     delegateMultisig,
     startMultisigIncept,
-} from './utils/multisig-utils';
-import { step } from './utils/test-step';
+} from './utils/multisig-utils.ts';
+import { step } from './utils/test-step.ts';
 
 const delegatorGroupName = 'delegator_group';
 const delegateeGroupName = 'delegatee_group';

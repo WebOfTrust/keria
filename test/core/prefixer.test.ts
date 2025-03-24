@@ -5,10 +5,10 @@ import {
     Serials,
     versify,
     Vrsn_1_0,
-} from '../../src/keri/core/core';
-import { MtrDex } from '../../src/keri/core/matter';
-import { Prefixer } from '../../src/keri/core/prefixer';
-import { strict as assert } from 'assert';
+} from '../../src/keri/core/core.ts';
+import { MtrDex } from '../../src/keri/core/matter.ts';
+import { Prefixer } from '../../src/keri/core/prefixer.ts';
+import { assert, describe, it } from 'vitest';
 
 describe('Prefixer', () => {
     it('should create autonomic identifier prefix using derivation as determined by code from ked', async () => {

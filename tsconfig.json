@@ -1,9 +1,19 @@
 {
-    "include": ["src", "types", "test", "examples/integration-scripts"],
+    "include": ["src", "test", "examples/integration-scripts", "types.d.ts"],
     "exclude": ["node_modules", "dist"],
-    "extends": "./tsconfig.node.json",
     "compilerOptions": {
         "noEmit": true,
-        "allowImportingTsExtensions": true
+        "allowImportingTsExtensions": true,
+        "rewriteRelativeImportExtensions": true,
+        "declaration": true,
+        "target": "ES2017",
+        "module": "Node16",
+        "lib": ["dom", "esnext"],
+        "moduleResolution": "node16",
+        "strict": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true
     }
 }

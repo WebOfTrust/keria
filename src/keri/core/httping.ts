@@ -5,13 +5,13 @@ import {
     Item,
     Parameters,
 } from 'structured-headers';
-import { Signer } from './signer';
-import { b } from './core';
-import { Cigar } from './cigar';
-import { nowUTC } from './utils';
-import { Siger } from './siger';
+import { Signer } from './signer.ts';
+import { b } from './core.ts';
+import { Cigar } from './cigar.ts';
+import { nowUTC } from './utils.ts';
+import { Siger } from './siger.ts';
 import { Buffer } from 'buffer';
-import { encodeBase64Url } from './base64';
+import { encodeBase64Url } from './base64.ts';
 
 export const HEADER_SIG_INPUT = normalize('Signature-Input');
 export const HEADER_SIG_TIME = normalize('Signify-Timestamp');

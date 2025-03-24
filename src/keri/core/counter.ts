@@ -1,5 +1,5 @@
-import { Codex, Sizage } from './matter';
-import { b, b64ToInt, d, intToB64 } from './core';
+import { Codex, Sizage } from './matter.ts';
+import { b, b64ToInt, d, intToB64 } from './core.ts';
 
 export interface CounterArgs {
     code?: string;

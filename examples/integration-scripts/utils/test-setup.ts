@@ -6,36 +6,8 @@ import {
     randomPasscode,
     ready,
 } from 'signify-ts';
-import { resolveEnvironment } from './resolve-env';
-import { waitOperation } from './test-util';
-
-/**
- * Connect or boot a number of SignifyClient instances
- * @example
- * <caption>Create two clients with random secrets</caption>
- * let client1: SignifyClient, client2: SignifyClient;
- * beforeAll(async () => {
- *   [client1, client2] = await getOrCreateClients(2);
- * });
- * @example
- * <caption>Launch jest from shell with pre-defined secrets</caption>
- * $ SIGNIFY_SECRETS="0ACqshJKkJ7DDXcaDuwnmI8s,0ABqicvyicXGvIVg6Ih-dngE" npx jest ./tests
- */
-export async function getOrCreateClients(
-    count: number,
-    brans: string[] | undefined = undefined
-): Promise<SignifyClient[]> {
-    const tasks: Promise<SignifyClient>[] = [];
-    const secrets = process.env['SIGNIFY_SECRETS']?.split(',');
-    for (let i = 0; i < count; i++) {
-        tasks.push(
-            getOrCreateClient(brans?.at(i) ?? secrets?.at(i) ?? undefined)
-        );
-    }
-    const clients: SignifyClient[] = await Promise.all(tasks);
-    console.log(`SIGNIFY_SECRETS="${clients.map((i) => i.bran).join(',')}"`);
-    return clients;
-}
+import { resolveEnvironment } from './resolve-env.ts';
+import { waitOperation } from './test-util.ts';
 
 /**
  * Connect or boot a SignifyClient instance

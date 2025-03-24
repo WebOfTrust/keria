@@ -3,11 +3,11 @@ import {
     Serials,
     versify,
     Vrsn_1_0,
-} from '../../src/keri/core/core';
-import { strict as assert } from 'assert';
-import { MtrDex } from '../../src/keri/core/matter';
+} from '../../src/keri/core/core.ts';
+import { assert, describe, it } from 'vitest';
+import { MtrDex } from '../../src/keri/core/matter.ts';
 import libsodium from 'libsodium-wrappers-sumo';
-import { Saider } from '../../src/keri/core/saider';
+import { Saider } from '../../src/keri/core/saider.ts';
 
 describe('Saider', () => {
     it('should create Saidified dicts', async () => {

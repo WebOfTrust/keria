@@ -1,5 +1,5 @@
-import { SignifyClient } from './clienting';
-import { Dict } from '../core/core';
+import { SignifyClient } from './clienting.ts';
+import { Dict } from '../core/core.ts';
 
 /**
  * Groups

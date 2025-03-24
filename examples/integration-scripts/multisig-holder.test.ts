@@ -1,6 +1,6 @@
-import { strict as assert } from 'assert';
+import { assert, test } from 'vitest';
 import signify, { SignifyClient, Operation, CredentialData } from 'signify-ts';
-import { resolveEnvironment } from './utils/resolve-env';
+import { resolveEnvironment } from './utils/resolve-env.ts';
 import {
     assertOperations,
     getOrCreateClient,
@@ -8,11 +8,11 @@ import {
     waitAndMarkNotification,
     waitOperation,
     warnNotifications,
-} from './utils/test-util';
+} from './utils/test-util.ts';
 import {
     acceptMultisigIncept,
     startMultisigIncept,
-} from './utils/multisig-utils';
+} from './utils/multisig-utils.ts';
 
 const { vleiServerUrl } = resolveEnvironment();
 const WITNESS_AIDS = [
@@ -338,13 +338,13 @@ test('multisig', async function run() {
 
     // Holder resolve multisig OOBI
     const oobisRes = await client1.oobis().get('holder', 'agent');
-    let oobiMultisig = oobisRes.oobis[0].split('/agent/')[0];
+    const oobiMultisig = oobisRes.oobis[0].split('/agent/')[0];
 
     op3 = await client3.oobis().resolve(oobiMultisig, 'holder');
     await waitOperation(client3, op3);
     console.log(`Issuer resolved multisig holder OOBI`);
 
-    let holderAid = await client1.identifiers().get('holder');
+    const holderAid = await client1.identifiers().get('holder');
     aid1 = await client1.identifiers().get('member1');
     aid2 = await client2.identifiers().get('member2');
 
@@ -360,14 +360,14 @@ test('multisig', async function run() {
     });
     console.log(`Issuer sent credential grant to holder.`);
 
-    let grantMsgSaid = await waitAndMarkNotification(
+    const grantMsgSaid = await waitAndMarkNotification(
         client1,
         '/exn/ipex/grant'
     );
     console.log(
         `Member1 received /exn/ipex/grant msg with SAID: ${grantMsgSaid} `
     );
-    let exnRes = await client1.exchanges().get(grantMsgSaid);
+    const exnRes = await client1.exchanges().get(grantMsgSaid);
 
     recp = [aid2['state']].map((state) => state['i']);
     op1 = await multisigAdmitCredential(
@@ -382,20 +382,20 @@ test('multisig', async function run() {
         `Member1 admitted credential with SAID : ${exnRes.exn.e.acdc.d}`
     );
 
-    let grantMsgSaid2 = await waitAndMarkNotification(
+    const grantMsgSaid2 = await waitAndMarkNotification(
         client2,
         '/exn/ipex/grant'
     );
     console.log(
         `Member2 received /exn/ipex/grant msg with SAID: ${grantMsgSaid2} `
     );
-    let exnRes2 = await client2.exchanges().get(grantMsgSaid2);
+    const exnRes2 = await client2.exchanges().get(grantMsgSaid2);
 
     assert.equal(grantMsgSaid, grantMsgSaid2);
 
     console.log(`Member2 /exn/ipex/grant msg :  ` + JSON.stringify(exnRes2));
 
-    let recp2 = [aid1['state']].map((state) => state['i']);
+    const recp2 = [aid1['state']].map((state) => state['i']);
     op2 = await multisigAdmitCredential(
         client2,
         'holder',
@@ -507,8 +507,8 @@ async function multisigAdmitCredential(
     issuerPrefix: string,
     recipients: string[]
 ): Promise<Operation> {
-    let mHab = await client.identifiers().get(memberAlias);
-    let gHab = await client.identifiers().get(groupName);
+    const mHab = await client.identifiers().get(memberAlias);
+    const gHab = await client.identifiers().get(groupName);
 
     const [admit, sigs, end] = await client.ipex().admit({
         senderName: groupName,
@@ -518,20 +518,20 @@ async function multisigAdmitCredential(
         datetime: TIME,
     });
 
-    let op = await client
+    const op = await client
         .ipex()
         .submitAdmit(groupName, admit, sigs, end, [issuerPrefix]);
 
-    let mstate = gHab['state'];
-    let seal = [
+    const mstate = gHab['state'];
+    const seal = [
         'SealEvent',
         { i: gHab['prefix'], s: mstate['ee']['s'], d: mstate['ee']['d'] },
     ];
-    let sigers = sigs.map((sig: any) => new signify.Siger({ qb64: sig }));
-    let ims = signify.d(signify.messagize(admit, sigers, seal));
+    const sigers = sigs.map((sig: any) => new signify.Siger({ qb64: sig }));
+    const ims = signify.d(signify.messagize(admit, sigers, seal));
     let atc = ims.substring(admit.size);
     atc += end;
-    let gembeds = {
+    const gembeds = {
         exn: [admit, atc],
     };
 

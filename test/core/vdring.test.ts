@@ -1,6 +1,6 @@
 import libsodium from 'libsodium-wrappers-sumo';
-import { vdr } from '../../src/keri/core/vdring';
-import { strict as assert } from 'assert';
+import { vdr } from '../../src/keri/core/vdring.ts';
+import { assert, describe, it } from 'vitest';
 
 describe('vdr', () => {
     it('should create registry inception events ', async () => {
@@ -31,74 +31,50 @@ describe('vdr', () => {
     it('should fail on NB config with backers', async () => {
         await libsodium.ready;
         const cnfg = ['NB'];
-        assert.throws(
-            () => {
-                vdr.incept({
-                    pre: 'ECJIoBpEcCWMzvquk861dXP8JJZ-vbmJczlDR-NYcE3g',
-                    toad: 0,
-                    nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
-                    cnfg: cnfg,
-                    baks: ['a backer'],
-                });
-            },
-            {
-                name: 'Error',
-                message: '1 backers specified for NB vcp, 0 allowed',
-            }
-        );
+        assert.throws(() => {
+            vdr.incept({
+                pre: 'ECJIoBpEcCWMzvquk861dXP8JJZ-vbmJczlDR-NYcE3g',
+                toad: 0,
+                nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
+                cnfg: cnfg,
+                baks: ['a backer'],
+            });
+        }, '1 backers specified for NB vcp, 0 allowed');
     });
 
     it('should fail with duplicate backers', async () => {
         await libsodium.ready;
-        assert.throws(
-            () => {
-                vdr.incept({
-                    pre: 'ECJIoBpEcCWMzvquk861dXP8JJZ-vbmJczlDR-NYcE3g',
-                    toad: 0,
-                    nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
-                    baks: ['a backer', 'a backer'],
-                });
-            },
-            {
-                name: 'Error',
-                message: 'Invalid baks a backer,a backer has duplicates',
-            }
-        );
+        assert.throws(() => {
+            vdr.incept({
+                pre: 'ECJIoBpEcCWMzvquk861dXP8JJZ-vbmJczlDR-NYcE3g',
+                toad: 0,
+                nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
+                baks: ['a backer', 'a backer'],
+            });
+        }, 'Invalid baks a backer,a backer has duplicates');
     });
 
     it('should fail with invalid toad config for backers', async () => {
         await libsodium.ready;
-        assert.throws(
-            () => {
-                vdr.incept({
-                    pre: 'ECJIoBpEcCWMzvquk861dXP8JJZ-vbmJczlDR-NYcE3g',
-                    toad: 0,
-                    nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
-                    baks: ['a backer'],
-                });
-            },
-            {
-                name: 'Error',
-                message: 'Invalid toad 0 for baks in a backer',
-            }
-        );
+        assert.throws(() => {
+            vdr.incept({
+                pre: 'ECJIoBpEcCWMzvquk861dXP8JJZ-vbmJczlDR-NYcE3g',
+                toad: 0,
+                nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
+                baks: ['a backer'],
+            });
+        }, 'Invalid toad 0 for baks in a backer');
     });
 
     it('should fail with invalid toad for no backers', async () => {
         await libsodium.ready;
-        assert.throws(
-            () => {
-                vdr.incept({
-                    pre: 'ECJIoBpEcCWMzvquk861dXP8JJZ-vbmJczlDR-NYcE3g',
-                    toad: 1,
-                    nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
-                });
-            },
-            {
-                name: 'Error',
-                message: 'Invalid toad 1 for no baks',
-            }
-        );
+        assert.throws(() => {
+            vdr.incept({
+                pre: 'ECJIoBpEcCWMzvquk861dXP8JJZ-vbmJczlDR-NYcE3g',
+                toad: 1,
+                nonce: 'AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s',
+            });
+        }, 'Invalid toad 1 for no baks');
     });
 
     it('should allow optional toad and no backers', async () => {

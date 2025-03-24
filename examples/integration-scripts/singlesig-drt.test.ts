@@ -1,3 +1,4 @@
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { CreateIdentiferArgs, SignifyClient } from 'signify-ts';
 import {
     assertOperations,
@@ -5,7 +6,7 @@ import {
     getOrCreateContact,
     getOrCreateIdentifier,
     waitOperation,
-} from './utils/test-util';
+} from './utils/test-util.ts';
 
 let delegator: SignifyClient, delegate: SignifyClient;
 let name1_id: string, name1_oobi: string;
@@ -33,7 +34,7 @@ describe('singlesig-drt', () => {
         let result = await delegate.identifiers().create('delegate1', kargs);
         let op = await result.op();
         let delegate1 = await delegate.identifiers().get('delegate1');
-        expect(op.name).toEqual(`delegation.${delegate1.prefix}`);
+        assert.equal(op.name, `delegation.${delegate1.prefix}`);
 
         // delegator approves delegate
         let seal = {
@@ -55,7 +56,7 @@ describe('singlesig-drt', () => {
         kargs = {};
         result = await delegate.identifiers().rotate('delegate1', kargs);
         op = await result.op();
-        expect(op.name).toEqual(`delegation.${result.serder.sad.d}`);
+        assert.equal(op.name, `delegation.${result.serder.sad.d}`);
 
         // delegator approves delegate
         delegate1 = await delegate.identifiers().get('delegate1');
@@ -76,7 +77,7 @@ describe('singlesig-drt', () => {
             waitOperation(delegate, op2),
         ]);
 
-        expect(op.response.t).toEqual(`drt`);
-        expect(op.response.s).toEqual(`1`);
+        assert.equal(op.response.t, `drt`);
+        assert.equal(op.response.s, `1`);
     });
 });

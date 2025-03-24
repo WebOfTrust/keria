@@ -1,11 +1,11 @@
-import { strict as assert } from 'assert';
+import { assert, test } from 'vitest';
 import signify, { Serder } from 'signify-ts';
-import { resolveEnvironment } from './utils/resolve-env';
+import { resolveEnvironment } from './utils/resolve-env.ts';
 import {
     assertOperations,
     resolveOobi,
     waitOperation,
-} from './utils/test-util';
+} from './utils/test-util.ts';
 
 const { url, bootUrl } = resolveEnvironment();
 
@@ -98,8 +98,9 @@ test('challenge', async () => {
     // List Client 1 contacts
     let contacts1 = await client1.contacts().list();
     let bobContact = contacts1.find((contact) => contact.alias === 'bob');
-    expect(bobContact?.alias).toEqual('bob');
-    expect(bobContact?.challenges).toHaveLength(0);
+    assert.equal(bobContact?.alias, 'bob');
+    assert(Array.isArray(bobContact?.challenges));
+    assert.strictEqual(bobContact.challenges.length, 0);
 
     // Bob responds to Alice challenge
     await client2.challenges().respond('bob', aid1.i, challenge1_small.words);
@@ -126,7 +127,7 @@ test('challenge', async () => {
     bobContact = contacts1.find((contact) => contact.alias === 'bob');
 
     assert(Array.isArray(bobContact?.challenges));
-    expect(bobContact?.challenges[0].authenticated).toBe(true);
+    assert.strictEqual(bobContact?.challenges[0].authenticated, true);
 
     await assertOperations(client1, client2);
 }, 30000);

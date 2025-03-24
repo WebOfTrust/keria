@@ -8,10 +8,11 @@ import signify, {
     SignifyClient,
     Tier,
 } from 'signify-ts';
-import { RetryOptions, retry } from './retry';
-import { HabState } from '../../../src/keri/core/keyState';
+import { RetryOptions, retry } from './retry.ts';
+import { HabState } from '../../../src/keri/core/keyState.ts';
 import assert from 'assert';
-import { resolveEnvironment } from './resolve-env';
+import { resolveEnvironment } from './resolve-env.ts';
+import { expect } from 'vitest';
 
 export interface Aid {
     name: string;
@@ -64,7 +65,7 @@ export async function assertOperations(
 ): Promise<void> {
     for (const client of clients) {
         const operations = await client.operations().list();
-        expect(operations).toHaveLength(0);
+        assert.strictEqual(operations.length, 0);
     }
 }
 
@@ -80,7 +81,7 @@ export async function assertNotifications(
     for (const client of clients) {
         const res = await client.notifications().list();
         const notes = res.notes.filter((i: { r: boolean }) => i.r === false);
-        expect(notes).toHaveLength(0);
+        assert.strictEqual(notes.length, 0);
     }
 }
 
@@ -197,8 +198,8 @@ export async function getOrCreateClient(
  *   [client1, client2] = await getOrCreateClients(2);
  * });
  * @example
- * <caption>Launch jest from shell with pre-defined secrets</caption>
- * $ SIGNIFY_SECRETS="0ACqshJKkJ7DDXcaDuwnmI8s,0ABqicvyicXGvIVg6Ih-dngE" npx jest ./tests
+ * <caption>Launch test from shell with pre-defined secrets</caption>
+ * $ SIGNIFY_SECRETS="0ACqshJKkJ7DDXcaDuwnmI8s,0ABqicvyicXGvIVg6Ih-dngE" npm run test:integration
  */
 export async function getOrCreateClients(
     count: number,

@@ -1,5 +1,5 @@
-import { Matter, MatterArgs, MtrDex } from './matter';
-import { Decrypter } from './decrypter';
+import { Matter, MatterArgs, MtrDex } from './matter.ts';
+import { Decrypter } from './decrypter.ts';
 
 export class Cipher extends Matter {
     constructor({ raw, code, qb64, qb64b, qb2 }: MatterArgs) {

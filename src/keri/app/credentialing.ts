@@ -1,6 +1,6 @@
-import { SignifyClient } from './clienting';
-import { interact, messagize } from '../core/eventing';
-import { vdr } from '../core/vdring';
+import { SignifyClient } from './clienting.ts';
+import { interact, messagize } from '../core/eventing.ts';
+import { vdr } from '../core/vdring.ts';
 import {
     b,
     d,
@@ -10,17 +10,17 @@ import {
     Serials,
     versify,
     Vrsn_1_0,
-} from '../core/core';
-import { Saider } from '../core/saider';
-import { Serder } from '../core/serder';
-import { Siger } from '../core/siger';
-import { TraitDex } from './habery';
+} from '../core/core.ts';
+import { Saider } from '../core/saider.ts';
+import { Serder } from '../core/serder.ts';
+import { Siger } from '../core/siger.ts';
+import { TraitDex } from './habery.ts';
 import {
     serializeACDCAttachment,
     serializeIssExnAttachment,
-} from '../core/utils';
-import { Operation } from './coring';
-import { HabState } from '../core/keyState';
+} from '../core/utils.ts';
+import { Operation } from './coring.ts';
+import { HabState } from '../core/keyState.ts';
 
 /** Types of credentials */
 export class CredentialTypes {

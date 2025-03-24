@@ -1,13 +1,13 @@
-import { strict as assert } from 'assert';
+import { assert, describe, it, vitest } from 'vitest';
 import libsodium from 'libsodium-wrappers-sumo';
-import { Salter } from '../../src/keri/core/salter';
-import { b } from '../../src/keri/core/core';
+import { Salter } from '../../src/keri/core/salter.ts';
+import { b } from '../../src/keri/core/core.ts';
 import {
     siginput,
     desiginput,
     SiginputArgs,
-} from '../../src/keri/core/httping';
-import * as utilApi from '../../src/keri/core/utils';
+} from '../../src/keri/core/httping.ts';
+import * as utilApi from '../../src/keri/core/utils.ts';
 
 describe('siginput', () => {
     it('create valid Signature-Input header with signature', async () => {
@@ -26,9 +26,9 @@ describe('siginput', () => {
             ],
             ['Signify-Timestamp', '2022-09-24T00:05:48.196795+00:00'],
         ]);
-        jest.spyOn(utilApi, 'nowUTC').mockReturnValue(
-            new Date('2021-01-01T00:00:00.000000+00:00')
-        );
+        vitest
+            .spyOn(utilApi, 'nowUTC')
+            .mockReturnValue(new Date('2021-01-01T00:00:00.000000+00:00'));
 
         const [header, sig] = siginput(signer, {
             name: 'sig0',

@@ -1,10 +1,10 @@
 import libsodium from 'libsodium-wrappers-sumo';
 
-import { Matter, MatterArgs, MtrDex } from './matter';
-import { Verfer } from './verfer';
-import { Signer } from './signer';
-import { Cipher } from './cipher';
-import { arrayEquals } from './utils';
+import { Matter, MatterArgs, MtrDex } from './matter.ts';
+import { Verfer } from './verfer.ts';
+import { Signer } from './signer.ts';
+import { Cipher } from './cipher.ts';
+import { arrayEquals } from './utils.ts';
 
 export class Encrypter extends Matter {
     private _encrypt: any;

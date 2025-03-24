@@ -1,7 +1,7 @@
-import { strict as assert } from 'assert';
+import { assert, describe, it } from 'vitest';
 import libsodium from 'libsodium-wrappers-sumo';
 
-import { Salter } from '../../src/keri/core/salter';
+import { Salter } from '../../src/keri/core/salter.ts';
 
 describe('Salter', () => {
     it('should generate salts', async () => {

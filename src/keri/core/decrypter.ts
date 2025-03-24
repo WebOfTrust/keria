@@ -1,10 +1,10 @@
 import libsodium from 'libsodium-wrappers-sumo';
 
-import { Matter, MatterArgs, MtrDex } from './matter';
-import { Signer } from './signer';
-import { Cipher } from './cipher';
-import { EmptyMaterialError } from './kering';
-import { Salter } from './salter';
+import { Matter, MatterArgs, MtrDex } from './matter.ts';
+import { Signer } from './signer.ts';
+import { Cipher } from './cipher.ts';
+import { EmptyMaterialError } from './kering.ts';
+import { Salter } from './salter.ts';
 
 export class Decrypter extends Matter {
     private readonly _decrypt: any;

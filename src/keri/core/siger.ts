@@ -1,5 +1,5 @@
-import { IdxSigDex, Indexer, IndexerArgs } from './indexer';
-import { Verfer } from './verfer';
+import { IdxSigDex, Indexer, IndexerArgs } from './indexer.ts';
+import { Verfer } from './verfer.ts';
 
 /**
    Siger is subclass of Indexer, indexed signature material,

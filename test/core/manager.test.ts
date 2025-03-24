@@ -6,28 +6,28 @@ import {
     RandyCreator,
     riKey,
     SaltyCreator,
-} from '../../src/keri/core/manager';
-import { strict as assert } from 'assert';
-import { MtrDex } from '../../src/keri/core/matter';
-import { Salter, Tier } from '../../src/keri/core/salter';
-import { Signer } from '../../src/keri/core/signer';
-import { Encrypter } from '../../src/keri/core/encrypter';
-import { Decrypter } from '../../src/keri/core/decrypter';
-import { Cipher } from '../../src/keri/core/cipher';
-import { Verfer } from '../../src/keri/core/verfer';
-import { Diger } from '../../src/keri/core/diger';
-import { Siger } from '../../src/keri/core/siger';
-import { b } from '../../src/keri/core/core';
-import { Cigar } from '../../src/keri/core/cigar';
+} from '../../src/keri/core/manager.ts';
+import { assert, describe, it, expect, vitest, Mocked } from 'vitest';
+import { MtrDex } from '../../src/keri/core/matter.ts';
+import { Salter, Tier } from '../../src/keri/core/salter.ts';
+import { Signer } from '../../src/keri/core/signer.ts';
+import { Encrypter } from '../../src/keri/core/encrypter.ts';
+import { Decrypter } from '../../src/keri/core/decrypter.ts';
+import { Cipher } from '../../src/keri/core/cipher.ts';
+import { Verfer } from '../../src/keri/core/verfer.ts';
+import { Diger } from '../../src/keri/core/diger.ts';
+import { Siger } from '../../src/keri/core/siger.ts';
+import { b } from '../../src/keri/core/core.ts';
+import { Cigar } from '../../src/keri/core/cigar.ts';
 import {
     IdentifierManager,
     IdentifierManagerParams,
     IdentifierManagerFactory,
     Prefixer,
     RandyIdentifierManager,
-} from '../../src';
-import { RandyKeyState, KeyState } from '../../src/keri/core/keyState';
-import { randomUUID } from 'crypto';
+} from '../../src/index.ts';
+import { RandyKeyState, KeyState } from '../../src/keri/core/keyState.ts';
+import { randomUUID } from 'node:crypto';
 
 describe('RandyCreator', () => {
     it('should create sets of random signers', async () => {
@@ -755,7 +755,7 @@ describe('Manager', () => {
     });
 
     describe('External Module ', () => {
-        class MockModule implements jest.Mocked<IdentifierManager> {
+        class MockModule implements Mocked<IdentifierManager> {
             #params: Record<string, unknown>;
 
             constructor(
@@ -766,11 +766,11 @@ describe('Manager', () => {
             }
 
             signers: Signer[] = [];
-            sign = jest.fn();
+            sign = vitest.fn();
             algo: Algos = Algos.extern;
-            incept = jest.fn();
-            rotate = jest.fn();
-            params = jest.fn(() => this.#params);
+            incept = vitest.fn();
+            rotate = vitest.fn();
+            params = vitest.fn(() => this.#params);
         }
 
         it('Should support creating external keeper module', async () => {

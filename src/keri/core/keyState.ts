@@ -1,5 +1,5 @@
-import { Algos } from './manager';
-import { Tier } from './salter';
+import { Algos } from './manager.ts';
+import { Tier } from './salter.ts';
 
 export interface KeyState {
     vn: [number, number];
@@ -29,6 +29,7 @@ export interface EstablishmentState {
 /**
  * Marker interface for state configuring an IdentifierManager.
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface IdentifierManagerState {}
 
 /**

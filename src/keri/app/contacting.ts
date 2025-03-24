@@ -1,5 +1,5 @@
-import { SignifyClient } from './clienting';
-import { Operation } from './coring';
+import { SignifyClient } from './clienting.ts';
+import { Operation } from './coring.ts';
 
 export interface Contact {
     alias: string;

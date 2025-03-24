@@ -1,14 +1,14 @@
-import { strict as assert } from 'assert';
+import { assert, test } from 'vitest';
 import signify from 'signify-ts';
-import { resolveEnvironment } from './utils/resolve-env';
+import { resolveEnvironment } from './utils/resolve-env.ts';
 import {
     assertOperations,
     getOrCreateContact,
     resolveOobi,
     waitOperation,
-} from './utils/test-util';
-import { retry } from './utils/retry';
-import { step } from './utils/test-step';
+} from './utils/test-util.ts';
+import { retry } from './utils/retry.ts';
+import { step } from './utils/test-step.ts';
 
 const { url, bootUrl } = resolveEnvironment();
 
@@ -124,5 +124,5 @@ test('delegation', async () => {
         oobis.oobis[0].split('/agent/')[0]
     );
 
-    expect(contactId).toEqual(aid2.prefix);
+    assert.equal(contactId, aid2.prefix);
 }, 600000);

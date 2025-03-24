@@ -1,13 +1,12 @@
-import { strict as assert } from 'assert';
-import { Saider, Salter, Serder, SignifyClient } from 'signify-ts';
-import { resolveEnvironment } from './utils/resolve-env';
+import { assert, test } from 'vitest';
+import { Saider, Serder, SignifyClient } from 'signify-ts';
+import { resolveEnvironment } from './utils/resolve-env.ts';
 import {
     Aid,
     assertOperations,
     createAid,
     getOrCreateClients,
     getOrCreateContact,
-    getOrCreateIdentifier,
     getOrIssueCredential,
     getReceivedCredential,
     markAndRemoveNotification,
@@ -15,8 +14,8 @@ import {
     waitForNotifications,
     waitOperation,
     warnNotifications,
-} from './utils/test-util';
-import { retry } from './utils/retry';
+} from './utils/test-util.ts';
+import { retry } from './utils/retry.ts';
 
 const { vleiServerUrl } = resolveEnvironment();
 

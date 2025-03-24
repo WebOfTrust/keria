@@ -1,5 +1,5 @@
-import { Siger } from '../core/siger';
-import { Cigar } from '../core/cigar';
+import { Siger } from '../core/siger.ts';
+import { Cigar } from '../core/cigar.ts';
 
 export const FALSY = [false, 0, '?0', 'no', 'false', 'False', 'off'];
 export const TRUTHY = [true, 1, '?1', 'yes', 'true', 'True', 'on'];

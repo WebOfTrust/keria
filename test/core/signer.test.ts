@@ -1,9 +1,9 @@
-import { strict as assert } from 'assert';
+import { assert, describe, it } from 'vitest';
 import libsodium from 'libsodium-wrappers-sumo';
 
-import { Signer } from '../../src';
-import { Matter, MtrDex } from '../../src';
-import { b } from '../../src';
+import { Signer } from '../../src/index.ts';
+import { Matter, MtrDex } from '../../src/index.ts';
+import { b } from '../../src/index.ts';
 
 describe('Signer', () => {
     it('should sign things', async () => {
