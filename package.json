@@ -34,8 +34,8 @@
     "build": "tsc -p tsconfig.build.json && tsc -p tsconfig.json --noEmit",
     "test": "vitest",
     "prepare": "tsc -p tsconfig.build.json",
-    "test:integration": "npm -w examples/integration-scripts test",
-    "lint": "eslint src test examples/integration-scripts",
+    "test:integration": "vitest -c vitest.integration.ts",
+    "lint": "eslint src test test-integration",
     "generate-docs": "typedoc src/index.ts",
     "pretty": "prettier --write .",
     "pretty:check": "prettier --check ."
@@ -45,6 +45,7 @@
     "@types/libsodium-wrappers-sumo": "^0.7.5",
     "@types/node": "^22.13.11",
     "@vitest/coverage-v8": "^3.0.9",
+    "bip39": "^3.1.0",
     "eslint": "^9.22.0",
     "eslint-config-prettier": "^10.1.1",
     "minami": "^1.2.3",
@@ -53,6 +54,7 @@
     "typedoc": "^0.28.0",
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.27.0",
+    "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.0.9"
   },
   "dependencies": {
@@ -62,8 +64,5 @@
     "libsodium-wrappers-sumo": "^0.7.9",
     "mathjs": "^12.4.0",
     "structured-headers": "^0.5.0"
-  },
-  "workspaces": [
-    "examples/*"
-  ]
+  }
 }

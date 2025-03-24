@@ -7,5 +7,3 @@ dist
 # IntelliJ Project Files
 .idea
 coverage/*
-
-examples/signify-react-ts/.cache

@@ -108,12 +108,6 @@ docker compose pull
 docker compose up --wait
 ```
 
-**Important!** The integration tests runs on the build output in `dist/` directory. Make sure to run build before running the integration tests.
-
-```bash
-npm run build
-```
-
 Use the npm script "test:integration" to run all integration tests in sequence:
 
 ```bash
@@ -123,13 +117,13 @@ npm run test:integration
 To execute a specific integration test, you can use:
 
 ```bash
-npm run test:integration -- credentials.test.ts
+npm run test:integration -- test-integration/credentials.test.ts
 ```
 
 It is also possible to run the tests using local instances of vLEI, Keria, and witness network. Set the environment variable `TEST_ENVIRONMENT` to `local`, e.g:
 
 ```
-TEST_ENVIRONMENT=local npm run test:integration credentials.test.ts
+TEST_ENVIRONMENT=local npm run test:integration test-integration/credentials.test.ts
 ```
 
 This changes the discovery urls to use `localhost` instead of the hostnames inside the docker network.

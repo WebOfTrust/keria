@@ -7,9 +7,9 @@ import signify, {
     SignifyClient,
     d,
     messagize,
+    HabState,
 } from 'signify-ts';
 import { getStates, waitAndMarkNotification } from './test-util.ts';
-import { HabState } from '../../../src/keri/core/keyState.ts';
 import assert from 'assert';
 
 export interface AcceptMultisigInceptArgs {

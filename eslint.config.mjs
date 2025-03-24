@@ -11,11 +11,7 @@ export default tseslint.config(
     {
         // These are files with more lenient lint config because they have not been "fixed" yet
         // Once a directory here is fixed, it should be removed from here so the strict rules applies
-        files: [
-            'src/keri/app/**',
-            'src/keri/core/**',
-            'examples/integration-scripts/**',
-        ],
+        files: ['src/keri/app/**', 'src/keri/core/**', 'test-integration/**'],
         rules: {
             'prefer-const': 'warn',
             'no-var': 'warn',

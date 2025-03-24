@@ -7,9 +7,9 @@ import signify, {
     Salter,
     SignifyClient,
     Tier,
+    HabState,
 } from 'signify-ts';
 import { RetryOptions, retry } from './retry.ts';
-import { HabState } from '../../../src/keri/core/keyState.ts';
 import assert from 'assert';
 import { resolveEnvironment } from './resolve-env.ts';
 import { expect } from 'vitest';
