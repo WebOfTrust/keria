@@ -1,6 +1,5 @@
 import { blake3 } from '@noble/hashes/blake3';
 import { Matter, MatterArgs, MtrDex } from './matter.ts';
-import { Buffer } from 'buffer';
 
 /**
  * @description : Diger is subset of Matter and is used to verify the digest of serialization
@@ -10,10 +9,7 @@ import { Buffer } from 'buffer';
  */
 
 export class Diger extends Matter {
-    private readonly _verify: (
-        a: Uint8Array,
-        b: Uint8Array | Buffer
-    ) => boolean;
+    private readonly _verify: (a: Uint8Array, b: Uint8Array) => boolean;
 
     // This constructor will assign digest verification function to ._verify
     constructor(
@@ -79,13 +75,11 @@ export class Diger extends Matter {
         return diger.verify(ser) && this.verify(ser);
     }
 
-    blake3_256(ser: Uint8Array, dig: Uint8Array | Buffer) {
+    blake3_256(ser: Uint8Array, dig: Uint8Array) {
         const digest = blake3.create({ dkLen: 32 }).update(ser).digest();
-        const other = Uint8Array.from(dig);
 
         return (
-            digest.length == other.length &&
-            digest.toString() === other.toString()
+            digest.length == dig.length && digest.toString() === dig.toString()
         );
     }
 }

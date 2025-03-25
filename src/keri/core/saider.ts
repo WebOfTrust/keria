@@ -2,7 +2,6 @@ import { DigiDex, Matter, MatterArgs, MtrDex } from './matter.ts';
 import { deversify, Dict, Serials } from './core.ts';
 import { EmptyMaterialError } from './kering.ts';
 import { dumps, sizeify } from './serder.ts';
-import { Buffer } from 'buffer';
 import { blake3 } from '@noble/hashes/blake3';
 
 const Dummy = '#';
@@ -11,25 +10,7 @@ export enum Ids {
     d = 'd',
 }
 
-class Digestage {
-    public klas: any = undefined;
-    public size: number | undefined = 0;
-    public length: number | undefined = 0;
-    constructor(klas: any, size?: number, length?: number) {
-        this.klas = klas;
-        this.size = size;
-        this.length = length;
-    }
-}
-
 export class Saider extends Matter {
-    static Digests = new Map<string, Digestage>([
-        [
-            MtrDex.Blake3_256,
-            new Digestage(Saider._derive_blake3_256, undefined, undefined),
-        ],
-    ]);
-
     constructor(
         { raw, code, qb64b, qb64, qb2 }: MatterArgs,
         sad?: Dict<any>,
@@ -69,21 +50,13 @@ export class Saider extends Matter {
         }
     }
 
-    static _derive_blake3_256(
-        ser: Uint8Array,
-        _digest_size: number,
-        _length: number
-    ) {
-        return Buffer.from(blake3.create({ dkLen: 32 }).update(ser).digest());
-    }
-
     private static _derive(
         sad: Dict<any>,
         code: string,
         kind: Serials | undefined,
         label: string
     ): [Uint8Array, Dict<any>] {
-        if (!DigiDex.has(code) || !Saider.Digests.has(code)) {
+        if (!DigiDex.has(code)) {
             throw new Error(`Unsupported digest code = ${code}.`);
         }
 
@@ -95,19 +68,14 @@ export class Saider extends Matter {
 
         const ser = { ...sad };
 
-        const digestage = Saider.Digests.get(code);
-
         const cpa = Saider._serialze(ser, kind);
-        const args: any[] = [];
-        if (digestage!.size != undefined) {
-            args.push(digestage!.size);
-        }
 
-        if (digestage!.length != undefined) {
-            args.push(digestage!.length);
+        switch (code) {
+            case MtrDex.Blake3_256:
+                return [blake3.create({ dkLen: 32 }).update(cpa).digest(), sad];
+            default:
+                throw new Error(`Unsupported digest code = ${code}.`);
         }
-
-        return [digestage!.klas(cpa, ...args), sad];
     }
 
     public derive(

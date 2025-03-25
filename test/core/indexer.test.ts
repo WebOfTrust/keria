@@ -2,7 +2,6 @@ import libsodium from 'libsodium-wrappers-sumo';
 import { assert, describe, it } from 'vitest';
 import { IdrDex, Indexer } from '../../src/keri/core/indexer.ts';
 import { b, intToB64 } from '../../src/keri/core/core.ts';
-import { Buffer } from 'buffer';
 import {
     decodeBase64Url,
     encodeBase64Url,
@@ -71,7 +70,7 @@ describe('Indexer', () => {
             const odx = i + ps;
             bytes[odx] = sig[i];
         }
-        const sig64 = encodeBase64Url(Buffer.from(bytes));
+        const sig64 = encodeBase64Url(bytes);
         assert.equal(sig64.length, 88);
         assert.equal(
             sig64,
@@ -95,16 +94,13 @@ describe('Indexer', () => {
         // b'\xde\xca\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
         assert.deepStrictEqual(
             qsig2b,
-            Buffer.from(
-                new Uint8Array([
-                    0, 0, 153, 210, 60, 57, 36, 36, 48, 159, 107, 251, 24, 160,
-                    140, 64, 114, 18, 50, 46, 107, 178, 199, 31, 112, 14, 39,
-                    109, 143, 64, 170, 165, 140, 200, 110, 133, 200, 33, 246,
-                    113, 145, 112, 169, 236, 207, 146, 175, 41, 222, 202, 252,
-                    127, 126, 215, 111, 124, 23, 130, 29, 212, 60, 111, 34, 129,
-                    38, 9,
-                ])
-            )
+            new Uint8Array([
+                0, 0, 153, 210, 60, 57, 36, 36, 48, 159, 107, 251, 24, 160, 140,
+                64, 114, 18, 50, 46, 107, 178, 199, 31, 112, 14, 39, 109, 143,
+                64, 170, 165, 140, 200, 110, 133, 200, 33, 246, 113, 145, 112,
+                169, 236, 207, 146, 175, 41, 222, 202, 252, 127, 126, 215, 111,
+                124, 23, 130, 29, 212, 60, 111, 34, 129, 38, 9,
+            ])
         );
 
         let indexer = new Indexer({ raw: sig });

@@ -1,7 +1,7 @@
 import { BexDex, Matter, MatterArgs, MtrDex } from './matter.ts';
 import { EmptyMaterialError } from './kering.ts';
-import { Buffer } from 'buffer';
 import { decodeBase64Url, encodeBase64Url } from './base64.ts';
+import { concat } from './core.ts';
 
 const B64REX = '^[A-Za-z0-9\\-_]*$';
 export const Reb64 = new RegExp(B64REX);
@@ -123,7 +123,7 @@ export class Bexter extends Matter {
     get bext(): string {
         const sizage = Matter.Sizes.get(this.code);
         const wad = Uint8Array.from(new Array(sizage?.ls).fill(0));
-        const bext = encodeBase64Url(Buffer.from([...wad, ...this.raw]));
+        const bext = encodeBase64Url(concat(wad, this.raw));
 
         let ws = 0;
         if (sizage?.ls === 0 && bext !== undefined) {

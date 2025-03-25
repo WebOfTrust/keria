@@ -10,7 +10,6 @@ import { b } from './core.ts';
 import { Cigar } from './cigar.ts';
 import { nowUTC } from './utils.ts';
 import { Siger } from './siger.ts';
-import { Buffer } from 'buffer';
 import { encodeBase64Url } from './base64.ts';
 
 export const HEADER_SIG_INPUT = normalize('Signature-Input');
@@ -130,7 +129,7 @@ export class Unqualified {
     }
 
     get qb64(): string {
-        return encodeBase64Url(Buffer.from(this._raw));
+        return encodeBase64Url(this._raw);
     }
 
     get qb64b(): Uint8Array {

@@ -2,7 +2,6 @@ import { EmptyMaterialError } from './kering.ts';
 
 import { intToB64, readInt } from './core.ts';
 import { b, d } from './core.ts';
-import { Buffer } from 'buffer';
 import { decodeBase64Url, encodeBase64Url } from './base64.ts';
 
 export class Codex {
@@ -421,7 +420,7 @@ export class Matter {
                 bytes[odx] = raw[i];
             }
 
-            return both + encodeBase64Url(Buffer.from(bytes));
+            return both + encodeBase64Url(bytes);
         } else {
             const both = code;
             const cs = both.length;
@@ -443,7 +442,7 @@ export class Matter {
                 bytes[odx] = raw[i];
             }
 
-            return both + encodeBase64Url(Buffer.from(bytes)).slice(cs % 4);
+            return both + encodeBase64Url(bytes).slice(cs % 4);
         }
     }
 

@@ -4,18 +4,18 @@ import { blake3 } from '@noble/hashes/blake3';
 
 import { Diger } from '../../src/keri/core/diger.ts';
 import { MtrDex } from '../../src/keri/core/matter.ts';
-import { Buffer } from 'buffer';
+import { concat } from '../../src/keri/core/core.ts';
+
+function encodeText(text: string) {
+    return new TextEncoder().encode(text);
+}
 
 describe('Diger', () => {
     it('should generate digests', () => {
         // Create something to digest and verify
-        const ser = Buffer.from(
-            'abcdefghijklmnopqrstuvwxyz0123456789',
-            'binary'
-        );
-        const digest = Buffer.from(
-            blake3.create({ dkLen: 32 }).update(ser).digest()
-        );
+        const ser = encodeText('abcdefghijklmnopqrstuvwxyz0123456789');
+
+        const digest = blake3.create({ dkLen: 32 }).update(ser).digest();
 
         let diger = new Diger({ raw: digest });
         assert.deepStrictEqual(diger.code, MtrDex.Blake3_256);
@@ -25,9 +25,7 @@ describe('Diger', () => {
         let result = diger.verify(ser);
         assert.equal(result, true);
 
-        result = diger.verify(
-            Buffer.concat([ser, Buffer.from('2j2idjpwjfepjtgi', 'binary')])
-        );
+        result = diger.verify(concat(ser, encodeText('2j2idjpwjfepjtgi')));
         assert.equal(result, false);
         diger = new Diger({ raw: digest, code: MtrDex.Blake3_256 });
         assert.deepStrictEqual(diger.code, MtrDex.Blake3_256);
