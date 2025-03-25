@@ -1,8 +1,6 @@
 import { fromByteArray, toByteArray } from 'base64-js';
 
-export function encodeBase64Url(buffer: Uint8Array): string {
-    const input = Buffer.from(buffer);
-
+export function encodeBase64Url(input: Uint8Array): string {
     return fromByteArray(input)
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
