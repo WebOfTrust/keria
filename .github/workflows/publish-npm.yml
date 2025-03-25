@@ -3,10 +3,6 @@ name: Publish NPM
 on:
   workflow_dispatch:
     inputs:
-      dry-run:
-        type: boolean
-        default: true
-        description: Dry run publish
       dist-tag:
         type: choice
         options:
@@ -30,32 +26,9 @@ jobs:
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
-
-      - name: Set package name from vars
-        if: ${{ vars.NPM_PACKAGE_NAME }}
-        run: |
-          cat package.json | jq -r '.name = "${{ vars.NPM_PACKAGE_NAME }}"' > package.json.tmp
-          mv package.json.tmp package.json
-
-      - name: Set version from commit
-        if: ${{ inputs.dist-tag == 'dev' }}
-        run: |
-          npm version --no-git-tag-version $(cat package.json | jq .version -r)-dev.$(git rev-parse --short HEAD)
-
-      - name: Create git tag
-        run: git tag $(cat package.json | jq .version -r)
-
-      - name: Publish dev package (Dry run)
-        if: ${{ inputs.dry-run == true }}
-        run: npm publish --tag "${{ inputs.dist-tag }}" --dry-run
-
-      - name: Publish dev package
-        if: ${{ inputs.dry-run == false }}
+      - name: Publish package
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-            npm publish --tag "${{ inputs.dist-tag }}"
-            git tag v$(cat package.json | jq .version -r)
-            git push origin  v$(cat package.json | jq .version -r)
+          NPM_PUBLISH_TAG: ${{ inputs.dist-tag }}
+          NPM_PACKAGE_SCOPE: ${{ vars.NPM_PACKAGE_SCOPE }}
+        run: ./publish.sh

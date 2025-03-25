@@ -135,3 +135,43 @@ Account Creation Workflow
 ![Account Creation](/diagrams/account-creation-workflow.png)
 
 ![Account Creation Webpage](/diagrams/account-creation-webpage-workflow.png)
+
+# Publishing
+
+This package is published on npm: https://www.npmjs.com/package/signify-ts.
+
+If you need to publish a version under your own scope, you can use the [publish script](./publish.sh). This enables you to create development packages. For example:
+
+```bash
+NPM_PACKAGE_SCOPE=@myorg DRY_RUN=1 ./publish.sh
+npm notice Tarball Details
+npm notice name: @myorg/signify-ts
+npm notice version: 0.3.0-rc1-dev.8fa9919
+npm notice filename: myorg-signify-ts-0.3.0-rc1-dev.8fa9919.tgz
+npm notice package size: 81.0 kB
+npm notice unpacked size: 370.0 kB
+npm notice shasum: 8c160bc99d9ec552e6c478c20922cae3388a8ace
+npm notice integrity: sha512-WRuD5PKFN3WBl[...]xVieCIS0UpVeg==
+npm notice total files: 96
+npm notice
+npm notice Publishing to https://registry.npmjs.org/ with tag dev and default access (dry-run)
++ @myorg/signify-ts@0.3.0-rc1-dev.8fa9919
+```
+
+Set the `NPM_PUBLISH_TAG` to `latest` to skip the commit hash suffix in the version:
+
+```bash
+NPM_PUBLISH_TAG=latest NPM_PACKAGE_SCOPE=@myorg DRY_RUN=1 ./publish.sh
+npm notice Tarball Details
+npm notice name: @myorg/signify-ts
+npm notice version: 0.3.0-rc1
+npm notice filename: myorg-signify-ts-0.3.0-rc1.tgz
+npm notice package size: 80.9 kB
+npm notice unpacked size: 370.0 kB
+npm notice shasum: 8c9e4edcf19802e8acaf5996a36061a9c335b1c4
+npm notice integrity: sha512-V1y2W3zs4Ccsn[...]vKY3WWgalcuBQ==
+npm notice total files: 96
+npm notice
+npm notice Publishing to https://registry.npmjs.org/ with tag latest and default access (dry-run)
++ @myorg/signify-ts@0.3.0-rc1
+```
