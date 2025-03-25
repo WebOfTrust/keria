@@ -1,5 +1,5 @@
 {
-    "include": ["src", "test", "test-integration", "types.d.ts"],
+    "include": ["src", "test", "test-integration"],
     "exclude": ["node_modules", "dist"],
     "compilerOptions": {
         "noEmit": true,
