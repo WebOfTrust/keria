@@ -834,6 +834,8 @@ class IdentifierResourceEnd:
                 title="invalid rotation",
                 description=f"required field 'rot' missing from request",
             )
+        serder = serdering.SerderKERI(sad=rot)
+        logger.info("[%s | %s...%s]: Rotation event sn=%s SAID=%s", hab.name, hab.pre[:4], hab.pre[-4:], serder.sn, serder.said)
 
         if "ba" in rot:
             for wit in rot["ba"]:
@@ -847,8 +849,6 @@ class IdentifierResourceEnd:
                 title="invalid rotation",
                 description=f"required field 'sigs' missing from request",
             )
-
-        serder = serdering.SerderKERI(sad=rot)
         sigers = [core.Siger(qb64=sig) for sig in sigs]
 
         if Algos.salty in body:
@@ -931,6 +931,8 @@ class IdentifierResourceEnd:
                 title="invalid interaction",
                 description=f"required field 'ixn' missing from request",
             )
+        serder = serdering.SerderKERI(sad=ixn)
+        logger.info("[%s | %s...%s] Interaction event sn=%s SAID=%s", hab.name, hab.pre[:4], hab.pre[-4:], serder.sn, serder.said)
 
         sigs = body.get("sigs")
         if sigs is None or len(sigs) == 0:
@@ -939,7 +941,6 @@ class IdentifierResourceEnd:
                 description=f"required field 'sigs' missing from request",
             )
 
-        serder = serdering.SerderKERI(sad=ixn)
         sigers = [core.Siger(qb64=sig) for sig in sigs]
 
         hab.interact(serder=serder, sigers=sigers)
@@ -975,6 +976,7 @@ class IdentifierResourceEnd:
             raise falcon.HTTPNotFound(title=f"No AID {name} found")
 
         code = body.get("code")
+        logger.info("[%s | %s...%s]: Resubmit event code=%s", name, hab.pre[:4], hab.pre[-4:], code)
 
         if hab.kever.wits:
             agent.submits.append(dict(alias=name, code=code))

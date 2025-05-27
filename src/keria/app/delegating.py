@@ -1,7 +1,7 @@
 import falcon
 
 from hio.base import doing
-from keri import kering
+from keri import kering, help
 from keri.app import forwarding, agenting, habbing
 from keri.core import coring, serdering
 from keri.db import dbing
@@ -9,6 +9,8 @@ from keri.db import dbing
 from keria.core import httping, longrunning
 
 DELEGATION_ROUTE = "/identifiers/{name}/delegation"
+
+logger = help.ogler.getLogger()
 
 def loadEnds(app, identifierResource):
     gatorEnd = DelegatorEnd(identifierResource)
@@ -29,11 +31,8 @@ class Anchorer(doing.DoDoer):
         gather all receipts and send them to all other witnesses
 
         Parameters:
-            hab (Hab): Habitat of the identifier to populate witnesses
-            msg (bytes): is the message to send to all witnesses.
-                 Defaults to sending the latest KEL event if msg is None
-            scheme (str): Scheme to favor if available
-
+            hby (Habery): Habery of the agent to populate witnesses
+            proxy (Hab): Agent Hab to use as a messaging proxy to send messages to the delegator on behalf of SignifyHab instances as SignifyHabs cannot sign messages in a KERIA Agent.
         """
         self.hby = hby
         self.postman = forwarding.Poster(hby=hby)
@@ -132,7 +131,7 @@ class Anchorer(doing.DoDoer):
                 self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
 
                 # Move to escrow waiting for witness receipts
-                print(f"Delegation approval received,  {serder.pre} confirmed")
+                logger.info("[%s...%s]: Delegation approval received, %s confirmed", pre[:4], pre[-4:], serder.pre)
                 self.hby.db.cdel.put(keys=(pre, coring.Seqner(sn=serder.sn).qb64), val=coring.Saider(qb64=serder.said))
                 self.hby.db.dune.rem(keys=(pre, said))
 
@@ -160,7 +159,7 @@ class Anchorer(doing.DoDoer):
                             witnessed = True
                     if not witnessed:
                         continue
-                print(f"Witness receipts complete, waiting for delegation approval.")
+                logger.info("[%s...%s]: Witness receipts complete, waiting for delegation approval for %s", pre[:4], pre[-4:], serder.pre)
                 if isinstance(hab, habbing.GroupHab):
                     phab = hab.mhab
                 elif self.proxy is not None:
@@ -168,7 +167,7 @@ class Anchorer(doing.DoDoer):
                 elif hab.kever.sn > 0:
                     phab = hab
                 else:
-                    raise kering.ValidationError("no proxy to send messages for delegation")
+                    raise kering.ValidationError("No proxy to send messages for delegation for AID [%s...%s]", pre[:4], pre[-4:])
 
                 evt = hab.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
 
@@ -180,7 +179,7 @@ class Anchorer(doing.DoDoer):
                 self.hby.db.dune.pin(keys=(srdr.pre, srdr.said), val=srdr)
                 
 class DelegatorEnd:
-    """ Resource class for for handling delegator events"""
+    """ Resource class for handling delegator events"""
     
     def __init__(self, identifierResource) -> None:
         """
@@ -192,7 +191,7 @@ class DelegatorEnd:
         self.identifierResource = identifierResource
 
     def on_post(self, req, rep, name):
-        """ Identifier delegator enpoint POST to create the ixn anchor and approve the delegation
+        """ Identifier delegator endpoint POST to create the ixn anchor and approve the delegation
 
         Parameters:
             req (Request): falcon.Request HTTP request object
