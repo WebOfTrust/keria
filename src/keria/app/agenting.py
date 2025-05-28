@@ -53,7 +53,22 @@ from ..core.authing import Authenticater
 from ..core.keeping import RemoteManager
 from ..db import basing
 
-formatter = logging.Formatter('keria: %(asctime)s - %(levelname)s - %(message)s')
+class TruncatedFormatter(logging.Formatter):
+    """Formats log records with shorter module and function names and a right justified line number for readability."""
+    def __init__(self, fmt=None, datefmt=None, style='%'):
+        super().__init__(fmt, datefmt, style)
+
+    def format(self, record):
+        # Truncate module and funcName to first 'chars' characters
+        mod_chars = 10 # number of spaces to truncate to
+        fn_chars = 14 # number of spaces to truncate to
+        record.module = (record.module[:mod_chars] + ' ' * mod_chars)[:mod_chars]
+        record.funcName = (record.funcName[:fn_chars] + ' ' * fn_chars)[:fn_chars]
+        record.lineno = str(record.lineno).rjust(5)  # Ensure line number is right-aligned
+        return super().format(record)
+
+formatter = TruncatedFormatter('%(asctime)s [keria] %(levelname)-8s %(module)s.%(funcName)s-%(lineno)s %(message)s')
+formatter.default_msec_format = None
 logHandler = logging.StreamHandler()
 logHandler.setFormatter(formatter)
 ogler.baseFormatter = formatter
@@ -129,7 +144,7 @@ def runAgency(config: KERIAServerConfig):
     logger.setLevel(ogler.level)
     if config.logFile is not None:
         ogler.headDirPath = config.logFile
-        ogler.reopen(name=config.name, temp=False, clear=True)
+        ogler.reopen(name="keria", temp=False, clear=True)
 
     logger.info("Starting Agent for %s listening: admin/%s, http/%s, boot/%s",
                 config.name, config.adminPort, config.httpPort, config.bootPort)
@@ -142,7 +157,7 @@ def agencyDoist(doers: List[Doer]):
     """Creates a Doist for the Agency doers and adds a graceful shutdown handler. Useful for testing."""
     tock = 0.03125
     doist = doing.Doist(limit=0.0, tock=tock, real=True)
-    doers.append(GracefulShutdownDoer(doist=doist, agency=getAgency(doers)))
+    doers.append(GracefulShutdownDoer(agency=getAgency(doers)))
     doist.doers = doers
     return doist
 
