@@ -131,7 +131,7 @@ class Anchorer(doing.DoDoer):
                 self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
 
                 # Move to escrow waiting for witness receipts
-                logger.info("[%s...%s]: Delegation approval received, %s confirmed", pre[:4], pre[-4:], serder.pre)
+                logger.info("[%s]: Delegation approval received, %s confirmed", pre, serder.pre)
                 self.hby.db.cdel.put(keys=(pre, coring.Seqner(sn=serder.sn).qb64), val=coring.Saider(qb64=serder.said))
                 self.hby.db.dune.rem(keys=(pre, said))
 
@@ -159,7 +159,7 @@ class Anchorer(doing.DoDoer):
                             witnessed = True
                     if not witnessed:
                         continue
-                logger.info("[%s...%s]: Witness receipts complete, waiting for delegation approval for %s", pre[:4], pre[-4:], serder.pre)
+                logger.info("[%s]: Witness receipts complete, waiting for delegation approval for %s", pre, serder.pre)
                 if isinstance(hab, habbing.GroupHab):
                     phab = hab.mhab
                 elif self.proxy is not None:
@@ -167,7 +167,7 @@ class Anchorer(doing.DoDoer):
                 elif hab.kever.sn > 0:
                     phab = hab
                 else:
-                    raise kering.ValidationError("No proxy to send messages for delegation for AID [%s...%s]", pre[:4], pre[-4:])
+                    raise kering.ValidationError("No proxy to send messages for delegation for AID %s]", pre)
 
                 evt = hab.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
 

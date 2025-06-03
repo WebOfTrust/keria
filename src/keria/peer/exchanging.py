@@ -106,8 +106,8 @@ class ExchangeCollectionEnd:
         serder = serdering.SerderKERI(sad=ked)
         sigers = [core.Siger(qb64=sig) for sig in sigs]
 
-        logger.info("[%s | %s...%s] ExchangeCollectionEnd: route %s received exn %s being sent to [%s]",
-                    name, hab.pre[:4], hab.pre[-4:], serder.ked['r'], serder.said, ", ".join(rec))
+        logger.info("[%s | %s] ExchangeCollectionEnd: route %s received exn %s being sent to [%s]",
+                    name, hab.pre, serder.ked['r'], serder.said, ", ".join(rec))
 
         # Now create the stream to send, need the signer seal
         kever = hab.kever
@@ -123,8 +123,8 @@ class ExchangeCollectionEnd:
 
         msg = dict(said=serder.said, pre=hab.pre, rec=rec, topic=topic)
 
-        logger.info("[%s | %s...%s] ExchangeCollectionEnd: appending %s",
-                    name, hab.pre[:4], hab.pre[-4:], json.dumps(msg))
+        logger.info("[%s | %s] ExchangeCollectionEnd: appending %s",
+                    name, hab.pre, json.dumps(msg))
         agent.exchanges.append(msg)
 
         rep.status = falcon.HTTP_202

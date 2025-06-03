@@ -677,12 +677,12 @@ class ExchangeSender(doing.DoDoer):
             rec = msg["rec"]
             topic = msg['topic']
             hab = self.hby.habs[pre]
-            logger.debug("[%s | %s...%s]: Current Message Body= %s", hab.name, hab.pre[:4], hab.pre[-4:], msg);
+            logger.debug("[%s | %s]: Current Message Body= %s", hab.name, hab.pre, msg);
             if self.exc.lead(hab, said=said):
                 atc = exchanging.serializeMessage(self.hby, said)
                 del atc[:serder.size]
                 for recp in rec:
-                    logger.debug("[%s | %s...%s]: Sending on topic %s to recipient %s from %s", hab.name, hab.pre[:4], hab.pre[-4:], topic, recp, pre)
+                    logger.debug("[%s | %s]: Sending on topic %s to recipient %s from %s", hab.name, hab.pre, topic, recp, pre)
                     postman = forwarding.StreamPoster(hby=self.hby, hab=self.agentHab, recp=recp, topic=topic)
                     try:
                         postman.send(serder=serder,

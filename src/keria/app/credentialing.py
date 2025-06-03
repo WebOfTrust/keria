@@ -1072,7 +1072,7 @@ class Registrar:
             self.rgy.reger.tpwe.add(keys=(registry.regk, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
 
         else:
-            logger.info("[%s | %s...%s]: Waiting for TEL registry vcp event mulisig anchoring event", hab.name, hab.pre[:4], hab.pre[-4:])
+            logger.info("[%s | %s]: Waiting for TEL registry vcp event mulisig anchoring event", hab.name, hab.pre)
             self.rgy.reger.tmse.add(keys=(registry.regk, rseq.qb64, registry.regd), val=(prefixer, seqner, saider))
 
     def issue(self, regk, iserder, anc):
@@ -1097,7 +1097,7 @@ class Registrar:
             saider = coring.Saider(qb64=hab.kever.serder.said)
             registry.anchorMsg(pre=vcid, regd=iserder.said, seqner=seqner, saider=saider)
 
-            logger.info("[%s | %s...%s]: Waiting for TEL event witness receipts", hab.name, hab.pre[:4], hab.pre[-4:])
+            logger.info("[%s | %s]: Waiting for TEL event witness receipts", hab.name, hab.pre)
             self.witDoer.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
             return vcid, rseq.sn
@@ -1110,7 +1110,7 @@ class Registrar:
             seqner = coring.Seqner(sn=sn)
             saider = coring.Saider(qb64=said)
 
-            logger.info("[%s | %s...%s]: Waiting for TEL iss event mulisig anchoring event %s", hab.name, hab.pre[:4], hab.pre[-4:], seqner.sn)
+            logger.info("[%s | %s]: Waiting for TEL iss event mulisig anchoring event %s", hab.name, hab.pre, seqner.sn)
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, iserder.said), val=(prefixer, seqner, saider))
             return vcid, rseq.sn
 
@@ -1136,7 +1136,7 @@ class Registrar:
             saider = coring.Saider(qb64=hab.kever.serder.said)
             registry.anchorMsg(pre=vcid, regd=rserder.said, seqner=seqner, saider=saider)
 
-            logger.info("[%s | %s...%s]: Waiting for TEL event witness receipts", hab.name, hab.pre[:4], hab.pre[-4:])
+            logger.info("[%s | %s]: Waiting for TEL event witness receipts", hab.name, hab.pre)
             self.witDoer.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
 
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
@@ -1152,7 +1152,7 @@ class Registrar:
 
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
 
-            logger.info(f"[%s | %s...%s]: Waiting for TEL rev event mulisig anchoring event %s", hab.name, hab.pre[:4], hab.pre[-4:], seqner.sn)
+            logger.info(f"[%s | %s]: Waiting for TEL rev event mulisig anchoring event %s", hab.name, hab.pre, seqner.sn)
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, rserder.said), val=(prefixer, seqner, saider))
             return vcid, rseq.sn
 

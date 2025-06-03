@@ -835,7 +835,7 @@ class IdentifierResourceEnd:
                 description=f"required field 'rot' missing from request",
             )
         serder = serdering.SerderKERI(sad=rot)
-        logger.info("[%s | %s...%s]: Rotation event sn=%s SAID=%s", hab.name, hab.pre[:4], hab.pre[-4:], serder.sn, serder.said)
+        logger.info("[%s | %s]: Rotation event sn=%s SAID=%s", hab.name, hab.pre, serder.sn, serder.said)
 
         if "ba" in rot:
             for wit in rot["ba"]:
@@ -932,7 +932,7 @@ class IdentifierResourceEnd:
                 description=f"required field 'ixn' missing from request",
             )
         serder = serdering.SerderKERI(sad=ixn)
-        logger.info("[%s | %s...%s] Interaction event sn=%s SAID=%s", hab.name, hab.pre[:4], hab.pre[-4:], serder.sn, serder.said)
+        logger.info("[%s | %s] Interaction event sn=%s SAID=%s", hab.name, hab.pre, serder.sn, serder.said)
 
         sigs = body.get("sigs")
         if sigs is None or len(sigs) == 0:
@@ -976,7 +976,7 @@ class IdentifierResourceEnd:
             raise falcon.HTTPNotFound(title=f"No AID {name} found")
 
         code = body.get("code")
-        logger.info("[%s | %s...%s]: Resubmit event code=%s", name, hab.pre[:4], hab.pre[-4:], code)
+        logger.info("[%s | %]: Resubmit event code=%s", name, hab.pre, code)
 
         if hab.kever.wits:
             agent.submits.append(dict(alias=name, code=code))

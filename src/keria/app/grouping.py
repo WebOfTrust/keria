@@ -59,7 +59,7 @@ class MultisigRequestCollectionEnd:
         sigs = httping.getRequiredParam(body, "sigs")
         atc = httping.getRequiredParam(body, "atc")
 
-        logger.info("[%s | %s...%s]: Posting EXN on Route %s event %s", name, hab.pre[:4], hab.pre[-4:], ked["r"], ked["d"])
+        logger.info("[%s | %s]: Posting EXN on Route %s event %s", name, hab.pre, ked["r"], ked["d"])
         logger.debug("EXN: %s", json.dumps(body))
 
         # create sigers from the edge signatures so we can messagize the whole thing
@@ -81,7 +81,7 @@ class MultisigRequestCollectionEnd:
         if hab.mhab.pre in smids:
             smids.remove(hab.mhab.pre)
 
-        logger.info("[%s | %s...%s]: new exchange message %s", name, hab.pre[:4], hab.pre[-4:], json.dumps(dict(said=serder.said, pre=hab.pre, rec=smids, topic='multisig')))
+        logger.info("[%s | %s]: new exchange message %s", name, hab.pre, json.dumps(dict(said=serder.said, pre=hab.pre, rec=smids, topic='multisig')))
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=smids, topic='multisig'))
 
         rep.status = falcon.HTTP_200
