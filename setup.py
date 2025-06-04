@@ -40,7 +40,7 @@ else:
 
 setup(
     name='keria',
-    version='0.2.0-rc2',  # also change in src/keria/__init__.py
+    version='0.2.0',  # also change in src/keria/__init__.py
     license='Apache Software License 2.0',
     description='KERIA: KERI Agent in the cloud',
     long_description=long_description,
