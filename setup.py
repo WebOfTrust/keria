@@ -40,7 +40,7 @@ else:
 
 setup(
     name='keria',
-    version='0.2.0-rc1',  # also change in src/keria/__init__.py
+    version='0.2.0-rc2',  # also change in src/keria/__init__.py
     license='Apache Software License 2.0',
     description='KERIA: KERI Agent in the cloud',
     long_description=long_description,
@@ -84,7 +84,7 @@ setup(
     python_requires='>=3.12.2',
     install_requires=[
         'hio==0.6.14',
-        'keri==1.2.2',
+        'keri==1.2.4',
         'mnemonic==0.21',
         'multicommand==1.0.0',
         'falcon==4.0.2',
@@ -101,7 +101,6 @@ setup(
         'pytest>=8.3.4',
     ],
     setup_requires=[
-        'setuptools==75.8.0'
     ],
     entry_points={
         'console_scripts': [

@@ -323,8 +323,8 @@ class Helpers:
         return httpServerDoer
 
     @staticmethod
-    def controller():
-        serder, signers = Helpers.incept(bran=b'0123456789abcdefghijk', stem="signify:controller", pidx=0)
+    def controller(bran=b'0123456789abcdefghijk'):
+        serder, signers = Helpers.incept(bran=bran, stem="signify:controller", pidx=0)
         sigers = [signers[0].sign(ser=serder.raw, index=0)]
         return serder, sigers
 
@@ -539,6 +539,11 @@ class Helpers:
     def endrole(cid, eid, role="agent"):
         data = dict(cid=cid, role=role, eid=eid)
         return eventing.reply(route="/end/role/add", data=data)
+
+    @staticmethod
+    def locscheme(eid, url, scheme="http"):
+        data = dict(eid=eid, url=url, scheme=scheme)
+        return eventing.reply(route="/loc/scheme", data=data)
 
     @staticmethod
     def middleware(agent):

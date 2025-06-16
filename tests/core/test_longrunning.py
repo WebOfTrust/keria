@@ -13,6 +13,8 @@ def test_operations(helpers):
         app.add_route("/identifiers", end)
         endRolesEnd = aiding.EndRoleCollectionEnd()
         app.add_route("/identifiers/{name}/endroles", endRolesEnd)
+        locSchemesEnd = aiding.LocSchemeCollectionEnd()
+        app.add_route("/identifiers/{name}/locschemes", locSchemesEnd)
         opColEnd = longrunning.OperationCollectionEnd()
         app.add_route("/operations", opColEnd)
         opResEnd = longrunning.OperationResourceEnd()
@@ -169,6 +171,17 @@ def test_operations(helpers):
         assert op.name == f"query.{recp}.4"
         assert op.done is False
 
+        # add loc scheme
+
+        rpy = helpers.locscheme(recp, "http://testurl.com")
+        sigs = helpers.sign(salt, 0, 0, rpy.raw)
+        body = dict(rpy=rpy.ked, sigs=sigs)
+        res = client.simulate_post(
+            path=f"/identifiers/user2/locschemes", json=body)
+        op = res.json
+        assert op["done"] is True
+        assert op["name"] == "locscheme.EAyXphfc0qOLqEDAe0cCYCj-ovbSaEFgVgX6MrC_b5ZO.http"
+
 
 def test_operation_bad_metadata(helpers):
     with helpers.openKeria() as (agency, agent, app, client):
@@ -250,19 +263,38 @@ def test_operation_bad_metadata(helpers):
                                start=helping.nowIso8601(), metadata={})
 
         with pytest.raises(ValidationError) as err:
-            witop.metadata = {"cid": "EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1", "role": "agent"}
+            endop.metadata = {"cid": "EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1", "role": "agent"}
             agent.monitor.status(endop)
         assert str(err.value) == "invalid long running endrole operation, metadata missing required fields ('cid', 'role', 'eid')"
 
         with pytest.raises(ValidationError) as err:
-            witop.metadata = {"cid": "EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1", "eid": "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"}
+            endop.metadata = {"cid": "EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1", "eid": "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"}
             agent.monitor.status(endop)
         assert str(err.value) == "invalid long running endrole operation, metadata missing required fields ('cid', 'role', 'eid')"
 
         with pytest.raises(ValidationError) as err:
-            witop.metadata = {"role": "agent", "eid": "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"}
+            endop.metadata = {"role": "agent", "eid": "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"}
             agent.monitor.status(endop)
         assert str(err.value) == "invalid long running endrole operation, metadata missing required fields ('cid', 'role', 'eid')"
+
+        # LocScheme
+        locop = longrunning.Op(type=longrunning.OpTypes.locscheme, oid="EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1",
+                               start=helping.nowIso8601(), metadata={})
+
+        with pytest.raises(ValidationError) as err:
+            locop.metadata = {"eid": "EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1", "scheme": "http"}
+            agent.monitor.status(locop)
+        assert str(err.value) == "invalid long running locscheme operation, metadata missing required fields ('eid', 'scheme', 'url')"
+
+        with pytest.raises(ValidationError) as err:
+            locop.metadata = {"eid": "EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1", "url": "http://testurl.com"}
+            agent.monitor.status(locop)
+        assert str(err.value) == "invalid long running locscheme operation, metadata missing required fields ('eid', 'scheme', 'url')"
+
+        with pytest.raises(ValidationError) as err:
+            locop.metadata = {"scheme": "http", "url": "http://testurl.com"}
+            agent.monitor.status(locop)
+        assert str(err.value) == "invalid long running locscheme operation, metadata missing required fields ('eid', 'scheme', 'url')"
 
         # Challenge
         challengeop = longrunning.Op(type=longrunning.OpTypes.challenge, oid="EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1",

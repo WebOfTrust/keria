@@ -677,8 +677,23 @@ class ExchangeSender(doing.DoDoer):
 
 
 class Granter(doing.DoDoer):
+    """
+    Presents ACDC credentials to a recipient using the Grant action of the IPEX protocol
+    by sending all relevant data including delegated KELs and chained ACDCs.
+    """
 
     def __init__(self, hby, rgy, agentHab, exc, grants, tock=0.0):
+        """
+        Accepts a list of IPEX Grant cues to process.
+
+        Parameters:
+            hby (Habery): The Agent Habery.
+            rgy (Regery): The Agent Regery.
+            agentHab (Hab): The Agent Hab.
+            exc (Exchanger): The Exchanger instance for this Agent.
+            grants (decking.Deck): Queue of grant messages to process.
+            tock (float): The time interval for processing grants.
+        """
         self.hby = hby
         self.rgy = rgy
         self.agentHab = agentHab
@@ -687,13 +702,45 @@ class Granter(doing.DoDoer):
         self.tock = tock
         super(Granter, self).__init__(always=True, tock=self.tock)
 
-    def recur(self, tyme, deeds=None):
+    def sendAgentKEL(self, pre, recp, postman):
+        """Send the KEL of the agent to the recipient."""
+        for msg in self.agentHab.db.cloneDelegation(self.agentHab.kever):
+            serder = serdering.SerderKERI(raw=msg)
+            atc = msg[serder.size:]
+            postman.send(serder=serder, attachment=atc)
+
+    def sendCredArtifacts(self, recp, credSaid, postman):
+        """Send to the recipient the ACDC and the KELs of the issuer, holder, and any delegators."""
+        creder = self.rgy.reger.creds.get(keys=(credSaid,))
+        sendArtifacts(self.hby, self.rgy.reger, postman, creder, recp)
+        self.sendChainedArtifacts(recp, creder, postman)
+
+    def sendChainedArtifacts(self, recp, creder, postman):
+        """
+        Send to the recipient any chained ACDCs and the KELs of the issuers and holders of those
+        ACDCS and the KELs of any of their delegators.
+        """
+        sources = self.rgy.reger.sources(self.hby.db, creder)
+        for source, atc in sources:
+            sendArtifacts(self.hby, self.rgy.reger, postman, source, recp)
+            postman.send(serder=source, attachment=atc)
+
+    def postGrants(self):
+        """
+        Presents an ACDC by sending all relevant data and cryptographic artifacts in the following order:
+        - the agent KEL artifacts, including any delegation chain artifats
+        - the issuer KEL artifacts, including delegation artifacts
+        - the holder KEL artifacts, including delegation artifacts
+        - the ACDC registry artifacts
+        - the ACDC credential itself
+        This is repeated for any chained credentials except that the agent KEL is only sent once.
+        """
         if self.grants:
             msg = self.grants.popleft()
             said = msg['said']
             if not self.exc.complete(said=said):
                 self.grants.append(msg)
-                return super(Granter, self).recur(tyme, deeds)
+                return
 
             serder, pathed = exchanging.cloneMessage(self.hby, said)
 
@@ -704,14 +751,9 @@ class Granter(doing.DoDoer):
                 for recp in rec:
                     postman = forwarding.StreamPoster(hby=self.hby, hab=self.agentHab, recp=recp, topic="credential")
                     try:
+                        self.sendAgentKEL(pre, recp, postman)
                         credSaid = serder.ked['e']['acdc']['d']
-                        creder = self.rgy.reger.creds.get(keys=(credSaid,))
-                        sendArtifacts(self.hby, self.rgy.reger, postman, creder, recp)
-                        sources = self.rgy.reger.sources(self.hby.db, creder)
-                        for source, atc in sources:
-                            sendArtifacts(self.hby, self.rgy.reger, postman, source, recp)
-                            postman.send(serder=source, attachment=atc)
-
+                        self.sendCredArtifacts(recp, credSaid, postman)
                     except kering.ValidationError:
                         logger.info(f"unable to send to recipient={recp}")
                     except KeyError:
@@ -720,6 +762,9 @@ class Granter(doing.DoDoer):
                         doer = doing.DoDoer(doers=postman.deliver())
                         self.extend([doer])
 
+    def recur(self, tyme, deeds=None):
+        """Doer lifecycle method to process grants."""
+        self.postGrants()
         return super(Granter, self).recur(tyme, deeds)
 
 
@@ -1002,6 +1047,22 @@ class BootEnd:
         self.password = password
         self.agency = agency
 
+    def parseBasicAuth(self, req: falcon.Request):
+        schemePrefix = 'Basic '
+        if req.auth is None or not req.auth.startswith(schemePrefix):
+            return None, None
+
+        token = b64decode(req.auth[len(schemePrefix):]).decode('utf-8')
+        splitIndex = token.find(':')
+        if splitIndex == -1:
+            return None, None
+
+        username = token[:splitIndex]
+        password = token[splitIndex + 1:]
+
+        return username, password
+
+
     def authenticate(self, req: falcon.Request):
         # Username AND Password is not set, so no need to authenticate
         if self.username is None and self.password is None:
@@ -1010,15 +1071,8 @@ class BootEnd:
         if req.auth is None:
             raise falcon.HTTPUnauthorized(title="Unauthorized")
 
-        scheme, token = req.auth.split(' ')
-        if scheme != 'Basic':
-            raise falcon.HTTPUnauthorized(title="Unauthorized")
-
         try:
-            username, password = b64decode(token).decode('utf-8').split(':')
-
-            if username is None or password is None:
-                raise falcon.HTTPUnauthorized(title="Unauthorized")
+            username, password = self.parseBasicAuth(req)
 
             if username == self.username and password == self.password:
                 return

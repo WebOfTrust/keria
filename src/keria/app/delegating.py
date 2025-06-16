@@ -163,10 +163,10 @@ class Anchorer(doing.DoDoer):
                 print(f"Witness receipts complete, waiting for delegation approval.")
                 if isinstance(hab, habbing.GroupHab):
                     phab = hab.mhab
-                elif hab.kever.sn > 0:
-                    phab = hab
                 elif self.proxy is not None:
                     phab = self.proxy
+                elif hab.kever.sn > 0:
+                    phab = hab
                 else:
                     raise kering.ValidationError("no proxy to send messages for delegation")
 

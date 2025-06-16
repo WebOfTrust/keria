@@ -504,6 +504,12 @@ def test_credentialing_ends(helpers, seeder):
         assert res.status_code == 200
         assert len(res.json) == 4
 
+        # Query using specific filter to check indexes
+        body = json.dumps({'filter': {'-a-LEI': "984500E5DEFDBQ1O9038"}}).encode("utf-8")
+        res = client.simulate_post(f"/credentials/query", body=body)
+        assert res.status_code == 200
+        assert len(res.json) == 0
+
         # Check db directly to make sure all indices are gone too (GET endpoints don't cover all indices)
         assert agent.rgy.reger.creds.get(keys=saids[0]) is None
         assert agent.rgy.reger.cancs.get(keys=saids[0]) is None

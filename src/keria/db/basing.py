@@ -214,6 +214,26 @@ class Seeker(dbing.LMDBer):
             value = "".join(values)
             db.add(keys=(value,), val=saider)
 
+    def unindex(self, said):
+        if (saider := self.reger.saved.get(keys=(said,))) is None:
+            raise ValueError(f"{said} is not a verified credential")
+
+        creder = self.reger.creds.get(keys=(saider.qb64,))
+        indexes = self.schIdx.get(keys=(creder.schema,))
+        if not indexes:
+            raise ValueError(f"No known indexes for schema {creder.schema}")
+
+        for index in indexes:
+            db = self.indexes[index]
+            idx = self.dynIdx.get(keys=(index,))
+            values = []
+            for path in idx.paths:
+                pather = coring.Pather(qb64=path)
+                values.append(pather.resolve(creder.sad))
+
+            value = "".join(values)
+            db.rem(keys=(value,), val=saider)
+
     def generateIndexes(self, said):
         """ Parse schema of said, create schIdx entry keyed to said of schema and the subkey indexes in
         self.indexes
