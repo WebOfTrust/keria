@@ -49,7 +49,7 @@ from .serving import GracefulShutdownDoer
 from ..peer import exchanging as keriaexchanging
 from .specing import AgentSpecResource
 from ..core import authing, longrunning, httping
-from ..core.authing import Authenticator
+from ..core.authing import SignedHeaderAuthenticator
 from ..core.keeping import RemoteManager
 from ..db import basing
 
@@ -189,7 +189,7 @@ def setupDoers(config: KERIAServerConfig):
     bootApp.add_route("/health", HealthEnd())
 
     # Create Authenticater for verifying signatures on all requests
-    authn = Authenticator(agency=agency)
+    authn = SignedHeaderAuthenticator(agency=agency)
 
     app = falcon.App(
         middleware=falcon.CORSMiddleware(allow_origins='*', allow_credentials='*', expose_headers=allowed_cors_headers),
@@ -197,7 +197,7 @@ def setupDoers(config: KERIAServerConfig):
     )
     if config.cors:
         app.add_middleware(middleware=httping.HandleCORS())
-    app.add_middleware(authing.SignatureValidationComponent(agency=agency, authn=authn, allowed=["/agent"]))
+    app.add_middleware(authing.AuthenticationMiddleware(agency=agency, authn=authn, allowed=["/agent"]))
     app.req_options.media_handlers.update(media.Handlers())
     app.resp_options.media_handlers.update(media.Handlers())
 
