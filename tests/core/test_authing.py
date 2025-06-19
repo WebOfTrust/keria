@@ -355,6 +355,40 @@ def test_build_environ():
                        'wsgi.url_scheme': 'https'}
 
 
+def test_serialize_response():
+    rep = falcon.Response()
+    rep.set_headers([
+        ("signify-resource", "EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy"),
+        ("access-control-allow-origin", "*"),  # CORS should be ignored
+        ("access-control-allow-methods", "*"),
+        ("access-control-allow-headers", "*"),
+        ("access-control-expose-headers", "*"),
+        ("access-control-max-age", "1728000")
+    ])
+    rep.status = "400 Bad Request"
+
+    serialized = authing.ESSRAuthenticator.serializeResponse("HTTP/1.1", rep)
+    assert serialized == """HTTP/1.1 400 Bad Request\r
+signify-resource: EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy\r
+\r
+"""
+
+    rep.data = json.dumps({"a": "b"}).encode("utf-8")
+    serialized = authing.ESSRAuthenticator.serializeResponse("HTTP/1.1", rep)
+    assert serialized == """HTTP/1.1 400 Bad Request\r
+signify-resource: EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy\r
+\r
+{"a": "b"}"""
+
+    rep.data = None
+    rep.text = "Identifier not found!"
+    serialized = authing.ESSRAuthenticator.serializeResponse("HTTP/1.1", rep)
+    assert serialized == """HTTP/1.1 400 Bad Request\r
+signify-resource: EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy\r
+\r
+Identifier not found!"""
+
+
 class MockAgency:
     def __init__(self, agent=None):
         self.agent = agent
