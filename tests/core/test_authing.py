@@ -71,14 +71,49 @@ def test_signed_header_authenticator(mockHelpingNowUTC):
 
         req = create_req(method="POST", path="/boot", headers=dict(headers))
 
-        with pytest.raises(kering.AuthNError):  # Should fail if Agent hasn't resolved caid's KEL
+        with pytest.raises(kering.AuthNError) as e:  # Should fail if Agent hasn't resolved caid's KEL
             authn.inbound(req)
+        assert str(e.value) == "Unknown or invalid controller (controller KEL not resolved)"
 
         agentKev = eventing.Kevery(db=agent.agentHab.db, lax=True, local=False)
         icp = controller.makeOwnInception()
         parsing.Parser().parse(ims=bytearray(icp), kvy=agentKev)
 
         assert controller.pre in agent.agentHab.kevers
+
+        # Malform Signature-Input
+        headers['Signature-Input'] = ('notsignify=("signify-resource" "@method" "@path" '
+                                      '"signify-timestamp");created=1609459200;keyid'
+                                      '="EJPEPKslRHD_fkug3zmoyjQ90DazQAYWI8JIrV2QXyhg";alg="ed25519"')
+
+        headers['Signature'] = ('indexed="?0";signify'
+                                '="0BA9SX7Jyn66ZdCPOb0WqDEn1UC49GeSPypjVgeMrt6VLWKjEw9ij7Ndur7Wcrru_5eQNbSiNaiP4NQYWht5srEX"')
+        req = create_req(method="POST", path="/boot", headers=dict(headers))
+
+        with pytest.raises(kering.AuthNError) as e:
+            authn.inbound(req)
+        assert str(e.value) == "Missing signify inputs in signature"
+
+        # Correct Signature-Input
+        headers['Signature-Input'] = ('signify=("signify-resource" "@method" "@path" '
+                                      '"signify-timestamp");created=1609459200;keyid'
+                                      '="EJPEPKslRHD_fkug3zmoyjQ90DazQAYWI8JIrV2QXyhg";alg="ed25519"')
+
+        # Bad signature
+        headers['Signature'] = ('indexed="?0";signify'
+                                '="0BA9SX7Jyn66ZdCPOb0WqDEn1UC49GeSPypjVgeMrt6VLWKjEw9ij7Ndur7Wcrru_5eQNbSiNaiP4NQYWht5srEX"')
+        req = create_req(method="POST", path="/boot", headers=dict(headers))
+
+        with pytest.raises(kering.AuthNError) as e:
+            authn.inbound(req)
+        assert str(e.value) == ("Signature for Inputage(name='signify', fields=['signify-resource', '@method', "
+                                "'@path', 'signify-timestamp'], created=1609459200, "
+                                "keyid='EJPEPKslRHD_fkug3zmoyjQ90DazQAYWI8JIrV2QXyhg', alg='ed25519', expires=None, "
+                                "nonce=None, context=None) invalid")
+        # Good signature
+        headers['Signature'] = ('indexed="?0";signify'
+                                '="0BA9SX7Jyn66ZdCPOb0WqDEn1UC49GeSPypjVgeMrt6VLWKjEw9ij7Ndur7Wcrru_5eQNbSiNaiP4NQYWht5srEL"')
+        req = create_req(method="POST", path="/boot", headers=dict(headers))
 
         authn.inbound(req)  # Does not raise error
 
@@ -101,8 +136,9 @@ def test_signed_header_authenticator(mockHelpingNowUTC):
                                      'signify-timestamp': '2021-01-01T00:00:00.000000+00:00'}
 
         req = create_req(method="POST", path="/boot", headers=dict(rep.headers))
-        with pytest.raises(kering.AuthNError):  # Should because the agent won't be found
+        with pytest.raises(kering.AuthNError) as e:  # Should because the agent won't be found
             authn.inbound(req)
+        assert str(e.value) == "Unknown controller"
 
 
 def test_essr_authenticator(mockHelpingNowUTC):

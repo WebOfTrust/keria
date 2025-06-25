@@ -110,16 +110,16 @@ class SignedHeaderAuthenticator(Authenticator):
         agent = self.agency.get(resource)
 
         if agent is None:
-            raise kering.AuthNError("unknown or invalid controller")
+            raise kering.AuthNError("Unknown controller")
 
         if resource not in agent.agentHab.kevers:
-            raise kering.AuthNError("unknown or invalid controller")
+            raise kering.AuthNError("Unknown or invalid controller (controller KEL not resolved)")
 
         inputs = ending.desiginput(siginput.encode("utf-8"))
         inputs = [i for i in inputs if i.name == "signify"]
 
         if not inputs:
-            raise kering.AuthNError("todo")
+            raise kering.AuthNError("Missing signify inputs in signature")
 
         for inputage in inputs:
             items = []
