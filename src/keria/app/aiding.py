@@ -139,6 +139,8 @@ class KeyStateRecord(basing.KeyStateRecord):
             )
         },
     )
+    kt: Union[str, list[str]]
+    nt: Union[str, list[str]]
 
 
 @dataclass
