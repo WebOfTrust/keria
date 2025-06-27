@@ -7,7 +7,7 @@ from apispec.ext.marshmallow import MarshmallowPlugin
 
 from keria.app import aiding, agenting, grouping, notifying
 from keria.peer import exchanging
-from ..core import longrunning
+from ..core import optypes
 from ..utils.openapi import applyAltConstraintsToOpenApiSchema
 from . import credentialing
 from keri.core import coring
@@ -105,20 +105,24 @@ class AgentSpecResource:
             schema=marshmallow_dataclass.class_schema(agenting.VCP_V_1)(),
         )
         self.spec.components.schema(
+            "ISS_V_1",
+            schema=marshmallow_dataclass.class_schema(agenting.ISS_V_1)(),
+        )
+        self.spec.components.schema(
+            "REV_V_1",
+            schema=marshmallow_dataclass.class_schema(agenting.REV_V_1)(),
+        )
+        self.spec.components.schema(
             "EXN_V_1",
-            schema=marshmallow_dataclass.class_schema(agenting.EXN_V_1)(),
+            schema=marshmallow_dataclass.class_schema(exchanging.EXN_V_1)(),
         )
         self.spec.components.schema(
             "EXN_V_2",
-            schema=marshmallow_dataclass.class_schema(agenting.EXN_V_2)(),
+            schema=marshmallow_dataclass.class_schema(exchanging.EXN_V_2)(),
         )
         self.spec.components.schema(
             "Credential",
             schema=marshmallow_dataclass.class_schema(credentialing.ClonedCredential)(),
-        )
-        self.spec.components.schema(
-            "Operation",
-            schema=marshmallow_dataclass.class_schema(longrunning.Operation)(),
         )
         self.spec.components.schema(
             "CredentialStateIssOrRev",
@@ -184,11 +188,6 @@ class AgentSpecResource:
         credentialSchema["properties"]["status"] = {
             "$ref": "#/components/schemas/CredentialState"
         }
-
-        # Operation
-        operationSchema = self.spec.components.schemas["Operation"]
-        operationSchema["properties"]["metadata"] = {"type": "object"}
-        operationSchema["properties"]["response"] = {"type": "object"}
 
         # Registries
         self.spec.components.schema(
@@ -289,13 +288,6 @@ class AgentSpecResource:
         self.spec.components.schema(
             "EndRole", schema=marshmallow_dataclass.class_schema(aiding.EndRole)()
         )
-
-        self.spec.components.schemas["Rpy"] = {
-            "oneOf": [
-                {"$ref": "#/components/schemas/RPY_V_1"},
-                {"$ref": "#/components/schemas/RPY_V_2"},
-            ]
-        }
 
         # Register the Challenge schema
         self.spec.components.schema(
@@ -496,24 +488,499 @@ class AgentSpecResource:
         exnMSchema = self.spec.components.schemas["ExnMultisig"]
         exnMSchema["properties"]["exn"] = {"$ref": "#/components/schemas/Exn"}
 
-        # Patch KeyStateRecord
-        keyStateRecordSchema = self.spec.components.schemas["KeyStateRecord"]
-        keyStateRecordSchema["properties"]["kt"] = {
+        # Register the OOBI operation schemas
+        self.spec.components.schema(
+            "PendingOOBIOperation",
+            schema=marshmallow_dataclass.class_schema(optypes.PendingOOBIOperation)(),
+        )
+        self.spec.components.schema(
+            "CompletedOOBIOperation",
+            schema=marshmallow_dataclass.class_schema(optypes.CompletedOOBIOperation)(),
+        )
+        self.spec.components.schema(
+            "FailedOOBIOperation",
+            schema=marshmallow_dataclass.class_schema(optypes.FailedOOBIOperation)(),
+        )
+        self.spec.components.schemas["OOBIOperation"] = {
             "oneOf": [
-                {"type": "string"},
-                {"type": "array", "items": {"type": "string"}},
+                {"$ref": "#/components/schemas/PendingOOBIOperation"},
+                {"$ref": "#/components/schemas/CompletedOOBIOperation"},
+                {"$ref": "#/components/schemas/FailedOOBIOperation"},
             ]
         }
-        keyStateRecordSchema["properties"]["nt"] = {
+
+        # Register the Query operation schemas
+        self.spec.components.schema(
+            "PendingQueryOperation",
+            schema=marshmallow_dataclass.class_schema(optypes.PendingQueryOperation)(),
+        )
+        self.spec.components.schema(
+            "CompletedQueryOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.CompletedQueryOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "FailedQueryOperation",
+            schema=marshmallow_dataclass.class_schema(optypes.FailedQueryOperation)(),
+        )
+        self.spec.components.schemas["QueryOperation"] = {
             "oneOf": [
-                {"type": "string"},
-                {"type": "array", "items": {"type": "string"}},
+                {"$ref": "#/components/schemas/PendingQueryOperation"},
+                {"$ref": "#/components/schemas/CompletedQueryOperation"},
+                {"$ref": "#/components/schemas/FailedQueryOperation"},
             ]
         }
-        if "kt" not in keyStateRecordSchema["required"]:
-            keyStateRecordSchema["required"].append("kt")
-        if "nt" not in keyStateRecordSchema["required"]:
-            keyStateRecordSchema["required"].append("nt")
+
+        # Register the EndRole operation schemas
+        self.spec.components.schema(
+            "PendingEndRoleOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.PendingEndRoleOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "CompletedEndRoleOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.CompletedEndRoleOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "FailedEndRoleOperation",
+            schema=marshmallow_dataclass.class_schema(optypes.FailedEndRoleOperation)(),
+        )
+        self.spec.components.schemas["CompletedEndRoleOperation"]["properties"][
+            "response"
+        ] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/RPY_V_1"},
+                {"$ref": "#/components/schemas/RPY_V_2"},
+            ]
+        }
+        self.spec.components.schemas["EndRoleOperation"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/PendingEndRoleOperation"},
+                {"$ref": "#/components/schemas/CompletedEndRoleOperation"},
+                {"$ref": "#/components/schemas/FailedEndRoleOperation"},
+            ]
+        }
+
+        # Register the Witness operation schemas
+        self.spec.components.schema(
+            "PendingWitnessOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.PendingWitnessOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "CompletedWitnessOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.CompletedWitnessOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "FailedWitnessOperation",
+            schema=marshmallow_dataclass.class_schema(optypes.FailedWitnessOperation)(),
+        )
+        self.spec.components.schemas["CompletedWitnessOperation"]["properties"][
+            "response"
+        ] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/ICP_V_1"},
+                {"$ref": "#/components/schemas/ICP_V_2"},
+                {"$ref": "#/components/schemas/ROT_V_1"},
+                {"$ref": "#/components/schemas/ROT_V_2"},
+                {"$ref": "#/components/schemas/IXN_V_1"},
+                {"$ref": "#/components/schemas/IXN_V_2"},
+            ]
+        }
+        self.spec.components.schemas["WitnessOperation"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/PendingWitnessOperation"},
+                {"$ref": "#/components/schemas/CompletedWitnessOperation"},
+                {"$ref": "#/components/schemas/FailedWitnessOperation"},
+            ]
+        }
+
+        # Register the Delegation operation schemas
+        self.spec.components.schema(
+            "PendingDelegationOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.PendingDelegationOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "CompletedDelegationOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.CompletedDelegationOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "FailedDelegationOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.FailedDelegationOperation
+            )(),
+        )
+        self.spec.components.schemas["CompletedDelegationOperation"]["properties"][
+            "response"
+        ] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/DIP_V_1"},
+                {"$ref": "#/components/schemas/DIP_V_2"},
+                {"$ref": "#/components/schemas/DRT_V_1"},
+                {"$ref": "#/components/schemas/DRT_V_2"},
+            ]
+        }
+        self.spec.components.schemas["DelegationOperation"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/PendingDelegationOperation"},
+                {"$ref": "#/components/schemas/CompletedDelegationOperation"},
+                {"$ref": "#/components/schemas/FailedDelegationOperation"},
+            ]
+        }
+
+        # Registry operation schemas
+        self.spec.components.schema(
+            "PendingRegistryOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.PendingRegistryOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "CompletedRegistryOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.CompletedRegistryOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "FailedRegistryOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.FailedRegistryOperation
+            )(),
+        )
+        self.spec.components.schemas["RegistryOperation"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/PendingRegistryOperation"},
+                {"$ref": "#/components/schemas/CompletedRegistryOperation"},
+                {"$ref": "#/components/schemas/FailedRegistryOperation"},
+            ]
+        }
+
+        # LocScheme operation schemas
+        self.spec.components.schema(
+            "PendingLocSchemeOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.PendingLocSchemeOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "CompletedLocSchemeOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.CompletedLocSchemeOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "FailedLocSchemeOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.FailedLocSchemeOperation
+            )(),
+        )
+        self.spec.components.schemas["LocSchemeOperation"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/PendingLocSchemeOperation"},
+                {"$ref": "#/components/schemas/CompletedLocSchemeOperation"},
+                {"$ref": "#/components/schemas/FailedLocSchemeOperation"},
+            ]
+        }
+
+        # Challenge operation schemas
+        self.spec.components.schema(
+            "PendingChallengeOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.PendingChallengeOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "CompletedChallengeOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.CompletedChallengeOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "FailedChallengeOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.FailedChallengeOperation
+            )(),
+        )
+        self.spec.components.schemas["ChallengeOperationResponse"]["properties"][
+            "exn"
+        ] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/EXN_V_1"},
+                {"$ref": "#/components/schemas/EXN_V_2"},
+            ]
+        }
+        self.spec.components.schemas["ChallengeOperation"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/PendingChallengeOperation"},
+                {"$ref": "#/components/schemas/CompletedChallengeOperation"},
+                {"$ref": "#/components/schemas/FailedChallengeOperation"},
+            ]
+        }
+
+        # Exchange operation schemas
+        self.spec.components.schema(
+            "PendingExchangeOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.PendingExchangeOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "CompletedExchangeOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.CompletedExchangeOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "FailedExchangeOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.FailedExchangeOperation
+            )(),
+        )
+        self.spec.components.schemas["ExchangeOperation"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/PendingExchangeOperation"},
+                {"$ref": "#/components/schemas/CompletedExchangeOperation"},
+                {"$ref": "#/components/schemas/FailedExchangeOperation"},
+            ]
+        }
+
+        # Submit operation schemas
+        self.spec.components.schema(
+            "PendingSubmitOperation",
+            schema=marshmallow_dataclass.class_schema(optypes.PendingSubmitOperation)(),
+        )
+        self.spec.components.schema(
+            "CompletedSubmitOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.CompletedSubmitOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "FailedSubmitOperation",
+            schema=marshmallow_dataclass.class_schema(optypes.FailedSubmitOperation)(),
+        )
+        self.spec.components.schemas["SubmitOperation"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/PendingSubmitOperation"},
+                {"$ref": "#/components/schemas/CompletedSubmitOperation"},
+                {"$ref": "#/components/schemas/FailedSubmitOperation"},
+            ]
+        }
+
+        # Done operation schemas
+        self.spec.components.schema(
+            "DoneOperationMetadata",
+            schema=marshmallow_dataclass.class_schema(optypes.DoneOperationMetadata)(),
+        )
+        self.spec.components.schemas["DoneOperationMetadata"]["properties"][
+            "response"
+        ] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/ICP_V_1"},
+                {"$ref": "#/components/schemas/ICP_V_2"},
+                {"$ref": "#/components/schemas/ROT_V_1"},
+                {"$ref": "#/components/schemas/ROT_V_2"},
+                {"$ref": "#/components/schemas/EXN_V_1"},
+                {"$ref": "#/components/schemas/EXN_V_2"},
+            ]
+        }
+        self.spec.components.schema(
+            "PendingDoneOperation",
+            schema=marshmallow_dataclass.class_schema(optypes.PendingDoneOperation)(),
+        )
+        self.spec.components.schema(
+            "CompletedDoneOperation",
+            schema=marshmallow_dataclass.class_schema(optypes.CompletedDoneOperation)(),
+        )
+        self.spec.components.schema(
+            "FailedDoneOperation",
+            schema=marshmallow_dataclass.class_schema(optypes.FailedDoneOperation)(),
+        )
+        self.spec.components.schemas["CompletedDoneOperation"]["properties"][
+            "response"
+        ] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/ICP_V_1"},
+                {"$ref": "#/components/schemas/ICP_V_2"},
+                {"$ref": "#/components/schemas/ROT_V_1"},
+                {"$ref": "#/components/schemas/ROT_V_2"},
+                {"$ref": "#/components/schemas/EXN_V_1"},
+                {"$ref": "#/components/schemas/EXN_V_2"},
+            ]
+        }
+        self.spec.components.schemas["DoneOperation"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/PendingDoneOperation"},
+                {"$ref": "#/components/schemas/CompletedDoneOperation"},
+                {"$ref": "#/components/schemas/FailedDoneOperation"},
+            ]
+        }
+
+        # Credential operation schemas
+        self.spec.components.schema(
+            "CredentialOperationMetadata",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.CredentialOperationMetadata
+            )(),
+        )
+        self.spec.components.schemas["CredentialOperationMetadata"]["properties"][
+            "ced"
+        ] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/ACDC_V_1"},
+                {"$ref": "#/components/schemas/ACDC_V_2"},
+            ]
+        }
+        self.spec.components.schemas["CredentialOperationMetadata"]["properties"][
+            "depends"
+        ] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/ROT_V_1"},
+                {"$ref": "#/components/schemas/ROT_V_2"},
+                {"$ref": "#/components/schemas/DRT_V_1"},
+                {"$ref": "#/components/schemas/DRT_V_2"},
+                {"$ref": "#/components/schemas/IXN_V_1"},
+                {"$ref": "#/components/schemas/IXN_V_2"},
+            ]
+        }
+        self.spec.components.schema(
+            "CredentialOperationResponse",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.CredentialOperationResponse
+            )(),
+        )
+        self.spec.components.schemas["CredentialOperationResponse"]["properties"][
+            "ced"
+        ] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/ACDC_V_1"},
+                {"$ref": "#/components/schemas/ACDC_V_2"},
+            ]
+        }
+        self.spec.components.schema(
+            "PendingCredentialOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.PendingCredentialOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "CompletedCredentialOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.CompletedCredentialOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "FailedCredentialOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.FailedCredentialOperation
+            )(),
+        )
+        self.spec.components.schemas["CredentialOperation"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/PendingCredentialOperation"},
+                {"$ref": "#/components/schemas/CompletedCredentialOperation"},
+                {"$ref": "#/components/schemas/FailedCredentialOperation"},
+            ]
+        }
+
+        # Group operation schemas
+        self.spec.components.schema(
+            "PendingGroupOperation",
+            schema=marshmallow_dataclass.class_schema(optypes.PendingGroupOperation)(),
+        )
+        self.spec.components.schema(
+            "CompletedGroupOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.CompletedGroupOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "FailedGroupOperation",
+            schema=marshmallow_dataclass.class_schema(optypes.FailedGroupOperation)(),
+        )
+        self.spec.components.schemas["CompletedGroupOperation"]["properties"][
+            "response"
+        ] = ancEvent
+        self.spec.components.schemas["GroupOperation"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/PendingGroupOperation"},
+                {"$ref": "#/components/schemas/CompletedGroupOperation"},
+                {"$ref": "#/components/schemas/FailedGroupOperation"},
+            ]
+        }
+
+        # Delegator operation schemas
+        self.spec.components.schema(
+            "DelegatorOperationMetadata",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.DelegatorOperationMetadata
+            )(),
+        )
+        self.spec.components.schemas["DelegatorOperationMetadata"]["properties"][
+            "depends"
+        ] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/GroupOperation"},
+                {"$ref": "#/components/schemas/WitnessOperation"},
+                {"$ref": "#/components/schemas/DoneOperation"},
+            ]
+        }
+
+        self.spec.components.schema(
+            "PendingDelegatorOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.PendingDelegatorOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "CompletedDelegatorOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.CompletedDelegatorOperation
+            )(),
+        )
+        self.spec.components.schema(
+            "FailedDelegatorOperation",
+            schema=marshmallow_dataclass.class_schema(
+                optypes.FailedDelegatorOperation
+            )(),
+        )
+        self.spec.components.schemas["DelegatorOperation"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/PendingDelegatorOperation"},
+                {"$ref": "#/components/schemas/CompletedDelegatorOperation"},
+                {"$ref": "#/components/schemas/FailedDelegatorOperation"},
+            ]
+        }
+
+        self.spec.components.schemas["Operation"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/OOBIOperation"},
+                {"$ref": "#/components/schemas/QueryOperation"},
+                {"$ref": "#/components/schemas/EndRoleOperation"},
+                {"$ref": "#/components/schemas/WitnessOperation"},
+                {"$ref": "#/components/schemas/DelegationOperation"},
+                {"$ref": "#/components/schemas/RegistryOperation"},
+                {"$ref": "#/components/schemas/LocSchemeOperation"},
+                {"$ref": "#/components/schemas/ChallengeOperation"},
+                {"$ref": "#/components/schemas/ExchangeOperation"},
+                {"$ref": "#/components/schemas/SubmitOperation"},
+                {"$ref": "#/components/schemas/DoneOperation"},
+                {"$ref": "#/components/schemas/CredentialOperation"},
+                {"$ref": "#/components/schemas/GroupOperation"},
+                {"$ref": "#/components/schemas/DelegatorOperation"},
+            ]
+        }
 
         self.addRoutes(app)
 

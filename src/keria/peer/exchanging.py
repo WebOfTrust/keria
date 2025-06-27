@@ -15,7 +15,7 @@ from keri.core import coring, eventing, serdering
 from keri.peer import exchanging
 from keri.help import ogler
 from keria.core import httping
-from keria.app import agenting
+from keria.utils.openapi import dataclassFromFielddom
 
 logger = ogler.getLogger()
 
@@ -29,6 +29,17 @@ def loadEnds(app):
 
     exnResEnd = ExchangeResourceEnd()
     app.add_route("/exchanges/{said}", exnResEnd)
+
+
+exnFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.exn]
+EXN_V_1, EXNSchema_V_1 = dataclassFromFielddom("EXN_V_1", exnFieldDomV1)
+
+exnFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_2_0
+][serdering.Ilks.exn]
+EXN_V_2, EXNSchema_V_2 = dataclassFromFielddom("EXN_V_2", exnFieldDomV2)
 
 
 class ExchangeCollectionEnd:
@@ -158,7 +169,7 @@ class ExchangeCollectionEnd:
 class ExchangeResource:
     """Data class for exchange message resource"""
 
-    exn: Union["agenting.EXN_V_1", "agenting.EXN_V_2"]  # type: ignore
+    exn: Union["EXN_V_1", "EXN_V_2"]  # type: ignore
     pathed: dict
 
     def to_dict(self):
