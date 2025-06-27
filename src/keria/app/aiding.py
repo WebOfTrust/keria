@@ -456,6 +456,8 @@ class IdentifierCollectionEnd:
         responses:
             202:
                 description: Identifier creation is in progress. The response is a long running operation.
+                application/json:
+                    schema: IdentifierCreateResponse
             400:
                 description: Bad request. This could be due to missing or invalid parameters.
         """
