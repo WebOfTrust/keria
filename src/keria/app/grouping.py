@@ -6,8 +6,10 @@ keria.app.grouping module
 """
 
 import json
+from dataclasses import dataclass
 
 import falcon
+from typing import Optional, Union
 from keri import core
 from keri.app import habbing
 from keri.core import coring, eventing, serdering
@@ -15,6 +17,7 @@ from keri.help import ogler
 from keri.kering import SerializeError
 
 from keria.core import httping, longrunning
+from keria.app import aiding, credentialing, agenting
 
 logger = ogler.getLogger()
 
@@ -39,6 +42,19 @@ class MultisigRequestCollectionEnd:
             req (falcon.Request): HTTP request object
             rep (falcon.Response): HTTP response object
             name (str): AID prefix or human-readable name of Hab to load credentials for
+
+        responses:
+            200:
+                description: Successfully created the multisig request.
+            content:
+                application/json:
+                    schema:
+                        type: object
+                        $ref: '#/components/schemas/Exn'
+            400:
+                description: Bad request. This could be due to missing or invalid parameters, or the identifier is not a multisig.
+            404:
+                description: Alias or prefix {name} is not a valid reference to an identifier.
 
         """
         agent = req.context.agent
@@ -167,6 +183,11 @@ class MultisigJoinCollectionEnd:
         responses:
             202:
                 description: Successfully created the multisig request.
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            $ref: '#/components/schemas/Operation'
             400:
                 description: Bad request. Bad request. This could be due to missing or invalid parameters.
             404:
@@ -251,6 +272,128 @@ class MultisigJoinCollectionEnd:
         rep.data = op.to_json().encode("utf-8")
 
 
+@dataclass
+class MultisigInceptEmbeds:
+    icp: Union["aiding.ICP_V_1", "aiding.ICP_V_2"]  # type: ignore
+
+
+@dataclass
+class MultisigRotateEmbeds:
+    rot: Union["credentialing.ROT_V_1", "credentialing.ROT_V_2"]  # type: ignore
+
+
+@dataclass
+class MultisigInteractEmbeds:
+    ixn: Union["credentialing.IXN_V_1", "credentialing.IXN_V_2"]  # type: ignore
+
+
+@dataclass
+class MultisigRegistryInceptEmbeds:
+    vcp: "agenting.VCP_V_1"  # type: ignore
+    anc: credentialing.AnchoringEvent  # type: ignore
+
+
+@dataclass
+class MultisigIssueEmbeds:
+    acdc: Union["credentialing.ACDC_V_1", "credentialing.ACDC_V_2"]  # type: ignore
+    iss: "agenting.ISS_V_1"  # type: ignore
+    anc: credentialing.AnchoringEvent  # type: ignore
+
+
+@dataclass
+class MultisigRevokeEmbeds:
+    rev: "agenting.REV_V_1"  # type: ignore
+    anc: credentialing.AnchoringEvent  # type: ignore
+
+
+@dataclass
+class MultisigRpyEmbeds:
+    rpy: Union["aiding.RPY_V_1", "aiding.RPY_V_2"]  # type: ignore
+    anc: credentialing.AnchoringEvent  # type: ignore
+
+
+@dataclass
+class MultisigExnEmbeds:
+    exn: Union["agenting.EXN_V_1", "agenting.EXN_V_2"]  # type: ignore
+
+
+@dataclass
+class ExnEmbedsBase:
+    d: str
+
+
+@dataclass
+class ExnInceptEmbeds(ExnEmbedsBase, MultisigInceptEmbeds):
+    pass
+
+
+@dataclass
+class ExnRotateEmbeds(ExnEmbedsBase, MultisigRotateEmbeds):
+    pass
+
+
+@dataclass
+class ExnInteractEmbeds(ExnEmbedsBase, MultisigInteractEmbeds):
+    pass
+
+
+@dataclass
+class ExnRegistryInceptEmbeds(ExnEmbedsBase, MultisigRegistryInceptEmbeds):
+    pass
+
+
+@dataclass
+class ExnIssueEmbeds(ExnEmbedsBase, MultisigIssueEmbeds):
+    pass
+
+
+@dataclass
+class ExnRevokeEmbeds(ExnEmbedsBase, MultisigRevokeEmbeds):
+    pass
+
+
+@dataclass
+class ExnRpyEmbeds(ExnEmbedsBase, MultisigRpyEmbeds):
+    pass
+
+
+@dataclass
+class ExnExnEmbeds(ExnEmbedsBase, MultisigExnEmbeds):
+    pass
+
+
+# Type alias for all possible ExnEmbeds types
+ExnEmbeds = Union[
+    ExnInceptEmbeds,
+    ExnRotateEmbeds,
+    ExnInteractEmbeds,
+    ExnRegistryInceptEmbeds,
+    ExnIssueEmbeds,
+    ExnRevokeEmbeds,
+    ExnRpyEmbeds,
+    ExnExnEmbeds,
+]
+
+
+@dataclass
+class ExnMultisig:
+    exn: Union["agenting.EXN_V_1", "agenting.EXN_V_2"]  # type: ignore
+    paths: dict
+    e: Union[
+        MultisigInceptEmbeds,
+        MultisigRotateEmbeds,
+        MultisigInteractEmbeds,
+        MultisigRegistryInceptEmbeds,
+        MultisigIssueEmbeds,
+        MultisigRevokeEmbeds,
+        MultisigRpyEmbeds,
+        MultisigExnEmbeds,
+    ]
+    groupName: Optional[str] = None
+    memberName: Optional[str] = None
+    sender: Optional[str] = None
+
+
 class MultisigRequestResourceEnd:
     """Resource endpoint class for getting full data for a mulisig exn request from a notification"""
 
@@ -277,6 +420,12 @@ class MultisigRequestResourceEnd:
         responses:
             200:
                 description: Successfully retrieved the multisig resource.
+                content:
+                    application/json:
+                        schema:
+                            type: array
+                            items:
+                                $ref: '#/components/schemas/ExnMultisig'
             400:
                 description: Bad request. This could be due to missing or invalid parameters.
             404:
