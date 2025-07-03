@@ -174,7 +174,6 @@ class SignedHeaderAuthenticator(Authenticator):
             response (Response): Falcon response object
 
         """
-
         request.path = quote(request.path)
         agent = request.context.agent
         response.set_header('Signify-Resource', agent.agentHab.pre)
@@ -251,6 +250,7 @@ class ESSRAuthenticator(Authenticator):
             raise kering.AuthNError("ESSR payload missing or incorrect encrypted sender")
 
         request.reinit(environ)
+        request.path = unquote(request.path)
         request.context.mode = AuthMode.ESSR
         request.context.agent = agent
 
@@ -262,6 +262,7 @@ class ESSRAuthenticator(Authenticator):
             response (Response): Falcon response object
 
         """
+        request.path = quote(request.path)
         agent = request.context.agent
         response.set_header("SIGNIFY-RESOURCE", agent.agentHab.pre)  # ESSR "Encrypt Sender"
         inner = self.serializeResponse(request.env.get("SERVER_PROTOCOL"), response).encode("utf-8")
