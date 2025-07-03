@@ -328,10 +328,10 @@ class ESSRAuthenticator(Authenticator):
             headers[header_name.strip()] = header_value.strip()
             i += 1
 
-        body = "\n".join(lines[i + 1:]).strip()
+        body = "\n".join(lines[i + 1:]).strip().encode("utf-8")
 
         environ = {
-            "wsgi.input": BytesIO(body.encode("utf-8")),
+            "wsgi.input": BytesIO(body),
             "wsgi.errors": sys.stderr,
             "wsgi.url_scheme": splitUrl.scheme,
             "REQUEST_METHOD": method,

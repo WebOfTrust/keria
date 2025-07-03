@@ -390,6 +390,27 @@ def test_build_environ():
                        'wsgi.input': mock.ANY,
                        'wsgi.url_scheme': 'https'}
 
+    http = """POST https://127.0.0.1/main HTTP/1.1
+    content-type: application/json
+    signify-resource: ECjmyrSFFfOb3VJi1JUKTy-Vn766h-VKl3XY8OEFdxBF
+
+    ññ
+    """
+    environ = authing.ESSRAuthenticator.buildEnviron(http)
+    assert environ == {'CONTENT_LENGTH': '4',  # ñ takes 2
+                       'CONTENT_TYPE': 'application/json',
+                       'HTTP_CONTENT_TYPE': 'application/json',
+                       'HTTP_SIGNIFY_RESOURCE': 'ECjmyrSFFfOb3VJi1JUKTy-Vn766h-VKl3XY8OEFdxBF',
+                       'PATH_INFO': '/main',
+                       'QUERY_STRING': '',
+                       'REQUEST_METHOD': 'POST',
+                       'SERVER_NAME': '127.0.0.1',
+                       'SERVER_PORT': '433',
+                       'SERVER_PROTOCOL': 'HTTP/1.1',
+                       'wsgi.errors': mock.ANY,
+                       'wsgi.input': mock.ANY,
+                       'wsgi.url_scheme': 'https'}
+
 
 def test_serialize_response():
     rep = falcon.Response()
