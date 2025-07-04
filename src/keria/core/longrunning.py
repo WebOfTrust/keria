@@ -6,8 +6,7 @@ keria.core.longrunning module
 """
 import datetime
 from collections import namedtuple
-from dataclasses import dataclass, asdict, field
-from typing import Any, Optional, Union, List
+from dataclasses import dataclass, asdict
 
 import falcon
 import json
@@ -39,37 +38,12 @@ class Status:
 
 @dataclass_json
 @dataclass
-class OpMetadata:
-    cid: str
-    role: str
-    eid: str
-
-
-@dataclass_json
-@dataclass
-class OpResponseKel:
-    v: str
-    t: str
-    d: str
-    i: str
-    s: str
-    kt: str
-    k: List[str]
-    nt: str
-    n: List[str]
-    bt: str
-    b: List[str]
-    c: List[Any] = field(default_factory=list)
-    a: List[Any] = field(default_factory=list)
-
-
-@dataclass_json
-@dataclass
 class Operation:
     name: str
-    metadata: OpMetadata
+    metadata: dict
     done: bool = False
-    response: Optional[Union[OpResponseKel, dict]] = None
+    error: Status = None
+    response: dict = None
 
 
 @dataclass

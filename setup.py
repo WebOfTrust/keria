@@ -91,8 +91,6 @@ setup(
         'http_sfv==0.9.9',
         'dataclasses_json==0.6.7',
         'apispec==6.8.1',
-        'marshmallow_dataclass==8.7.1',
-        'marshmallow_oneofschema==3.2.0',
     ],
     extras_require={
         'test': ['pytest', 'coverage'],
