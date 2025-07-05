@@ -288,11 +288,31 @@ def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):
 
 class Agency(doing.DoDoer):
     """
-    Agency
-
+    An Agency manages a collection of agents by using a set of subtasks to handle
+    - agent provisioning
+    - agent deletion
+    - shutting down agents
     """
 
-    def __init__(self, name, bran, base="", releaseTimeout=None, configFile=None, configDir=None, adb=None, temp=False, curls=None, iurls=None, durls=None):
+    def __init__(self, name, bran, base="", releaseTimeout=None,
+                 configFile=None, configDir=None, adb=None, temp=False,
+                 curls=None, iurls=None, durls=None):
+        """
+        Initialize the Agency with the given parameters.
+
+        Parameters:
+            name (str): Name of the agency.
+            bran (str): Passcode for the agency's keystore.
+            base (str): Base directory for the agency's keystore.
+            releaseTimeout (int): Timeout for releasing agents.
+            configFile (str): Configuration file name for the agency.
+            configDir (str): Directory for configuration files.
+            adb (AgencyBaser): Optional AgencyBaser instance for database access.
+            temp (bool): Whether to use a temporary database.
+            curls (list): Controller Service Endpoint Location OOBI URLs to resolve at startup of each Agent.
+            iurls (list): General Introduction OOBI URLs to resolve at startup of each Agent.
+            durls (list): Data OOBI URLs resolved at startup of each Agent.
+        """
         self.name = name
         self.base = base
         self.bran = bran
@@ -319,6 +339,16 @@ class Agency(doing.DoDoer):
         super(Agency, self).__init__(doers=[Releaser(self, releaseTimeout=releaseTimeout)])
 
     def create(self, caid, salt=None):
+        """
+        Create and return a new agent with the given caid and optional salt.
+
+        Returns:
+            Agent: The newly created agent.
+
+        Parameters:
+            caid (str): The controller AID (Agent Identifier) for the new agent.
+            salt (str): Optional QB64 salt for the agent's Habery. If not provided, a random salt will be used.
+        """
         ks = keeping.Keeper(name=caid,
                             base=self.base,
                             temp=self.temp,
@@ -375,6 +405,7 @@ class Agency(doing.DoDoer):
         return agent
 
     def delete(self, agent):
+        """Deletes the agent from the agency and cleans up its resources."""
         self.adb.agnt.rem(key=agent.caid)
         agent.hby.deleteHab(agent.caid)
         agent.hby.ks.close(clear=True)
@@ -382,7 +413,13 @@ class Agency(doing.DoDoer):
 
         del self.agents[agent.caid]
 
+    @deprecated(deprecated_in="0.2.0-rc2", removed_in="1.0.0",
+                details="Use Agency.shutdownagency and Agent.shutdownAgent instead.")
     def shut(self, agent):
+        """
+        Shuts down an agent and cleans up its resources.
+
+        """
         logger.info(f"Shutting down agent {agent.caid}")
         agent.remove(agent.doers)
         self.remove([agent])
@@ -401,6 +438,12 @@ class Agency(doing.DoDoer):
             logger.error(f"Error closing databases for agent {agent.caid}: {ex}")
 
     def get(self, caid):
+        """
+        Retrieve an agent from the agency's agent list by controller AID (caid).
+
+        Returns:
+            Agent: The agent associated with the given caid, or None if not found.
+        """
         if caid in self.agents:
             agent = self.agents[caid]
             agent.last = helping.nowUTC()
@@ -430,6 +473,12 @@ class Agency(doing.DoDoer):
         return agent
 
     def lookup(self, pre):
+        """
+        Look up an agent by its prefix (pre) in the agency's database.
+
+        Returns:
+            Agent: The agent associated with the given prefix, or None if not found.
+        """
         # Check to see if this is a managed AID
         if (prefixer := self.adb.aids.get(keys=(pre,))) is not None:
             caid = prefixer.qb64
@@ -445,6 +494,7 @@ class Agency(doing.DoDoer):
             return None
 
     def incept(self, caid, pre):
+        """Maps a given agent to its controller AID (caid) in the agency's database."""
         self.adb.aids.pin(keys=(pre,), val=coring.Prefixer(qb64=caid))
 
     def shutdownAgency(self):
@@ -483,20 +533,115 @@ class Agency(doing.DoDoer):
 
 class Agent(doing.DoDoer):
     """
+    An always-on agent for a remote Signify controller of keys at the edge. The top level, DoDoer task object
+    representing the Habery (database) and all associated KEL, ACDC (TEL), and other processing for its Signify controller.
 
-    The top level object and DoDoer representing a Habery for a remote controller and all associated processing
-
+    This agent acts as a:
+    - always-on communications mailbox for the Signify controller and any AIDs it controls
+    - delegation communication proxy for any AIDs the Signify controller controls
+    - KEL host for each the Signify conroller, any AIDs it controlls, and the agent's KEL
     """
 
     def __init__(self, hby, rgy, agentHab, agency, caid, **opts):
-        self.hby = hby
-        self.rgy = rgy
-        self.agentHab = agentHab
+        """
+        Initialize the Agent with the given Habery, Regery, and agent's Hab.
+        Parameters:
+            hby (Habery): The Habery instance for the agent's database access.
+            rgy (Regery): The Regery instance for the agent's registry access.
+            agentHab (Hab): The Hab instance representing the agent itself.
+            agency (Agency): The Agency instance managing this agent.
+            caid (str): The controller AID identifier for this agent.
+            opts (dict): Additional options for the Agent initialization.
+
+        Attributes:
+            .agency (Agency): The Agency instance managing this agent.
+            .caid (str): The controller AID identifier for this agent.
+            .hby (Habery): The Habery instance for the agent's local database.
+            .agentHab (Hab): The Hab instance representing the agent itself.
+            .rgy (Regery): The Regery instance for the agent's registry access.
+            .cfd (MappingProxyType): Configuration data for the agent.
+            .tocks (MappingProxyType): Escrow timing configurations for the underlying Hio tasks comprising this agent.
+            .last (datetime.datetime): Last activity timestamp for the agent.
+            .shouldShutdown (bool): Flag indicating if the agent should shut down.
+            .swain (delegating.Anchorer): Watches the delegator for delegation approval seals for inception and rotation.
+            .counselor (Counselor): Handles multisig transaction signing orchestration including for multisig operations.
+                in delegated identifiers.
+            .org (connecting.Organizer): Contact data manager for all OOBI-based contacts for an agent.
+            .mgr (RemoteManager): Manages local key index storage for remotely managed keys.
+            .cues (Deck): Holds KEL and TEL event messages for processing.
+            .groups (Deck): Holds multisig event messages for processing.
+            .anchors (Deck): Holds delegation anchors for processing.
+            .witners (Deck): Holds witness-related data for processing.
+            .queries (Deck): Holds key state query messages for processing.
+            .exchanges (Deck): Holds exchange messages for processing.
+            .grants (Deck): Holds IPEX grant messages for processing.
+            .admits (Deck): Holds IPEX admit messages for processing.
+            .submits (Deck): Holds KEL messages to be resubmitted to witnesses to obtain receipts of.
+            .witq (WitnessInquisitor): Retrieves key state from witnesses.
+            .witPub (WitnessPublisher): Publishes key state to witnesses.
+            .witDoer (WitnessReceiptor): Propagates key events and receipts across the current witness set.
+            .witSubmitDoer (WitnessReceiptor): Resubmits KEL messages to witnesses to obtain receipts of.
+            .rep (Respondant): Routes response 'exn' messages by topic and handles cues for receipt, reply, and replay messages.
+            .notifier (Notifier): Notifies the agent of events and changes.
+            .mux (Multiplexor): Coordinates peer-to-peer messages between group multisig participants.
+            .verifier (Verifier): Verifies and escrows TEL events (registries, credentials).
+            .registrar (Registrar): Creation and escrowing for registries and credential issuance and revocation.
+            .credentialer (Credentialer): Handles the credential missing signature escrow and credential schema validation.
+            .seeker (Seeker): Database indexing saved credentials to simplify searching.
+            .exnseeker (ExnSeeker): Database indexing saved exchange 'exn' messages to simplify searching.
+            .exc (Exchanger): Handles peer-to-peer message routing and processing.
+            .submitter (Submitter): Submits the last event from a KEL to the witnesses to obtain receipts and propagate to all other witnesses.
+            .monitor (Monitor): Monitors the agent's state and performs long-running tasks like credential issuance and revocation.
+            .rvy (Revery): Reply event message processor for routing and processing 'rpy' messages.
+            .kvy (Kevery): Key Event Log (KEL) event processor for routing and processing KEL messages.
+            .tvy (Tevery): TEL event processor for routing and processing TEL messages.
+            .parser (Parser): Parses incoming messages and routes them to the appropriate handlers.
+            .doers (List[Doer]): List of Doers that handle various tasks for the agent.
+
+         Subtasks (Doers, DoDoers):
+            oobiery (Oobiery): Handles OOBI resolution.
+            receiptor (Receiptor): Obtains receipts on key events from witnesses and propagates receipts to each current witness of a controller.
+            witq (WitnessInquisitor): Retrieves key state from witnesses.
+            witPub (WitnessPublisher): Publishes key state to witnesses.
+            witDoer (WitnessReceiptor): Propagates key events and receipts across the current witness set.
+            witSubmitDoer (WitnessReceiptor): Resubmits KEL messages to witnesses to obtain receipts of.
+            rep (Respondant): Routes response 'exn' messages by topic and handles cues for receipt, reply, and replay messages.
+            HaberyDoer: Handles setup and tear down for the Habery
+            signaler (Signaler): Sends signals to the controller of the agent.
+            notifier (Notifier): Notifies the agent of events and changes.
+            submitter (Submitter): Submits the last event from a KEL to the witnesses to obtain receipts and propagate to all other witnesses.
+            monitor (Monitor): Monitors the agent's state and performs long-running tasks like credential issuance and revocation.
+            Initer: prints a log message when the agent is initialized with the agent and controller AIDs.
+            Querier: Handles key state queries by sequence number, anchor, or prefix.
+            Escrower: Handles all message escrows including KEL, TEL, Reply, and Exchange messages.
+            Parser: Runs the Parser to parse incoming messages and route them to the appropriate handlers.
+            Witnesser: Performs event receipting, catchup, and propagation all current witnesses for KEL events.
+            Delegator: Handles delegated event processing.
+            ExchangeSender: Sends exchange messages to other controllers.
+            Granter: Handles IPEX grant messages.
+            Admitter: Handles IPEX admit messages.
+            GroupRequester: Watches for and handles multisig group requests by delegating to the Counselor.
+            SeekerDoer: Handles database indexing and queries for saved credentials.
+            ExnCueDoer: Handles database indexing and queries for saved exchange 'exn' messages.
+
+        Data Buffers (Decks):
+            cues (Deck): for KEL and TEL event messages.
+            groups (Deck): multisig event messages.
+            anchors (Deck): delegation anchors.
+            witners (Deck): Holds witness-related data.
+            queries (Deck): key state query messages.
+            exchanges (Deck): exchange messages.
+            grants (Deck): IPEX grant messages.
+            admits (Deck): IPEX admit messages.
+            submits (Deck): KEL messages to be resubmitted to witnesses to obtain receipts of.
+        """
         self.agency = agency
         self.caid = caid
+        self.hby = hby
+        self.agentHab = agentHab
+        self.rgy = rgy
         self.cfd = MappingProxyType(dict(self.hby.cf.get()) if self.hby.cf is not None else dict())
         self.tocks = MappingProxyType(self.cfd.get("tocks", {}))
-
         self.last = helping.nowUTC()
         self._shouldShutdown = False
 
@@ -678,6 +823,10 @@ class ParserDoer(doing.Doer):
 
 
 class Witnesser(doing.Doer):
+    """
+    Uses the Receiptor to obtain key event receipts from witnesses or on rotation events to catch up
+    witnesses as needed to the current key state.
+    """
 
     def __init__(self, receiptor, witners, tock=0.0):
         self.receiptor = receiptor
@@ -954,19 +1103,27 @@ class ExchangeCueDoer(doing.Doer):
 
 
 class Initer(doing.Doer):
+    """Prints a message once an agent is initialized."""
     def __init__(self, agentHab, caid, tock=0.0):
         self.agentHab = agentHab
         self.caid = caid
         self.tock = tock
         super(Initer, self).__init__(tock=self.tock)
 
-    def recur(self, tyme):
-        """ Prints Agent name and prefix """
+    def print_agent(self):
+        """Prints agent and associated controller name and prefix """
         if not self.agentHab.inited:
             return False
-
-        print("  Agent:", self.agentHab.pre, "  Controller:", self.caid)
+        agent_label = f"  Agent Pre: {self.agentHab.pre}, Controller: {self.caid}"
+        # if log level not info or lower just print
+        if logger.level > logging.INFO:
+            print(agent_label)
+        else:
+            logger.info(f"  Agent Pre: {self.agentHab.pre}, Controller: {self.caid}")
         return True
+
+    def recur(self, tyme):
+        return self.print_agent()
 
 
 class GroupRequester(doing.Doer):
@@ -980,7 +1137,7 @@ class GroupRequester(doing.Doer):
         super(GroupRequester, self).__init__(tock=self.tock)
 
     def recur(self, tyme):
-        """ Checks cue for group proceccing requests and processes any with Counselor """
+        """ Checks cue for group processing requests and handles any with Counselor """
         if self.groups:
             msg = self.groups.popleft()
             serder = msg["serder"]
@@ -996,6 +1153,9 @@ class GroupRequester(doing.Doer):
 
 
 class Querier(doing.DoDoer):
+    """
+    Performs key state queries depending on sequence number, anchor, or prefix.
+    """
 
     def __init__(self, hby, agentHab, queries, kvy, tock=0.0):
         self.hby = hby

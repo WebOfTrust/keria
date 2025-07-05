@@ -1257,8 +1257,24 @@ class Registrar:
 
 
 class Credentialer:
+    """
+    Places credentials into the credential missing signature escrow, handles the credential signature
+    escrow, and has utility functions to validate a credential against its schema and to know
+    if a credential's anchoring event is completely signed.
+    """
 
     def __init__(self, agentHab, hby, rgy, registrar, verifier, notifier):
+        """
+        Initialize the Credentialer
+
+        Parameters:
+            agentHab (Hab): Hab of the agent performing credential operations
+            hby (Habery): Habery in which the Agent lives
+            rgy (Regery): Container for local registries and their associated Tevers
+            registrar (Registrar): Creation and escrowing for registries and credential issuance/revocation
+            verifier (Verifier): Verifies and escrows TEL events.
+            notifier (Notifier): Handles notifying controllers of significant events
+        """
         self.agentHab = agentHab
         self.hby = hby
         self.rgy = rgy
@@ -1268,13 +1284,15 @@ class Credentialer:
 
     def validate(self, creder):
         """
+        Validates a credential against its schema.
 
         Args:
             creder (Creder): creder object representing the credential to validate
 
         Returns:
-            bool: true if credential is valid against a known schema
-
+            bool: True if credential is valid against a known schema
+        Raises:
+            kering.ConfigurationError: if the credential schema is not found or validation fails
         """
         schema = creder.sad['s']
         scraw = self.verifier.resolver.resolve(schema)
