@@ -106,7 +106,7 @@ class ExchangeCollectionEnd:
         serder = serdering.SerderKERI(sad=ked)
         sigers = [core.Siger(qb64=sig) for sig in sigs]
 
-        logger.info("[%s | %s] ExchangeCollectionEnd: route %s received exn %s being sent to [%s]",
+        logger.info("[%s | %s]: route %s received exn %s being sent to [%s]",
                     name, hab.pre, serder.ked['r'], serder.said, ", ".join(rec))
 
         # Now create the stream to send, need the signer seal
@@ -123,7 +123,7 @@ class ExchangeCollectionEnd:
 
         msg = dict(said=serder.said, pre=hab.pre, rec=rec, topic=topic)
 
-        logger.info("[%s | %s] ExchangeCollectionEnd: appending %s",
+        logger.info("[%s | %s]: appending %s",
                     name, hab.pre, json.dumps(msg))
         agent.exchanges.append(msg)
 

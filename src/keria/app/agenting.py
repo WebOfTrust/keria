@@ -13,6 +13,7 @@ from dataclasses import asdict, dataclass, field
 from typing import List
 from urllib.parse import urlparse, urljoin
 from types import MappingProxyType
+from deprecation import deprecated
 
 import falcon
 import lmdb
@@ -302,16 +303,16 @@ class Agency(doing.DoDoer):
 
         Parameters:
             name (str): Name of the agency.
-            bran (str): Passcode for the agency's keystore.
+            bran (str | None): Passcode for the agency's keystore.
             base (str): Base directory for the agency's keystore.
-            releaseTimeout (int): Timeout for releasing agents.
-            configFile (str): Configuration file name for the agency.
-            configDir (str): Directory for configuration files.
-            adb (AgencyBaser): Optional AgencyBaser instance for database access.
+            releaseTimeout (int | None): Timeout for releasing agents.
+            configFile (str | None): Configuration file name for the agency.
+            configDir (str | None): Directory for configuration files.
+            adb (AgencyBaser | None): Optional AgencyBaser instance for database access.
             temp (bool): Whether to use a temporary database.
-            curls (list): Controller Service Endpoint Location OOBI URLs to resolve at startup of each Agent.
-            iurls (list): General Introduction OOBI URLs to resolve at startup of each Agent.
-            durls (list): Data OOBI URLs resolved at startup of each Agent.
+            curls (list | None): Controller Service Endpoint Location OOBI URLs to resolve at startup of each Agent.
+            iurls (list | None): General Introduction OOBI URLs to resolve at startup of each Agent.
+            durls (list | None): Data OOBI URLs resolved at startup of each Agent.
         """
         self.name = name
         self.base = base
@@ -533,13 +534,18 @@ class Agency(doing.DoDoer):
 
 class Agent(doing.DoDoer):
     """
-    An always-on agent for a remote Signify controller of keys at the edge. The top level, DoDoer task object
-    representing the Habery (database) and all associated KEL, ACDC (TEL), and other processing for its Signify controller.
+    An network accessible agent paired to a remote Signify controller holding keys at the edge.
+    The top level, DoDoer task object representing the Habery (database) and all associated KEL,
+    ACDC (TEL), and other processing for its Signify controller.
 
     This agent acts as a:
-    - always-on communications mailbox for the Signify controller and any AIDs it controls
+    - mailbox for communicating to and from the Signify controller and any AIDs it controls
     - delegation communication proxy for any AIDs the Signify controller controls
     - KEL host for each the Signify conroller, any AIDs it controlls, and the agent's KEL
+    - TEL host for any registry or ACDC (credential) the Signify controller creates or manages
+    - ACDC (credential) host for any ACDCs (credentials) the Signify controller creates or manages
+    - Signify key index backup for the key index used by the Signify controller in the
+      hierarchical deterministic key (HDK) management scheme used to select keys at the edge.
     """
 
     def __init__(self, hby, rgy, agentHab, agency, caid, **opts):
@@ -791,20 +797,16 @@ class Agent(doing.DoDoer):
 
     def shutdownAgent(self):
         self.remove(self.doers) # calls .exit()
-        try:
-            self.hby.ks.close(clear=False)
-            self.seeker.close(clear=False)
-            self.exnseeker.close(clear=False)
-            self.monitor.opr.close(clear=False)
-            self.notifier.noter.close(clear=False)
-            self.rep.mbx.close(clear=False)
-            self.registrar.rgy.close()
-            self.mgr.rb.close(clear=False)
-            self.hby.close(clear=False)
-        except lmdb.Error as ex:  # Sometimes LMDB will throw an error if the DB is already closed
-            logger.error(f"Error closing databases for agent {self.caid}: {ex}")
-        else:
-            logger.info(f"Agent {self.caid} shut down")
+        # Shut down all of the LMDBer subclasses to close open files.
+        to_close = [self.seeker, self.exnseeker, self.monitor.opr,
+                    self.notifier.noter, self.rep.mbx, self.registrar.rgy.reger, self.mgr.rb, self.hby]
+        for db in to_close:
+            try:
+                db.close(clear=False)
+                logger.debug(f"Closed database {db.__class__.__name__} for agent {self.caid}")
+            except lmdb.Error as ex:  # Sometimes LMDB will throw an error if the DB is already closed
+                logger.error(f"Error closing database {db.__class__.__name__} for agent {self.caid}: {ex}")
+        logger.info(f"Agent {self.caid} shut down")
 
 
 class ParserDoer(doing.Doer):
@@ -1119,7 +1121,7 @@ class Initer(doing.Doer):
         if logger.level > logging.INFO:
             print(agent_label)
         else:
-            logger.info(f"  Agent Pre: {self.agentHab.pre}, Controller: {self.caid}")
+            logger.info(agent_label)
         return True
 
     def recur(self, tyme):
