@@ -36,11 +36,10 @@ class GracefulShutdownDoer(doing.Doer):
         logger.info(f"Received SIGINT, initiating graceful shutdown.")
         self.shutdown_received = True
 
-    def shutdown_agents(self, agents):
+    def shutdownAgency(self):
         """Helper function to shut down the agents."""
-        logger.info("Stopping %s agents", len(agents))
-        for caid in agents:
-            self.agency.shut(self.agency.agents[caid])
+        logger.info("Stopping Agency")
+        self.agency.shouldShutdown = True  # Set the shutdown flag in the Agency
 
     def enter(self):
         """
@@ -52,23 +51,13 @@ class GracefulShutdownDoer(doing.Doer):
         signal.signal(signal.SIGINT, self.handle_sigint)
         logger.info("Registered signal handlers for SIGTERM")
 
-    def recur(self, tock=0.0):
+    def recur(self, tyme=None, tock=0.0):
         """Generator coroutine checking once per tock for shutdown flag"""
         # Checks once per tock if the shutdown flag has been set and if so initiates the shutdown process
         while not self.shutdown_received:
             yield tock # will iterate forever in here until shutdown flag set
-
         logger.info("Shutdown flag received, initiating graceful shutdown of agents")
-
-        # Once shutdown_flag is set, exit the Doist loop by triggering .exit() after finishing this recur.
+        self.shutdownAgency()
+        # Once shutdown_received is set, trigger agency shutdown which will eventually shut down
+        # the Doist loop by throwing a KeyboardInterrupt
         return True # Returns a "done" status
-        # Causes the Doist scheduler to call .exit() lifecycle method below, killing the Doist loop with the KeyboardInterrupt
-
-    def exit(self):
-        """
-        Exits the Doist loop.
-        Lifecycle method called once when the Doist running this Doer exits the context for this Doer.
-        """
-        logger.info("Shutting down all agents in the Agency")
-        self.shutdown_agents(list(self.agency.agents.keys()))
-        raise KeyboardInterrupt("Graceful shutdown finished, causing Doist loop to exit")

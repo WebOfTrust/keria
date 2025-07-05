@@ -298,6 +298,7 @@ class Agency(doing.DoDoer):
         self.bran = bran
         self.temp = temp
         self.configFile = configFile
+        self.shouldShutdown = False
         self.configDir = configDir
         self.cf = None
         self.curls = curls
@@ -315,7 +316,7 @@ class Agency(doing.DoDoer):
         self.agents = dict()
 
         self.adb = adb if adb is not None else basing.AgencyBaser(name="TheAgency", base=base, reopen=True, temp=temp)
-        super(Agency, self).__init__(doers=[Releaser(self, releaseTimeout=releaseTimeout)], always=True)
+        super(Agency, self).__init__(doers=[Releaser(self, releaseTimeout=releaseTimeout)])
 
     def create(self, caid, salt=None):
         ks = keeping.Keeper(name=caid,
@@ -446,6 +447,39 @@ class Agency(doing.DoDoer):
     def incept(self, caid, pre):
         self.adb.aids.pin(keys=(pre,), val=coring.Prefixer(qb64=caid))
 
+    def shutdownAgency(self):
+        """Shuts down the agents in an agency in preparation for agency shutdown."""
+        if len(self.agents) > 0:
+            caids = list(self.agents.keys())
+            for caid in caids:
+                agent = self.agents[caid]
+                if not agent.shouldShutdown:
+                    agent.shouldShutdown = True
+                if agent.done:
+                    self.remove([agent])
+                    del self.agents[caid]
+
+    def recur(self, tyme=None, tock=0.0):
+        """
+        Checks once per loop to see if the Agency should shutdown.
+        If so, it will shut down each agent and then exit the Agency by returning True for the task (DoDoer) completion status.
+        """
+        if self.shouldShutdown and len(self.agents) == 0:
+            logger.info("Agency shutdown complete. Exiting Agency.")
+            return True
+        if self.shouldShutdown and len(self.agents) > 0:
+            self.shutdownAgency()
+        super(Agency, self).recur(tyme=tyme)
+        return False # Task is not done, run forever until True is returned
+
+    def exit(self, rdeeds=None, deeds=None):
+        """
+        Called once per agent since self.remove() calls self.exit() when cleaning up each agent.
+        Should only trigger the Doist loop to exit once all agents have been removed.
+        """
+        super(Agency, self).exit(deeds=deeds if deeds else self.deeds)
+        if len(self.agents) == 0:
+            raise KeyboardInterrupt("Agency shutdown complete. Exiting Agency.")
 
 class Agent(doing.DoDoer):
     """
@@ -464,6 +498,7 @@ class Agent(doing.DoDoer):
         self.tocks = MappingProxyType(self.cfd.get("tocks", {}))
 
         self.last = helping.nowUTC()
+        self._shouldShutdown = False
 
         self.swain = delegating.Anchorer(hby=hby, proxy=agentHab)
         self.counselor = Counselor(hby=hby, swain=self.swain, proxy=agentHab)
@@ -564,11 +599,19 @@ class Agent(doing.DoDoer):
             self.submitter,
         ])
 
-        super(Agent, self).__init__(doers=doers, always=True, **opts)
+        super(Agent, self).__init__(doers=doers, **opts)
 
     @property
     def pre(self):
         return self.agentHab.pre
+
+    @property
+    def shouldShutdown(self):
+        return self._shouldShutdown
+
+    @shouldShutdown.setter
+    def shouldShutdown(self, value):
+        self._shouldShutdown = bool(value)
 
     def inceptSalty(self, pre, **kwargs):
         keeper = self.mgr.get(Algos.salty)
@@ -593,6 +636,30 @@ class Agent(doing.DoDoer):
         keeper.incept(pre=pre, verfers=verfers, digers=digers, **kwargs)
 
         self.agency.incept(self.caid, pre)
+
+    def recur(self, tyme=None, tock=0.0):
+        if self.shouldShutdown:
+            self.shutdownAgent() # will call exit so no need to return
+            return True # never gets here since shutdownAgent triggers exit
+        super(Agent, self).recur(tyme=tyme)
+        return False
+
+    def shutdownAgent(self):
+        self.remove(self.doers) # calls .exit()
+        try:
+            self.hby.ks.close(clear=False)
+            self.seeker.close(clear=False)
+            self.exnseeker.close(clear=False)
+            self.monitor.opr.close(clear=False)
+            self.notifier.noter.close(clear=False)
+            self.rep.mbx.close(clear=False)
+            self.registrar.rgy.close()
+            self.mgr.rb.close(clear=False)
+            self.hby.close(clear=False)
+        except lmdb.Error as ex:  # Sometimes LMDB will throw an error if the DB is already closed
+            logger.error(f"Error closing databases for agent {self.caid}: {ex}")
+        else:
+            logger.info(f"Agent {self.caid} shut down")
 
 
 class ParserDoer(doing.Doer):
