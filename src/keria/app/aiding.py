@@ -371,8 +371,20 @@ class IdentifierCollectionEnd:
         responses:
             200:
                 description: Successfully retrieved identifiers.
+                content:
+                  application/json:
+                    schema:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Operation'
             206:
                 description: Successfully retrieved identifiers within the specified range.
+                content:
+                  application/json:
+                    schema:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Operation'
         """
         agent = req.context.agent
         res = []

@@ -1,7 +1,11 @@
 import copy
 import falcon
+import marshmallow_dataclass
 from apispec import yaml_utils
 from apispec.core import VALID_METHODS, APISpec
+from apispec.ext.marshmallow import MarshmallowPlugin
+from ..core import longrunning
+from keria.app import aiding
 """
 KERIA
 keria.app.specing module
@@ -23,7 +27,29 @@ class AgentSpecResource:
             title=title,
             version=version,
             openapi_version=openapi_version,
+            plugins=[MarshmallowPlugin()],
         )
+
+        # Register marshmallow schemas (pass class)
+        StatusSchema = marshmallow_dataclass.class_schema(longrunning.Status)
+        OperationBaseSchema = marshmallow_dataclass.class_schema(longrunning.OperationBase)
+        self.spec.components.schema("StatusSchema", schema=StatusSchema)
+        self.spec.components.schema("OperationBase", schema=OperationBaseSchema)
+
+        # Register manual schema using direct assignment (not component or schema)
+        self.spec.components.schemas["Operation"] = {
+            "allOf": [
+                {"$ref": "#/components/schemas/OperationBase"},
+                {
+                    "type": "object",
+                    "properties": {
+                        "metadata": {"type": "object"},
+                        "response": {"type": "object"},
+                    },
+                },
+            ]
+        }
+
         self.addRoutes(app)
 
     def addRoutes(self, app):
@@ -32,6 +58,8 @@ class AgentSpecResource:
 
         for route in routes_to_check:
             if route.resource is not None:
+                if not isinstance(route.resource, aiding.IdentifierCollectionEnd):
+                    continue
                 operations = dict()
                 operations.update(yaml_utils.load_operations_from_docstring(route.resource.__doc__) or {})
 

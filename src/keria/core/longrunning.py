@@ -6,7 +6,9 @@ keria.core.longrunning module
 """
 import datetime
 from collections import namedtuple
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
+from marshmallow import fields
+from typing import Optional
 
 import falcon
 import json
@@ -35,14 +37,16 @@ class Status:
     message: str
     details: dict = None
 
+@dataclass
+class OperationBase:
+    name: str
+    done: Optional[bool] = field(default=None, metadata={"marshmallow_field": fields.Boolean(allow_none=False)})
+    error: Optional[Status] = field(default=None, metadata={"marshmallow_field": fields.Boolean(allow_none=False)})
 
 @dataclass_json
 @dataclass
-class Operation:
-    name: str
-    metadata: dict
-    done: bool = False
-    error: Status = None
+class Operation(OperationBase):
+    metadata: dict = None
     response: dict = None
 
 
