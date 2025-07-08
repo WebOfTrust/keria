@@ -5,7 +5,8 @@ from apispec import yaml_utils
 from apispec.core import VALID_METHODS, APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 from ..core import longrunning
-from keria.app import aiding
+from ..core.apitype import SAD, SADAttributes, ISS, Schema, StatusAnchor, Status, Anchor, Seal, ANC, Credential
+from keria.app import aiding, credentialing
 """
 KERIA
 keria.app.specing module
@@ -31,6 +32,36 @@ class AgentSpecResource:
         )
 
         # Register marshmallow schemas (pass class)
+        SADSchema = marshmallow_dataclass.class_schema(SAD)()
+        self.spec.components.schema("SADSchema", schema=SADSchema)
+
+        SADAttributesSchema = marshmallow_dataclass.class_schema(SADAttributes)()
+        self.spec.components.schema("SADAttributesSchema", schema=SADAttributesSchema)
+
+        ISSSchema = marshmallow_dataclass.class_schema(ISS)()
+        self.spec.components.schema("ISSSchema", schema=ISSSchema)
+
+        SchemaSchema = marshmallow_dataclass.class_schema(Schema)()
+        self.spec.components.schema("SchemaSchema", schema=SchemaSchema)
+
+        StatusAnchorSchema = marshmallow_dataclass.class_schema(StatusAnchor)()
+        self.spec.components.schema("StatusAnchorSchema", schema=StatusAnchorSchema)
+
+        CredentialStatusSchema = marshmallow_dataclass.class_schema(Status)()
+        self.spec.components.schema("CredentialStatusSchema", schema=CredentialStatusSchema)
+
+        AnchorSchema = marshmallow_dataclass.class_schema(Anchor)()
+        self.spec.components.schema("AnchorSchema", schema=AnchorSchema)
+
+        SealSchema = marshmallow_dataclass.class_schema(Seal)()
+        self.spec.components.schema("SealSchema", schema=SealSchema)
+
+        ANCSchema = marshmallow_dataclass.class_schema(ANC)()
+        self.spec.components.schema("ANCSchema", schema=ANCSchema)
+
+        CredentialSchema = marshmallow_dataclass.class_schema(Credential)()
+        self.spec.components.schema("CredentialSchema", schema=CredentialSchema)
+
         StatusSchema = marshmallow_dataclass.class_schema(longrunning.Status)
         OperationBaseSchema = marshmallow_dataclass.class_schema(longrunning.OperationBase)
         self.spec.components.schema("StatusSchema", schema=StatusSchema)
@@ -58,7 +89,7 @@ class AgentSpecResource:
 
         for route in routes_to_check:
             if route.resource is not None:
-                if not isinstance(route.resource, aiding.IdentifierCollectionEnd):
+                if not isinstance(route.resource, aiding.IdentifierCollectionEnd) and not isinstance(route.resource, credentialing.CredentialCollectionEnd):
                     continue
                 operations = dict()
                 operations.update(yaml_utils.load_operations_from_docstring(route.resource.__doc__) or {})

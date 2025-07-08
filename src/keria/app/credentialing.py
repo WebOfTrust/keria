@@ -718,8 +718,7 @@ class CredentialResourceEnd:
               content:
                   application/json+cesr:
                     schema:
-                        description: Credential
-                        type: object
+                        $ref: '#/components/schemas/CredentialSchema'
            400:
              description: The requested credential was not found.
         """
