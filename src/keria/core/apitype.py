@@ -1,25 +1,34 @@
 from dataclasses import dataclass, field
 from marshmallow import fields
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple, Literal
 
 @dataclass
 class SADAttributes:
     d: str
-    i: str
     LEI: str
     dt: str
+    i: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
 
+@dataclass
+class Seal:
+    s: str
+    d: str
+    i: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
+    t: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
+    p: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
+
+# The following fields are REQUIRED [v, d, i, s]
 @dataclass
 class SAD:
     v: str
     d: str
     i: str
-    ri: str
     s: str
-    a: SADAttributes
-    u: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.Boolean(allow_none=False)})
-    e: Optional[List[Any]] = field(default=None, metadata={"marshmallow_field": fields.Boolean(allow_none=False)})
-    r: Optional[List[Any]] = field(default=None, metadata={"marshmallow_field": fields.Boolean(allow_none=False)})
+    ri: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
+    a: Optional[SADAttributes] = field(default=None, metadata={"marshmallow_field": fields.Dict(allow_none=False)})
+    u: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
+    e: Optional[List[Any]] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Raw(), allow_none=False)})
+    r: Optional[List[Any]] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Raw(), allow_none=False)})
 
 @dataclass
 class ISS:
@@ -61,19 +70,39 @@ class Status:
     dt: str
     et: str
 
+
+@dataclass
+class CredentialStateBase:
+    vn: Tuple[int, int]
+    i: str
+    s: str
+    d: str
+    ri: str
+    a: Seal
+    dt: str
+    et: str  # Will be narrowed in the subclasses
+
+@dataclass
+class CredentialStateIssOrRev(CredentialStateBase):
+    et: Literal['iss', 'rev']
+    ra: Dict[str, Any]
+
+@dataclass
+class RaFields:
+    i: str
+    s: str
+    d: str
+
+@dataclass
+class CredentialStateBisOrBrv(CredentialStateBase):
+    et: Literal['bis', 'brv']
+    ra: RaFields
+
 @dataclass
 class Anchor:
     pre: str
     sn: int
     d: str
-
-@dataclass
-class Seal:
-    i: str
-    s: str
-    d: str
-    t: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.Boolean(allow_none=False)})
-    p: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.Boolean(allow_none=False)})
 
 @dataclass
 class ANC:
@@ -94,7 +123,7 @@ class Credential:
     pre: str
     schema: Schema
     chains: List[Dict[str, Any]]
-    status: Status
+    status: Any
     anchor: Anchor
     anc: ANC
     ancAttachment: str

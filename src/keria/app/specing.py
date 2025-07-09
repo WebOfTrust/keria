@@ -4,8 +4,7 @@ import marshmallow_dataclass
 from apispec import yaml_utils
 from apispec.core import VALID_METHODS, APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
-from ..core import longrunning
-from ..core.apitype import SAD, SADAttributes, ISS, Schema, StatusAnchor, Status, Anchor, Seal, ANC, Credential
+from ..core import longrunning, apitype
 from keria.app import aiding, credentialing
 """
 KERIA
@@ -32,40 +31,41 @@ class AgentSpecResource:
         )
 
         # Register marshmallow schemas (pass class)
-        SADSchema = marshmallow_dataclass.class_schema(SAD)()
-        self.spec.components.schema("SADSchema", schema=SADSchema)
+        self.spec.components.schema("SADSchema", schema=marshmallow_dataclass.class_schema(apitype.SAD)())
 
-        SADAttributesSchema = marshmallow_dataclass.class_schema(SADAttributes)()
-        self.spec.components.schema("SADAttributesSchema", schema=SADAttributesSchema)
+        self.spec.components.schema("SADAttributesSchema", schema=marshmallow_dataclass.class_schema(apitype.SADAttributes)())
 
-        ISSSchema = marshmallow_dataclass.class_schema(ISS)()
-        self.spec.components.schema("ISSSchema", schema=ISSSchema)
+        self.spec.components.schema("ISSSchema", schema=marshmallow_dataclass.class_schema(apitype.ISS)())
 
-        SchemaSchema = marshmallow_dataclass.class_schema(Schema)()
-        self.spec.components.schema("SchemaSchema", schema=SchemaSchema)
+        self.spec.components.schema("SchemaSchema", schema=marshmallow_dataclass.class_schema(apitype.Schema)())
 
-        StatusAnchorSchema = marshmallow_dataclass.class_schema(StatusAnchor)()
-        self.spec.components.schema("StatusAnchorSchema", schema=StatusAnchorSchema)
+        self.spec.components.schema("StatusAnchorSchema", schema=marshmallow_dataclass.class_schema(apitype.StatusAnchor)())
 
-        CredentialStatusSchema = marshmallow_dataclass.class_schema(Status)()
-        self.spec.components.schema("CredentialStatusSchema", schema=CredentialStatusSchema)
+        self.spec.components.schema("CredentialStatusSchema", schema=marshmallow_dataclass.class_schema(apitype.Status)())
 
-        AnchorSchema = marshmallow_dataclass.class_schema(Anchor)()
-        self.spec.components.schema("AnchorSchema", schema=AnchorSchema)
+        self.spec.components.schema("AnchorSchema", schema=marshmallow_dataclass.class_schema(apitype.Anchor)())
 
-        SealSchema = marshmallow_dataclass.class_schema(Seal)()
-        self.spec.components.schema("SealSchema", schema=SealSchema)
+        self.spec.components.schema("SealSchema", schema=marshmallow_dataclass.class_schema(apitype.Seal)())
 
-        ANCSchema = marshmallow_dataclass.class_schema(ANC)()
-        self.spec.components.schema("ANCSchema", schema=ANCSchema)
+        self.spec.components.schema("ANCSchema", schema=marshmallow_dataclass.class_schema(apitype.ANC)())
 
-        CredentialSchema = marshmallow_dataclass.class_schema(Credential)()
-        self.spec.components.schema("CredentialSchema", schema=CredentialSchema)
+        self.spec.components.schema("CredentialSchema", schema=marshmallow_dataclass.class_schema(apitype.Credential)())
 
-        StatusSchema = marshmallow_dataclass.class_schema(longrunning.Status)
-        OperationBaseSchema = marshmallow_dataclass.class_schema(longrunning.OperationBase)
-        self.spec.components.schema("StatusSchema", schema=StatusSchema)
-        self.spec.components.schema("OperationBase", schema=OperationBaseSchema)
+        # self.spec.components.schema("StatusSchema", schema=marshmallow_dataclass.class_schema(longrunning.Status)())
+        self.spec.components.schema("OperationBaseSchema", schema=marshmallow_dataclass.class_schema(longrunning.OperationBase)())
+        self.spec.components.schema("StatusSchema", schema=marshmallow_dataclass.class_schema(longrunning.Status)())
+        self.spec.components.schema("OperationBase", schema=marshmallow_dataclass.class_schema(longrunning.OperationBase)())
+
+        self.spec.components.schema("CredentialStateIssOrRevSchema", schema=marshmallow_dataclass.class_schema(apitype.CredentialStateIssOrRev))
+        self.spec.components.schema("CredentialStateBisOrBrvSchema", schema=marshmallow_dataclass.class_schema(apitype.CredentialStateBisOrBrv))
+
+        cred_schema = self.spec.components.schemas["CredentialSchema"]
+        cred_schema["properties"]["status"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/CredentialStateIssOrRevSchema"},
+                {"$ref": "#/components/schemas/CredentialStateBisOrBrvSchema"},
+            ]
+        }
 
         # Register manual schema using direct assignment (not component or schema)
         self.spec.components.schemas["Operation"] = {
