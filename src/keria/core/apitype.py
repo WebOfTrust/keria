@@ -1,6 +1,10 @@
 from dataclasses import dataclass, field
-from marshmallow import fields
+from marshmallow import fields, ValidationError, Schema
 from typing import List, Dict, Any, Optional, Tuple, Literal
+
+class EmptyDictSchema(Schema):
+    class Meta:
+        additional = ()
 
 @dataclass
 class SADAttributes:
@@ -85,7 +89,11 @@ class CredentialStateBase:
 @dataclass
 class CredentialStateIssOrRev(CredentialStateBase):
     et: Literal['iss', 'rev']
-    ra: Dict[str, Any]
+    ra: Dict[str, Any] = field(
+        metadata={
+            "marshmallow_field": fields.Nested(EmptyDictSchema(), allow_none=False, required=True)
+        }
+    )
 
 @dataclass
 class RaFields:
