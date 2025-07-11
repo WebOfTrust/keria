@@ -82,6 +82,13 @@ class RegistryCollectionEnd:
         responses:
            200:
               description:  array of current credential issuance and revocation registies
+              content:
+                  application/json:
+                    schema:
+                        description: Registries
+                        type: array
+                        items:
+                           $ref: '#/components/schemas/RegistrySchema'
 
         """
         agent = req.context.agent
@@ -295,6 +302,10 @@ class RegistryResourceEnd:
         responses:
            200:
                 description:  credential issuance and revocation registy
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/RegistrySchema'
            400:
                 description: Bad request. This could be due to missing or invalid parameters.
            404:
@@ -522,7 +533,7 @@ class CredentialQueryCollectionEnd:
                         description: Credentials
                         type: array
                         items:
-                           type: object
+                           $ref: '#/components/schemas/CredentialSchema'
 
         """
         agent = req.context.agent
@@ -638,8 +649,7 @@ class CredentialCollectionEnd:
               content:
                   application/json:
                     schema:
-                        description: Credential
-                        type: object
+                        $ref: '#/components/schemas/CredentialSchema'
 
         """
         agent = req.context.agent
@@ -905,6 +915,10 @@ class CredentialResourceDeleteEnd:
         responses:
             200:
                 description: Credential revocation initiated successfully.
+                content:
+                  application/json+cesr:
+                    schema:
+                        $ref: '#/components/schemas/CredentialSchema'
             400:
                 description: Bad request. This could be due to invalid revocation event or other invalid parameters.
             404:

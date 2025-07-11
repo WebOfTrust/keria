@@ -135,3 +135,11 @@ class Credential:
     anchor: Anchor
     anc: ANC
     ancAttachment: str
+
+#Registry
+@dataclass
+class Registry:
+    name: str
+    regk: str
+    pre: str
+    state: Any

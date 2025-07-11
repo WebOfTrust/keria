@@ -59,8 +59,8 @@ class AgentSpecResource:
         self.spec.components.schema("CredentialStateIssOrRevSchema", schema=marshmallow_dataclass.class_schema(apitype.CredentialStateIssOrRev))
         self.spec.components.schema("CredentialStateBisOrBrvSchema", schema=marshmallow_dataclass.class_schema(apitype.CredentialStateBisOrBrv))
 
-        cred_schema = self.spec.components.schemas["CredentialSchema"]
-        cred_schema["properties"]["status"] = {
+        credentialSchema = self.spec.components.schemas["CredentialSchema"]
+        credentialSchema["properties"]["status"] = {
             "oneOf": [
                 {"$ref": "#/components/schemas/CredentialStateIssOrRevSchema"},
                 {"$ref": "#/components/schemas/CredentialStateBisOrBrvSchema"},
@@ -81,6 +81,16 @@ class AgentSpecResource:
             ]
         }
 
+        # Registries
+        self.spec.components.schema("RegistrySchema", schema=marshmallow_dataclass.class_schema(apitype.Registry)())
+        registrySchema = self.spec.components.schemas["RegistrySchema"]
+        registrySchema["properties"]["state"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/CredentialStateIssOrRevSchema"},
+                {"$ref": "#/components/schemas/CredentialStateBisOrBrvSchema"},
+            ]
+        }
+
         self.addRoutes(app)
 
     def addRoutes(self, app):
@@ -89,7 +99,18 @@ class AgentSpecResource:
 
         for route in routes_to_check:
             if route.resource is not None:
-                if not isinstance(route.resource, aiding.IdentifierCollectionEnd) and not isinstance(route.resource, credentialing.CredentialCollectionEnd):
+                if not isinstance(
+                    route.resource,
+                    (
+                        aiding.IdentifierCollectionEnd,
+                        credentialing.CredentialCollectionEnd,
+                        credentialing.CredentialQueryCollectionEnd,
+                        credentialing.CredentialResourceEnd,
+                        credentialing.CredentialResourceDeleteEnd,
+                        credentialing.RegistryCollectionEnd,
+                        credentialing.RegistryResourceEnd,
+                    ),
+                ):
                     continue
                 operations = dict()
                 operations.update(yaml_utils.load_operations_from_docstring(route.resource.__doc__) or {})
