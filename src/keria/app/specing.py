@@ -81,14 +81,19 @@ class AgentSpecResource:
             ]
         }
 
-        # Registries
-        self.spec.components.schema("RegistrySchema", schema=marshmallow_dataclass.class_schema(apitype.Registry)())
-        registrySchema = self.spec.components.schemas["RegistrySchema"]
-        registrySchema["properties"]["state"] = {
+        # CredentialState
+        self.spec.components.schemas["CredentialStateSchema"] = {
             "oneOf": [
                 {"$ref": "#/components/schemas/CredentialStateIssOrRevSchema"},
                 {"$ref": "#/components/schemas/CredentialStateBisOrBrvSchema"},
             ]
+        }
+
+        # Registries
+        self.spec.components.schema("RegistrySchema", schema=marshmallow_dataclass.class_schema(apitype.Registry)())
+        registrySchema = self.spec.components.schemas["RegistrySchema"]
+        registrySchema["properties"]["state"] = {
+            "$ref": "#/components/schemas/CredentialStateSchema"
         }
 
         self.addRoutes(app)
@@ -99,19 +104,6 @@ class AgentSpecResource:
 
         for route in routes_to_check:
             if route.resource is not None:
-                if not isinstance(
-                    route.resource,
-                    (
-                        aiding.IdentifierCollectionEnd,
-                        credentialing.CredentialCollectionEnd,
-                        credentialing.CredentialQueryCollectionEnd,
-                        credentialing.CredentialResourceEnd,
-                        credentialing.CredentialResourceDeleteEnd,
-                        credentialing.RegistryCollectionEnd,
-                        credentialing.RegistryResourceEnd,
-                    ),
-                ):
-                    continue
                 operations = dict()
                 operations.update(yaml_utils.load_operations_from_docstring(route.resource.__doc__) or {})
 

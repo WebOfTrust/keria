@@ -164,6 +164,10 @@ class RegistryCollectionEnd:
         responses:
            202:
               description:  registry inception request has been submitted
+              content:
+                  application/json:
+                    schema:
+                        $ref: '#/components/schemas/Operation'
 
         """
         agent = req.context.agent
@@ -236,6 +240,10 @@ class RegistryResourceEnd:
         responses:
            200:
               description:  credential issuance and revocation registy
+              content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/RegistrySchema'
            404:
             description: The requested registry was not found.
         """
@@ -382,6 +390,10 @@ class SchemaResourceEnd:
         responses:
            200:
               description: Schema JSON successfully returned
+              content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SchemaSchema'
            404:
               description: No schema found for SAID
         """
@@ -413,6 +425,12 @@ class SchemaCollectionEnd:
         responses:
            200:
               description: Array of all schema JSON
+              content:
+                  application/json:
+                    schema:
+                        type: array
+                        items:
+                           $ref: '#/components/schemas/SchemaSchema'
         """
         agent = req.context.agent
 
@@ -461,7 +479,7 @@ class CredentialVerificationCollectionEnd:
                   application/json:
                     schema:
                         description: long running operation of credential processing
-                        type: object
+                        $ref: '#/components/schemas/Operation'
            404:
               description: Malformed ACDC or iss event
         """
@@ -918,7 +936,7 @@ class CredentialResourceDeleteEnd:
                 content:
                   application/json+cesr:
                     schema:
-                        $ref: '#/components/schemas/CredentialSchema'
+                        $ref: '#/components/schemas/Operation'
             400:
                 description: Bad request. This could be due to invalid revocation event or other invalid parameters.
             404:
@@ -993,7 +1011,7 @@ class CredentialRegistryResourceEnd:
                   application/json:
                     schema:
                         description: Credential registry state
-                        type: object
+                        $ref: '#/components/schemas/CredentialStateSchema'
            404:
               description: Unknown management registry or credential
         """
