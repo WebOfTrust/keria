@@ -8,7 +8,7 @@ import datetime
 from collections import namedtuple
 from dataclasses import dataclass, asdict, field
 from marshmallow import fields
-from typing import Optional
+from typing import Optional, Dict
 
 import falcon
 import json
@@ -35,7 +35,7 @@ OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation', group
 class Status:
     code: int
     message: str
-    details: dict = None
+    details: Optional[Dict] = field(default=None, metadata={"marshmallow_field": fields.Dict(allow_none=True)})
 
 @dataclass
 class OperationBase:

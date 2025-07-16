@@ -214,10 +214,18 @@ class RegistryCollectionEnd:
             name (str): human readable name or prefix for AID
 
         ---
-        summary: List credential issuance and revocation registies
-        description: List credential issuance and revocation registies
+        summary: List credential issuance and revocation registries
+        description: List credential issuance and revocation registries
+        operationId: listRegistries
         tags:
            - Registries
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: human readable name or prefix of Hab to load credentials for
         responses:
            200:
               description:  array of current credential issuance and revocation registies
@@ -228,6 +236,8 @@ class RegistryCollectionEnd:
                         type: array
                         items:
                            $ref: '#/components/schemas/Registry'
+           404:
+              description: The requested registry is not a valid reference to an identifier
 
         """
         agent = req.context.agent
@@ -265,8 +275,16 @@ class RegistryCollectionEnd:
         ---
         summary: Request to create a credential issuance and revocation registry
         description: Request to create a credential issuance and revocation registry
+        operationId: createRegistry
         tags:
            - Registries
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: human readable name or prefix of Hab to load credentials for
         requestBody:
             required: true
             content:
@@ -288,7 +306,6 @@ class RegistryCollectionEnd:
                       description: qb64 encoded ed25519 random seed for registry
                     noBackers:
                       type: boolean
-                      required: False
                       description: True means to not allow seperate backers from identifier's witnesses.
                     baks:
                       type: array
@@ -297,9 +314,14 @@ class RegistryCollectionEnd:
                       description: List of qb64 AIDs of witnesses to be used for the new group identifier.
                     estOnly:
                       type: boolean
-                      required: false
                       default: false
                       description: True means to not allow interaction events to anchor credential events.
+                  required:
+                    - name
+                    - alias
+                    - toad
+                    - nonce
+                    - baks
         responses:
            202:
               description:  registry inception request has been submitted
@@ -307,6 +329,10 @@ class RegistryCollectionEnd:
                   application/json:
                     schema:
                         $ref: '#/components/schemas/Operation'
+           404:
+              description: The requested registry is not a valid reference to an identifier.
+           400:
+              description: Registry already in use.
 
         """
         agent = req.context.agent
@@ -361,6 +387,7 @@ class RegistryResourceEnd:
         ---
         summary: Get a single credential issuance and revocation registy
         description: Get a single credential issuance and revocation registy
+        operationId: getRegistry
         tags:
            - Registries
         parameters:
@@ -420,8 +447,9 @@ class RegistryResourceEnd:
             registryName(str): human readable name for registry or its SAID
 
         ---
-        summary: Get a single credential issuance and revocation registy
-        description: Get a single credential issuance and revocation registy
+        summary: Get a single credential issuance and revocation registry
+        description: Get a single credential issuance and revocation registry
+        operationId: renameRegistry
         tags:
            - Registries
         parameters:
@@ -517,6 +545,7 @@ class SchemaResourceEnd:
        ---
         summary:  Get schema JSON of specified schema
         description:  Get schema JSON of specified schema
+        operationId: getSchema
         tags:
            - Schema
         parameters:
@@ -559,6 +588,7 @@ class SchemaCollectionEnd:
        ---
         summary:  Get schema JSON of all schema
         description:  Get schema JSON of all schema
+        operationId: listSchemas
         tags:
            - Schema
         responses:
@@ -593,6 +623,7 @@ class CredentialVerificationCollectionEnd:
         ---
         summary: Verify a credential without IPEX
         description: Verify a credential without using IPEX (TEL should be updated separately)
+        operationId: verifyCredential
         tags:
            - Credentials
         requestBody:
@@ -666,6 +697,7 @@ class CredentialQueryCollectionEnd:
         ---
         summary:  List credentials in credential store (wallet)
         description: List issued or received credentials current verified
+        operationId: listCredentials
         tags:
            - Credentials
         parameters:
@@ -756,11 +788,13 @@ class CredentialCollectionEnd:
         ---
         summary: Perform credential issuance
         description: Perform credential issuance
+        operationId: issueCredential
         tags:
            - Credentials
         parameters:
           - in: path
-            name: alias or prefix
+            name: name
+            description: human readable alias or prefix for AID to use as issuer
             schema:
               type: string
             required: true
@@ -801,12 +835,14 @@ class CredentialCollectionEnd:
                       type: boolean
                       description: flag to inidicate this credential should support privacy preserving presentations
         responses:
-           200:
-              description: Credential issued.
-              content:
-                  application/json:
-                    schema:
-                        $ref: '#/components/schemas/Credential'
+            200:
+                description: Credential issued.
+                content:
+                    application/json:
+                        schema: 
+                            $ref: '#/components/schemas/Credential'
+            400:
+                description: Bad request. This could be due to missing or invalid data.
 
         """
         agent = req.context.agent
@@ -870,6 +906,7 @@ class CredentialResourceEnd:
         ---
         summary:  Export credential and all supporting cryptographic material
         description: Export credential and all supporting cryptographic material
+        operationId: getCredential
         tags:
            - Credentials
         parameters:
@@ -967,6 +1004,7 @@ class CredentialResourceEnd:
         ---
         summary: Delete a credential from the database
         description: Delete a credential from the database and remove any associated indices
+        operationId: deleteCredential
         tags:
            - Credentials
         parameters:
@@ -1034,6 +1072,7 @@ class CredentialResourceDeleteEnd:
         ---
         summary: Perform credential revocation
         description: Initiates a credential revocation for a given identifier and SAID.
+        operationId: revokeCredential
         tags:
          - Credentials
         parameters:
@@ -1128,6 +1167,7 @@ class CredentialRegistryResourceEnd:
         ---
         summary: Get credential registry state
         description: Get credential registry state from any known Tever (does not need be controlled by us)
+        operationId: getCredentialState
         tags:
            - Credentials
         parameters:
