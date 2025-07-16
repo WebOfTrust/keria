@@ -40,8 +40,8 @@ class Status:
 @dataclass
 class OperationBase:
     name: str
-    done: Optional[bool] = field(default=None, metadata={"marshmallow_field": fields.Boolean(allow_none=False)})
-    error: Optional[Status] = field(default=None, metadata={"marshmallow_field": fields.Boolean(allow_none=False)})
+    done: bool = field(default=False, metadata={"marshmallow_field": fields.Boolean(allow_none=False)})
+    error: Optional[Status] = field(default=None, metadata={"marshmallow_field": fields.Dict(allow_none=False)})
 
 @dataclass_json
 @dataclass

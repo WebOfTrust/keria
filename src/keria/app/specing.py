@@ -4,8 +4,8 @@ import marshmallow_dataclass
 from apispec import yaml_utils
 from apispec.core import VALID_METHODS, APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
-from ..core import longrunning, apitype
-from keria.app import aiding, credentialing
+from ..core import longrunning
+from . import credentialing
 """
 KERIA
 keria.app.specing module
@@ -31,40 +31,36 @@ class AgentSpecResource:
         )
 
         # Register marshmallow schemas (pass class)
-        self.spec.components.schema("SADSchema", schema=marshmallow_dataclass.class_schema(apitype.SAD)())
-
-        self.spec.components.schema("SADAttributesSchema", schema=marshmallow_dataclass.class_schema(apitype.SADAttributes)())
-
-        self.spec.components.schema("ISSSchema", schema=marshmallow_dataclass.class_schema(apitype.ISS)())
-
-        self.spec.components.schema("SchemaSchema", schema=marshmallow_dataclass.class_schema(apitype.Schema)())
-
-        self.spec.components.schema("StatusAnchorSchema", schema=marshmallow_dataclass.class_schema(apitype.StatusAnchor)())
-
-        self.spec.components.schema("CredentialStatusSchema", schema=marshmallow_dataclass.class_schema(apitype.Status)())
-
-        self.spec.components.schema("AnchorSchema", schema=marshmallow_dataclass.class_schema(apitype.Anchor)())
-
-        self.spec.components.schema("SealSchema", schema=marshmallow_dataclass.class_schema(apitype.Seal)())
-
-        self.spec.components.schema("ANCSchema", schema=marshmallow_dataclass.class_schema(apitype.ANC)())
-
-        self.spec.components.schema("CredentialSchema", schema=marshmallow_dataclass.class_schema(apitype.Credential)())
-
-        # self.spec.components.schema("StatusSchema", schema=marshmallow_dataclass.class_schema(longrunning.Status)())
-        self.spec.components.schema("OperationBaseSchema", schema=marshmallow_dataclass.class_schema(longrunning.OperationBase)())
-        self.spec.components.schema("StatusSchema", schema=marshmallow_dataclass.class_schema(longrunning.Status)())
+        self.spec.components.schema("ACDC", schema=marshmallow_dataclass.class_schema(credentialing.ACDC)())
+        self.spec.components.schema("ACDCAttributes", schema=marshmallow_dataclass.class_schema(credentialing.ACDCAttributes)())
+        self.spec.components.schema("IssEvt", schema=marshmallow_dataclass.class_schema(credentialing.IssEvt)())
+        self.spec.components.schema("Schema", schema=marshmallow_dataclass.class_schema(credentialing.Schema)())
+        self.spec.components.schema("StatusAnchor", schema=marshmallow_dataclass.class_schema(credentialing.StatusAnchor)())
+        self.spec.components.schema("CredentialStatus", schema=marshmallow_dataclass.class_schema(credentialing.Status)())
+        self.spec.components.schema("Anchor", schema=marshmallow_dataclass.class_schema(credentialing.Anchor)())
+        self.spec.components.schema("Seal", schema=marshmallow_dataclass.class_schema(credentialing.Seal)())
+        self.spec.components.schema("ANC", schema=marshmallow_dataclass.class_schema(credentialing.ANC)())
+        self.spec.components.schema("Credential", schema=marshmallow_dataclass.class_schema(credentialing.ClonedCredential)())
         self.spec.components.schema("OperationBase", schema=marshmallow_dataclass.class_schema(longrunning.OperationBase)())
+        self.spec.components.schema("StatusSchema", schema=marshmallow_dataclass.class_schema(longrunning.Status)())
+        self.spec.components.schema("CredentialStateIssOrRev", schema=marshmallow_dataclass.class_schema(credentialing.CredentialStateIssOrRev))
+        self.spec.components.schema("CredentialStateBisOrBrv", schema=marshmallow_dataclass.class_schema(credentialing.CredentialStateBisOrBrv))
 
-        self.spec.components.schema("CredentialStateIssOrRevSchema", schema=marshmallow_dataclass.class_schema(apitype.CredentialStateIssOrRev))
-        self.spec.components.schema("CredentialStateBisOrBrvSchema", schema=marshmallow_dataclass.class_schema(apitype.CredentialStateBisOrBrv))
+        # Patch the schema to force additionalProperties=True
+        acdcAttributesSchema = self.spec.components.schemas["ACDCAttributes"]
+        acdcAttributesSchema["additionalProperties"] = True
 
-        credentialSchema = self.spec.components.schemas["CredentialSchema"]
-        credentialSchema["properties"]["status"] = {
+        # CredentialState
+        self.spec.components.schemas["CredentialState"] = {
             "oneOf": [
-                {"$ref": "#/components/schemas/CredentialStateIssOrRevSchema"},
-                {"$ref": "#/components/schemas/CredentialStateBisOrBrvSchema"},
+                {"$ref": "#/components/schemas/CredentialStateIssOrRev"},
+                {"$ref": "#/components/schemas/CredentialStateBisOrBrv"},
             ]
+        }
+
+        credentialSchema = self.spec.components.schemas["Credential"]
+        credentialSchema["properties"]["status"] = {
+            "$ref": "#/components/schemas/CredentialState"
         }
 
         # Register manual schema using direct assignment (not component or schema)
@@ -81,20 +77,13 @@ class AgentSpecResource:
             ]
         }
 
-        # CredentialState
-        self.spec.components.schemas["CredentialStateSchema"] = {
-            "oneOf": [
-                {"$ref": "#/components/schemas/CredentialStateIssOrRevSchema"},
-                {"$ref": "#/components/schemas/CredentialStateBisOrBrvSchema"},
-            ]
+        # Registries
+        self.spec.components.schema("Registry", schema=marshmallow_dataclass.class_schema(credentialing.Registry)())
+        registrySchema = self.spec.components.schemas["Registry"]
+        registrySchema["properties"]["state"] = {
+            "$ref": "#/components/schemas/CredentialState"
         }
 
-        # Registries
-        self.spec.components.schema("RegistrySchema", schema=marshmallow_dataclass.class_schema(apitype.Registry)())
-        registrySchema = self.spec.components.schemas["RegistrySchema"]
-        registrySchema["properties"]["state"] = {
-            "$ref": "#/components/schemas/CredentialStateSchema"
-        }
 
         self.addRoutes(app)
 

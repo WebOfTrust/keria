@@ -6,7 +6,7 @@ keria.app.credentialing module
 services and endpoint for ACDC credential managements
 """
 import json
-from dataclasses import asdict
+from dataclasses import asdict, dataclass, field
 
 import falcon
 from keri import kering
@@ -17,7 +17,9 @@ from keri.db import dbing
 from keri.db.dbing import dgKey
 from keri.vdr import viring
 
-from keria.core import httping, longrunning
+from ..core import httping, longrunning
+from marshmallow import fields, Schema
+from typing import List, Dict, Any, Optional, Tuple, Literal
 
 
 def loadEnds(app, identifierResource):
@@ -49,6 +51,143 @@ def loadEnds(app, identifierResource):
     credentialVerificationEnd = CredentialVerificationCollectionEnd()
     app.add_route("/credentials/verify", credentialVerificationEnd)
 
+class EmptyDictSchema(Schema):
+    class Meta:
+        additional = ()
+
+@dataclass
+class ACDCAttributes:
+    dt: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
+    i: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
+    u: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
+    # Override the schema to force additionalProperties=True
+
+@dataclass
+class Seal:
+    s: str
+    d: str
+    i: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
+
+@dataclass
+class ACDC:
+    v: str
+    d: str
+    i: str
+    s: str
+    ri: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
+    a: Optional[ACDCAttributes] = field(default=None, metadata={"marshmallow_field": fields.Dict(allow_none=False)})
+    u: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
+    e: Optional[List[Any]] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Raw(), allow_none=False)})
+    r: Optional[List[Any]] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Raw(), allow_none=False)})
+
+@dataclass
+class IssEvt:
+    v: str
+    t: str
+    d: str
+    i: str
+    s: str
+    ri: str
+    dt: str
+
+@dataclass
+class Schema:
+    _id: str = field(metadata={"data_key": "$id"})
+    _schema: str = field(metadata={"data_key": "$schema"})
+    title: str
+    description: str
+    type: str
+    credentialType: str
+    version: str
+    properties: Dict[str, Any]
+    additionalProperties: bool
+    required: List[str]
+
+@dataclass
+class StatusAnchor:
+    s: int
+    d: str
+
+@dataclass
+class Status:
+    vn: List[int]
+    i: str
+    s: str
+    d: str
+    ri: str
+    ra: Dict[str, Any]
+    a: StatusAnchor
+    dt: str
+    et: str
+
+@dataclass
+class CredentialStateBase:
+    vn: Tuple[int, int]
+    i: str
+    s: str
+    d: str
+    ri: str
+    a: Seal
+    dt: str
+    et: str  # Will be narrowed in the subclasses
+
+@dataclass
+class CredentialStateIssOrRev(CredentialStateBase):
+    et: Literal['iss', 'rev']
+    ra: Dict[str, Any] = field(
+        metadata={
+            "marshmallow_field": fields.Nested(EmptyDictSchema(), allow_none=False, required=True)
+        }
+    )
+
+@dataclass
+class RaFields:
+    i: str
+    s: str
+    d: str
+
+@dataclass
+class CredentialStateBisOrBrv(CredentialStateBase):
+    et: Literal['bis', 'brv']
+    ra: RaFields
+
+@dataclass
+class Anchor:
+    pre: str
+    sn: int
+    d: str
+
+@dataclass
+class ANC:
+    v: str
+    t: str
+    d: str
+    i: str
+    s: str
+    p: str
+    di: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
+    a: Optional[List[Seal]] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Raw(), allow_none=False)})
+
+@dataclass
+class ClonedCredential:
+    sad: ACDC
+    atc: str
+    iss: IssEvt
+    issatc: str
+    pre: str
+    schema: Schema
+    chains: List[Dict[str, Any]]
+    status: CredentialStateBase
+    anchor: Anchor
+    anc: ANC
+    ancatc: str
+
+@dataclass
+class Registry:
+    name: str
+    regk: str
+    pre: str
+    state: CredentialStateBase
 
 class RegistryCollectionEnd:
     """
@@ -88,7 +227,7 @@ class RegistryCollectionEnd:
                         description: Registries
                         type: array
                         items:
-                           $ref: '#/components/schemas/RegistrySchema'
+                           $ref: '#/components/schemas/Registry'
 
         """
         agent = req.context.agent
@@ -243,7 +382,7 @@ class RegistryResourceEnd:
               content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/RegistrySchema'
+                      $ref: '#/components/schemas/Registry'
            404:
             description: The requested registry was not found.
         """
@@ -313,7 +452,7 @@ class RegistryResourceEnd:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/RegistrySchema'
+                      $ref: '#/components/schemas/Registry'
            400:
                 description: Bad request. This could be due to missing or invalid parameters.
            404:
@@ -393,7 +532,7 @@ class SchemaResourceEnd:
               content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/SchemaSchema'
+                      $ref: '#/components/schemas/Schema'
            404:
               description: No schema found for SAID
         """
@@ -430,7 +569,7 @@ class SchemaCollectionEnd:
                     schema:
                         type: array
                         items:
-                           $ref: '#/components/schemas/SchemaSchema'
+                           $ref: '#/components/schemas/Schema'
         """
         agent = req.context.agent
 
@@ -551,7 +690,7 @@ class CredentialQueryCollectionEnd:
                         description: Credentials
                         type: array
                         items:
-                           $ref: '#/components/schemas/CredentialSchema'
+                           $ref: '#/components/schemas/Credential'
 
         """
         agent = req.context.agent
@@ -667,7 +806,7 @@ class CredentialCollectionEnd:
               content:
                   application/json:
                     schema:
-                        $ref: '#/components/schemas/CredentialSchema'
+                        $ref: '#/components/schemas/Credential'
 
         """
         agent = req.context.agent
@@ -746,7 +885,7 @@ class CredentialResourceEnd:
               content:
                   application/json+cesr:
                     schema:
-                        $ref: '#/components/schemas/CredentialSchema'
+                        $ref: '#/components/schemas/Credential'
            400:
              description: The requested credential was not found.
         """
@@ -1011,7 +1150,7 @@ class CredentialRegistryResourceEnd:
                   application/json:
                     schema:
                         description: Credential registry state
-                        $ref: '#/components/schemas/CredentialStateSchema'
+                        $ref: '#/components/schemas/CredentialState'
            404:
               description: Unknown management registry or credential
         """
