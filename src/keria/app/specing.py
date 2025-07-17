@@ -42,7 +42,6 @@ class AgentSpecResource:
         self.spec.components.schema("ANC", schema=marshmallow_dataclass.class_schema(credentialing.ANC)())
         self.spec.components.schema("Credential", schema=marshmallow_dataclass.class_schema(credentialing.ClonedCredential)())
         self.spec.components.schema("OperationBase", schema=marshmallow_dataclass.class_schema(longrunning.OperationBase)())
-        self.spec.components.schema("StatusSchema", schema=marshmallow_dataclass.class_schema(longrunning.Status)())
         self.spec.components.schema("CredentialStateIssOrRev", schema=marshmallow_dataclass.class_schema(credentialing.CredentialStateIssOrRev))
         self.spec.components.schema("CredentialStateBisOrBrv", schema=marshmallow_dataclass.class_schema(credentialing.CredentialStateBisOrBrv))
 

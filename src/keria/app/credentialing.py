@@ -19,7 +19,7 @@ from keri.vdr import viring
 
 from ..core import httping, longrunning
 from marshmallow import fields, Schema
-from typing import List, Dict, Any, Optional, Tuple, Literal
+from typing import List, Dict, Any, Optional, Tuple, Literal, Union
 
 
 def loadEnds(app, identifierResource):
@@ -83,7 +83,7 @@ class ACDC:
 @dataclass
 class IssEvt:
     v: str
-    t: str
+    t: Literal['iss', 'bis']
     d: str
     i: str
     s: str
@@ -157,6 +157,7 @@ class Anchor:
     sn: int
     d: str
 
+# TODO: ANC should be updated to include fields from an establishment event (inception, rotation) and not just interaction events
 @dataclass
 class ANC:
     v: str
@@ -177,7 +178,7 @@ class ClonedCredential:
     pre: str
     schema: Schema
     chains: List[Dict[str, Any]]
-    status: CredentialStateBase
+    status: Union[CredentialStateIssOrRev, CredentialStateBisOrBrv]
     anchor: Anchor
     anc: ANC
     ancatc: str
