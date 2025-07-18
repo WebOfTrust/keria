@@ -6,9 +6,9 @@ keria.core.longrunning module
 """
 import datetime
 from collections import namedtuple
-from dataclasses import dataclass, asdict, field, MISSING
+from dataclasses import dataclass, asdict, field
 from marshmallow import fields
-from typing import Optional, Dict, List, Union
+from typing import Optional, Dict, Union
 
 import falcon
 import json
