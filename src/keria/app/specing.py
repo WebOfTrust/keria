@@ -32,7 +32,6 @@ class AgentSpecResource:
 
         # Register marshmallow schemas (pass class)
         self.spec.components.schema("ACDC", schema=marshmallow_dataclass.class_schema(credentialing.ACDC)())
-        self.spec.components.schema("ACDCAttributes", schema=marshmallow_dataclass.class_schema(credentialing.ACDCAttributes)())
         self.spec.components.schema("IssEvt", schema=marshmallow_dataclass.class_schema(credentialing.IssEvt)())
         self.spec.components.schema("Schema", schema=marshmallow_dataclass.class_schema(credentialing.Schema)())
         self.spec.components.schema("StatusAnchor", schema=marshmallow_dataclass.class_schema(credentialing.StatusAnchor)())

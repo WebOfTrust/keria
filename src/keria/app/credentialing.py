@@ -20,6 +20,7 @@ from keri.vdr import viring
 from ..core import httping, longrunning
 from marshmallow import fields, Schema
 from typing import List, Dict, Any, Optional, Tuple, Literal, Union
+from marshmallow_dataclass import class_schema
 
 
 def loadEnds(app, identifierResource):
@@ -75,7 +76,7 @@ class ACDC:
     i: str
     s: str
     ri: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
-    a: Optional[ACDCAttributes] = field(default=None, metadata={"marshmallow_field": fields.Dict(allow_none=False)})
+    a: Optional[ACDCAttributes] = field(default=None, metadata={"marshmallow_field": fields.Nested(class_schema(ACDCAttributes), allow_none=False)})
     u: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
     e: Optional[List[Any]] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Raw(), allow_none=False)})
     r: Optional[List[Any]] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Raw(), allow_none=False)})
@@ -167,7 +168,7 @@ class ANC:
     s: str
     p: str
     di: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
-    a: Optional[List[Seal]] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Raw(), allow_none=False)})
+    a: Optional[List[Seal]] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Nested(class_schema(Seal)), allow_none=False)})
 
 @dataclass
 class ClonedCredential:
@@ -188,7 +189,7 @@ class Registry:
     name: str
     regk: str
     pre: str
-    state: CredentialStateBase
+    state: Union[CredentialStateIssOrRev, CredentialStateBisOrBrv]
 
 class RegistryCollectionEnd:
     """

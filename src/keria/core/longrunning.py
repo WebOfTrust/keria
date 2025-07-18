@@ -38,14 +38,11 @@ class OperationStatus:
     message: str
     details: Optional[Dict] = field(default=None, metadata={"marshmallow_field": fields.Dict(allow_none=True)})
 
-    class Meta:
-        schema_name = "OperationStatus"
-
 @dataclass
 class OperationBase:
     name: str
-    error: Union[OperationStatus, type(MISSING)] = field(
-        default=MISSING,
+    error: Union[OperationStatus] = field(
+        default=None,
         metadata={"marshmallow_field": fields.Nested(class_schema(OperationStatus), required=False)}
     )
     done: bool = field(default=False, metadata={"marshmallow_field": fields.Boolean(allow_none=False)})
