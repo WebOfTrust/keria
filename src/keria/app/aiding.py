@@ -7,8 +7,9 @@ keria.app.aiding module
 
 import falcon
 import json
-from dataclasses import asdict, dataclass, field
-from typing import Dict, Optional, List, Union
+from enum import Enum
+from dataclasses import asdict, dataclass, field, make_dataclass
+from typing import Dict, Any, Optional, List, Union
 from urllib.parse import urlparse, urljoin
 from keri import kering
 from keri import core
@@ -2030,6 +2031,12 @@ class ChallengeVerifyResourceEnd:
 
         rep.status = falcon.HTTP_202
 
+@dataclass
+class Contact:
+    id: str = field(metadata={"marshmallow_field": fields.String(required=True)})
+    alias: str = field(default=None, metadata={"marshmallow_field": fields.String(required=True)})
+    oobi: str = field(default=None, metadata={"marshmallow_field": fields.String(required=True)})
+    # override this in spec to add additional fields
 
 @dataclass
 class WellKnown:

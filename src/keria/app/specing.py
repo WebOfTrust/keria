@@ -249,6 +249,9 @@ class AgentSpecResource:
         self.spec.components.schemas["Tier"] = enumSchemaFromNamedtuple(
             coring.Tiers, description="Tier of key material"
         )
+        self.spec.components.schemas["GroupKeyState"]["properties"]["mhab"] = {
+            "$ref": "#/components/schemas/Identifier"
+        }
         saltyStateSchema = self.spec.components.schemas["SaltyState"]
         saltyStateSchema["properties"]["tier"] = {"$ref": "#/components/schemas/Tier"}
 
