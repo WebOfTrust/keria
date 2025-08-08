@@ -2375,6 +2375,30 @@ class ContactResourceEnd:
 
         rep.status = falcon.HTTP_202
 
+@dataclass
+class MemberEnds:
+    agent: Dict[str, str]
+    controller: Optional[Dict[str, str]] = None
+    witness: Optional[Dict[str, str]] = None
+    registrar: Optional[Dict[str, str]] = None
+    watcher: Optional[Dict[str, str]] = None
+    judge: Optional[Dict[str, str]] = None
+    juror: Optional[Dict[str, str]] = None
+    peer: Optional[Dict[str, str]] = None
+    mailbox: Optional[Dict[str, str]] = None
+
+
+@dataclass
+class AidRecord:
+    aid: str
+    ends: MemberEnds
+
+
+@dataclass
+class GroupMember:
+    signing: List[AidRecord]
+    rotation: List[AidRecord]
+
 
 class GroupMemberCollectionEnd:
 
@@ -2402,6 +2426,10 @@ class GroupMemberCollectionEnd:
         responses:
             200:
                 description: Successfully fetched the group member information.
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/GroupMember'
             400:
                 description: Bad request. This could be due to missing or invalid parameters.
             404:

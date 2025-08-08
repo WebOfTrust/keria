@@ -191,6 +191,9 @@ class AgentSpecResource:
         contactSchema = self.spec.components.schemas["Contact"]
         contactSchema["additionalProperties"] = True
 
+        # Register the GroupMember schema
+        self.spec.components.schema("GroupMember", schema=marshmallow_dataclass.class_schema(aiding.GroupMember)())
+
         self.addRoutes(app)
 
     def addRoutes(self, app):
