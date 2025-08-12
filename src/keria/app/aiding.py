@@ -7,8 +7,8 @@ keria.app.aiding module
 import falcon
 import json
 from enum import Enum
-from dataclasses import asdict, dataclass, field, make_dataclass
-from typing import Dict, Any, Optional, List, Union
+from dataclasses import asdict, dataclass, field
+from typing import Dict, Optional, List, Union
 from urllib.parse import urlparse, urljoin
 from keri import kering
 from keri import core
@@ -22,6 +22,7 @@ from keri.db import basing
 from marshmallow import fields
 from marshmallow_dataclass import class_schema
 from ..core import longrunning, httping
+from ..utils.openapi import namedtupleToEnum, dataclassFromFielddom
 
 logger = ogler.getLogger()
 
@@ -75,62 +76,16 @@ def loadEnds(app, agency, authn):
 
     return aidEnd
 
-
-def inferType(value: Any, key: str = ""):
-    if key == "a":
-        return Any
-    if isinstance(value, str):
-        return str
-    elif isinstance(value, int):
-        return int
-    elif isinstance(value, float):
-        return float
-    elif isinstance(value, bool):
-        return bool
-    elif isinstance(value, list):
-        # Try to infer item type from first item if available
-        if len(value) > 0:
-            item_type = inferType(value[0], key)
-        else:
-            item_type = str  # Default to str instead of Any
-        return List[item_type]
-    elif isinstance(value, dict):
-        return Dict[str, Any]
-    else:
-        return Any
-
-def dataclassFromFielddom(name: str, field_dom: serdering.FieldDom) -> (type, class_schema):
-    """
-    Dynamically create a dataclass from a FieldDom instance.
-    """
-    fields = []
-
-    for key, value in field_dom.alls.items():
-        py_type = inferType(value, key)
-
-        # Default value
-        if isinstance(value, list):
-            default = field(default_factory=list)
-        elif isinstance(value, dict):
-            default = field(default_factory=dict)
-        else:
-            default = value
-
-        fields.append((key, py_type, default))
-
-    # Create the dataclass dynamically
-    generated_cls = make_dataclass(name, fields)
-
-    return generated_cls, class_schema(generated_cls)
-
-Icp, IcpSchema = dataclassFromFielddom("IcpV1", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_2_0][kering.Ilks.icp]) 
+IcpV1, IcpV1Schema = dataclassFromFielddom("IcpV1", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.icp]) 
+IcpV2, IcpV2Schema = dataclassFromFielddom("IcpV2", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_2_0][kering.Ilks.icp])
 RotV1, RotV1Schema = dataclassFromFielddom("RotV1", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.rot])
 RotV2, RotV2Schema = dataclassFromFielddom("RotV2", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_2_0][kering.Ilks.rot])
-DipV, DipSchema = dataclassFromFielddom("Dip", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_2_0][kering.Ilks.dip])
+DipV1, DipV1Schema = dataclassFromFielddom("DipV1", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.dip])
+DipV2, DipV2Schema = dataclassFromFielddom("DipV2", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_2_0][kering.Ilks.dip])
 DrtV1, DrtV1Schema = dataclassFromFielddom("DrtV1", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.drt])
 DrtV2, DrtV2Schema = dataclassFromFielddom("DrtV2", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_2_0][kering.Ilks.drt])
-Vcp, VcpSchema = dataclassFromFielddom("Vcp", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.vcp])
-Vrt, VrtSchema = dataclassFromFielddom("Vrt", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.vrt])
+VcpV1, VcpV1Schema = dataclassFromFielddom("VcpV1", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.vcp])
+VrtV1, VrtV1Schema = dataclassFromFielddom("VrtV1", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.vrt])
 
 
 @dataclass
@@ -144,7 +99,7 @@ class KeyStateRecord(basing.KeyStateRecord):
 @dataclass
 class Controller:
     state: KeyStateRecord
-    ee: Union[Icp, RotV1, RotV2, DipV, DrtV1, DrtV2, Vcp, Vrt]
+    ee: Union[IcpV1, IcpV2, RotV1, RotV2, DipV1, DipV2, DrtV1, DrtV2, VcpV1, VrtV1]
 
 @dataclass
 class AgentResourceResult:
@@ -435,14 +390,9 @@ class ExternState:
     pidx: int
     # Override the schema to force additionalProperties=True
 
-class Tier(str, Enum):
-    low = "low"
-    med = "med"
-    high = "high"
-
 @dataclass
 class SaltyState:
-    tier: Tier
+    tier: namedtupleToEnum(coring.Tiers, "Tier") # type: ignore
     sxlt: str = ''
     pidx: int = 0
     kidx: int = 0
@@ -468,10 +418,13 @@ class HabState:
     state: KeyStateRecord
     transferable: Optional[bool] = None
     windexes: Optional[List[str]] = None
-    salty: SaltyState = field(default_factory=SaltyState)
-    randy: RandyKeyState = field(default_factory=RandyKeyState)
-    group: GroupKeyState = field(default_factory=GroupKeyState)
-    extern: ExternState = field(default_factory=ExternState)
+    # One of salty, randy, group, or extern must be present
+    # Patch to ensure only one of these is set in specing
+
+    def __post_init__(self):
+        present = [self.salty, self.randy, self.group, self.extern]
+        if sum(x is not None for x in present) != 1:
+            raise ValueError("Exactly one of salty, randy, group, or extern must be present.")
 
 
 class IdentifierCollectionEnd:
@@ -1173,21 +1126,11 @@ def info(hab, rm, full=False):
 
     return data
 
-class Role(str, Enum):
-    controller = "controller"
-    witness = "witness"
-    registrar = "registrar"
-    watcher = "watcher"
-    judge = "judge"
-    juror = "juror"
-    peer = "peer"
-    mailbox = "mailbox"
-    agent = "agent"
 
 @dataclass
 class OOBI:
     """Data class for OOBI URLs"""
-    role: Role
+    role: namedtupleToEnum(kering.Roles, "Role") # type: ignore
     oobis: List[str] = field(default_factory=list, metadata={"marshmallow_field": fields.List(fields.String(), required=True)})
 
 class IdentifierOOBICollectionEnd:
@@ -1696,6 +1639,9 @@ class RpyEscrowCollectionEnd:
 class Challenge:
     """Challenge data class"""
     words: list[str]
+    dt: str = field(metadata={"marshmallow_field": fields.String(required=False)})
+    said: str = field(default=None, metadata={"marshmallow_field": fields.String(required=False)})
+    authenticated: bool = field(default=False, metadata={"marshmallow_field": fields.Boolean(required=False)})
 
 
 class ChallengeCollectionEnd:
@@ -1936,11 +1882,34 @@ class ChallengeVerifyResourceEnd:
 
         rep.status = falcon.HTTP_202
 
+
+@dataclass
+class WellKnown:
+    """Data class for Well Known URLs"""
+    url: str = field(metadata={"marshmallow_field": fields.String(required=True)})
+    dt: str = field(metadata={"marshmallow_field": fields.String(required=True)})
+
+@dataclass
+class MemberEnds:
+    agent: Dict[str, str]
+    controller: Optional[Dict[str, str]] = None
+    witness: Optional[Dict[str, str]] = None
+    registrar: Optional[Dict[str, str]] = None
+    watcher: Optional[Dict[str, str]] = None
+    judge: Optional[Dict[str, str]] = None
+    juror: Optional[Dict[str, str]] = None
+    peer: Optional[Dict[str, str]] = None
+    mailbox: Optional[Dict[str, str]] = None
+    
 @dataclass
 class Contact:
     id: str = field(metadata={"marshmallow_field": fields.String(required=True)})
     alias: str = field(default=None, metadata={"marshmallow_field": fields.String(required=True)})
     oobi: str = field(default=None, metadata={"marshmallow_field": fields.String(required=True)})
+    end: MemberEnds = field(default=None, metadata={"marshmallow_field": fields.Nested(class_schema(MemberEnds), allow_none=False)})
+    challenges: List[Challenge] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Nested(class_schema(Challenge), allow_none=False))})
+    wellKnowns: List[WellKnown] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Nested(class_schema(WellKnown), allow_none=False))})
+
     # override this in spec to add additional fields
 
 class ContactCollectionEnd:
@@ -2374,18 +2343,6 @@ class ContactResourceEnd:
             )
 
         rep.status = falcon.HTTP_202
-
-@dataclass
-class MemberEnds:
-    agent: Dict[str, str]
-    controller: Optional[Dict[str, str]] = None
-    witness: Optional[Dict[str, str]] = None
-    registrar: Optional[Dict[str, str]] = None
-    watcher: Optional[Dict[str, str]] = None
-    judge: Optional[Dict[str, str]] = None
-    juror: Optional[Dict[str, str]] = None
-    peer: Optional[Dict[str, str]] = None
-    mailbox: Optional[Dict[str, str]] = None
 
 
 @dataclass

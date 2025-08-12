@@ -9,6 +9,8 @@ from keria.app import aiding
 from ..core import longrunning
 from ..utils.openapi import applyAltConstraintsToOpenApiSchema
 from . import credentialing
+from keri.core import coring
+from ..utils.openapi import enumSchemaFromNamedtuple
 """
 KERIA
 keria.app.specing module
@@ -121,42 +123,66 @@ class AgentSpecResource:
         }
 
         # Register the AgentSpecResource
-        self.spec.components.schema("Icp", schema=aiding.IcpSchema)
+        self.spec.components.schema("IcpV1", schema=aiding.IcpV1Schema)
+        self.spec.components.schema("IcpV2", schema=aiding.IcpV2Schema)
         self.spec.components.schema("RotV1", schema=aiding.RotV1Schema)
         self.spec.components.schema("RotV2", schema=aiding.RotV2Schema)
-        self.spec.components.schema("Dip", schema=aiding.DipSchema)
+        self.spec.components.schema("DipV1", schema=aiding.DipV1Schema)
+        self.spec.components.schema("DipV2", schema=aiding.DipV2Schema)
         self.spec.components.schema("DrtV1", schema=aiding.DrtV1Schema)
         self.spec.components.schema("DrtV2", schema=aiding.DrtV2Schema)
-        self.spec.components.schema("Vcp", schema=aiding.VcpSchema)
-        self.spec.components.schema("Vrt", schema=aiding.VrtSchema)
+        self.spec.components.schema("VcpV1", schema=aiding.VcpV1Schema)
+        self.spec.components.schema("VrtV1", schema=aiding.VrtV1Schema)
 
         self.spec.components.schema("AgentResourceResult", schema=marshmallow_dataclass.class_schema(aiding.AgentResourceResult)())
 
         agentControllerSchema = self.spec.components.schemas["Controller"]
         agentControllerSchema["properties"]["ee"] = {
             "oneOf": [
-                {"$ref": "#/components/schemas/Icp"},
+                {"$ref": "#/components/schemas/IcpV1"},
+                {"$ref": "#/components/schemas/IcpV2"},
                 {"$ref": "#/components/schemas/RotV1"},
                 {"$ref": "#/components/schemas/RotV2"},
-                {"$ref": "#/components/schemas/Dip"},
+                {"$ref": "#/components/schemas/DipV1"},
+                {"$ref": "#/components/schemas/DipV2"},
                 {"$ref": "#/components/schemas/DrtV1"},
                 {"$ref": "#/components/schemas/DrtV2"},
-                {"$ref": "#/components/schemas/Vcp"},
-                {"$ref": "#/components/schemas/Vrt"},
+                {"$ref": "#/components/schemas/VcpV1"},
+                {"$ref": "#/components/schemas/VrtV1"},
             ]
         }
 
         # Identifiers
+        self.spec.components.schema("SaltyState", schema=marshmallow_dataclass.class_schema(aiding.SaltyState)())
+        self.spec.components.schema("RandyKeyState", schema=marshmallow_dataclass.class_schema(aiding.RandyKeyState)())
+        self.spec.components.schema("GroupKeyState", schema=marshmallow_dataclass.class_schema(aiding.GroupKeyState)()) 
+        self.spec.components.schema("ExternState", schema=marshmallow_dataclass.class_schema(aiding.ExternState)())
         self.spec.components.schema("Identifier", schema=marshmallow_dataclass.class_schema(aiding.HabState)())
+        identifierSchema = self.spec.components.schemas["Identifier"]
+        identifierSchema["oneOf"] = [
+            {
+                "required": ["salty"],
+                "properties": {"salty": {"$ref": "#/components/schemas/SaltyState"}}
+            },
+            {
+                "required": ["randy"],
+                "properties": {"randy": {"$ref": "#/components/schemas/RandyKeyState"}}
+            },
+            {
+                "required": ["group"],
+                "properties": {"group": {"$ref": "#/components/schemas/GroupKeyState"}}
+            },
+            {
+                "required": ["extern"],
+                "properties": {"extern": {"$ref": "#/components/schemas/ExternState"}}
+            }
+        ]
         self.spec.components.schemas["GroupKeyState"]["properties"]["mhab"] = {
             "$ref": "#/components/schemas/Identifier"
         }
-        self.spec.components.schema("Tier", schema=marshmallow_dataclass.class_schema(aiding.Tier)())
-        self.spec.components.schemas["Tier"] = {
-            "type": "string",
-            "enum": ["low", "med", "high"],
-            "description": "Tier of key material"
-        }
+        self.spec.components.schemas["Tier"] = enumSchemaFromNamedtuple(
+            coring.Tiers, description="Tier of key material"
+        )
         saltyStateSchema = self.spec.components.schemas["SaltyState"]
         saltyStateSchema["properties"]["tier"] = {
             "$ref": "#/components/schemas/Tier"
