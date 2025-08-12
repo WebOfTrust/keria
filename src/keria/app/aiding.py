@@ -8,8 +8,8 @@ keria.app.aiding module
 import falcon
 import json
 from enum import Enum
-from dataclasses import asdict, dataclass, field, make_dataclass
-from typing import Dict, Any, Optional, List, Union
+from dataclasses import asdict, dataclass, field
+from typing import Dict, Optional, List, Union
 from urllib.parse import urlparse, urljoin
 from keri import kering
 from keri import core
@@ -2031,11 +2031,34 @@ class ChallengeVerifyResourceEnd:
 
         rep.status = falcon.HTTP_202
 
+
+@dataclass
+class WellKnown:
+    """Data class for Well Known URLs"""
+    url: str = field(metadata={"marshmallow_field": fields.String(required=True)})
+    dt: str = field(metadata={"marshmallow_field": fields.String(required=True)})
+
+@dataclass
+class MemberEnds:
+    agent: Dict[str, str]
+    controller: Optional[Dict[str, str]] = None
+    witness: Optional[Dict[str, str]] = None
+    registrar: Optional[Dict[str, str]] = None
+    watcher: Optional[Dict[str, str]] = None
+    judge: Optional[Dict[str, str]] = None
+    juror: Optional[Dict[str, str]] = None
+    peer: Optional[Dict[str, str]] = None
+    mailbox: Optional[Dict[str, str]] = None
+    
 @dataclass
 class Contact:
     id: str = field(metadata={"marshmallow_field": fields.String(required=True)})
     alias: str = field(default=None, metadata={"marshmallow_field": fields.String(required=True)})
     oobi: str = field(default=None, metadata={"marshmallow_field": fields.String(required=True)})
+    end: MemberEnds = field(default=None, metadata={"marshmallow_field": fields.Nested(class_schema(MemberEnds), allow_none=False)})
+    challenges: List[Challenge] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Nested(class_schema(Challenge), allow_none=False))})
+    wellKnowns: List[WellKnown] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Nested(class_schema(WellKnown), allow_none=False))})
+
     # override this in spec to add additional fields
 
 @dataclass
