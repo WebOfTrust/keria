@@ -5,7 +5,7 @@ from apispec import yaml_utils
 from apispec.core import VALID_METHODS, APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 
-from keria.app import aiding
+from keria.app import aiding, agenting
 from ..core import longrunning
 from ..utils.openapi import applyAltConstraintsToOpenApiSchema
 from . import credentialing
@@ -291,6 +291,48 @@ class AgentSpecResource:
             "GroupMember",
             schema=marshmallow_dataclass.class_schema(aiding.GroupMember)(),
         )
+
+        # Register the KeyEventRecord schema
+        self.spec.components.schema("KeyEventRecord", schema=marshmallow_dataclass.class_schema(agenting.KeyEventRecord)())
+        keyEventRecordSchema = self.spec.components.schemas["KeyEventRecord"]
+        keyEventRecordSchema["properties"]["ked"] = {
+            "oneOf": [
+                # Keri V1.0
+                {"$ref": "#/components/schemas/IcpV1"},
+                {"$ref": "#/components/schemas/RotV1"},
+                {"$ref": "#/components/schemas/IxnV1"},
+                {"$ref": "#/components/schemas/DipV1"},
+                {"$ref": "#/components/schemas/DrtV1"},
+                {"$ref": "#/components/schemas/RctV1"},
+                {"$ref": "#/components/schemas/QryV1"},
+                {"$ref": "#/components/schemas/RpyV1"},
+                {"$ref": "#/components/schemas/ProV1"},
+                {"$ref": "#/components/schemas/BarV1"},
+                {"$ref": "#/components/schemas/ExnV1"},
+                {"$ref": "#/components/schemas/VcpV1"},
+                {"$ref": "#/components/schemas/VrtV1"},
+                {"$ref": "#/components/schemas/IssV1"},
+                {"$ref": "#/components/schemas/RevV1"},
+                {"$ref": "#/components/schemas/BisV1"},
+                {"$ref": "#/components/schemas/BrvV1"},
+                # Keri V2.0
+                {"$ref": "#/components/schemas/IcpV2"},
+                {"$ref": "#/components/schemas/RotV2"},
+                {"$ref": "#/components/schemas/IxnV2"},
+                {"$ref": "#/components/schemas/DipV2"},
+                {"$ref": "#/components/schemas/DrtV2"},
+                {"$ref": "#/components/schemas/RctV2"},
+                {"$ref": "#/components/schemas/QryV2"},
+                {"$ref": "#/components/schemas/RpyV2"},
+                {"$ref": "#/components/schemas/ProV2"},
+                {"$ref": "#/components/schemas/BarV2"},
+                {"$ref": "#/components/schemas/XipV2"},
+                {"$ref": "#/components/schemas/ExnV2"}
+            ]
+        }
+
+        # Register the AgentConfig schema
+        self.spec.components.schema("AgentConfig", schema=marshmallow_dataclass.class_schema(agenting.AgentConfig)())
 
         self.addRoutes(app)
 
