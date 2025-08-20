@@ -32,7 +32,7 @@ from keri.help import nowIso8601
 from keri.vdr import credentialing
 
 from keria.app import agenting, aiding
-from keria.core import longrunning
+from keria.core import longrunning, httping
 from keria.testing.testing_helper import SCRIPTS_DIR
 
 
@@ -746,14 +746,14 @@ class MockHttpServer:
 def test_createHttpServer(monkeypatch):
     port = 5632
     app = falcon.App()
-    server = agenting.createHttpServer(port, app)
+    server = httping.createHttpServer(port, app)
     assert isinstance(server, http.Server)
 
     monkeypatch.setattr(hio.core.tcp, 'ServerTls', MockServerTls)
     monkeypatch.setattr(hio.core.http, 'Server', MockHttpServer)
 
-    server = agenting.createHttpServer(port, app, keypath='keypath', certpath='certpath',
-                                          cafilepath='cafilepath')
+    server = httping.createHttpServer(port, app, keypath='keypath', certpath='certpath',
+                                                 cafilepath='cafilepath')
 
     assert isinstance(server, MockHttpServer)
     assert isinstance(server.servant, MockServerTls)
