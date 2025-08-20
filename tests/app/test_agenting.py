@@ -223,7 +223,7 @@ def test_agency():
         agency = agenting.Agency(name="agency", base="", bran=None, temp=True, configFile="keria",
                                  configDir=SCRIPTS_DIR)
         assert agency.cf is not None
-        assert agency.cf.path.endswith("scripts/keri/cf/keria.json") is True
+        assert agency.cf.path.endswith("keri/cf/keria.json") is True
 
         tock = 0.03125
         limit = 1.0

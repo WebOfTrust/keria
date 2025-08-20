@@ -7,6 +7,7 @@ import os
 import pathlib
 import shutil
 from contextlib import contextmanager
+from typing import Tuple, List
 
 import falcon
 from falcon import testing
@@ -17,7 +18,7 @@ from keri.app import keeping, habbing, configing, signing
 from keri.core import coring, eventing, parsing, routing, scheming, serdering
 from keri.core.coring import MtrDex
 from keri.core.eventing import SealEvent
-from keri.core.signing import Salter
+from keri.core.signing import Salter, Signer
 from keri.help import helping
 from keri.kering import TraitCodex
 from keri.vc import proving
@@ -324,12 +325,22 @@ class Helpers:
 
     @staticmethod
     def controller(bran=b'0123456789abcdefghijk'):
+        """
+        Creates a Signify Controller using a Signify stem in the key seed using a single signer.
+        Returns:
+            (SerderKERI, List[Siger]): The inception event serder and list of signatures
+        """
         serder, signers = Helpers.incept(bran=bran, stem="signify:controller", pidx=0)
         sigers = [signers[0].sign(ser=serder.raw, index=0)]
         return serder, sigers
 
     @staticmethod
-    def incept(bran, stem, pidx, count=1, sith="1", wits=None, toad="0", delpre=None):
+    def incept(bran, stem, pidx, count=1, sith="1", wits=None, toad="0", delpre=None) -> Tuple[serdering.SerderKERI, List[Signer]]:
+        """
+        Perform a regular inception event with the given parameters.
+        Returns:
+            (SerderKERI, List[Signer]): The inception event serder and list of signers
+        """
         if wits is None:
             wits = []
 
@@ -552,7 +563,13 @@ class Helpers:
     @staticmethod
     @contextmanager
     def openKeria(salter=None, cf=None, temp=True):
+        """
+        Creates a Signify Controller and it's associated Agent, Agent Habery, containing Agency,
+        Falcon HTTP App, and Falcon test client. The Agency has a single Agent.
 
+        Returns:
+            (Agency, Agent, falcon.App, TestClient): The agency, agent, Falcon HTTP app, and Falcon HTTP test client
+        """
         serder, sigers = Helpers.controller()
         assert serder.pre == Helpers.controllerAID
 
@@ -563,11 +580,11 @@ class Helpers:
         if cf is None:
             cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, reopen=True, clear=False)
 
+        agency = agenting.Agency(name="agency", bran=None, temp=True)
         with habbing.openHby(name="keria", salt=salter.qb64, temp=temp, cf=cf) as hby:
             ims = eventing.messagize(serder, sigers=sigers)
             parsing.Parser(kvy=hby.kvy).parseOne(ims=ims)
 
-            agency = agenting.Agency(name="agency", bran=None, temp=True)
             agentHab = hby.makeHab(serder.pre, ns="agent", transferable=True, delpre=serder.pre)
 
             rgy = credentialing.Regery(hby=hby, name=agentHab.name, base=hby.base, temp=True)
