@@ -19,7 +19,7 @@ import falcon
 import lmdb
 from falcon import media
 from hio.base import doing, Doer
-from hio.core import http, tcp
+from hio.core import http
 from hio.help import decking
 
 from keri import core, kering
@@ -47,6 +47,8 @@ from keri.app import challenging
 from . import aiding, notifying, indirecting, credentialing, ipexing, delegating
 from . import grouping as keriagrouping
 from .serving import GracefulShutdownDoer
+from .. import log_name, ogler, set_log_level
+from ..core.httping import falconApp, createHttpServer
 from ..peer import exchanging as keriaexchanging
 from .specing import AgentSpecResource
 from ..core import authing, longrunning, httping
@@ -54,27 +56,7 @@ from ..core.authing import Authenticater
 from ..core.keeping import RemoteManager
 from ..db import basing
 
-class TruncatedFormatter(logging.Formatter):
-    """Formats log records with shorter module and function names and a right justified line number for readability."""
-    def __init__(self, fmt=None, datefmt=None, style='%'):
-        super().__init__(fmt, datefmt, style)
-
-    def format(self, record):
-        # Truncate module and funcName to first 'chars' characters
-        mod_chars = 10 # number of spaces to truncate to
-        fn_chars = 14 # number of spaces to truncate to
-        record.module = (record.module[:mod_chars] + ' ' * mod_chars)[:mod_chars]
-        record.funcName = (record.funcName[:fn_chars] + ' ' * fn_chars)[:fn_chars]
-        record.lineno = str(record.lineno).rjust(5)  # Ensure line number is right-aligned
-        return super().format(record)
-
-formatter = TruncatedFormatter('%(asctime)s [keria] %(levelname)-8s %(module)s.%(funcName)s-%(lineno)s %(message)s')
-formatter.default_msec_format = None
-logHandler = logging.StreamHandler()
-logHandler.setFormatter(formatter)
-ogler.baseFormatter = formatter
-ogler.baseConsoleHandler = logHandler
-logger = ogler.getLogger()
+logger = ogler.getLogger(log_name)
 
 @dataclass
 class KERIAServerConfig:
@@ -141,8 +123,7 @@ class KERIAServerConfig:
 
 def runAgency(config: KERIAServerConfig):
     """Runs a KERIA Agency with the given Doers by calling Doist.do(). Useful for testing."""
-    ogler.level = logging.getLevelName(config.logLevel)
-    logger.setLevel(ogler.level)
+    set_log_level(config.logLevel, logger)
     if config.logFile is not None:
         ogler.headDirPath = config.logFile
         ogler.reopen(name="keria", temp=False, clear=True)
@@ -807,6 +788,107 @@ class Agent(doing.DoDoer):
             except lmdb.Error as ex:  # Sometimes LMDB will throw an error if the DB is already closed
                 logger.error(f"Error closing database {db.__class__.__name__} for agent {self.caid}: {ex}")
         logger.info(f"Agent {self.caid} shut down")
+
+def createBootServerDoer(config: KERIAServerConfig, agency: Agency):
+    """Create the Agent boot HTTP server and the Doer to run it. Returns only the Doer."""
+    bootApp = falconApp()
+
+    bootEnd = BootEnd(agency, username=config.bootUsername, password=config.bootPassword)
+    bootApp.add_route("/boot", bootEnd)
+    bootApp.add_route("/health", HealthEnd())
+
+    bootServer = createHttpServer(config.bootPort, bootApp, config.keyPath, config.certPath, config.caFilePath)
+    if not bootServer.reopen():
+        raise RuntimeError(f"Cannot create boot HTTP server on port {config.bootPort}")
+    return http.ServerDoer(server=bootServer)
+
+def createAdminServerDoer(config: KERIAServerConfig, agency: Agency):
+    """
+    Create the Admin HTTP server and the Doer to run it.
+    Returns the Doer and the Falcon app so the HTTP app can use it for OpenAPI docs.
+    """
+    # Create Authenticater for verifying signatures on all requests
+    authn = Authenticater(agency=agency)
+
+    adminApp = falconApp()
+    if config.cors:
+        adminApp.add_middleware(middleware=httping.HandleCORS())
+    adminApp.add_middleware(authing.SignatureValidationComponent(agency=agency, authn=authn, allowed=["/agent"]))
+    adminApp.req_options.media_handlers.update(media.Handlers())
+    adminApp.resp_options.media_handlers.update(media.Handlers())
+
+    loadEnds(app=adminApp)
+    aidEnd = aiding.loadEnds(app=adminApp, agency=agency, authn=authn)
+    credentialing.loadEnds(app=adminApp, identifierResource=aidEnd)
+    delegating.loadEnds(app=adminApp, identifierResource=aidEnd)
+    notifying.loadEnds(app=adminApp)
+    keriagrouping.loadEnds(app=adminApp)
+
+    keriaexchanging.loadEnds(app=adminApp)
+    ipexing.loadEnds(app=adminApp)
+
+    adminServer = createHttpServer(config.adminPort, adminApp, config.keyPath, config.certPath, config.caFilePath)
+    if not adminServer.reopen():
+        raise RuntimeError(f"cannot create admin HTTP server on port {config.adminPort}")
+    return adminApp, http.ServerDoer(server=adminServer)
+
+def createHttpServerDoer(config: KERIAServerConfig, agency: Agency, adminApp: falcon.App):
+    """Create the main HTTP server and the Doer to run it. Returns only the Doer."""
+    happ = falconApp()
+    happ.req_options.media_handlers.update(media.Handlers())
+    happ.resp_options.media_handlers.update(media.Handlers())
+
+    ending.loadEnds(agency=agency, app=happ)
+    indirecting.loadEnds(agency=agency, app=happ)
+
+    swagsink = http.serving.StaticSink(staticDirPath="./static")
+    happ.add_sink(swagsink, prefix="/swaggerui")
+
+    specEnd = AgentSpecResource(app=adminApp, title='KERIA Interactive Web Interface API')
+    specEnd.addRoutes(happ)
+    happ.add_route("/spec.yaml", specEnd)
+    server = createHttpServer(config.httpPort, happ, config.keyPath, config.certPath, config.caFilePath)
+    if not server.reopen():
+        raise RuntimeError(f"cannot create local http server on port {config.httpPort}")
+    return http.ServerDoer(server=server)
+
+
+def setupDoers(config: KERIAServerConfig, temp=False, cf=None):
+    """
+    Sets up the HIO coroutines the KERIA agent server is composed of including three HTTP servers for a KERIA agent server:
+    1. Boot server for bootstrapping agents. Signify calls this with a signed inception event.
+    2. Admin server for administrative tasks like creating agents.
+    3. HTTP server for all other agent operations.
+
+    Parameters:
+        config (KERIAServerConfig): Configuration for the KERIA server.
+        temp (bool): Whether to use a temporary database. Default is False. Useful for testing.
+        cf (configing.Configer | None): Optional Configer instance for configuration data. Useful for testing.
+    """
+    agency = Agency(
+        name=config.name,
+        base=config.base,
+        bran=config.bran,
+        configFile=config.configFile,
+        configDir=config.configDir,
+        releaseTimeout=config.releaseTimeout,
+        curls=config.curls,
+        iurls=config.iurls,
+        durls=config.durls,
+        temp=temp,
+        cf=cf
+    )
+    bootServerDoer = createBootServerDoer(config, agency)
+    adminApp, adminServerDoer = createAdminServerDoer(config, agency)
+
+    doers = [agency, bootServerDoer, adminServerDoer]
+
+    if config.httpPort:
+        httpServerDoer = createHttpServerDoer(config, agency, adminApp)
+        doers.append(httpServerDoer)
+
+    logger.info("The Agency is loaded and waiting for requests...")
+    return doers
 
 
 class ParserDoer(doing.Doer):
