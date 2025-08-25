@@ -121,18 +121,28 @@ class KERIAServerConfig:
     # Experimental username for boot endpoint. Enables HTTP Basic Authentication for the boot endpoint. Only meant to be used for testing purposes.
     bootUsername: str = None
 
-def runAgency(config: KERIAServerConfig):
+def readConfigFile(configDir: str, configFile: str, temp=False):
+    return configing.Configer(name=configFile,
+                       base="",
+                       headDirPath=configDir,
+                       temp=temp,
+                       reopen=True,
+                       clear=False)
+
+def runAgency(config: KERIAServerConfig, temp=False):
     """Runs a KERIA Agency with the given Doers by calling Doist.do(). Useful for testing."""
     set_log_level(config.logLevel, logger)
     if config.logFile is not None:
         ogler.headDirPath = config.logFile
-        ogler.reopen(name="keria", temp=False, clear=True)
+        ogler.reopen(name="keria", temp=temp, clear=True)
 
     logger.info("Starting Agent for %s listening: admin/%s, http/%s, boot/%s",
                 config.name, config.adminPort, config.httpPort, config.bootPort)
     logger.info("PID: %s", os.getpid())
-
-    doist = agencyDoist(setupDoers(config))
+    cf = readConfigFile(config.configDir, config.configFile, temp=temp) if config.configFile is not None else None
+    agency = createAgency(config, temp=temp, cf=cf)
+    doist = agencyDoist(setupDoers(agency, config))
+    logger.info("The Agency is loaded and waiting for requests...")
     doist.do()
 
 def agencyDoist(doers: List[Doer]):
@@ -226,15 +236,20 @@ class Agency(doing.DoDoer):
         if config_name in config:
             config[habName] = config[config_name]
             del config[config_name]
+        else:
+            config[habName] = {}
 
+        config[habName]["curls"] = config[habName].get("curls", [])
+        config["iurls"] = config.get("iurls", [])
+        config["durls"] = config.get("durls", [])
         if self.curls is not None and isinstance(self.curls, list):
-            config[habName] = { "dt": timestamp, "curls": self.curls }
+            config[habName]["curls"] = config[habName]["curls"] + self.curls
 
         if self.iurls is not None and isinstance(self.iurls, list):
-            config["iurls"] = self.iurls
+            config["iurls"] = config["iurls"] + self.iurls
 
         if self.durls is not None and isinstance(self.durls, list):
-            config["durls"] = self.durls
+            config["durls"] = config["durls"] + self.durls
         return config
 
     def _write_agent_config(self, caid):
@@ -764,20 +779,8 @@ def createHttpServerDoer(config: KERIAServerConfig, agency: Agency, adminApp: fa
         raise RuntimeError(f"cannot create local http server on port {config.httpPort}")
     return http.ServerDoer(server=server)
 
-
-def setupDoers(config: KERIAServerConfig, temp=False, cf=None):
-    """
-    Sets up the HIO coroutines the KERIA agent server is composed of including three HTTP servers for a KERIA agent server:
-    1. Boot server for bootstrapping agents. Signify calls this with a signed inception event.
-    2. Admin server for administrative tasks like creating agents.
-    3. HTTP server for all other agent operations.
-
-    Parameters:
-        config (KERIAServerConfig): Configuration for the KERIA server.
-        temp (bool): Whether to use a temporary database. Default is False. Useful for testing.
-        cf (configing.Configer | None): Optional Configer instance for configuration data. Useful for testing.
-    """
-    agency = Agency(
+def createAgency(config: KERIAServerConfig, temp=False, cf=None):
+    return Agency(
         name=config.name,
         base=config.base,
         bran=config.bran,
@@ -790,6 +793,19 @@ def setupDoers(config: KERIAServerConfig, temp=False, cf=None):
         temp=temp,
         cf=cf
     )
+
+def setupDoers(agency: Agency, config: KERIAServerConfig, temp=False, cf=None):
+    """
+    Sets up the HIO coroutines the KERIA agent server is composed of including three HTTP servers for a KERIA agent server:
+    1. Boot server for bootstrapping agents. Signify calls this with a signed inception event.
+    2. Admin server for administrative tasks like creating agents.
+    3. HTTP server for all other agent operations.
+
+    Parameters:
+        config (KERIAServerConfig): Configuration for the KERIA server.
+        temp (bool): Whether to use a temporary database. Default is False. Useful for testing.
+        cf (configing.Configer | None): Optional Configer instance for configuration data. Useful for testing.
+    """
     bootServerDoer = createBootServerDoer(config, agency)
     adminApp, adminServerDoer = createAdminServerDoer(config, agency)
 
@@ -798,8 +814,6 @@ def setupDoers(config: KERIAServerConfig, temp=False, cf=None):
     if config.httpPort:
         httpServerDoer = createHttpServerDoer(config, agency, adminApp)
         doers.append(httpServerDoer)
-
-    logger.info("The Agency is loaded and waiting for requests...")
     return doers
 
 
