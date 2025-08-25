@@ -37,22 +37,26 @@ from keria.testing.testing_helper import SCRIPTS_DIR
 
 
 def test_setup_no_http():
-    doers = agenting.setupDoers(agenting.KERIAServerConfig(
+    config = agenting.KERIAServerConfig(
         name="test",
         adminPort=1234,
         bootPort=5678,
         httpPort=None,
-    ))
+    )
+    agency = agenting.createAgency(config, temp=True, cf=None)
+    doers = agenting.setupDoers(agency, config)
     assert len(doers) == 3
     assert isinstance(doers[0], agenting.Agency) is True
 
 def test_setup():
-    doers = agenting.setupDoers(agenting.KERIAServerConfig(
+    config = agenting.KERIAServerConfig(
         name="test",
         adminPort=1234,
         bootPort=5678,
         httpPort=9999,
-    ))
+    )
+    agency = agenting.createAgency(config, temp=True, cf=None)
+    doers = agenting.setupDoers(agency, config)
     assert len(doers) == 4
 
 def wait_for_server(port, timeout=10):
