@@ -1,7 +1,8 @@
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 from dataclasses import field, make_dataclass
 from marshmallow_dataclass import class_schema
+from marshmallow import fields as mm_fields
 from keri.core import serdering
 
 
@@ -33,24 +34,40 @@ def dataclassFromFielddom(name: str, field_dom: serdering.FieldDom) -> (type, cl
     Dynamically create a dataclass from a FieldDom instance.
     """
     fields = []
+    custom_fields = {}
 
     for key, value in field_dom.alls.items():
-        py_type = inferType(value, key)
-
-        # Default value
-        if isinstance(value, list):
-            default = field(default_factory=list)
-        elif isinstance(value, dict):
-            default = field(default_factory=dict)
+        # Custom: for "kt" or "nt", allow string or array of strings
+        if key in ("kt", "nt"):
+            py_type = Union[str, List[str]]
+            marshmallow_field = mm_fields.Raw(
+                metadata={
+                    "oneOf": [
+                        {"type": "string"},
+                        {"type": "array", "items": {"type": "string"}}
+                    ]
+                }
+            )
+            default = field(default_factory=list, metadata={"marshmallow_field": marshmallow_field})
+            custom_fields[key] = marshmallow_field
         else:
-            default = value
-
+            py_type = inferType(value, key)
+            if isinstance(value, list):
+                default = field(default_factory=list)
+            elif isinstance(value, dict):
+                default = field(default_factory=dict)
+            else:
+                default = value
         fields.append((key, py_type, default))
 
-    # Create the dataclass dynamically
     generated_cls = make_dataclass(name, fields)
+    schema = class_schema(generated_cls)()
 
-    return generated_cls, class_schema(generated_cls)
+    for key in ("kt", "nt"):
+        if key in custom_fields:
+            schema._declared_fields[key] = custom_fields[key]
+
+    return generated_cls, schema
 
 def enumSchemaFromNamedtuple(nt_instance, description=None):
     """

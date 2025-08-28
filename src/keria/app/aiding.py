@@ -1891,7 +1891,7 @@ class WellKnown:
 
 @dataclass
 class MemberEnds:
-    agent: Dict[str, str]
+    agent: Optional[Dict[str, str]] = None
     controller: Optional[Dict[str, str]] = None
     witness: Optional[Dict[str, str]] = None
     registrar: Optional[Dict[str, str]] = None
