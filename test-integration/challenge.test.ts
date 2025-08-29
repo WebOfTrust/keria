@@ -1,48 +1,14 @@
 import { assert, test } from 'vitest';
-import signify, { Serder } from 'signify-ts';
-import { resolveEnvironment } from './utils/resolve-env.ts';
+import { Serder } from 'signify-ts';
 import {
     assertOperations,
+    getOrCreateClients,
     resolveOobi,
     waitOperation,
 } from './utils/test-util.ts';
 
-const { url, bootUrl } = resolveEnvironment();
-
 test('challenge', async () => {
-    await signify.ready();
-    const bran1 = signify.randomPasscode();
-    const bran2 = signify.randomPasscode();
-    const client1 = new signify.SignifyClient(
-        url,
-        bran1,
-        signify.Tier.low,
-        bootUrl
-    );
-    const client2 = new signify.SignifyClient(
-        url,
-        bran2,
-        signify.Tier.low,
-        bootUrl
-    );
-    await client1.boot();
-    await client2.boot();
-    await client1.connect();
-    await client2.connect();
-    const state1 = await client1.state();
-    const state2 = await client2.state();
-    console.log(
-        'Client 1 connected. Client AID:',
-        state1.controller.state.i,
-        'Agent AID: ',
-        state1.agent.i
-    );
-    console.log(
-        'Client 2 connected. Client AID:',
-        state2.controller.state.i,
-        'Agent AID: ',
-        state2.agent.i
-    );
+    const [client1, client2] = await getOrCreateClients(2);
 
     // Generate challenge words
     const challenge1_small = await client1.challenges().generate(128);

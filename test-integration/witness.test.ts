@@ -1,31 +1,17 @@
 // This scrip also work if you start keria with no config file with witness urls
 import { assert, test } from 'vitest';
-import signify from 'signify-ts';
 import { resolveEnvironment } from './utils/resolve-env.ts';
-import { resolveOobi, waitOperation } from './utils/test-util.ts';
+import {
+    getOrCreateClient,
+    resolveOobi,
+    waitOperation,
+} from './utils/test-util.ts';
 
 const WITNESS_AID = 'BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha';
-const { url, bootUrl, witnessUrls } = resolveEnvironment();
+const { witnessUrls } = resolveEnvironment();
 
 test('test witness', async () => {
-    await signify.ready();
-    // Boot client
-    const bran1 = signify.randomPasscode();
-    const client1 = new signify.SignifyClient(
-        url,
-        bran1,
-        signify.Tier.low,
-        bootUrl
-    );
-    await client1.boot();
-    await client1.connect();
-    const state1 = await client1.state();
-    console.log(
-        'Client connected. Client AID:',
-        state1.controller.state.i,
-        'Agent AID: ',
-        state1.agent.i
-    );
+    const client1 = await getOrCreateClient();
 
     // Client 1 resolves witness OOBI
     await resolveOobi(client1, witnessUrls[0] + `/oobi/${WITNESS_AID}`, 'wit');

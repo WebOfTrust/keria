@@ -10,7 +10,7 @@ x-python-env: &python-env
 
 services:
     vlei-server:
-        image: gleif/vlei
+        image: gleif/vlei:0.2.0
         environment:
             <<: *python-env
         command: vLEI-server -s ./schema/acdc -c ./samples/acdc/ -o ./samples/oobis/

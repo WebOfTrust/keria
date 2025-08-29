@@ -1,23 +1,13 @@
 import { assert, test } from 'vitest';
 import signify from 'signify-ts';
-import { resolveEnvironment } from './utils/resolve-env.ts';
-import { assertOperations, waitOperation } from './utils/test-util.ts';
-
-const { url, bootUrl } = resolveEnvironment();
+import {
+    assertOperations,
+    getOrCreateClient,
+    waitOperation,
+} from './utils/test-util.ts';
 
 test('randy', async () => {
-    await signify.ready();
-    // Boot client
-    const bran1 = signify.randomPasscode();
-    const client1 = new signify.SignifyClient(
-        url,
-        bran1,
-        signify.Tier.low,
-        bootUrl
-    );
-    await client1.boot();
-    await client1.connect();
-    await client1.state();
+    const client1 = await getOrCreateClient();
 
     let icpResult = await client1
         .identifiers()

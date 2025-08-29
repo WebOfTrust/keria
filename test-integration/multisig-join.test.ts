@@ -2,8 +2,6 @@ import signify, { Serder, SignifyClient } from 'signify-ts';
 import {
     getOrCreateClient,
     getOrCreateIdentifier,
-} from './utils/test-setup.ts';
-import {
     markNotification,
     waitForNotifications,
     waitOperation,
