@@ -27,7 +27,7 @@ All pull requests require approval from at least 2 out of 3 maintainers before m
 
 | Name                    | GitHub                                                  | Discord               | email                                 |
 | ----------------------- | ------------------------------------------------------- | --------------------- | ------------------------------------- |
-| Phil Feairheller        | [iFerpfeairhellergal](https://github.com/pfeairheller)  | philfeairheller_95942 |                                       |
+| Phil Feairheller        | [pfeairheller](https://github.com/pfeairheller)  | philfeairheller_95942 |                                       |
 | Lance Byrd              | [2byrds](https://github.com/2byrds)                     | megrimlance           |                                       |
 | Rodolfo Miranda         | [rodolfomiranda](https://github.com/rodolfomiranda)     | rodo5833              |                                       |
 | Alex Andrei             | [AlexAndrei98](https://github.com/AlexAndrei98)         |                       |                                       |
