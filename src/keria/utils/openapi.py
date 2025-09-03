@@ -33,32 +33,47 @@ def dataclassFromFielddom(name: str, field_dom: serdering.FieldDom) -> (type, cl
     """
     Dynamically create a dataclass from a FieldDom instance.
     """
-    fields = []
+    required_fields = []
+    optional_fields = []
     custom_fields = {}
 
     for key, value in field_dom.alls.items():
-        # Custom: for "kt" or "nt", allow string or array of strings
+        # Custom: for "kt" or "nt", allow string or array of strings or array of array of strings
         if key in ("kt", "nt"):
-            py_type = Union[str, List[str]]
+            py_type = Union[str, List[str], List[List[str]]]
             marshmallow_field = mm_fields.Raw(
+                required=True,
                 metadata={
                     "oneOf": [
                         {"type": "string"},
-                        {"type": "array", "items": {"type": "string"}}
+                        {"type": "array", "items": {"type": "string"}},
+                        {"type": "array", "items": {"type": "array", "items": {"type": "string"}}}
                     ]
                 }
             )
-            default = field(default_factory=list, metadata={"marshmallow_field": marshmallow_field})
+            field_def = (key, py_type, field(metadata={"marshmallow_field": marshmallow_field}))
+            required_fields.append(field_def)
             custom_fields[key] = marshmallow_field
         else:
             py_type = inferType(value, key)
             if isinstance(value, list):
-                default = field(default_factory=list)
+                field_def = (key, py_type, field(default_factory=list))
+                optional_fields.append(field_def)
             elif isinstance(value, dict):
-                default = field(default_factory=dict)
+                field_def = (key, py_type, field(default_factory=dict))
+                optional_fields.append(field_def)
             else:
-                default = value
-        fields.append((key, py_type, default))
+                # Check if this should be required (no meaningful default) or optional
+                if value == "" or value == 0:  # Empty string or zero could be defaults
+                    field_def = (key, py_type, value)  # Has default, so optional
+                    optional_fields.append(field_def)
+                else:
+                    # Non-empty/non-zero values might indicate required fields
+                    field_def = (key, py_type)  # No default = required
+                    required_fields.append(field_def)  # Add to required_fields instead
+
+    # Combine required fields first, then optional fields
+    fields = required_fields + optional_fields
 
     generated_cls = make_dataclass(name, fields)
     schema = class_schema(generated_cls)()
