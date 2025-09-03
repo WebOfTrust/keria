@@ -3,3 +3,4 @@ docs/
 package.json
 package-lock.json
 .github/
+MAINTAINERS.md
