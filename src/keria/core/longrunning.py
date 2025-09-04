@@ -6,7 +6,9 @@ keria.core.longrunning module
 """
 import datetime
 from collections import namedtuple
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
+from marshmallow import fields
+from typing import Optional, Dict, Union
 
 import falcon
 import json
@@ -16,6 +18,7 @@ from keri.app.oobiing import Result
 from keri.core import eventing, coring, serdering
 from keri.db import dbing, koming
 from keri.help import helping
+from marshmallow_dataclass import class_schema
 
 from keria.app import delegating
 
@@ -30,19 +33,24 @@ OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation', group
 
 @dataclass_json
 @dataclass
-class Status:
+class OperationStatus:
     code: int
     message: str
-    details: dict = None
+    details: Optional[Dict] = field(default=None, metadata={"marshmallow_field": fields.Dict(allow_none=True)})
 
+@dataclass
+class OperationBase:
+    name: str
+    error: Union[OperationStatus] = field(
+        default=None,
+        metadata={"marshmallow_field": fields.Nested(class_schema(OperationStatus), required=False)}
+    )
+    done: bool = field(default=False, metadata={"marshmallow_field": fields.Boolean(allow_none=False)})
 
 @dataclass_json
 @dataclass
-class Operation:
-    name: str
-    metadata: dict
-    done: bool = False
-    error: Status = None
+class Operation(OperationBase):
+    metadata: dict = None
     response: dict = None
 
 
