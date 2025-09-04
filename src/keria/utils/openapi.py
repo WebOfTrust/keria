@@ -33,8 +33,7 @@ def dataclassFromFielddom(name: str, field_dom: serdering.FieldDom) -> (type, cl
     """
     Dynamically create a dataclass from a FieldDom instance.
     """
-    required_fields = []
-    optional_fields = []
+    fields = []
     custom_fields = {}
 
     for key, value in field_dom.alls.items():
@@ -52,32 +51,17 @@ def dataclassFromFielddom(name: str, field_dom: serdering.FieldDom) -> (type, cl
                 }
             )
             field_def = (key, py_type, field(metadata={"marshmallow_field": marshmallow_field}))
-            required_fields.append(field_def)
             custom_fields[key] = marshmallow_field
         else:
             py_type = inferType(value, key)
-            if isinstance(value, list):
-                field_def = (key, py_type, field(default_factory=list))
-                optional_fields.append(field_def)
-            elif isinstance(value, dict):
-                field_def = (key, py_type, field(default_factory=dict))
-                optional_fields.append(field_def)
-            else:
-                # Check if this should be required (no meaningful default) or optional
-                if value == "" or value == 0:  # Empty string or zero could be defaults
-                    field_def = (key, py_type, value)  # Has default, so optional
-                    optional_fields.append(field_def)
-                else:
-                    # Non-empty/non-zero values might indicate required fields
-                    field_def = (key, py_type)  # No default = required
-                    required_fields.append(field_def)  # Add to required_fields instead
+            field_def = (key, py_type)
 
-    # Combine required fields first, then optional fields
-    fields = required_fields + optional_fields
+        fields.append(field_def)
 
     generated_cls = make_dataclass(name, fields)
     schema = class_schema(generated_cls)()
 
+    # Apply custom marshmallow fields for kt/nt
     for key in ("kt", "nt"):
         if key in custom_fields:
             schema._declared_fields[key] = custom_fields[key]
