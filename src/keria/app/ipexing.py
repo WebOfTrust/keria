@@ -93,7 +93,7 @@ class IpexAdmitCollectionEnd:
         ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
 
         # make a copy and parse
-        agent.hby.psr.parseOne(ims=bytearray(ims))
+        agent.parser.parseOne(ims=bytearray(ims))
 
         # now get rid of the event so we can pass it as atc to send
         del ims[:serder.size]
