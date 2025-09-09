@@ -794,10 +794,6 @@ class Admitter(doing.Doer):
 
             grant, pathed = exchanging.cloneMessage(self.hby, admit.ked['p'])
 
-            if not grant:
-                print(f"Invalid admit message={admit.ked}, no grant found")
-                return False
-
             embeds = grant.ked['e']
             acdc = embeds["acdc"]
             issr = acdc['i']
