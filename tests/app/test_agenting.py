@@ -109,7 +109,7 @@ def test_graceful_shutdown_doer():
         tock = 0.03125
         limit = 1.0
         doist = doing.Doist(limit=limit, tock=tock, real=True)
-        shutdownDoer = agenting.GracefulShutdownDoer(doist=doist, agency=agency)
+        shutdownDoer = agenting.GracefulShutdownDoer(agency=agency)
         doers = [agency, shutdownDoer]
         doist.enter(doers=doers)
 
@@ -127,7 +127,11 @@ def test_graceful_shutdown_doer():
         # See test_shutdown_signals test above for an example of sending signals.
         shutdownDoer.handle_sigterm(signal.SIGTERM, None)
 
-        doist.do(doers=doers)
+        try:  # need to catch the KeyboardInterrupt so that Pytest does not stop executing after this test.
+            doist.do(doers=doers)
+        except KeyboardInterrupt as ex:
+            # This simulates the Doist loop being interrupted by the shutdown signal
+            assert str(ex) == "Graceful shutdown finished, causing Doist loop to exit"
         assert  shutdownDoer.shutdown_received is True
 
         # shutdownDoer.shutdown_agents(agency.agents)
