@@ -15,8 +15,6 @@ def test_spec_resource(helpers):
         notifying.loadEnds(app)
         
         specRes = specing.AgentSpecResource(app, title='KERIA Interactive Web Interface API')
-        
-        specRes = specing.AgentSpecResource(app, title='KERIA Interactive Web Interface API')
 
         sd = specRes.spec.to_dict()
 
