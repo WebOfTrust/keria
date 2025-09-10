@@ -390,9 +390,10 @@ class ExternState:
     pidx: int
     # Override the schema to force additionalProperties=True
 
+Tier = namedtupleToEnum(coring.Tiers, "Tier")
 @dataclass
 class SaltyState:
-    tier: namedtupleToEnum(coring.Tiers, "Tier") # type: ignore
+    tier: Tier # type: ignore
     sxlt: str = ''
     pidx: int = 0
     kidx: int = 0
@@ -1126,11 +1127,11 @@ def info(hab, rm, full=False):
 
     return data
 
-
+Role = namedtupleToEnum(kering.Roles, "Role")
 @dataclass
 class OOBI:
     """Data class for OOBI URLs"""
-    role: namedtupleToEnum(kering.Roles, "Role") # type: ignore
+    role: Role # type: ignore
     oobis: List[str] = field(default_factory=list, metadata={"marshmallow_field": fields.List(fields.String(), required=True)})
 
 class IdentifierOOBICollectionEnd:
