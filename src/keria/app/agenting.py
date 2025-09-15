@@ -158,7 +158,7 @@ def getAgency(doers):
     for doer in doers:
         if isinstance(doer, Agency):
             return doer
-        return None
+    return None
 
 
 class Agency(doing.DoDoer):
