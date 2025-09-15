@@ -827,6 +827,11 @@ class ParserDoer(doing.Doer):
         super(ParserDoer, self).__init__(tock=self.tock)
 
     def recur(self, tyme=None):
+        """
+        Continually processes messages on the incoming message stream (ims).
+        Inner parsator yields continually when the stream is empty, making this good for long-running
+        servers.
+        """
         if self.parser.ims:
             logger.info("Agent %s received:\n%s\n...\n", self.kvy, self.parser.ims[:1024])
         done = yield from self.parser.parsator()  # process messages continuously
