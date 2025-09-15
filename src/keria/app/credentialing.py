@@ -864,7 +864,9 @@ class CredentialCollectionEnd:
             rep.text = e.args[0]
             return
 
-        regk = iserder.ked['ri']
+        regk = iserder.ked['ri'] if 'ri' in iserder.ked else iserder.ked['ii'] if 'ii' in iserder.ked else None
+        if regk is None:
+            raise falcon.HTTPBadRequest(description="credential issuance request missing registry (ri) or (ii) field")
         if regk not in agent.rgy.tevers:
             raise falcon.HTTPNotFound(description=f"issue against invalid registry SAID {regk}")
 
