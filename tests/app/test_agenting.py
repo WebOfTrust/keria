@@ -117,9 +117,9 @@ def test_graceful_shutdown_doer():
         doers = [agency, shutdownDoer]
         doist.enter(doers=doers)
 
-        caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
+        caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtBose"
         agent = agency.create(caid, salt=salter.qb64)
-        assert agent.pre == "EIAEKYpTygdBtFHBrHKWeh0aYCdx0ZJqZtzQLFnaDB2b"
+        assert agent.pre == "EHgwniP6WZdB0PWNsf0FmFfFpJCp-pSDKiHJ1QqMCCjX"
         assert len(agency.agents) == 1, "Agent not created as expected."
 
         assert shutdownDoer.shutdown_received is False
@@ -217,7 +217,7 @@ def test_load_tocks_config(helpers):
 
 
 def test_agency():
-    salt = b'0123456789abcdef'
+    salt = b'0123456789aaaaaa'
     salter = core.Salter(raw=salt)
     cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
 
@@ -236,14 +236,14 @@ def test_agency():
 
         caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
         agent = agency.create(caid, salt=salter.qb64)
-        assert agent.pre == "EIAEKYpTygdBtFHBrHKWeh0aYCdx0ZJqZtzQLFnaDB2b"
+        assert agent.pre == "EBtONOpwylm2krDPNyvfN8F1dlbAxpGcKBcY7WRzs3aq"
 
         badcaid = "E987eerAdhmvrjDeam2eAO2SR5niCgnjAJXJHtJoe"
         agent = agency.get(badcaid)
         assert agent is None
 
         agent = agency.get(caid)
-        assert agent.pre == "EIAEKYpTygdBtFHBrHKWeh0aYCdx0ZJqZtzQLFnaDB2b"
+        assert agent.pre == "EBtONOpwylm2krDPNyvfN8F1dlbAxpGcKBcY7WRzs3aq"
 
         agency.incept(caid, hab.pre)
 
@@ -251,7 +251,7 @@ def test_agency():
         assert agent is None
 
         agent = agency.lookup(hab.pre)
-        assert agent.pre == "EIAEKYpTygdBtFHBrHKWeh0aYCdx0ZJqZtzQLFnaDB2b"
+        assert agent.pre == "EBtONOpwylm2krDPNyvfN8F1dlbAxpGcKBcY7WRzs3aq"
 
         # Create non-temp Agency and test reload of agent from disk
         base = "keria-temp"
@@ -278,7 +278,7 @@ def test_agency():
 
         caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
         agent = agency.create(caid, salt=salter.qb64)
-        assert agent.pre == "EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei"
+        assert agent.pre == "EBtONOpwylm2krDPNyvfN8F1dlbAxpGcKBcY7WRzs3aq"
 
         # Rcreate the agency to see if agent is reloaded from disk
         agency = agenting.Agency(name="agency", base=base, bran=None, configFile="keria",
@@ -286,7 +286,7 @@ def test_agency():
         doist.enter(doers=[agency])
 
         agent = agency.get(caid)
-        assert agent.pre == "EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei"
+        assert agent.pre == "EBtONOpwylm2krDPNyvfN8F1dlbAxpGcKBcY7WRzs3aq"
 
         # Clean up afterwards
         if os.path.exists(f'/usr/local/var/keri/db/{base}'):
@@ -303,7 +303,7 @@ def test_agency():
         assert len(agent.doers) == 0
 
 def test_agency_without_config_file():
-    salt = b'0123456789abcdef'
+    salt = b'0123456789bbbbbb'
     salter = core.Salter(raw=salt)
     cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
 
@@ -317,12 +317,12 @@ def test_agency_without_config_file():
         doist.extend(doers=[agency])
 
         # Ensure we can still create agent
-        caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
+        caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtCose"
         agent = agency.create(caid, salt=salter.qb64)
-        assert agent.pre == "EIAEKYpTygdBtFHBrHKWeh0aYCdx0ZJqZtzQLFnaDB2b"
+        assert agent.pre == "EIaGV6pWVbL9wlltrNYPefQvnRUlb58ZmWvlDoX_BM_2"
 
 def test_agency_with_urls_from_arguments():
-    salt = b'0123456789abcdef'
+    salt = b'0123456789dddddd'
     salter = core.Salter(raw=salt)
     cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
 
@@ -339,9 +339,9 @@ def test_agency_with_urls_from_arguments():
         doist.extend(doers=[agency])
 
         # Ensure we can still create agent
-        caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
+        caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtRose"
         agent = agency.create(caid, salt=salter.qb64)
-        assert agent.pre == "EIAEKYpTygdBtFHBrHKWeh0aYCdx0ZJqZtzQLFnaDB2b"
+        assert agent.pre == "EC1Df_cBKDQ-NsTzFX-WwTozEniLl19WqWMdwE3WoZkQ"
 
         assert agent.hby.cf is not None
         assert agent.hby.cf.get()[f"agent-{caid}"]["curls"] == curls
@@ -383,9 +383,9 @@ def test_unprotected_boot_ends(helpers):
 
 def test_protected_boot_ends(helpers):
     credentials = [
-        dict(bran=b'0123456789abcdefghija', username="user", password="secret"), 
-        dict(bran=b'0123456789abcdefghijb', username="admin", password="secret with spaces"),
-        dict(bran=b'0123456789abcdefghijc', username="admin", password="secret : with colon")
+        dict(bran=b'0123456789aaaaaaghija', username="user", password="secret"),
+        dict(bran=b'0123456789bbbbbbghijb', username="admin", password="secret with spaces"),
+        dict(bran=b'0123456789ccccccghijc', username="admin", password="secret : with colon")
     ]
 
     for credential in credentials:
@@ -487,8 +487,8 @@ def test_witnesser(helpers):
 
 
 def test_keystate_ends(helpers):
-    caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
-    salt = b'0123456789abcdef'
+    caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtDose"
+    salt = b'0123456789cccccc'
     salter = core.Salter(raw=salt)
     cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
 
@@ -514,13 +514,13 @@ def test_keystate_ends(helpers):
 
         state = states[0]
         assert state['i'] == hab.pre
-        assert state['d'] == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
+        assert state['d'] == "EJ9ZaKf0e89CsaowWPjEpJ_oZc-OYWgRNTYULjQcGOwp"
         assert state['et'] == 'icp'
-        assert state['k'] == ['DGmIfLmgErg4zFHfPwaDckLNxsLqc5iS_P0QbLjbWR0I']
-        assert state['n'] == ['EJhRr10e5p7LVB6JwLDIcgqsISktnfe5m60O_I2zZO6N']
+        assert state['k'] == ['DFbG433Fct2JBjNzRFT_lnk_-7Ymnl5Ig6RRsEE9fCS2']
+        assert state['n'] == ['EIgTsJ65kMPQGWXM5FB81Hcgyfz9iv4gWmZVP5a_RIOF']
         assert state['ee'] == {'ba': [],
                                'br': [],
-                               'd': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
+                               'd': 'EJ9ZaKf0e89CsaowWPjEpJ_oZc-OYWgRNTYULjQcGOwp',
                                's': '0'}
 
 

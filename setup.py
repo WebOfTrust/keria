@@ -84,7 +84,7 @@ setup(
     python_requires='>=3.12.2',
     install_requires=[
         'hio==0.6.14',
-        'keri==1.2.6',
+        'keri==1.2.7',
         'mnemonic==0.21',
         'multicommand==1.0.0',
         'falcon==4.0.2',
