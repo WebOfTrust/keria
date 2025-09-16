@@ -41,7 +41,7 @@ class GracefulShutdownDoer(doing.Doer):
         logger.info("Stopping Agency")
         self.agency.shouldShutdown = True  # Set the shutdown flag in the Agency
 
-    def enter(self):
+    def enter(self, temp=False):
         """
         Sets up signal handlers.
         Lifecycle method called once when the Doist running this Doer enters the context for this Doer.
@@ -51,7 +51,7 @@ class GracefulShutdownDoer(doing.Doer):
         signal.signal(signal.SIGINT, self.handle_sigint)
         logger.info("Registered signal handlers for SIGTERM")
 
-    def recur(self, tyme=None, tock=0.0):
+    def recur(self, tyme=None, tock=0.0, **opts):
         """Generator coroutine checking once per tock for shutdown flag"""
         # Checks once per tock if the shutdown flag has been set and if so initiates the shutdown process
         while not self.shutdown_received:

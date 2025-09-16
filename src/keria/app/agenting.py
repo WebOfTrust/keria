@@ -826,7 +826,7 @@ class ParserDoer(doing.Doer):
         self.tock = tock
         super(ParserDoer, self).__init__(tock=self.tock)
 
-    def recur(self, tyme=None):
+    def recur(self, tyme=None, tock=0.0, **opts):
         """
         Continually processes messages on the incoming message stream (ims).
         Inner parsator yields continually when the stream is empty, making this good for long-running
@@ -850,7 +850,7 @@ class Witnesser(doing.Doer):
         self.tock = tock
         super(Witnesser, self).__init__(tock=self.tock)
 
-    def recur(self, tyme=None):
+    def recur(self, tyme=None, tock=0.0, **opts):
         while True:
             if self.witners:
                 msg = self.witners.popleft()
@@ -876,7 +876,7 @@ class Delegator(doing.Doer):
         self.tock = tock
         super(Delegator, self).__init__(tock=self.tock)
 
-    def recur(self, tyme=None):
+    def recur(self, tyme=None, tock=0.0, **opts):
         if self.anchors:
             msg = self.anchors.popleft()
             sn = msg["sn"] if "sn" in msg else None
@@ -1032,7 +1032,7 @@ class Admitter(doing.Doer):
         self.tock = tock
         super(Admitter, self).__init__(tock=self.tock)
 
-    def recur(self, tyme):
+    def recur(self, tyme, tock=0.0, **opts):
         if self.admits:
             msg = self.admits.popleft()
             said = msg['said']
@@ -1076,7 +1076,7 @@ class SeekerDoer(doing.Doer):
         self.tock = tock
         super(SeekerDoer, self).__init__(tock=self.tock)
 
-    def recur(self, tyme=None):
+    def recur(self, tyme=None, tock=0.0, **opts):
         if self.cues:
             cue = self.cues.popleft()
             if cue["kin"] == "saved":
@@ -1100,7 +1100,7 @@ class ExchangeCueDoer(doing.Doer):
         self.tock = tock
         super(ExchangeCueDoer, self).__init__(tock=self.tock)
 
-    def recur(self, tyme=None):
+    def recur(self, tyme=None, tock=0.0, **opts):
         if self.cues:
             cue = self.cues.popleft()
             if cue["kin"] == "saved":
@@ -1138,7 +1138,7 @@ class Initer(doing.Doer):
             logger.info(agent_label)
         return True
 
-    def recur(self, tyme):
+    def recur(self, tyme, tock=0.0, **opts):
         return self.print_agent()
 
 
@@ -1152,7 +1152,7 @@ class GroupRequester(doing.Doer):
         self.tock = tock
         super(GroupRequester, self).__init__(tock=self.tock)
 
-    def recur(self, tyme):
+    def recur(self, tyme, tock=0.0, **opts):
         """ Checks cue for group processing requests and handles any with Counselor """
         if self.groups:
             msg = self.groups.popleft()
@@ -1231,7 +1231,7 @@ class Escrower(doing.Doer):
 
         super(Escrower, self).__init__(tock=self.tock)
 
-    def recur(self, tyme):
+    def recur(self, tyme, tock=0.0, **opts):
         """ Process all escrows once per loop. """
         self.kvy.processEscrows()
         self.kvy.processEscrowDelegables()
@@ -1260,7 +1260,7 @@ class Releaser(doing.Doer):
 
         super(Releaser, self).__init__(tock=self.tock)
 
-    def recur(self, tyme=None):
+    def recur(self, tyme=None, tock=0.0, **opts):
         while True:
             idle = []
             for caid in self.agents:
