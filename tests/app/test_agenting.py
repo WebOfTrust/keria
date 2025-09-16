@@ -907,9 +907,9 @@ def test_submitter(seeder, helpers):
         assert resSubmit.text == json.dumps(
             dict(
                 name="submit.EKOrePIIU8ynKwOOLxs56ZxxQswUFNV8-cyYFt3nBJHR",
-                metadata={"alias": "pal", "sn": 0},
-                done=True,
                 error=None,
+                done=True,
+                metadata={"alias": "pal", "sn": 0},
                 response={
                     "vn": [1, 0],
                     "i": "EKOrePIIU8ynKwOOLxs56ZxxQswUFNV8-cyYFt3nBJHR",
