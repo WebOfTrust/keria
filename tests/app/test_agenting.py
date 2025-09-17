@@ -119,7 +119,7 @@ def test_graceful_shutdown_doer():
 
         caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtBose"
         agent = agency.create(caid, salt=salter.qb64)
-        assert agent.pre == "EHgwniP6WZdB0PWNsf0FmFfFpJCp-pSDKiHJ1QqMCCjX"
+        assert agent.pre == "EJjzRbtuVaxE6ktdd2oC2gszdSpzIi-YrZcmMhHtXggM"
         assert len(agency.agents) == 1, "Agent not created as expected."
 
         assert shutdownDoer.shutdown_received is False
@@ -236,14 +236,14 @@ def test_agency():
 
         caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtJose"
         agent = agency.create(caid, salt=salter.qb64)
-        assert agent.pre == "EBtONOpwylm2krDPNyvfN8F1dlbAxpGcKBcY7WRzs3aq"
+        assert agent.pre == "ELu7SsaPCHNcyz-eqqPfOU6rOmhH7ayGkZJxvCy0Z1yC"
 
         badcaid = "E987eerAdhmvrjDeam2eAO2SR5niCgnjAJXJHtJoe"
         agent = agency.get(badcaid)
         assert agent is None
 
         agent = agency.get(caid)
-        assert agent.pre == "EBtONOpwylm2krDPNyvfN8F1dlbAxpGcKBcY7WRzs3aq"
+        assert agent.pre == "ELu7SsaPCHNcyz-eqqPfOU6rOmhH7ayGkZJxvCy0Z1yC"
 
         agency.incept(caid, hab.pre)
 
@@ -251,7 +251,7 @@ def test_agency():
         assert agent is None
 
         agent = agency.lookup(hab.pre)
-        assert agent.pre == "EBtONOpwylm2krDPNyvfN8F1dlbAxpGcKBcY7WRzs3aq"
+        assert agent.pre == "ELu7SsaPCHNcyz-eqqPfOU6rOmhH7ayGkZJxvCy0Z1yC"
 
         # Create non-temp Agency and test reload of agent from disk
         base = "keria-temp"
@@ -319,7 +319,7 @@ def test_agency_without_config_file():
         # Ensure we can still create agent
         caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtCose"
         agent = agency.create(caid, salt=salter.qb64)
-        assert agent.pre == "EIaGV6pWVbL9wlltrNYPefQvnRUlb58ZmWvlDoX_BM_2"
+        assert agent.pre == "EMoA-qVulQDVuRD08WkxzFyMUcmelTew0cvDnOOzjwPr"
 
 def test_agency_with_urls_from_arguments():
     salt = b'0123456789dddddd'
@@ -341,7 +341,7 @@ def test_agency_with_urls_from_arguments():
         # Ensure we can still create agent
         caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtRose"
         agent = agency.create(caid, salt=salter.qb64)
-        assert agent.pre == "EC1Df_cBKDQ-NsTzFX-WwTozEniLl19WqWMdwE3WoZkQ"
+        assert agent.pre == "EK-DLhw2jJ__SNNaSmSwfkA0gHtsAMAFnx21xOKncX23"
 
         assert agent.hby.cf is not None
         assert agent.hby.cf.get()[f"agent-{caid}"]["curls"] == curls

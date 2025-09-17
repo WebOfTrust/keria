@@ -87,8 +87,8 @@ class RequestLoggerMiddleware:
 
     def process_response(self, req: falcon.Request, resp: falcon.Response, resource, req_succeeded):
         """Log outgoing responses."""
-        logger.info(f'Response status  : %s on %s %s', resp.status, req.method, req.url)
-        logger.debug(f'Response headers: %s', resp.headers)
+        logger.info('Response status  : %s on %s %s', resp.status, req.method, req.url)
+        logger.debug('Response headers: %s', resp.headers)
 
 
 def keri_headers():

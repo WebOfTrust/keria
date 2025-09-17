@@ -37,10 +37,10 @@ from keri.db.basing import OobiRecord
 from keri.vc import protocoling
 
 from keria.end import ending
-from keri.help import helping, ogler, nowIso8601
+from keri.help import helping, nowIso8601
 from keri.peer import exchanging
 from keri.vdr import verifying
-from keri.vdr.credentialing import Regery, sendArtifacts
+from keri.vdr.credentialing import Regery
 from keri.vdr.eventing import Tevery
 from keri.app import challenging
 
@@ -437,7 +437,7 @@ class Agency(doing.DoDoer):
         Should only trigger the Doist loop to exit once all agents have been removed.
         """
         super(Agency, self).exit(deeds=deeds if deeds else self.deeds)
-        if len(self.agents) == 0:
+        if len(self.agents) == 0 and self.shouldShutdown:
             raise KeyboardInterrupt("Agency shutdown complete. Exiting Agency.")
 
 class Agent(doing.DoDoer):
@@ -950,34 +950,99 @@ class Granter(doing.DoDoer):
         self.rgy = rgy
         self.agentHab = agentHab
         self.exc = exc
-        self.grants = grants
+        self.grants: decking.Deck = grants
         self.tock = tock
         super(Granter, self).__init__(always=True, tock=self.tock)
 
-    def sendAgentKEL(self, pre, recp, postman):
+    def _makeDoer(self, grant_msg: dict):
+        return GrantDoer(
+                hby=self.hby,
+                rgy=self.rgy,
+                agentHab=self.agentHab,
+                exc=self.exc,
+                granter=self,
+                grants=self.grants,
+                grant_msg=grant_msg,
+                tock=self.tock)
+
+    def postGrants(self):
+        """
+        Makes a GrantDoer per grant message to process the grant.
+        """
+        while self.grants:
+            grant_msg = self.grants.popleft()
+            self.extend([self._makeDoer(grant_msg)])
+
+    def recur(self, tyme, deeds=None):
+        """Doer lifecycle method to process grants. Continuously processes grants as they arrive."""
+        self.postGrants()
+        return super(Granter, self).recur(tyme, deeds)
+
+
+class GrantDoer(doing.Doer):
+    """
+    GrantDoer is a Doer for a single IPEX Grant operation that runs the message transmission process
+    for all KEL, TEL, and credential artifacts included in the Grant.
+
+    This GrantDoer allows for KLI-like behavior where the .postGrant can use yield expressions to
+    wait on the parent driver DoDoer to finish running the child StreamPoster DoDoer prior to
+    cleaning itself up.
+    """
+    def __init__(self, hby, rgy, agentHab, exc, granter, grants, grant_msg, tock=0.0, **kwa):
+        """
+        Accepts a list of IPEX Grant cues to process.
+
+        Parameters:
+            hby (Habery): The Agent Habery.
+            rgy (Regery): The Agent Regery.
+            agentHab (Hab): The Agent Hab.
+            exc (Exchanger): The Exchanger instance for this Agent.
+            granter (Granter): The Granter instance to use for processing grants.
+            grants (decking.Deck): Queue of grant messages to process.
+            grant_msg
+            tock (float): The time interval for processing grants.
+        """
+        if not grant_msg or not isinstance(grant_msg, dict):
+            raise ValueError(f"Grant message missing or invalid: {grant_msg}")
+        self.grant_msg = grant_msg
+        self.hby = hby
+        self.rgy = rgy
+        self.agentHab = agentHab
+        self.exc = exc
+        self.parent = granter
+        self.grants = grants
+        self.tock = tock
+        super(GrantDoer, self).__init__(tock=self.tock, **kwa)
+
+    def gatherAgentKEL(self, pre, recp, postman):
         """Send the KEL of the agent to the recipient."""
+        agent_evts = []
         for msg in self.agentHab.db.cloneDelegation(self.agentHab.kever):
             serder = serdering.SerderKERI(raw=msg)
             atc = msg[serder.size:]
-            postman.send(serder=serder, attachment=atc)
+            agent_evts.append((serder, atc))
+        return agent_evts
 
-    def sendCredArtifacts(self, recp, credSaid, postman):
+    def getCredArtifacts(self, recp, credSaid):
         """Send to the recipient the ACDC and the KELs of the issuer, holder, and any delegators."""
         creder = self.rgy.reger.creds.get(keys=(credSaid,))
-        sendArtifacts(self.hby, self.rgy.reger, postman, creder, recp)
-        self.sendChainedArtifacts(recp, creder, postman)
+        cred_artifacts = ipexing.gatherArtifacts(self.hby, self.rgy.reger, creder, recp)
+        chain_artifacts = self.getChainedArtifacts(recp, creder)
+        return cred_artifacts + chain_artifacts
 
-    def sendChainedArtifacts(self, recp, creder, postman):
+    def getChainedArtifacts(self, recp, creder):
         """
         Send to the recipient any chained ACDCs and the KELs of the issuers and holders of those
         ACDCS and the KELs of any of their delegators.
         """
+        chain_artifacts = []
         sources = self.rgy.reger.sources(self.hby.db, creder)
         for source, atc in sources:
-            sendArtifacts(self.hby, self.rgy.reger, postman, source, recp)
-            postman.send(serder=source, attachment=atc)
+            chain_artifacts.extend(ipexing.gatherArtifacts(self.hby, self.rgy.reger, source, recp))
+            chain_artifacts.append((source, atc))
+        return chain_artifacts
 
-    def postGrants(self):
+    def postGrant(self):
         """
         Presents an ACDC by sending all relevant data and cryptographic artifacts in the following order:
         - the agent KEL artifacts, including any delegation chain artifats
@@ -987,37 +1052,41 @@ class Granter(doing.DoDoer):
         - the ACDC credential itself
         This is repeated for any chained credentials except that the agent KEL is only sent once.
         """
-        if self.grants:
-            msg = self.grants.popleft()
-            said = msg['said']
-            if not self.exc.complete(said=said):
-                self.grants.append(msg)
-                return
+        msg = self.grant_msg
+        said = msg['said']
+        if not self.exc.complete(said=said):
+            self.grants.append(msg)
+            return
 
-            serder, pathed = exchanging.cloneMessage(self.hby, said)
+        serder, pathed = exchanging.cloneMessage(self.hby, said)
 
-            pre = msg["pre"]
-            rec = msg["rec"]
-            hab = self.hby.habs[pre]
-            if self.exc.lead(hab, said=said):
-                for recp in rec:
-                    postman = forwarding.StreamPoster(hby=self.hby, hab=self.agentHab, recp=recp, topic="credential")
-                    try:
-                        self.sendAgentKEL(pre, recp, postman)
-                        credSaid = serder.ked['e']['acdc']['d']
-                        self.sendCredArtifacts(recp, credSaid, postman)
-                    except kering.ValidationError:
-                        logger.info(f"unable to send to recipient={recp}")
-                    except KeyError:
-                        logger.info(f"invalid grant message={serder.ked}")
-                    else:
-                        doer = doing.DoDoer(doers=postman.deliver())
-                        self.extend([doer])
+        pre = msg["pre"]
+        rec = msg["rec"]
+        hab = self.hby.habs[pre]
+        if self.exc.lead(hab, said=said):
+            for recp in rec:
+                postman = forwarding.StreamPoster(hby=self.hby, hab=self.agentHab, recp=recp, topic="credential")
+                try:
+                    agent_evts = self.gatherAgentKEL(pre, recp, postman)
+                    credSaid = serder.ked['e']['acdc']['d']
+                    cred_artifacts = self.getCredArtifacts(recp, credSaid)
+                    artifacts = agent_evts + cred_artifacts
+                    # Queue the artifacts for later sending by postman.deliver()
+                    for serder, atc in artifacts:
+                        postman.send(serder=serder, attachment=atc)
+                except kering.ValidationError:
+                    logger.info(f"unable to send to recipient={recp}")
+                except KeyError:
+                    logger.info(f"invalid grant message={serder.ked}")
+                else:
+                    doer = doing.DoDoer(doers=postman.deliver())
+                    self.parent.extend([doer])
+        return True
 
-    def recur(self, tyme, deeds=None):
-        """Doer lifecycle method to process grants."""
-        self.postGrants()
-        return super(Granter, self).recur(tyme, deeds)
+    def recur(self, tock=0.0, **opts):
+        """Processes the IPEX Grant operation and then exits by returning True (done)."""
+        self.postGrant()
+        return True
 
 
 class Admitter(doing.Doer):
