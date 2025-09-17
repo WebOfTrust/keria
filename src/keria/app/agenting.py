@@ -50,7 +50,7 @@ from .serving import GracefulShutdownDoer
 from ..peer import exchanging as keriaexchanging
 from .specing import AgentSpecResource
 from ..core import authing, longrunning, httping
-from ..core.authing import Authenticater
+from ..core.authing import SignedHeaderAuthenticator
 from ..core.keeping import RemoteManager
 from ..db import basing
 
@@ -173,8 +173,8 @@ def setupDoers(config: KERIAServerConfig):
     """
     Sets up the HIO coroutines the KERIA agent server is composed of including three HTTP servers for a KERIA agent server:
     1. Boot server for bootstrapping agents. Signify calls this with a signed inception event.
-    2. Admin server for administrative tasks like creating agents.
-    3. HTTP server for all other agent operations.
+    2. Admin server for any Signify client related actions after bootstrapping.
+    3. HTTP server for all other external agents send KERI events or messages for interactions.
     """
     agency = Agency(
         name=config.name,
@@ -194,7 +194,8 @@ def setupDoers(config: KERIAServerConfig):
         'signature',
         'signature-input',
         'signify-resource',
-        'signify-timestamp'
+        'signify-timestamp',
+        'signify-receiver'
     ]
     bootApp = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*',
@@ -209,14 +210,15 @@ def setupDoers(config: KERIAServerConfig):
     bootApp.add_route("/health", HealthEnd())
 
     # Create Authenticater for verifying signatures on all requests
-    authn = Authenticater(agency=agency)
+    authn = SignedHeaderAuthenticator(agency=agency)
 
-    app = falcon.App(middleware=falcon.CORSMiddleware(
-        allow_origins='*', allow_credentials='*',
-        expose_headers=allowed_cors_headers))
+    app = falcon.App(
+        middleware=falcon.CORSMiddleware(allow_origins='*', allow_credentials='*', expose_headers=allowed_cors_headers),
+        request_type=authing.ModifiableRequest
+    )
     if config.cors:
         app.add_middleware(middleware=httping.HandleCORS())
-    app.add_middleware(authing.SignatureValidationComponent(agency=agency, authn=authn, allowed=["/agent"]))
+    app.add_middleware(authing.AuthenticationMiddleware(agency=agency, authn=authn, allowed=["/agent"]))
     app.req_options.media_handlers.update(media.Handlers())
     app.resp_options.media_handlers.update(media.Handlers())
 
