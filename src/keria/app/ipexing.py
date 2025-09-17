@@ -10,6 +10,7 @@ import falcon
 from keri import core
 from keri.app import habbing
 from keri.core import eventing, serdering
+from keri.vdr import credentialing
 from keri.peer import exchanging
 
 from keria.core import httping, longrunning
@@ -622,3 +623,65 @@ class IpexAgreeCollectionEnd:
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=[agreeRec], topic="credential"))
 
         return agent.monitor.submit(serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
+
+def gatherArtifacts(hby: habbing.Habery, reger: credentialing.Reger, creder: serdering.SerderACDC, recp: str):
+    """
+    Gathers a list from the local database of all dependent credential artifacts needed by the
+    recipient to fully verify an ACDC including all KEL and TEL events for the issuer and issuee and
+    any of their (delegators.
+
+    Parameters:
+        hby: Habery to read KELs from
+        reger: Registry to read registries and ACDCs from
+        creder: The credential to send
+        recp: recipient
+
+    Returns:
+        A list of (Serder, attachment) tuples to send
+    """
+    messages = []
+    issr = creder.issuer
+    isse = creder.attrib["i"] if "i" in creder.attrib else None
+    regk = creder.regi
+
+    # Get issuer delegation parent KELs
+    ikever = hby.db.kevers[issr]
+    for msg in hby.db.cloneDelegation(ikever):
+        serder = serdering.SerderKERI(raw=msg)
+        atc = msg[serder.size:]
+        messages.append((serder, atc))
+
+    # get issuer KEL
+    for msg in hby.db.clonePreIter(pre=issr):
+        serder = serdering.SerderKERI(raw=msg)
+        atc = msg[serder.size:]
+        messages.append((serder, atc))
+
+    # If sending to recipient that is no the issuee then
+    # Get issuee KEL and delegation parent KELs
+    if isse != recp:
+        ikever = hby.db.kevers[isse]
+        for msg in hby.db.cloneDelegation(ikever):
+            serder = serdering.SerderKERI(raw=msg)
+            atc = msg[serder.size:]
+            messages.append((serder, atc))
+
+        for msg in hby.db.clonePreIter(pre=isse):
+            serder = serdering.SerderKERI(raw=msg)
+            atc = msg[serder.size:]
+            messages.append((serder, atc))
+
+    # Get registry TEL
+    if regk is not None:
+        for msg in reger.clonePreIter(pre=regk):
+            serder = serdering.SerderKERI(raw=msg)
+            atc = msg[serder.size:]
+            messages.append((serder, atc))
+
+    # get ACDC iss or bis event
+    for msg in reger.clonePreIter(pre=creder.said):
+        serder = serdering.SerderKERI(raw=msg)
+        atc = msg[serder.size:]
+        messages.append((serder, atc))
+
+    return messages
