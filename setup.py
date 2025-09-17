@@ -84,13 +84,14 @@ setup(
     python_requires='>=3.12.2',
     install_requires=[
         'hio==0.6.14',
-        'keri==1.2.4',
+        'keri==1.2.6',
         'mnemonic==0.21',
         'multicommand==1.0.0',
         'falcon==4.0.2',
         'http_sfv==0.9.9',
         'dataclasses_json==0.6.7',
         'apispec==6.8.1',
+        'deprecation==2.1.0',
     ],
     extras_require={
         'test': ['pytest', 'coverage'],
