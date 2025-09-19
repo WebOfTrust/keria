@@ -18,7 +18,7 @@ from keri.db.dbing import dgKey
 from keri.vdr import viring
 
 from ..core import httping, longrunning
-from marshmallow import fields, Schema
+from marshmallow import fields, Schema as MarshmallowSchema
 from typing import List, Dict, Any, Optional, Tuple, Literal, Union
 from marshmallow_dataclass import class_schema
 
@@ -52,7 +52,7 @@ def loadEnds(app, identifierResource):
     credentialVerificationEnd = CredentialVerificationCollectionEnd()
     app.add_route("/credentials/verify", credentialVerificationEnd)
 
-class EmptyDictSchema(Schema):
+class EmptyDictSchema(MarshmallowSchema):
     class Meta:
         additional = ()
 

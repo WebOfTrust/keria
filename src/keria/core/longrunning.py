@@ -23,7 +23,7 @@ from marshmallow_dataclass import class_schema
 from keria.app import delegating
 
 # long running operation types
-Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole '
+Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole ' # type: ignore[name-match]
                                 'locscheme challenge exchange submit done')
 
 OpTypes = Typeage(oobi="oobi", witness='witness', delegation='delegation', group='group', query='query',
@@ -41,7 +41,7 @@ class OperationStatus:
 @dataclass
 class OperationBase:
     name: str
-    error: Union[OperationStatus] = field(
+    error: Optional[OperationStatus] = field(
         default=None,
         metadata={"marshmallow_field": fields.Nested(class_schema(OperationStatus), required=False)}
     )
@@ -50,8 +50,8 @@ class OperationBase:
 @dataclass_json
 @dataclass
 class Operation(OperationBase):
-    metadata: dict = None
-    response: dict = None
+    metadata: Optional[dict] = None
+    response: Optional[dict] = None
 
 
 @dataclass
