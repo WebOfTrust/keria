@@ -9,7 +9,7 @@ import json
 from dataclasses import asdict, dataclass, field
 
 import falcon
-from keri import kering
+from keri import kering, help
 from keri.app import signing
 from keri.app.habbing import SignifyGroupHab
 from keri.core import coring, scheming, serdering
@@ -22,6 +22,8 @@ from marshmallow import fields, Schema as MarshmallowSchema
 from typing import List, Dict, Any, Optional, Tuple, Literal, Union
 from marshmallow_dataclass import class_schema
 
+
+logger = help.ogler.getLogger()
 
 def loadEnds(app, identifierResource):
     schemaColEnd = SchemaCollectionEnd()
@@ -1217,8 +1219,22 @@ def signPaths(hab, pather, sigers):
 
 
 class Registrar:
+    """
+    Manages credential registry creation (inception), credential issuance, and credential revocation.
+    Handles witness, multisig, and dissemination escrows for registry and credential operations.
+    """
 
     def __init__(self, agentHab, hby, rgy, counselor, witDoer, witPub, verifier):
+        """
+        Parameters:
+            hby (habbing.Habery): Habery in which the Agent lives
+            agentHab (habbing.Habitat): Agent
+            rgy (Regery): registry for the agent
+            counselor (Counselor): counselor for the agent
+            witDoer (WitnessReceiptor): retrieves receipts registry and credential events from witnesses
+            witPub (WitnessPublisher): publishes registry and credential events to witnesses
+            verifier (Verifier): Verifies TEL events
+        """
         self.hby = hby
         self.agentHab = agentHab
         self.rgy = rgy
@@ -1251,7 +1267,7 @@ class Registrar:
             self.rgy.reger.tpwe.add(keys=(registry.regk, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
 
         else:
-            print("Waiting for TEL registry vcp event mulisig anchoring event")
+            logger.info("[%s | %s]: Waiting for TEL registry vcp event mulisig anchoring event", hab.name, hab.pre)
             self.rgy.reger.tmse.add(keys=(registry.regk, rseq.qb64, registry.regd), val=(prefixer, seqner, saider))
 
     def issue(self, regk, iserder, anc):
@@ -1276,7 +1292,7 @@ class Registrar:
             saider = coring.Saider(qb64=hab.kever.serder.said)
             registry.anchorMsg(pre=vcid, regd=iserder.said, seqner=seqner, saider=saider)
 
-            print("Waiting for TEL event witness receipts")
+            logger.info("[%s | %s]: Waiting for TEL event witness receipts", hab.name, hab.pre)
             self.witDoer.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
             return vcid, rseq.sn
@@ -1289,7 +1305,7 @@ class Registrar:
             seqner = coring.Seqner(sn=sn)
             saider = coring.Saider(qb64=said)
 
-            print(f"Waiting for TEL iss event mulisig anchoring event {seqner.sn}")
+            logger.info("[%s | %s]: Waiting for TEL iss event mulisig anchoring event %s", hab.name, hab.pre, seqner.sn)
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, iserder.said), val=(prefixer, seqner, saider))
             return vcid, rseq.sn
 
@@ -1315,7 +1331,7 @@ class Registrar:
             saider = coring.Saider(qb64=hab.kever.serder.said)
             registry.anchorMsg(pre=vcid, regd=rserder.said, seqner=seqner, saider=saider)
 
-            print("Waiting for TEL event witness receipts")
+            logger.info("[%s | %s]: Waiting for TEL event witness receipts", hab.name, hab.pre)
             self.witDoer.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
 
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
@@ -1331,7 +1347,7 @@ class Registrar:
 
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
 
-            print(f"Waiting for TEL rev event mulisig anchoring event {seqner.sn}")
+            logger.info(f"[%s | %s]: Waiting for TEL rev event mulisig anchoring event %s", hab.name, hab.pre, seqner.sn)
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, rserder.said), val=(prefixer, seqner, saider))
             return vcid, rseq.sn
 
@@ -1428,7 +1444,7 @@ class Registrar:
             for msg in self.rgy.reger.clonePreIter(pre=regk, fn=rseq.sn):
                 tevt.extend(msg)
 
-            print(f"Sending TEL events to witnesses")
+            logger.info(f"Sending TEL events to witnesses")
             # Fire and forget the TEL event to the witnesses.  Consumers will have to query
             # to determine when the Witnesses have received the TEL events.
             self.witPub.msgs.append(dict(pre=prefixer.qb64, msg=tevt))
@@ -1436,8 +1452,24 @@ class Registrar:
 
 
 class Credentialer:
+    """
+    Places credentials into the credential missing signature escrow, handles the credential signature
+    escrow, and has utility functions to validate a credential against its schema and to know
+    if a credential's anchoring event is completely signed.
+    """
 
     def __init__(self, agentHab, hby, rgy, registrar, verifier, notifier):
+        """
+        Initialize the Credentialer
+
+        Parameters:
+            agentHab (Hab): Hab of the agent performing credential operations
+            hby (Habery): Habery in which the Agent lives
+            rgy (Regery): Container for local registries and their associated Tevers
+            registrar (Registrar): Creation and escrowing for registries and credential issuance/revocation
+            verifier (Verifier): Verifies and escrows TEL events.
+            notifier (Notifier): Handles notifying controllers of significant events
+        """
         self.agentHab = agentHab
         self.hby = hby
         self.rgy = rgy
@@ -1447,13 +1479,15 @@ class Credentialer:
 
     def validate(self, creder):
         """
+        Validates a credential against its schema.
 
         Args:
             creder (Creder): creder object representing the credential to validate
 
         Returns:
-            bool: true if credential is valid against a known schema
-
+            bool: True if credential is valid against a known schema
+        Raises:
+            kering.ConfigurationError: if the credential schema is not found or validation fails
         """
         schema = creder.sad['s']
         scraw = self.verifier.resolver.resolve(schema)
