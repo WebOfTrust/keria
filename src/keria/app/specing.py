@@ -34,8 +34,6 @@ class AgentSpecResource:
         self.spec.components.schema("ACDC", schema=marshmallow_dataclass.class_schema(credentialing.ACDC)())
         self.spec.components.schema("IssEvt", schema=marshmallow_dataclass.class_schema(credentialing.IssEvt)())
         self.spec.components.schema("Schema", schema=marshmallow_dataclass.class_schema(credentialing.Schema)())
-        self.spec.components.schema("StatusAnchor", schema=marshmallow_dataclass.class_schema(credentialing.StatusAnchor)())
-        self.spec.components.schema("CredentialStatus", schema=marshmallow_dataclass.class_schema(credentialing.Status)())
         self.spec.components.schema("Anchor", schema=marshmallow_dataclass.class_schema(credentialing.Anchor)())
         self.spec.components.schema("Seal", schema=marshmallow_dataclass.class_schema(credentialing.Seal)())
         self.spec.components.schema("ANC", schema=marshmallow_dataclass.class_schema(credentialing.ANC)())

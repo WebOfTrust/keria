@@ -105,23 +105,6 @@ class Schema:
     required: List[str]
 
 @dataclass
-class StatusAnchor:
-    s: int
-    d: str
-
-@dataclass
-class Status:
-    vn: List[int]
-    i: str
-    s: str
-    d: str
-    ri: str
-    ra: Dict[str, Any]
-    a: StatusAnchor
-    dt: str
-    et: str
-
-@dataclass
 class CredentialStateBase:
     vn: Tuple[int, int]
     i: str
