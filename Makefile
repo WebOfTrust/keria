@@ -1,4 +1,4 @@
-.PHONY: build-keria
+.PHONY: build-keria ruff-check
 
 VERSION=0.2.0-rc1
 IMAGE_NAME=weboftrust/keria

@@ -19,7 +19,7 @@ import pytest
 import requests
 from falcon import testing
 from hio.base import doing, tyming
-from hio.core import http, tcp
+from hio.core import http
 from hio.help import decking
 from keri import core
 from keri import kering

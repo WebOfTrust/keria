@@ -7,7 +7,6 @@ simple indirect mode demo support classes
 """
 import falcon
 from keri.app import httping
-from keri.core import eventing
 from keri.core.coring import Ilks, Sadder
 from keri.kering import Protocols, Kinds
 

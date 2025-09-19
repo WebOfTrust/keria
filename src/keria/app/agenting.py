@@ -22,7 +22,7 @@ from hio.base import doing, Doer
 from hio.core import http, tcp
 from hio.help import decking
 
-from keri import core, kering, help
+from keri import core, kering
 from keri.app.notifying import Notifier
 from keri.app.storing import Mailboxer
 

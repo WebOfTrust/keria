@@ -95,7 +95,8 @@ setup(
     ],
     extras_require={
         'test': ['pytest', 'coverage'],
-        'docs': ['sphinx', 'sphinx-rtd-theme']
+        'docs': ['sphinx', 'sphinx-rtd-theme'],
+        'dev': ['ruff>=0.8.0', 'pytest', 'coverage']
     },
     tests_require=[
         'coverage>=7.6.10',

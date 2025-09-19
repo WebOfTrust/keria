@@ -9,7 +9,6 @@ from builtins import isinstance
 from dataclasses import asdict
 import json
 import os
-import pytest
 from datetime import datetime
 
 import falcon

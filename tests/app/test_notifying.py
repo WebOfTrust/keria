@@ -9,7 +9,7 @@ from builtins import isinstance
 
 from keri.core.signing import Salter
 
-from keria.app import notifying, grouping
+from keria.app import notifying
 
 
 def test_load_ends(helpers):

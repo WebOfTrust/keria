@@ -1,6 +1,6 @@
 import signal
 
-from hio.base import doing, Doist
+from hio.base import doing
 from keri import help
 
 logger = help.ogler.getLogger()

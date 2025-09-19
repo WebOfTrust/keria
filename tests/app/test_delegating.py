@@ -12,7 +12,7 @@ import pytest
 from hio.base import doing
 from keri import kering
 from keri.app import habbing
-from keri.core import coring, eventing, parsing, serdering
+from keri.core import coring, eventing, parsing
 
 from keria.app import aiding, delegating
 from keria.core import longrunning

@@ -5,12 +5,11 @@ keria.app.ipexing module
 
 services and endpoint for IPEX message managements
 """
-import json
 
 import falcon
 from keri import core
 from keri.app import habbing
-from keri.core import coring, eventing, serdering
+from keri.core import eventing, serdering
 from keri.peer import exchanging
 
 from keria.core import httping, longrunning
