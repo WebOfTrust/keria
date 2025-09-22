@@ -19,7 +19,7 @@ import pytest
 import requests
 from falcon import testing
 from hio.base import doing, tyming
-from hio.core import http, tcp
+from hio.core import http
 from hio.help import decking
 from keri import core
 from keri import kering
@@ -101,7 +101,7 @@ def test_graceful_shutdown_doer():
     salter = core.Salter(raw=salt)
     cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
-        hab = hby.makeHab(name="test")
+        hby.makeHab(name="test")
 
         agency = agenting.Agency(name="agency", base="", bran=None, temp=True, configFile="keria",
                                  releaseTimeout=0, configDir=SCRIPTS_DIR)
@@ -837,7 +837,7 @@ def test_submitter(seeder, helpers):
         hab = agent.hby.habByName(alias)
         sn = 0
         msg = hab.makeOwnEvent(sn=sn)
-        rctMsgs = helpers.witnessMsg(hab=hab, msg=msg, sn=sn, witHabs=[wesHab])
+        helpers.witnessMsg(hab=hab, msg=msg, sn=sn, witHabs=[wesHab])
         wigs = hab.db.getWigs(dgkey)
         assert len(wigs) == 1 # only witnessed by one witness
         assert len(wesHab.kvy.db.getWigs(dgkey)) == 1  # only witnessed by one witness
@@ -855,7 +855,7 @@ def test_submitter(seeder, helpers):
         tock = 0.03125
         wdoist = doing.Doist(limit=limit, tock=tock, doers=wanDoers)
         wdoist.enter()
-        tymer = tyming.Tymer(tymth=wdoist.tymen(), duration=wdoist.limit)
+        tyming.Tymer(tymth=wdoist.tymen(), duration=wdoist.limit)
         aidEnd = aiding.IdentifierResourceEnd()
         app.add_route("/identifiers/{name}/submit", aidEnd)
         resSubmit = client.simulate_post(

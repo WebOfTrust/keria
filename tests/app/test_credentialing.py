@@ -204,20 +204,20 @@ def test_registry_end(helpers, seeder):
         # Test Operation Resource
         result = client.simulate_get(path=f"/operations/{op['name']}")
         assert result.status == falcon.HTTP_200
-        assert result.json["done"] == True
+        assert result.json["done"]
 
         result = client.simulate_get(path=f"/operations/{op2['name']}")
         assert result.status == falcon.HTTP_200
-        assert result.json["done"] == True
+        assert result.json["done"]
 
-        result = client.simulate_get(path=f"/operations/bad_name")
+        result = client.simulate_get(path="/operations/bad_name")
         assert result.status == falcon.HTTP_404
         assert result.json == {'title': "long running operation 'bad_name' not found"}
 
         result = client.simulate_delete(path=f"/operations/{op['name']}")
         assert result.status == falcon.HTTP_204
 
-        result = client.simulate_delete(path=f"/operations/bad_name")
+        result = client.simulate_delete(path="/operations/bad_name")
         assert result.status == falcon.HTTP_404
         assert result.json == {'title': "long running operation 'bad_name' not found"}
 
@@ -401,57 +401,57 @@ def test_credentialing_ends(helpers, seeder):
         for said in saids:
             agent.seeker.index(said)
 
-        res = client.simulate_post(f"/credentials/query")
+        res = client.simulate_post("/credentials/query")
         assert res.status_code == 200
         assert len(res.json) == 5
 
         body = json.dumps({'filter': {'-i': issuee}}).encode("utf-8")
-        res = client.simulate_post(f"/credentials/query", body=body)
+        res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert res.json == []
 
         body = json.dumps({'filter': {'-a-i': issuee}}).encode("utf-8")
-        res = client.simulate_post(f"/credentials/query", body=body)
+        res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 5
 
         body = json.dumps({'filter': {'-i': hab.pre}}).encode("utf-8")
-        res = client.simulate_post(f"/credentials/query", body=body)
+        res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 5
 
         body = json.dumps({'filter': {'-s': {'$eq': issuer.LE}}}).encode("utf-8")
-        res = client.simulate_post(f"/credentials/query", body=body)
+        res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 3
 
         body = json.dumps({'filter': {'-s': {'$eq': issuer.QVI}}}).encode("utf-8")
-        res = client.simulate_post(f"/credentials/query", body=body)
+        res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 2
 
         body = json.dumps({'limit': 1}).encode("utf-8")
-        res = client.simulate_post(f"/credentials/query", body=body)
+        res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 1
 
         body = json.dumps({'limit': 2}).encode("utf-8")
-        res = client.simulate_post(f"/credentials/query", body=body)
+        res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 2
 
         body = json.dumps({'limit': 4, 'skip':0}).encode("utf-8")
-        res = client.simulate_post(f"/credentials/query", body=body)
+        res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 4
 
         body = json.dumps({'limit': 4, 'skip':4}).encode("utf-8")
-        res = client.simulate_post(f"/credentials/query", body=body)
+        res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 1
 
         body = json.dumps({'limit': 4, 'skip':0, 'sort': ['-i']}).encode("utf-8")
-        res = client.simulate_post(f"/credentials/query", body=body)
+        res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 4
 
@@ -460,9 +460,9 @@ def test_credentialing_ends(helpers, seeder):
         assert res.headers['content-type'] == "application/json"
         assert res.json['sad']['d'] == saids[0]
 
-        res = client.simulate_get(f"/credentials/EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy")
+        res = client.simulate_get("/credentials/EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy")
         assert res.status_code == 404
-        assert res.json == {'description': f"credential for said EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy not found.",
+        assert res.json == {'description': "credential for said EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy not found.",
                             'title': '404 Not Found'}
 
         headers = {"Accept": "application/json+cesr"}
@@ -479,17 +479,17 @@ def test_credentialing_ends(helpers, seeder):
 
         res = client.simulate_get(f"/registries/{registry.regk}/EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy")
         assert res.status_code == 404
-        assert res.json == {'description': f"credential EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy not found in registry EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4",
+        assert res.json == {'description': "credential EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy not found in registry EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4",
                             'title': '404 Not Found'}
 
         res = client.simulate_get(f"/registries/EBVaw6pCqfMIiZGkA6qevzRUGsxTRuZXxl6YG1neeCGF/{saids[0]}")
         assert res.status_code == 404
-        assert res.json == {'description': f"registry EBVaw6pCqfMIiZGkA6qevzRUGsxTRuZXxl6YG1neeCGF not found",
+        assert res.json == {'description': "registry EBVaw6pCqfMIiZGkA6qevzRUGsxTRuZXxl6YG1neeCGF not found",
                             'title': '404 Not Found'}
 
-        res = client.simulate_delete(f"/credentials/doesnotexist")
+        res = client.simulate_delete("/credentials/doesnotexist")
         assert res.status_code == 404
-        assert res.json == {'description': f"credential for said doesnotexist not found.",
+        assert res.json == {'description': "credential for said doesnotexist not found.",
                             'title': '404 Not Found'}
 
         res = client.simulate_delete(f"/credentials/{saids[0]}")
@@ -497,16 +497,16 @@ def test_credentialing_ends(helpers, seeder):
 
         res = client.simulate_get(f"/credentials/{saids[0]}")
         assert res.status_code == 404
-        assert res.json == {'description': f"credential for said EIO9uC3K6MvyjFD-RB3RYW3dfL49kCyz3OPqv3gi1dek not found.",
+        assert res.json == {'description': "credential for said EIO9uC3K6MvyjFD-RB3RYW3dfL49kCyz3OPqv3gi1dek not found.",
                             'title': '404 Not Found'}
 
-        res = client.simulate_post(f"/credentials/query")
+        res = client.simulate_post("/credentials/query")
         assert res.status_code == 200
         assert len(res.json) == 4
 
         # Query using specific filter to check indexes
         body = json.dumps({'filter': {'-a-LEI': "984500E5DEFDBQ1O9038"}}).encode("utf-8")
-        res = client.simulate_post(f"/credentials/query", body=body)
+        res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 0
 
@@ -610,13 +610,13 @@ def test_revoke_credential(helpers, seeder):
 
         assert agent.credentialer.complete(creder.said) is True
 
-        res = client.simulate_post(f"/credentials/query")
+        res = client.simulate_post("/credentials/query")
         assert res.status_code == 200
         assert len(res.json) == 1
         assert res.json[0]['sad']['d'] == creder.said
         assert res.json[0]['status']['s'] == "0"
 
-        res = client.simulate_post(f"/credentials/query")
+        res = client.simulate_post("/credentials/query")
         assert res.status_code == 200
         assert len(res.json) == 1
         assert res.json[0]['sad']['d'] == creder.said
@@ -676,13 +676,13 @@ def test_revoke_credential(helpers, seeder):
         while not agent.registrar.complete(creder.said, sn=1):
             doist.recur(deeds=deeds)
         
-        res = client.simulate_post(f"/credentials/query")
+        res = client.simulate_post("/credentials/query")
         assert res.status_code == 200
         assert len(res.json) == 1
         assert res.json[0]['sad']['d'] == creder.said
         assert res.json[0]['status']['s'] == "1"
 
-        res = client.simulate_post(f"/credentials/query")
+        res = client.simulate_post("/credentials/query")
         assert res.status_code == 200
         assert len(res.json) == 1
         assert res.json[0]['sad']['d'] == creder.said
