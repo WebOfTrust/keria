@@ -38,7 +38,6 @@ jobs:
           flake8 . --count --exit-zero --ignore=E7,F841,E301,E302,E303 --max-complexity=10 --max-line-length=127 --statistics
       - name: Ruff checks
         run: |
-          pip install ruff
           ruff check
         
       - name: Run core KERI tests
