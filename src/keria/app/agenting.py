@@ -22,7 +22,7 @@ from hio.base import doing, Doer
 from hio.core import http, tcp
 from hio.help import decking
 
-from keri import core, kering, help
+from keri import core, kering
 from keri.app.notifying import Notifier
 from keri.app.storing import Mailboxer
 
@@ -895,7 +895,7 @@ class ExchangeSender(doing.DoDoer):
             rec = msg["rec"]
             topic = msg['topic']
             hab = self.hby.habs[pre]
-            logger.debug("[%s | %s]: Current Message Body= %s", hab.name, hab.pre, msg);
+            logger.debug("[%s | %s]: Current Message Body= %s", hab.name, hab.pre, msg)
             if self.exc.lead(hab, said=said):
                 atc = exchanging.serializeMessage(self.hby, said)
                 del atc[:serder.size]
@@ -1348,12 +1348,12 @@ class BootEnd:
         body = req.get_media()
         if "icp" not in body:
             raise falcon.HTTPBadRequest(title="invalid inception",
-                                        description=f'required field "icp" missing from body')
+                                        description='required field "icp" missing from body')
         icp = serdering.SerderKERI(sad=body["icp"])
 
         if "sig" not in body:
             raise falcon.HTTPBadRequest(title="invalid inception",
-                                        description=f'required field "sig" missing from body')
+                                        description='required field "sig" missing from body')
         siger = core.Siger(qb64=body["sig"])
 
         caid = icp.pre
@@ -1394,12 +1394,12 @@ class BootEnd:
             rand = body[Algos.randy]
             if "pris" not in rand:
                 raise falcon.HTTPBadRequest(title="invalid inception",
-                                            description=f'required field "pris" missing from body.rand')
+                                            description='required field "pris" missing from body.rand')
             pris = rand["pris"]
 
             if "nxts" not in rand:
                 raise falcon.HTTPBadRequest(title="invalid inception",
-                                            description=f'required field "nxts" missing from body.rand')
+                                            description='required field "nxts" missing from body.rand')
             nxts = rand["nxts"]
 
             mgr = agent.mgr.get(algo=Algos.randy)

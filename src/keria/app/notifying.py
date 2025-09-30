@@ -7,7 +7,6 @@ keria.app.notifying module
 import json
 
 import falcon
-from keri.peer import exchanging
 
 from keria.core import httping
 

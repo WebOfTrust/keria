@@ -9,7 +9,6 @@ from builtins import isinstance
 from dataclasses import asdict
 import json
 import os
-import pytest
 from datetime import datetime
 
 import falcon
@@ -91,7 +90,7 @@ def test_endrole_ends(helpers):
         sigs = helpers.sign(salt, 0, 0, rpy.raw)
         body = dict(rpy=rpy.ked, sigs=sigs)
 
-        res = client.simulate_post(path=f"/identifiers/user1/endroles", json=body)
+        res = client.simulate_post(path="/identifiers/user1/endroles", json=body)
         op = res.json
         ked = op["response"]
         serder = serdering.SerderKERI(sad=ked)
@@ -104,11 +103,11 @@ def test_endrole_ends(helpers):
 
         # Test GET method
         # Must be valid aid alias
-        res = client.simulate_get(path=f"/identifiers/bad/endroles")
+        res = client.simulate_get(path="/identifiers/bad/endroles")
         assert res.status_code == 404
 
         # Get endrols
-        res = client.simulate_get(path=f"/identifiers/user1/endroles")
+        res = client.simulate_get(path="/identifiers/user1/endroles")
         assert res.status_code == 200
 
         ends = res.json
@@ -157,19 +156,19 @@ def test_locscheme_ends(helpers, mockHelpingNowUTC):
         sigs = ["AACOFnUk-lsVq0rLNdWCBtr51fnkXRdEzo8gnUwYF0F6xJPGL9_MXxezBc_P6e15-M1GpaHua_l3Hn4qKRMomRoM"]
         body = dict(rpy=rpy.ked, sigs=sigs)
 
-        res = client.simulate_post(path=f"/identifiers/unknown-user/locschemes", json=body)
+        res = client.simulate_post(path="/identifiers/unknown-user/locschemes", json=body)
         assert res.status_code == 404
         assert res.json == {'description': 'invalid alias or prefix unknown-user',
                             'title': '404 Not Found'}
 
-        res = client.simulate_post(path=f"/identifiers/user1/locschemes", json=body)
+        res = client.simulate_post(path="/identifiers/user1/locschemes", json=body)
         assert res.status_code == 400
         assert res.json == {'description': 'unable to verify end role reply message',
                             'title': '400 Bad Request'}
 
         sigs = helpers.sign(salt, 0, 0, rpy.raw)
         body = dict(rpy=rpy.ked, sigs=sigs)
-        res = client.simulate_post(path=f"/identifiers/user1/locschemes", json=body)
+        res = client.simulate_post(path="/identifiers/user1/locschemes", json=body)
         assert res.status_code == 202
         op = res.json
         assert op["done"]
@@ -187,7 +186,7 @@ def test_locscheme_ends(helpers, mockHelpingNowUTC):
         rpy = helpers.locscheme(recp, "https://testurl.com", "https")
         sigs = helpers.sign(salt, 0, 0, rpy.raw)
         body = dict(rpy=rpy.ked, sigs=sigs)
-        res = client.simulate_post(path=f"/identifiers/user1/locschemes", json=body)
+        res = client.simulate_post(path="/identifiers/user1/locschemes", json=body)
         assert res.status_code == 202
         op = res.json
         assert op["done"]
@@ -268,7 +267,7 @@ def test_agent_resource(helpers, mockHelpingNowUTC):
         # Test rotation
         body = {
         }
-        res = client.simulate_put(path=f"/agent/bad_pre", body=json.dumps(body))
+        res = client.simulate_put(path="/agent/bad_pre", body=json.dumps(body))
         assert res.status_code == 404
         assert res.json == {'description': "no agent for bad_pre",
                             'title': '404 Not Found'}
@@ -508,7 +507,7 @@ def test_identifier_collection_end(helpers):
         assert res.status_code == 200
         assert res.json['done'] is True
 
-        res = client.simulate_get(path=f"/identifiers/aid1")
+        res = client.simulate_get(path="/identifiers/aid1")
         mhab = res.json
         agent0 = mhab["state"]
         
@@ -586,7 +585,7 @@ def test_identifier_collection_end(helpers):
         # Send in all signatures as if we are joining the inception event
         sigers = [signer0.sign(ser=serder.raw, index=0).qb64, p1.sign(ser=serder.raw, indices=[1])[0].qb64,
                   p2.sign(ser=serder.raw, indices=[2])[0].qb64]
-        states = nstates = [agent0, asdict(p1.kever.state()), asdict(p2.kever.state())]
+        states = [agent0, asdict(p1.kever.state()), asdict(p2.kever.state())]
         smids = rmids = [state['i'] for state in states if 'i' in state]
 
         body = {
@@ -1091,7 +1090,7 @@ def test_challenge_ends(helpers):
 
         data["said"] = exn.said
         b = json.dumps(data).encode("utf-8")
-        result = client.simulate_put(path=f"/challenges-verify/EFt8G8gkCJ71e4amQaRUYss0BDK4pUpzKelEIr3yZ1D0",
+        result = client.simulate_put(path="/challenges-verify/EFt8G8gkCJ71e4amQaRUYss0BDK4pUpzKelEIr3yZ1D0",
                                      body=b)
         assert result.status == falcon.HTTP_404  # Missing said
 
@@ -1107,7 +1106,7 @@ def test_challenge_ends(helpers):
         assert result.status_code == 404
 
         b = json.dumps(data).encode("utf-8")
-        result = client.simulate_post(path=f"/challenges-verify/EFt8G8gkCJ71e4amQaRUYss0BDK4pUpzKelEIr3yZ1D0",
+        result = client.simulate_post(path="/challenges-verify/EFt8G8gkCJ71e4amQaRUYss0BDK4pUpzKelEIr3yZ1D0",
                                       body=b)
         assert result.status_code == 404
 
@@ -1171,11 +1170,11 @@ def test_contact_ends(helpers):
         )
         b = json.dumps(data).encode("utf-8")
         # POST to an identifier that is not in the Kever
-        response = client.simulate_post(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo/pal", body=b)
+        response = client.simulate_post("/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo/pal", body=b)
         assert response.status == falcon.HTTP_404
 
         # Bad prefix
-        response = client.simulate_post(f"/contacts/bad_prefix", body=b)
+        response = client.simulate_post("/contacts/bad_prefix", body=b)
         assert response.status == falcon.HTTP_404
 
         # POST to a local identifier
@@ -1204,7 +1203,7 @@ def test_contact_ends(helpers):
         response = client.simulate_post(f"/contacts/{aids[i]}", body=b)
         assert response.status == falcon.HTTP_400
 
-        response = client.simulate_get(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
+        response = client.simulate_get("/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
         assert response.status == falcon.HTTP_404
 
         response = client.simulate_get(f"/contacts/{hab.pre}")
@@ -1217,7 +1216,7 @@ def test_contact_ends(helpers):
                                  'id': 'EAjKmvW6flpWJfdYYZ2Lu4pllPWKFjCBz0dcX-S86Nvg',
                                  'last': 'Burns3'}
 
-        response = client.simulate_get(f"/contacts")
+        response = client.simulate_get("/contacts")
         assert response.status == falcon.HTTP_200
         assert len(response.json) == 5
         data = {d["id"]: d for d in response.json}
@@ -1227,7 +1226,7 @@ def test_contact_ends(helpers):
         data = dict(id=hab.pre, company="ProSapien")
         b = json.dumps(data).encode("utf-8")
 
-        response = client.simulate_put(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo", body=b)
+        response = client.simulate_put("/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo", body=b)
         assert response.status == falcon.HTTP_404
 
         response = client.simulate_put(f"/contacts/{palPre}", body=b)
@@ -1324,7 +1323,7 @@ def test_contact_ends(helpers):
                                   'last': 'Burns0',
                                   'wellKnowns': []}]
 
-        response = client.simulate_delete(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
+        response = client.simulate_delete("/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
         assert response.status == falcon.HTTP_404
 
         response = client.simulate_delete(f"/contacts/{aids[3]}")
@@ -1336,7 +1335,7 @@ def test_contact_ends(helpers):
 
         data = bytearray(os.urandom(50))
         headers = {"Content-Type": "image/png", "Content-Length": "50"}
-        response = client.simulate_post(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo/img", body=data,
+        response = client.simulate_post("/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo/img", body=data,
                                         headers=headers)
         assert response.status == falcon.HTTP_404
 
@@ -1350,7 +1349,7 @@ def test_contact_ends(helpers):
         response = client.simulate_post(f"/contacts/{aids[0]}/img", body=data, headers=headers)
         assert response.status == falcon.HTTP_202
 
-        response = client.simulate_get(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo/img")
+        response = client.simulate_get("/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo/img")
         assert response.status == falcon.HTTP_404
 
         response = client.simulate_get(f"/contacts/{aids[2]}/img")
@@ -1366,8 +1365,8 @@ def test_contact_ends(helpers):
 
 def test_identifier_resource_end(helpers):
     with helpers.openKeria() as (agency, agent, app, client), \
-            habbing.openHby(name="p1", temp=True) as p1hby, \
-            habbing.openHby(name="p2", temp=True) as p2hby:
+            habbing.openHby(name="p1", temp=True), \
+            habbing.openHby(name="p2", temp=True):
         end = aiding.IdentifierCollectionEnd()
         resend = aiding.IdentifierResourceEnd()
         app.add_route("/identifiers", end)
@@ -1437,7 +1436,7 @@ def test_oobi_ends(helpers):
         # first try with bad signatures
         sigs = helpers.sign(b'0123456789xyzxyz', 0, 0, rpy.raw)
         body = dict(rpy=rpy.ked, sigs=sigs)
-        res = client.simulate_post(path=f"/identifiers/pal/endroles", json=body)
+        res = client.simulate_post(path="/identifiers/pal/endroles", json=body)
         assert res.status_code == 400
         assert res.json == {'description': "unable to verify end role reply message",
                             'title': '400 Bad Request'}
@@ -1446,17 +1445,17 @@ def test_oobi_ends(helpers):
         sigs = helpers.sign(salt, 0, 0, rpy.raw)
         body = dict(rpy=rpy.ked, sigs=sigs)
 
-        res = client.simulate_post(path=f"/identifiers/pal/endroles", json=body)
+        res = client.simulate_post(path="/identifiers/pal/endroles", json=body)
         op = res.json
         ked = op["response"]
         serder = serdering.SerderKERI(sad=ked)
         assert serder.raw == rpy.raw
 
         # not valid calls
-        res = client.simulate_post(path=f"/identifiers/pal/endroles/agent", json=body)
+        res = client.simulate_post(path="/identifiers/pal/endroles/agent", json=body)
         assert res.status_code == 404
 
-        res = client.simulate_post(path=f"/endroles/pal", json=body)
+        res = client.simulate_post(path="/endroles/pal", json=body)
         assert res.status_code == 404
 
 
@@ -1516,7 +1515,7 @@ def test_oobi_ends(helpers):
         sigs = helpers.sign(salt, 0, 0, rpy.raw)
         body = dict(rpy=rpy.ked, sigs=sigs)
 
-        res = client.simulate_post(path=f"/identifiers/pal/endroles", json=body)
+        res = client.simulate_post(path="/identifiers/pal/endroles", json=body)
         op = res.json
         ked = op["response"]
         serder = serdering.SerderKERI(sad=ked)
@@ -1572,7 +1571,7 @@ def test_approve_delegation(helpers):
     cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
 
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
-        hab = hby.makeHab(name="test")
+        hby.makeHab(name="test")
         agency = agenting.Agency(name="agency", bran=None, temp=True)
         agentHab = hby.makeHab(caid, ns="agent", transferable=True, data=[caid])
 
@@ -1650,8 +1649,8 @@ def test_rotation(helpers):
     salter = core.Salter(raw=salt)
 
     with helpers.openKeria() as (agency, agent, app, client), \
-            habbing.openHby(name="p1", temp=True, salt=salter.qb64) as p1hby, \
-            habbing.openHby(name="p2", temp=True, salt=salter.qb64) as p2hby:
+            habbing.openHby(name="p1", temp=True, salt=salter.qb64), \
+            habbing.openHby(name="p2", temp=True, salt=salter.qb64):
         end = aiding.IdentifierCollectionEnd()
         resend = aiding.IdentifierResourceEnd()
         app.add_route("/identifiers", end)
@@ -1797,7 +1796,7 @@ def test_rotation(helpers):
         assert res.json["icp_dt"] == icp_dt
 
         mhab = res.json
-        agent0 = mhab["state"]
+        mhab["state"]
 
         # rotate aid3
         body = helpers.createRotate(aid=aid3, salt=salt, signers=signers3, pidx=3, ridx=1, kidx=3, wits=wits3, toad=toad3)

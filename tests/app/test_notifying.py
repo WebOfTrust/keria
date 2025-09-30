@@ -9,7 +9,7 @@ from builtins import isinstance
 
 from keri.core.signing import Salter
 
-from keria.app import notifying, grouping
+from keria.app import notifying
 
 
 def test_load_ends(helpers):
@@ -43,7 +43,7 @@ def test_notifications(helpers):
         assert notes[0]['a'] == dict(a=1, b=2, c=3)
         assert notes[3]['a'] == dict(a=3)
 
-        headers = dict(Range=f"notes=0-2")
+        headers = dict(Range="notes=0-2")
         res = client.simulate_get(path="/notifications", headers=headers)
         assert res.status_code == 200
         notes = res.json
@@ -54,8 +54,8 @@ def test_notifications(helpers):
         assert res.headers["Content-Range"] == "notes 0-2/4"
 
         # Load since the last one seen
-        headers = dict(Range=f"notes=1-2")
-        res = client.simulate_get(path=f"/notifications", headers=headers)
+        headers = dict(Range="notes=1-2")
+        res = client.simulate_get(path="/notifications", headers=headers)
         assert res.status_code == 200
         notes = res.json
         assert len(notes) == 2

@@ -5,12 +5,11 @@ keria.app.ipexing module
 
 services and endpoint for IPEX message managements
 """
-import json
 
 import falcon
 from keri import core
 from keri.app import habbing
-from keri.core import coring, eventing, serdering
+from keri.core import eventing, serdering
 from keri.peer import exchanging
 
 from keria.core import httping, longrunning
@@ -119,7 +118,7 @@ class IpexAdmitCollectionEnd:
 
         # Have to add the atc to the end... this will be Pathed signatures for embeds
         if not atc:
-            raise falcon.HTTPBadRequest(description=f"attachment missing for multi-sig admit, unable to process request.")
+            raise falcon.HTTPBadRequest(description="attachment missing for multi-sig admit, unable to process request.")
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
@@ -243,7 +242,7 @@ class IpexGrantCollectionEnd:
             raise falcon.HTTPBadRequest(description=f"invalid route for embedded ipex grant {ked['r']}")
 
         if not atc:
-            raise falcon.HTTPBadRequest(description=f"attachment missing for multi-sig grant, unable to process request.")
+            raise falcon.HTTPBadRequest(description="attachment missing for multi-sig grant, unable to process request.")
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
@@ -360,7 +359,7 @@ class IpexApplyCollectionEnd:
             raise falcon.HTTPBadRequest(description=f"invalid route for embedded ipex apply {ked['r']}")
 
         if not atc:
-            raise falcon.HTTPBadRequest(description=f"attachment missing for multi-sig apply, unable to process request.")
+            raise falcon.HTTPBadRequest(description="attachment missing for multi-sig apply, unable to process request.")
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
@@ -474,7 +473,7 @@ class IpexOfferCollectionEnd:
             raise falcon.HTTPBadRequest(description=f"invalid route for embedded ipex offer {ked['r']}")
 
         if not atc:
-            raise falcon.HTTPBadRequest(description=f"attachment missing for multi-sig offer, unable to process request.")
+            raise falcon.HTTPBadRequest(description="attachment missing for multi-sig offer, unable to process request.")
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
@@ -591,7 +590,7 @@ class IpexAgreeCollectionEnd:
             raise falcon.HTTPBadRequest(description=f"invalid route for embedded ipex agree {ked['r']}")
 
         if not atc:
-            raise falcon.HTTPBadRequest(description=f"attachment missing for multi-sig agree, unable to process request.")
+            raise falcon.HTTPBadRequest(description="attachment missing for multi-sig agree, unable to process request.")
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)

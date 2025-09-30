@@ -149,7 +149,7 @@ class Monitor:
     def getOperations(self, type=None):
         """ Return list of long running opterations, optionally filtered by type """
         ops = self.opr.ops.getItemIter()
-        if type != None:
+        if type is not None:
             ops = filter(lambda i: i[1].type == type, ops)
 
         def get_status(op):
