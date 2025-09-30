@@ -2,12 +2,14 @@ import copy
 import falcon
 from apispec import yaml_utils
 from apispec.core import VALID_METHODS, APISpec
+
 """
 KERIA
 keria.app.specing module
 
 OpenAPI Description Resource for the KERI and ACDC ReST interface
 """
+
 
 class AgentSpecResource:
     """
@@ -18,7 +20,7 @@ class AgentSpecResource:
     2. Creating and managing authentic chained data containers (ACDCs)
     """
 
-    def __init__(self, app, title, version='1.0.1', openapi_version="3.1.0"):
+    def __init__(self, app, title, version="1.0.1", openapi_version="3.1.0"):
         self.spec = APISpec(
             title=title,
             version=version,
@@ -33,7 +35,10 @@ class AgentSpecResource:
         for route in routes_to_check:
             if route.resource is not None:
                 operations = dict()
-                operations.update(yaml_utils.load_operations_from_docstring(route.resource.__doc__) or {})
+                operations.update(
+                    yaml_utils.load_operations_from_docstring(route.resource.__doc__)
+                    or {}
+                )
 
                 if route.method_map:
                     for method_name, method_handler in route.method_map.items():
@@ -41,7 +46,9 @@ class AgentSpecResource:
                             continue
                         if method_name.lower() not in valid_methods:
                             continue
-                        docstring_yaml = yaml_utils.load_yaml_from_docstring(method_handler.__doc__)
+                        docstring_yaml = yaml_utils.load_yaml_from_docstring(
+                            method_handler.__doc__
+                        )
                         operations[method_name.lower()] = docstring_yaml or dict()
 
                 self.spec.path(path=route.uri_template, operations=operations)

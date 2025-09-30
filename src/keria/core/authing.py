@@ -4,6 +4,7 @@ KERIA
 keria.core.authing module
 
 """
+
 from urllib.parse import quote, unquote
 import falcon
 from hio.help import Hict
@@ -13,14 +14,10 @@ from keri.help import helping
 
 
 class Authenticater:
-
-    DefaultFields = ["Signify-Resource",
-                     "@method",
-                     "@path",
-                     "Signify-Timestamp"]
+    DefaultFields = ["Signify-Resource", "@method", "@path", "Signify-Timestamp"]
 
     def __init__(self, agency):
-        """ Create Agent Authenticator for verifying requests and signing responses
+        """Create Agent Authenticator for verifying requests and signing responses
 
         Parameters:
             agency(Agency): habitat of Agent for signing responses
@@ -87,7 +84,7 @@ class Authenticater:
             if inputage.alg is not None:
                 values.append(f"alg={inputage.alg}")
 
-            params = ';'.join(values)
+            params = ";".join(values)
 
             items.append(f'"@signature-params: {params}"')
             ser = "\n".join(items).encode("utf-8")
@@ -110,7 +107,7 @@ class Authenticater:
         return True
 
     def sign(self, agent, headers, method, path, fields=None):
-        """ Generate and add Signature Input and Signature fields to headers
+        """Generate and add Signature Input and Signature fields to headers
 
         Parameters:
             agent (Agent): The agent that is replying to the request
@@ -127,18 +124,32 @@ class Authenticater:
         if fields is None:
             fields = self.DefaultFields
 
-        header, qsig = ending.siginput("signify", method, path, headers, fields=fields, hab=agent.agentHab,
-                                       alg="ed25519", keyid=agent.agentHab.pre)
+        header, qsig = ending.siginput(
+            "signify",
+            method,
+            path,
+            headers,
+            fields=fields,
+            hab=agent.agentHab,
+            alg="ed25519",
+            keyid=agent.agentHab.pre,
+        )
         headers.extend(header)
-        signage = ending.Signage(markers=dict(signify=qsig), indexed=False, signer=None, ordinal=None, digest=None,
-                                 kind=None)
+        signage = ending.Signage(
+            markers=dict(signify=qsig),
+            indexed=False,
+            signer=None,
+            ordinal=None,
+            digest=None,
+            kind=None,
+        )
         headers.extend(ending.signature([signage]))
 
         return headers
 
 
 class SignatureValidationComponent(object):
-    """ Validate Signature and Signature-Input header signatures """
+    """Validate Signature and Signature-Input header signatures"""
 
     def __init__(self, agency, authn: Authenticater, allowed=None):
         """
@@ -154,7 +165,7 @@ class SignatureValidationComponent(object):
         self.allowed = allowed
 
     def process_request(self, req, resp):
-        """ Process request to ensure has a valid signature from caid
+        """Process request to ensure has a valid signature from caid
 
         Parameters:
             req: Http request object
@@ -184,12 +195,14 @@ class SignatureValidationComponent(object):
         except ValueError:
             pass
 
-        resp.complete = True  # This short-circuits Falcon, skipping all further processing
+        resp.complete = (
+            True  # This short-circuits Falcon, skipping all further processing
+        )
         resp.status = falcon.HTTP_401
         return
 
     def process_response(self, req, rep, resource, req_succeeded):
-        """  Process every falcon response by adding signature headers signed by the Agent AID.
+        """Process every falcon response by adding signature headers signed by the Agent AID.
 
         Parameters:
             req (Request): Falcon request object
@@ -203,9 +216,8 @@ class SignatureValidationComponent(object):
         if hasattr(req.context, "agent"):
             req.path = quote(req.path)
             agent = req.context.agent
-            rep.set_header('Signify-Resource', agent.agentHab.pre)
-            rep.set_header('Signify-Timestamp', helping.nowIso8601())
+            rep.set_header("Signify-Resource", agent.agentHab.pre)
+            rep.set_header("Signify-Timestamp", helping.nowIso8601())
             headers = self.authn.sign(agent, Hict(rep.headers), req.method, req.path)
             for key, val in headers.items():
                 rep.set_header(key, val)
-

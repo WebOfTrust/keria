@@ -5,19 +5,23 @@ Use this module to configure pytest
 https://docs.pytest.org/en/latest/pythonpath.html
 
 """
+
 import pytest
 
 from keri.core import coring
 from keri.help import helping
 from keria.testing import testing_helper
 
+
 @pytest.fixture
 def helpers():
     return testing_helper.Helpers
 
+
 @pytest.fixture
 def seeder():
     return testing_helper.DbSeed
+
 
 @pytest.fixture()
 def mockHelpingNowUTC(monkeypatch):
@@ -37,5 +41,5 @@ def mockHelpingNowIso8601(monkeypatch):
 
 @pytest.fixture()
 def mockCoringRandomNonce(monkeypatch):
-    """ Replay randomNonce with fixed falue for testing"""
+    """Replay randomNonce with fixed falue for testing"""
     monkeypatch.setattr(coring, "randomNonce", testing_helper.Helpers.mockRandomNonce)

@@ -5,6 +5,7 @@ keria.app.httping module
 
 Testing the Mark II Agent
 """
+
 import json
 
 from keria.app.agenting import HealthEnd
@@ -78,10 +79,5 @@ def test_healthcheck_end(helpers):
         health = json.loads(res.content)
 
         assert res.status_code == 200
-        assert 'message' in health
-        assert health['message'].startswith('Health is okay')
-
-
-
-
-
+        assert "message" in health
+        assert health["message"].startswith("Health is okay")
