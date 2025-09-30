@@ -5,6 +5,7 @@ from apispec import yaml_utils
 from apispec.core import VALID_METHODS, APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 from ..core import longrunning
+from ..utils.openapi import applyAltConstraintsToOpenApiSchema
 from . import credentialing
 """
 KERIA
@@ -31,20 +32,59 @@ class AgentSpecResource:
         )
 
         # Register marshmallow schemas (pass class)
-        self.spec.components.schema("ACDC", schema=marshmallow_dataclass.class_schema(credentialing.ACDC)())
-        self.spec.components.schema("IssEvt", schema=marshmallow_dataclass.class_schema(credentialing.IssEvt)())
+        self.spec.components.schema("ACDC_V_1", schema=credentialing.ACDCSchema_V_1)
+        self.spec.components.schema("ACDC_V_2", schema=credentialing.ACDCSchema_V_2)
+        self.spec.components.schema("IssEvent", schema=marshmallow_dataclass.class_schema(credentialing.IssEvent)())
         self.spec.components.schema("Schema", schema=marshmallow_dataclass.class_schema(credentialing.Schema)())
         self.spec.components.schema("Anchor", schema=marshmallow_dataclass.class_schema(credentialing.Anchor)())
         self.spec.components.schema("Seal", schema=marshmallow_dataclass.class_schema(credentialing.Seal)())
-        self.spec.components.schema("ANC", schema=marshmallow_dataclass.class_schema(credentialing.ANC)())
+        self.spec.components.schema("IXN_V_1", schema=marshmallow_dataclass.class_schema(credentialing.IXN_V_1)())
+        self.spec.components.schema("IXN_V_2", schema=marshmallow_dataclass.class_schema(credentialing.IXN_V_2)())
+        self.spec.components.schema("ICP_V_1", schema=marshmallow_dataclass.class_schema(credentialing.ICP_V_1)())
+        self.spec.components.schema("ICP_V_2", schema=marshmallow_dataclass.class_schema(credentialing.ICP_V_2)())
+        self.spec.components.schema("ROT_V_1", schema=marshmallow_dataclass.class_schema(credentialing.ROT_V_1)())
+        self.spec.components.schema("ROT_V_2", schema=marshmallow_dataclass.class_schema(credentialing.ROT_V_2)())
         self.spec.components.schema("Credential", schema=marshmallow_dataclass.class_schema(credentialing.ClonedCredential)())
-        self.spec.components.schema("OperationBase", schema=marshmallow_dataclass.class_schema(longrunning.OperationBase)())
+        self.spec.components.schema("Operation", schema=marshmallow_dataclass.class_schema(longrunning.Operation)())
         self.spec.components.schema("CredentialStateIssOrRev", schema=marshmallow_dataclass.class_schema(credentialing.CredentialStateIssOrRev))
         self.spec.components.schema("CredentialStateBisOrBrv", schema=marshmallow_dataclass.class_schema(credentialing.CredentialStateBisOrBrv))
 
         # Patch the schema to force additionalProperties=True
-        acdcAttributesSchema = self.spec.components.schemas["ACDCAttributes"]
-        acdcAttributesSchema["additionalProperties"] = True
+        acdc_attributes_schema = self.spec.components.schemas["ACDCAttributes"]
+        acdc_attributes_schema["additionalProperties"] = True
+        
+        # The ACDC class has alts constraints like {'a': 'A', 'A': 'a'}
+        acdc_schema_v1 = self.spec.components.schemas["ACDC_V_1"]
+        if hasattr(credentialing.ACDCSchema_V_1, '_alt_constraints'):
+            applyAltConstraintsToOpenApiSchema(
+                acdc_schema_v1,
+                credentialing.ACDCSchema_V_1._alt_constraints
+            )
+
+        acdc_schema_v2 = self.spec.components.schemas["ACDC_V_2"]
+        if hasattr(credentialing.ACDCSchema_V_2, '_alt_constraints'):
+            applyAltConstraintsToOpenApiSchema(
+                acdc_schema_v2,
+                credentialing.ACDCSchema_V_2._alt_constraints
+            )
+
+        credentialSchema = self.spec.components.schemas["Credential"]
+        credentialSchema["properties"]["sad"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/ACDC_V_1"},
+                {"$ref": "#/components/schemas/ACDC_V_2"},
+            ]
+        }
+        credentialSchema["properties"]["anc"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/IXN_V_1"},
+                {"$ref": "#/components/schemas/IXN_V_2"},
+                {"$ref": "#/components/schemas/ICP_V_1"},
+                {"$ref": "#/components/schemas/ICP_V_2"},
+                {"$ref": "#/components/schemas/ROT_V_1"},
+                {"$ref": "#/components/schemas/ROT_V_2"},
+            ]
+        }
 
         # CredentialState
         self.spec.components.schemas["CredentialState"] = {
@@ -54,24 +94,14 @@ class AgentSpecResource:
             ]
         }
 
-        credentialSchema = self.spec.components.schemas["Credential"]
         credentialSchema["properties"]["status"] = {
             "$ref": "#/components/schemas/CredentialState"
         }
 
-        # Register manual schema using direct assignment (not component or schema)
-        self.spec.components.schemas["Operation"] = {
-            "allOf": [
-                {"$ref": "#/components/schemas/OperationBase"},
-                {
-                    "type": "object",
-                    "properties": {
-                        "metadata": {"type": "object"},
-                        "response": {"type": "object"},
-                    },
-                },
-            ]
-        }
+        # Operation
+        operationSchema = self.spec.components.schemas["Operation"]
+        operationSchema["properties"]["metadata"] = { "type": "object" }
+        operationSchema["properties"]["response"] = { "type": "object" }
 
         # Registries
         self.spec.components.schema("Registry", schema=marshmallow_dataclass.class_schema(credentialing.Registry)())

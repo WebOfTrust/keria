@@ -8,7 +8,7 @@ import datetime
 from collections import namedtuple
 from dataclasses import dataclass, asdict, field
 from marshmallow import fields
-from typing import Optional, Dict, Union
+from typing import Optional, Dict
 
 import falcon
 import json
@@ -38,18 +38,15 @@ class OperationStatus:
     message: str
     details: Optional[Dict] = field(default=None, metadata={"marshmallow_field": fields.Dict(allow_none=True)})
 
+@dataclass_json
 @dataclass
-class OperationBase:
+class Operation:
     name: str
     error: Optional[OperationStatus] = field(
         default=None,
         metadata={"marshmallow_field": fields.Nested(class_schema(OperationStatus), required=False)}
     )
     done: bool = field(default=False, metadata={"marshmallow_field": fields.Boolean(allow_none=False)})
-
-@dataclass_json
-@dataclass
-class Operation(OperationBase):
     metadata: Optional[dict] = None
     response: Optional[dict] = None
 

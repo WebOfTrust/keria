@@ -17,6 +17,8 @@ from keri.db import dbing
 from keri.db.dbing import dgKey
 from keri.vdr import viring
 
+from ..utils.openapi import dataclassFromFielddom
+from keri.core.serdering import Protocols, Vrsn_1_0, Vrsn_2_0, SerderKERI
 from ..core import httping, longrunning
 from marshmallow import fields, Schema as MarshmallowSchema
 from typing import List, Dict, Any, Optional, Tuple, Literal, Union
@@ -71,20 +73,17 @@ class Seal:
     d: str
     i: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
 
-@dataclass
-class ACDC:
-    v: str
-    d: str
-    i: str
-    s: str
-    ri: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
-    a: Optional[ACDCAttributes] = field(default=None, metadata={"marshmallow_field": fields.Nested(class_schema(ACDCAttributes), allow_none=False)})
-    u: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
-    e: Optional[List[Any]] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Raw(), allow_none=False)})
-    r: Optional[List[Any]] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Raw(), allow_none=False)})
+acdcCustomTypes = {
+    'a': ACDCAttributes,
+    'A': Union[str, List[Any]],
+}
+acdcFieldDomV1 = SerderKERI.Fields[Protocols.acdc][Vrsn_1_0][None]
+ACDC_V_1, ACDCSchema_V_1 = dataclassFromFielddom("ACDC_V_1", acdcFieldDomV1, acdcCustomTypes)
+acdcFieldDomV2 = SerderKERI.Fields[Protocols.acdc][Vrsn_2_0][None]
+ACDC_V_2, ACDCSchema_V_2 = dataclassFromFielddom("ACDC_V_2", acdcFieldDomV2, acdcCustomTypes)
 
 @dataclass
-class IssEvt:
+class IssEvent:
     v: str
     t: Literal['iss', 'bis']
     d: str
@@ -95,8 +94,8 @@ class IssEvt:
 
 @dataclass
 class Schema:
-    _id: str = field(metadata={"data_key": "$id"})
-    _schema: str = field(metadata={"data_key": "$schema"})
+    id_: str = field(metadata={"data_key": "$id"})
+    schema: str = field(metadata={"data_key": "$schema"})
     title: str
     description: str
     type: str
@@ -143,30 +142,36 @@ class Anchor:
     sn: int
     d: str
 
-# TODO: ANC should be updated to include fields from an establishment event (inception, rotation) and not just interaction events
-@dataclass
-class ANC:
-    v: str
-    t: str
-    d: str
-    i: str
-    s: str
-    p: str
-    di: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
-    a: Optional[List[Seal]] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Nested(class_schema(Seal)), allow_none=False)})
+ixnCustomTypes = {
+    'a': List[Seal],
+}
+ixnFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.ixn]
+IXN_V_1, IXNSchema_V_1 = dataclassFromFielddom("IXN_V_1", ixnFieldDomV1, ixnCustomTypes)
+ixnFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.ixn]
+IXN_V_2, IXNSchema_V_2 = dataclassFromFielddom("IXN_V_2", ixnFieldDomV2, ixnCustomTypes)
+
+icpFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.icp]
+ICP_V_1, ICPSchema_V_1 = dataclassFromFielddom("ICP_V_1", icpFieldDomV1)
+icpFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.icp]
+ICP_V_2, ICPSchema_V_2 = dataclassFromFielddom("ICP_V_2", icpFieldDomV2)
+
+rotFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.rot]
+ROT_V_1, ROTSchema_V_1 = dataclassFromFielddom("ROT_V_1", rotFieldDomV1)
+rotFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.rot]
+ROT_V_2, ROTSchema_V_2 = dataclassFromFielddom("ROT_V_2", rotFieldDomV2)
 
 @dataclass
 class ClonedCredential:
-    sad: ACDC
+    sad: Union["ACDC_V_1", "ACDC_V_2"]  # Use string annotation for dynamically generated class
     atc: str
-    iss: IssEvt
+    iss: IssEvent
     issatc: str
     pre: str
     schema: Schema
     chains: List[Dict[str, Any]]
     status: Union[CredentialStateIssOrRev, CredentialStateBisOrBrv]
     anchor: Anchor
-    anc: ANC
+    anc: Union["IXN_V_1", "IXN_V_2", "ICP_V_1", "ICP_V_2", "ROT_V_1", "ROT_V_2"]
     ancatc: str
 
 @dataclass
