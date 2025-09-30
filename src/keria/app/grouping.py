@@ -4,6 +4,7 @@ KERIA
 keria.app.grouping module
 
 """
+
 import json
 
 import falcon
@@ -17,6 +18,7 @@ from keria.core import httping, longrunning
 
 logger = ogler.getLogger()
 
+
 def loadEnds(app):
     msrCol = MultisigRequestCollectionEnd()
     app.add_route("/identifiers/{name}/multisig/request", msrCol)
@@ -27,11 +29,11 @@ def loadEnds(app):
 
 
 class MultisigRequestCollectionEnd:
-    """ Collection endpoint class for creating mulisig exn requests from """
+    """Collection endpoint class for creating mulisig exn requests from"""
 
     @staticmethod
     def on_post(req, rep, name):
-        """ POST method for multisig request collection
+        """POST method for multisig request collection
 
         Parameters:
             req (falcon.Request): HTTP request object
@@ -44,14 +46,21 @@ class MultisigRequestCollectionEnd:
         body = req.get_media()
 
         # Get the hab
-        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
+        hab = (
+            agent.hby.habs[name]
+            if name in agent.hby.habs
+            else agent.hby.habByName(name)
+        )
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"alias or prefix {name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(
+                description=f"alias or prefix {name} is not a valid reference to an identifier"
+            )
 
         # ...and make sure we're a Group
         if not isinstance(hab, habbing.SignifyGroupHab):
-            raise falcon.HTTPBadRequest(description=f"hab for alias or prefix {name} is not a multisig")
-
+            raise falcon.HTTPBadRequest(
+                description=f"hab for alias or prefix {name} is not a multisig"
+            )
 
         # grab all of the required parameters
         ked = httping.getRequiredParam(body, "exn")
@@ -59,7 +68,13 @@ class MultisigRequestCollectionEnd:
         sigs = httping.getRequiredParam(body, "sigs")
         atc = httping.getRequiredParam(body, "atc")
 
-        logger.info("[%s | %s]: Posting EXN on Route %s event %s", name, hab.pre, ked["r"], ked["d"])
+        logger.info(
+            "[%s | %s]: Posting EXN on Route %s event %s",
+            name,
+            hab.pre,
+            ked["r"],
+            ked["d"],
+        )
         logger.debug("EXN: %s", json.dumps(body))
 
         # create sigers from the edge signatures so we can messagize the whole thing
@@ -67,33 +82,44 @@ class MultisigRequestCollectionEnd:
 
         # create seal for the proper location to find the signatures
         kever = hab.mhab.kever
-        seal = eventing.SealEvent(i=hab.mhab.pre, s="{:x}".format(kever.lastEst.s), d=kever.lastEst.d)
+        seal = eventing.SealEvent(
+            i=hab.mhab.pre, s="{:x}".format(kever.lastEst.s), d=kever.lastEst.d
+        )
 
         ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
         ims.extend(atc.encode("utf-8"))  # add the pathed attachments
         # make a copy and parse
         agent.hby.psr.parseOne(ims=bytearray(ims))
         # now get rid of the event so we can pass it as atc to send
-        del ims[:serder.size]
+        del ims[: serder.size]
 
         slist = hab.db.signingMembers(pre=hab.pre)
         smids = slist
         if hab.mhab.pre in smids:
             smids.remove(hab.mhab.pre)
 
-        logger.info("[%s | %s]: new exchange message %s", name, hab.pre, json.dumps(dict(said=serder.said, pre=hab.pre, rec=smids, topic='multisig')))
-        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=smids, topic='multisig'))
+        logger.info(
+            "[%s | %s]: new exchange message %s",
+            name,
+            hab.pre,
+            json.dumps(
+                dict(said=serder.said, pre=hab.pre, rec=smids, topic="multisig")
+            ),
+        )
+        agent.exchanges.append(
+            dict(said=serder.said, pre=hab.pre, rec=smids, topic="multisig")
+        )
 
         rep.status = falcon.HTTP_200
         rep.data = json.dumps(serder.ked).encode("utf-8")
 
 
 class MultisigJoinCollectionEnd:
-    """ Collection endpoint class for creating mulisig exn requests from """
+    """Collection endpoint class for creating mulisig exn requests from"""
 
     @staticmethod
     def on_post(req, rep, name):
-        """ POST method for multisig request collection
+        """POST method for multisig request collection
 
         Parameters:
             req (falcon.Request): HTTP request object
@@ -149,9 +175,15 @@ class MultisigJoinCollectionEnd:
         agent = req.context.agent
 
         # Get the hab
-        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
+        hab = (
+            agent.hby.habs[name]
+            if name in agent.hby.habs
+            else agent.hby.habByName(name)
+        )
         if hab is not None:
-            raise falcon.HTTPBadRequest(description=f"attempt to create identifier with an already used alias or prefix {name}")
+            raise falcon.HTTPBadRequest(
+                description=f"attempt to create identifier with an already used alias or prefix {name}"
+            )
 
         agent = req.context.agent
         body = req.get_media()
@@ -161,9 +193,9 @@ class MultisigJoinCollectionEnd:
         serder = None
         try:
             serder = serdering.SerderKERI(sad=rot)
-        except(SerializeError) as e:
+        except SerializeError as e:
             raise falcon.HTTPBadRequest(description=f"{e.args[0]}")
-        
+
         sigs = httping.getRequiredParam(body, "sigs")
 
         # Get group specific values
@@ -175,11 +207,13 @@ class MultisigJoinCollectionEnd:
         for recp in both:  # Have to verify we already know all the recipients.
             if recp not in agent.hby.kevers:
                 agent.hby.deleteHab(name=hab.name)
-                raise falcon.HTTPBadRequest(description=f"attempt to merge with unknown AID={recp}")
+                raise falcon.HTTPBadRequest(
+                    description=f"attempt to merge with unknown AID={recp}"
+                )
 
         sigers = [core.Siger(qb64=sig) for sig in sigs]
-        verfers = [coring.Verfer(qb64=k) for k in rot['k']]
-        digers = [coring.Diger(qb64=n) for n in rot['n']]
+        verfers = [coring.Verfer(qb64=k) for k in rot["k"]]
+        digers = [coring.Diger(qb64=n) for n in rot["n"]]
 
         mhab = None
         for mid in both:
@@ -188,19 +222,29 @@ class MultisigJoinCollectionEnd:
                 break
 
         if mhab is None:
-            raise falcon.HTTPBadRequest(description="Invalid multisig group rotation request,"
-                                                    " signing member list must contain a local identifier'")
+            raise falcon.HTTPBadRequest(
+                description="Invalid multisig group rotation request,"
+                " signing member list must contain a local identifier'"
+            )
 
-        hab = agent.hby.joinSignifyGroupHab(gid, name=name, mhab=mhab, smids=smids, rmids=rmids)
-        
+        hab = agent.hby.joinSignifyGroupHab(
+            gid, name=name, mhab=mhab, smids=smids, rmids=rmids
+        )
+
         try:
             hab.make(serder=serder, sigers=sigers)
-        except (ValueError):
+        except ValueError:
             logger.info("Already incepted group, continuing...")
 
         agent.inceptGroup(pre=gid, mpre=mhab.pre, verfers=verfers, digers=digers)
-        agent.groups.append(dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids))
-        op = agent.monitor.submit(serder.said, longrunning.OpTypes.group, metadata=dict(pre=serder.pre, sn=serder.sn))
+        agent.groups.append(
+            dict(pre=hab.pre, serder=serder, sigers=sigers, smids=smids, rmids=rmids)
+        )
+        op = agent.monitor.submit(
+            serder.said,
+            longrunning.OpTypes.group,
+            metadata=dict(pre=serder.pre, sn=serder.sn),
+        )
 
         rep.content_type = "application/json"
         rep.status = falcon.HTTP_202
@@ -208,11 +252,11 @@ class MultisigJoinCollectionEnd:
 
 
 class MultisigRequestResourceEnd:
-    """ Resource endpoint class for getting full data for a mulisig exn request from a notification """
+    """Resource endpoint class for getting full data for a mulisig exn request from a notification"""
 
     @staticmethod
     def on_get(req, rep, said):
-        """ GET method for multisig resources
+        """GET method for multisig resources
 
         Parameters:
             req (falcon.Request): HTTP request object
@@ -241,13 +285,17 @@ class MultisigRequestResourceEnd:
         agent = req.context.agent
         exn = agent.hby.db.exns.get(keys=(said,))
         if exn is None:
-            raise falcon.HTTPNotFound(description=f"no multisig request with said={said} found")
+            raise falcon.HTTPNotFound(
+                description=f"no multisig request with said={said} found"
+            )
 
-        route = exn.ked['r']
+        route = exn.ked["r"]
         if not route.startswith("/multisig"):
-            raise falcon.HTTPBadRequest(f"invalid mutlsig conversation with said={said}")
+            raise falcon.HTTPBadRequest(
+                f"invalid mutlsig conversation with said={said}"
+            )
 
-        payload = exn.ked['a']
+        payload = exn.ked["a"]
         match route.split("/"):
             case ["", "multisig", "icp"]:
                 pass
@@ -256,17 +304,19 @@ class MultisigRequestResourceEnd:
             case ["", "multisig", *_]:
                 gid = payload["gid"]
                 if gid not in agent.hby.habs:
-                    raise falcon.HTTPBadRequest(f"multisig request for non-local group pre={gid}")
+                    raise falcon.HTTPBadRequest(
+                        f"multisig request for non-local group pre={gid}"
+                    )
 
-        esaid = exn.ked['e']['d']
+        esaid = exn.ked["e"]["d"]
         exns = agent.mux.get(esaid=esaid)
 
         for d in exns:
-            exn = d['exn']
+            exn = d["exn"]
             serder = serdering.SerderKERI(sad=exn)
 
-            route = serder.ked['r']
-            payload = serder.ked['a']
+            route = serder.ked["r"]
+            payload = serder.ked["a"]
             match route.split("/"):
                 case ["", "multisig", "icp"]:
                     pass
@@ -274,27 +324,27 @@ class MultisigRequestResourceEnd:
                     gid = payload["gid"]
                     if gid in agent.hby.habs:
                         ghab = agent.hby.habs[gid]
-                        d['groupName'] = ghab.name
-                        d['memberName'] = ghab.mhab.name
+                        d["groupName"] = ghab.name
+                        d["memberName"] = ghab.mhab.name
 
                 case ["", "multisig", "vcp"]:
                     gid = payload["gid"]
                     ghab = agent.hby.habs[gid]
-                    d['groupName'] = ghab.name
-                    d['memberName'] = ghab.mhab.name
+                    d["groupName"] = ghab.name
+                    d["memberName"] = ghab.mhab.name
 
-                    sender = serder.ked['i']
+                    sender = serder.ked["i"]
                     if (c := agent.org.get(sender)) is not None:
-                        d['sender'] = c['alias']
+                        d["sender"] = c["alias"]
                 case ["", "multisig", "iss"]:
                     gid = payload["gid"]
                     ghab = agent.hby.habs[gid]
-                    d['groupName'] = ghab.name
-                    d['memberName'] = ghab.mhab.name
+                    d["groupName"] = ghab.name
+                    d["memberName"] = ghab.mhab.name
 
-                    sender = serder.ked['i']
+                    sender = serder.ked["i"]
                     if (c := agent.org.get(sender)) is not None:
-                        d['sender'] = c['alias']
+                        d["sender"] = c["alias"]
 
         rep.status = falcon.HTTP_200
         rep.data = json.dumps(exns).encode("utf-8")

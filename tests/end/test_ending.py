@@ -6,6 +6,7 @@ keria.app.ending module
 Testing the Mark II Agent Grouping endpoints
 
 """
+
 from keri.core import serdering
 
 from keria.app import aiding
@@ -40,13 +41,13 @@ def test_oobi_end(helpers):
         app.add_route("/identifiers/{name}/endroles", endRolesEnd)
 
         # First create participants (aid1, aid2) in a multisig AID
-        salt = b'0123456789abcdef'
+        salt = b"0123456789abcdef"
         op = helpers.createAid(client, "aid1", salt)
         aid = op["response"]
-        pre = aid['i']
+        pre = aid["i"]
         assert pre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
 
-        recp = aid['i']
+        recp = aid["i"]
         rpy = helpers.endrole(recp, agent.agentHab.pre)
         sigs = helpers.sign(salt, 0, 0, rpy.raw)
         body = dict(rpy=rpy.ked, sigs=sigs)
@@ -59,23 +60,34 @@ def test_oobi_end(helpers):
 
         res = client.simulate_get(path="/oobi")
         assert res.status_code == 404
-        assert res.json == {'description': 'no blind oobi for this node', 'title': '404 Not Found'}
+        assert res.json == {
+            "description": "no blind oobi for this node",
+            "title": "404 Not Found",
+        }
 
         res = client.simulate_get(path="/oobi/")
         assert res.status_code == 404
-        assert res.json == {'description': 'no blind oobi for this node', 'title': '404 Not Found'}
+        assert res.json == {
+            "description": "no blind oobi for this node",
+            "title": "404 Not Found",
+        }
 
         # Use a bad AID
-        res = client.simulate_get(path="/oobi/EHXXXXXT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSys")
+        res = client.simulate_get(
+            path="/oobi/EHXXXXXT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSys"
+        )
         assert res.status_code == 404
-        assert res.json == {'description': 'AID not found for this OOBI', 'title': '404 Not Found'}
+        assert res.json == {
+            "description": "AID not found for this OOBI",
+            "title": "404 Not Found",
+        }
 
         # Use valid AID
         res = client.simulate_get(path=f"/oobi/{pre}")
         assert res.status_code == 200
-        assert res.headers['Content-Type'] == "application/json+cesr"
+        assert res.headers["Content-Type"] == "application/json+cesr"
 
         # Use valid AID, role and EID
         res = client.simulate_get(path=f"/oobi/{pre}/agent/{agent.agentHab.pre}")
         assert res.status_code == 200
-        assert res.headers['Content-Type'] == "application/json+cesr"
+        assert res.headers["Content-Type"] == "application/json+cesr"
