@@ -13,7 +13,7 @@ from hio.help import Hict
 from keri import kering
 from keri import core
 from keri.app import habbing
-from keri.core import parsing, eventing, coring
+from keri.core import parsing, eventing
 from keri.end import ending
 
 from keria.app import agenting

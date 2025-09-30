@@ -123,12 +123,12 @@ def test_exchange_end(helpers):
         agent.exnseeker.index(exn.said)
 
         body = json.dumps({}).encode("utf-8")
-        res = client.simulate_post(f"/exchanges/query", body=body)
+        res = client.simulate_post("/exchanges/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 2
 
         body = json.dumps({'filter': {'-i': pre}, 'sort': ['-dt']}).encode("utf-8")
-        res = client.simulate_post(f"/exchanges/query", body=body)
+        res = client.simulate_post("/exchanges/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 2
 
@@ -141,7 +141,7 @@ def test_exchange_end(helpers):
         assert serder.said == exn.said
 
         body = json.dumps({'filter': {'-i': pre}, 'sort': ['-dt'], 'skip': 1, "limit": 1}).encode("utf-8")
-        res = client.simulate_post(f"/exchanges/query", body=body)
+        res = client.simulate_post("/exchanges/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 1
 
@@ -184,7 +184,7 @@ def test_exchange_end(helpers):
         agent.exnseeker.index(exn.said)
 
         body = json.dumps({'sort': ['-dt']}).encode("utf-8")
-        res = client.simulate_post(f"/exchanges/query", body=body)
+        res = client.simulate_post("/exchanges/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 3
 

@@ -1,6 +1,6 @@
 import signal
 
-from hio.base import doing, Doist
+from hio.base import doing
 from keri import help
 
 logger = help.ogler.getLogger()
@@ -28,12 +28,12 @@ class GracefulShutdownDoer(doing.Doer):
 
     def handle_sigterm(self, signum, frame):
         """Handler function for SIGTERM"""
-        logger.info(f"Received SIGTERM, initiating graceful shutdown.")
+        logger.info("Received SIGTERM, initiating graceful shutdown.")
         self.shutdown_received = True
 
     def handle_sigint(self, signum, frame):
         """Handler function for SIGINT"""
-        logger.info(f"Received SIGINT, initiating graceful shutdown.")
+        logger.info("Received SIGINT, initiating graceful shutdown.")
         self.shutdown_received = True
 
     def shutdownAgency(self):

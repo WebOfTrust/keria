@@ -6,7 +6,6 @@ keria.cli.keria.commands.start module
 KERIA Agent server start command line interface (CLI) command
 """
 import argparse
-import logging
 import os
 
 

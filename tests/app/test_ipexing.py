@@ -215,7 +215,7 @@ def test_ipex_grant(helpers, mockHelpingNowIso8601, seeder):
 
         # Send in all signatures as if we are joining the inception event
         sigers = [signer0.sign(ser=serder.raw, index=0).qb64, signer1.sign(ser=serder.raw, index=1).qb64]
-        states = nstates = [m0['state'], m1['state']]
+        states = [m0['state'], m1['state']]
         smids = rmids = [state['i'] for state in states if 'i' in state]
 
         body = {
@@ -460,7 +460,7 @@ def test_multisig(seeder, helpers):
         assert issuerPre == "ECJg1cFrp4G2ZHk8_ocsdoS1VuptVpaG9fLktBrwx1Fo"
 
         sigers = [issuerSigner0.sign(ser=serder.raw, index=0).qb64, issuerSigner1.sign(ser=serder.raw, index=1).qb64]
-        states = nstates = [ip0['state'], ip1['state']]
+        states = [ip0['state'], ip1['state']]
         smids = rmids = [state['i'] for state in states if 'i' in state]
 
         body = {
@@ -507,9 +507,9 @@ def test_multisig(seeder, helpers):
         sigs = [issuerSigner0.sign(ser=rpy.raw, index=0).qb64, issuerSigner1.sign(ser=rpy.raw, index=1).qb64]
         body = dict(rpy=rpy.ked, sigs=sigs)
 
-        res = client0.simulate_post(path=f"/identifiers/issuer/endroles", json=body)
+        res = client0.simulate_post(path="/identifiers/issuer/endroles", json=body)
         assert res.status_code == 202
-        res = client1.simulate_post(path=f"/identifiers/issuer/endroles", json=body)
+        res = client1.simulate_post(path="/identifiers/issuer/endroles", json=body)
         assert res.status_code == 202
 
         # Create Holder Participant 0
@@ -561,7 +561,7 @@ def test_multisig(seeder, helpers):
 
         # Send in all signatures as if we are joining the inception event
         sigers = [holderSigner0.sign(ser=serder.raw, index=0).qb64, holderSigner1.sign(ser=serder.raw, index=1).qb64]
-        states = nstates = [hp0['state'], hp1['state']]
+        states = [hp0['state'], hp1['state']]
         smids = rmids = [state['i'] for state in states if 'i' in state]
         
         body = {
@@ -608,9 +608,9 @@ def test_multisig(seeder, helpers):
         sigs = [holderSigner0.sign(ser=rpy.raw, index=0).qb64, holderSigner1.sign(ser=rpy.raw, index=1).qb64]
         body = dict(rpy=rpy.ked, sigs=sigs)
 
-        res = hclient0.simulate_post(path=f"/identifiers/holder/endroles", json=body)
+        res = hclient0.simulate_post(path="/identifiers/holder/endroles", json=body)
         assert res.status_code == 202
-        res = hclient1.simulate_post(path=f"/identifiers/holder/endroles", json=body)
+        res = hclient1.simulate_post(path="/identifiers/holder/endroles", json=body)
         assert res.status_code == 202
 
         # Create Verifier Participant 0
@@ -708,9 +708,9 @@ def test_multisig(seeder, helpers):
         sigs = [verifierSigner0.sign(ser=rpy.raw, index=0).qb64, verifierSigner1.sign(ser=rpy.raw, index=1).qb64]
         body = dict(rpy=rpy.ked, sigs=sigs)
 
-        res = vclient0.simulate_post(path=f"/identifiers/verifier/endroles", json=body)
+        res = vclient0.simulate_post(path="/identifiers/verifier/endroles", json=body)
         assert res.status_code == 202
-        res = vclient1.simulate_post(path=f"/identifiers/verifier/endroles", json=body)
+        res = vclient1.simulate_post(path="/identifiers/verifier/endroles", json=body)
         assert res.status_code == 202
 
         # Introduce the multisig AIDs to each other

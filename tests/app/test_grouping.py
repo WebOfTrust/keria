@@ -143,7 +143,7 @@ def test_multisig_request_ends(helpers):
         esaid = exn.ked["e"]["d"]
         agent.hby.db.meids.add(keys=(esaid,), val=coring.Saider(qb64=exn.said))
 
-        res = client.simulate_get(path=f"/multisig/request/BADSAID")
+        res = client.simulate_get(path="/multisig/request/BADSAID")
         assert res.status_code == 404
 
         res = client.simulate_get(path=f"/multisig/request/{said}")
