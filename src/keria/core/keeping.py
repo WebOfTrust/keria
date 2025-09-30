@@ -133,6 +133,10 @@ class RemoteKeeper(dbing.LMDBer):
 
 
 class RemoteManager:
+    """
+    Local key index manager representing the key index state of the remotely managed keys for the
+    associated remote Signify controller.
+    """
     def __init__(self, hby, rb: RemoteKeeper = None):
         self.hby = hby
         self.rb = rb if rb is not None else RemoteKeeper(name=hby.name,

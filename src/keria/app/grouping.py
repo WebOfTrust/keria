@@ -52,11 +52,15 @@ class MultisigRequestCollectionEnd:
         if not isinstance(hab, habbing.SignifyGroupHab):
             raise falcon.HTTPBadRequest(description=f"hab for alias or prefix {name} is not a multisig")
 
+
         # grab all of the required parameters
         ked = httping.getRequiredParam(body, "exn")
         serder = serdering.SerderKERI(sad=ked)
         sigs = httping.getRequiredParam(body, "sigs")
         atc = httping.getRequiredParam(body, "atc")
+
+        logger.info("[%s | %s]: Posting EXN on Route %s event %s", name, hab.pre, ked["r"], ked["d"])
+        logger.debug("EXN: %s", json.dumps(body))
 
         # create sigers from the edge signatures so we can messagize the whole thing
         sigers = [core.Siger(qb64=sig) for sig in sigs]
@@ -77,6 +81,7 @@ class MultisigRequestCollectionEnd:
         if hab.mhab.pre in smids:
             smids.remove(hab.mhab.pre)
 
+        logger.info("[%s | %s]: new exchange message %s", name, hab.pre, json.dumps(dict(said=serder.said, pre=hab.pre, rec=smids, topic='multisig')))
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=smids, topic='multisig'))
 
         rep.status = falcon.HTTP_200
@@ -190,7 +195,7 @@ class MultisigJoinCollectionEnd:
         
         try:
             hab.make(serder=serder, sigers=sigers)
-        except (ValueError) as e:
+        except (ValueError):
             logger.info("Already incepted group, continuing...")
 
         agent.inceptGroup(pre=gid, mpre=mhab.pre, verfers=verfers, digers=digers)

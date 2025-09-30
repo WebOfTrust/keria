@@ -52,7 +52,7 @@ def test_operations(helpers):
         assert isinstance(res.json, list)
         assert len(res.json) == 0
         r = next(filter(lambda i: i["name"] == op["name"], res.json), None)
-        assert r == None
+        assert r is None
 
         # add endrole
 
@@ -60,7 +60,7 @@ def test_operations(helpers):
         sigs = helpers.sign(salt, 0, 0, rpy.raw)
         body = dict(rpy=rpy.ked, sigs=sigs)
         res = client.simulate_post(
-            path=f"/identifiers/user1/endroles", json=body)
+            path="/identifiers/user1/endroles", json=body)
         op = res.json
         assert op["done"] is True
         assert op["name"] == "endrole.EAF7geUfHm-M5lA-PI6Jv-4708a-KknnlMlA7U1_Wduv.agent.EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
@@ -101,7 +101,7 @@ def test_operations(helpers):
         assert isinstance(res.json, list)
         assert len(res.json) == 1
         r = next(filter(lambda i: i["name"] == op["name"], res.json), None)
-        assert r == None
+        assert r is None
 
         # add endrole
 
@@ -109,7 +109,7 @@ def test_operations(helpers):
         sigs = helpers.sign(salt, 0, 0, rpy.raw)
         body = dict(rpy=rpy.ked, sigs=sigs)
         res = client.simulate_post(
-            path=f"/identifiers/user2/endroles", json=body)
+            path="/identifiers/user2/endroles", json=body)
         op = res.json
         assert op["done"] is True
         assert op["name"] == "endrole.EAyXphfc0qOLqEDAe0cCYCj-ovbSaEFgVgX6MrC_b5ZO.agent.EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
@@ -177,7 +177,7 @@ def test_operations(helpers):
         sigs = helpers.sign(salt, 0, 0, rpy.raw)
         body = dict(rpy=rpy.ked, sigs=sigs)
         res = client.simulate_post(
-            path=f"/identifiers/user2/locschemes", json=body)
+            path="/identifiers/user2/locschemes", json=body)
         op = res.json
         assert op["done"] is True
         assert op["name"] == "locscheme.EAyXphfc0qOLqEDAe0cCYCj-ovbSaEFgVgX6MrC_b5ZO.http"
@@ -327,7 +327,7 @@ def test_error(helpers):
         assert len(res.json) == 1
 
         op = res.json[0]
-        assert op["done"] == True
+        assert op["done"]
         assert op["error"]["code"] == 500
         assert op["error"]["message"] == f"{err}"
 
@@ -335,13 +335,13 @@ def test_error(helpers):
         assert res.status_code == 500
 
         # Test other error conditions
-        res = client.simulate_get(path=f"/operations/exchange.EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
+        res = client.simulate_get(path="/operations/exchange.EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
         assert res.status_code == 404
         assert res.json == {
             'title': "long running operation 'exchange.EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao' not found"
         }
 
-        res = client.simulate_get(path=f"/operations/query.EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
+        res = client.simulate_get(path="/operations/query.EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao")
         assert res.status_code == 404
         assert res.json == {'title': 'long running operation '
                                      "'query.EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao' not found"}

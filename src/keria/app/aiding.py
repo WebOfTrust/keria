@@ -494,7 +494,7 @@ class IdentifierCollectionEnd:
 
                 if "mhab" not in group:
                     raise falcon.HTTPBadRequest(
-                        description=f'required field "mhab" missing from body.group'
+                        description='required field "mhab" missing from body.group'
                     )
                 mpre = group["mhab"]["prefix"]
 
@@ -506,7 +506,7 @@ class IdentifierCollectionEnd:
 
                 if "keys" not in group:
                     raise falcon.HTTPBadRequest(
-                        description=f'required field "keys" missing from body.group'
+                        description='required field "keys" missing from body.group'
                     )
                 keys = group["keys"]
                 verfers = [coring.Verfer(qb64=key) for key in keys]
@@ -519,7 +519,7 @@ class IdentifierCollectionEnd:
 
                 if "ndigs" not in group:
                     raise falcon.HTTPBadRequest(
-                        description=f'required field "ndigs" missing from body.group'
+                        description='required field "ndigs" missing from body.group'
                     )
                 ndigs = group["ndigs"]
                 digers = [coring.Diger(qb64=ndig) for ndig in ndigs]
@@ -812,7 +812,7 @@ class IdentifierResourceEnd:
             else:
                 raise falcon.HTTPBadRequest(
                     title="invalid request",
-                    description=f"required field 'rot' or 'ixn' missing from request",
+                    description="required field 'rot' or 'ixn' missing from request",
                 )
 
             rep.status = falcon.HTTP_200
@@ -832,8 +832,10 @@ class IdentifierResourceEnd:
         if rot is None:
             raise falcon.HTTPBadRequest(
                 title="invalid rotation",
-                description=f"required field 'rot' missing from request",
+                description="required field 'rot' missing from request",
             )
+        serder = serdering.SerderKERI(sad=rot)
+        logger.info("[%s | %s]: Rotation event sn=%s SAID=%s", hab.name, hab.pre, serder.sn, serder.said)
 
         if "ba" in rot:
             for wit in rot["ba"]:
@@ -845,10 +847,8 @@ class IdentifierResourceEnd:
         if sigs is None or len(sigs) == 0:
             raise falcon.HTTPBadRequest(
                 title="invalid rotation",
-                description=f"required field 'sigs' missing from request",
+                description="required field 'sigs' missing from request",
             )
-
-        serder = serdering.SerderKERI(sad=rot)
         sigers = [core.Siger(qb64=sig) for sig in sigs]
 
         if Algos.salty in body:
@@ -929,17 +929,18 @@ class IdentifierResourceEnd:
         if ixn is None:
             raise falcon.HTTPBadRequest(
                 title="invalid interaction",
-                description=f"required field 'ixn' missing from request",
+                description="required field 'ixn' missing from request",
             )
+        serder = serdering.SerderKERI(sad=ixn)
+        logger.info("[%s | %s] Interaction event sn=%s SAID=%s", hab.name, hab.pre, serder.sn, serder.said)
 
         sigs = body.get("sigs")
         if sigs is None or len(sigs) == 0:
             raise falcon.HTTPBadRequest(
                 title="invalid interaction",
-                description=f"required field 'sigs' missing from request",
+                description="required field 'sigs' missing from request",
             )
 
-        serder = serdering.SerderKERI(sad=ixn)
         sigers = [core.Siger(qb64=sig) for sig in sigs]
 
         hab.interact(serder=serder, sigers=sigers)
@@ -975,6 +976,7 @@ class IdentifierResourceEnd:
             raise falcon.HTTPNotFound(title=f"No AID {name} found")
 
         code = body.get("code")
+        logger.info("[%s | %]: Resubmit event code=%s", name, hab.pre, code)
 
         if hab.kever.wits:
             agent.submits.append(dict(alias=name, code=code))

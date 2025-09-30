@@ -51,22 +51,22 @@ def test_oobi_end(helpers):
         sigs = helpers.sign(salt, 0, 0, rpy.raw)
         body = dict(rpy=rpy.ked, sigs=sigs)
 
-        res = client.simulate_post(path=f"/identifiers/aid1/endroles", json=body)
+        res = client.simulate_post(path="/identifiers/aid1/endroles", json=body)
         op = res.json
         ked = op["response"]
         serder = serdering.SerderKERI(sad=ked)
         assert serder.raw == rpy.raw
 
-        res = client.simulate_get(path=f"/oobi")
+        res = client.simulate_get(path="/oobi")
         assert res.status_code == 404
         assert res.json == {'description': 'no blind oobi for this node', 'title': '404 Not Found'}
 
-        res = client.simulate_get(path=f"/oobi/")
+        res = client.simulate_get(path="/oobi/")
         assert res.status_code == 404
         assert res.json == {'description': 'no blind oobi for this node', 'title': '404 Not Found'}
 
         # Use a bad AID
-        res = client.simulate_get(path=f"/oobi/EHXXXXXT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSys")
+        res = client.simulate_get(path="/oobi/EHXXXXXT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSys")
         assert res.status_code == 404
         assert res.json == {'description': 'AID not found for this OOBI', 'title': '404 Not Found'}
 
