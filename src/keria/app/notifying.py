@@ -4,6 +4,7 @@ KERIA
 keria.app.notifying module
 
 """
+
 import json
 
 import falcon
@@ -19,10 +20,9 @@ def loadEnds(app):
 
 
 class NotificationCollectionEnd:
-
     @staticmethod
     def on_get(req, rep):
-        """ Notification GET endpoint
+        """Notification GET endpoint
 
         Parameters:
             req: falcon.Request HTTP request
@@ -72,10 +72,9 @@ class NotificationCollectionEnd:
 
 
 class NotificationResourceEnd:
-
     @staticmethod
     def on_put(req, rep, said):
-        """ Notification PUT endpoint
+        """Notification PUT endpoint
 
         Parameters:
             req: falcon.Request HTTP request
@@ -104,14 +103,16 @@ class NotificationResourceEnd:
         mared = agent.notifier.mar(said)
         if not mared:
             rep.status = falcon.HTTP_404
-            rep.data = json.dumps(dict(msg=f"no notification to mark as read for {said}")).encode("utf-8")
+            rep.data = json.dumps(
+                dict(msg=f"no notification to mark as read for {said}")
+            ).encode("utf-8")
             return
 
         rep.status = falcon.HTTP_202
 
     @staticmethod
     def on_delete(req, rep, said):
-        """ Notification DELETE endpoint
+        """Notification DELETE endpoint
 
         Parameters:
             req: falcon.Request HTTP request

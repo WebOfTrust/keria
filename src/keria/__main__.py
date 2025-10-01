@@ -14,4 +14,3 @@ from keria.app.cli.keria import main
 
 if __name__ == "__main__":
     main()
-

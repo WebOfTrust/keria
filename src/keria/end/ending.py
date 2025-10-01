@@ -6,6 +6,7 @@ keria.end.ending module
 ReST API endpoints
 
 """
+
 import falcon
 from keri import kering
 from keri.end import ending
@@ -20,7 +21,7 @@ def loadEnds(app, agency, default=None):
 
 
 class OOBIEnd:
-    """ REST API for OOBI endpoints
+    """REST API for OOBI endpoints
 
     Attributes:
         .hby (Habery): database access
@@ -28,7 +29,7 @@ class OOBIEnd:
     """
 
     def __init__(self, agency, default=None):
-        """  End point for responding to OOBIs
+        """End point for responding to OOBIs
 
         Parameters:
             default (str) qb64 AID of the 'self' of the node for
@@ -38,7 +39,7 @@ class OOBIEnd:
         self.default = default
 
     def on_get(self, _, rep, aid=None, role=None, eid=None):
-        """  GET endoint for OOBI resource
+        """GET endoint for OOBI resource
 
         Parameters:
             _: Falcon request object
@@ -95,7 +96,9 @@ class OOBIEnd:
         if kever.prefixer.qb64 in agent.hby.prefixes:  # One of our identifiers
             hab = agent.hby.habs[kever.prefixer.qb64]
         else:  # Not allowed to respond
-            raise falcon.HTTPNotAcceptable(description=f"{aid} is not a local identifier")
+            raise falcon.HTTPNotAcceptable(
+                description=f"{aid} is not a local identifier"
+            )
 
         eids = []
         if eid:

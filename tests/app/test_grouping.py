@@ -6,6 +6,7 @@ keria.app.grouping module
 Testing the Mark II Agent Grouping endpoints
 
 """
+
 import json
 
 from keri.app.habbing import SignifyGroupHab
@@ -290,7 +291,10 @@ def test_join(helpers, monkeypatch):
         assert res.json == {
             "done": False,
             "error": None,
-            "metadata": {"pre": "EDWg3-rB5FTpcckaYdBcexGmbLIO6AvAwjaJTBlXUn_I", "sn": 3},
+            "metadata": {
+                "pre": "EDWg3-rB5FTpcckaYdBcexGmbLIO6AvAwjaJTBlXUn_I",
+                "sn": 3,
+            },
             "name": "group.EPKCBT0rSgFKTDRjynYzOTsYWo7fDNElTxFbRZZW9f6R",
             "response": None,
         }

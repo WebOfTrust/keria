@@ -5,6 +5,7 @@ keria.app.credentialing module
 
 services and endpoint for ACDC credential managements
 """
+
 import json
 from dataclasses import asdict
 
@@ -21,6 +22,7 @@ from keria.core import httping, longrunning
 
 
 logger = help.ogler.getLogger()
+
 
 def loadEnds(app, identifierResource):
     schemaColEnd = SchemaCollectionEnd()
@@ -69,7 +71,7 @@ class RegistryCollectionEnd:
 
     @staticmethod
     def on_get(req, rep, name):
-        """  Registries GET endpoint
+        """Registries GET endpoint
 
         Parameters:
             req: falcon.Request HTTP request
@@ -88,13 +90,21 @@ class RegistryCollectionEnd:
         """
         agent = req.context.agent
 
-        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
+        hab = (
+            agent.hby.habs[name]
+            if name in agent.hby.habs
+            else agent.hby.habByName(name)
+        )
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(
+                description=f"{name} is not a valid reference to an identifier"
+            )
 
         res = []
         for name, registry in agent.rgy.regs.items():
-            if registry.regk not in registry.tevers:  # defensive programming for a registry not being fully committed
+            if (
+                registry.regk not in registry.tevers
+            ):  # defensive programming for a registry not being fully committed
                 continue
 
             if registry.hab.pre == hab.pre:
@@ -102,7 +112,7 @@ class RegistryCollectionEnd:
                     name=registry.name,
                     regk=registry.regk,
                     pre=registry.hab.pre,
-                    state=asdict(registry.tever.state())
+                    state=asdict(registry.tever.state()),
                 )
                 res.append(rd)
 
@@ -111,7 +121,7 @@ class RegistryCollectionEnd:
         rep.data = json.dumps(res).encode("utf-8")
 
     def on_post(self, req, rep, name):
-        """  Registries POST endpoint
+        """Registries POST endpoint
 
         Parameters:
             req: falcon.Request HTTP request
@@ -171,12 +181,20 @@ class RegistryCollectionEnd:
         ked = httping.getRequiredParam(body, "ixn")
         ixn = serdering.SerderKERI(sad=ked)
 
-        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
+        hab = (
+            agent.hby.habs[name]
+            if name in agent.hby.habs
+            else agent.hby.habByName(name)
+        )
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(
+                description=f"{name} is not a valid reference to an identifier"
+            )
 
         if agent.rgy.registryByName(name=rname) is not None:
-            raise falcon.HTTPBadRequest(description=f"registry name {rname} already in use")
+            raise falcon.HTTPBadRequest(
+                description=f"registry name {rname} already in use"
+            )
 
         registry = agent.rgy.makeSignifyRegistry(name=rname, prefix=hab.pre, regser=vcp)
 
@@ -190,19 +208,27 @@ class RegistryCollectionEnd:
 
         seqner = coring.Seqner(sn=ixn.sn)
         prefixer = coring.Prefixer(qb64=ixn.pre)
-        agent.registrar.incept(hab, registry, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=ixn.said))
-        op = agent.monitor.submit(registry.regk, longrunning.OpTypes.registry,
-                                  metadata=dict(pre=hab.kever.prefixer.qb64, anchor=anchor, depends=op))
+        agent.registrar.incept(
+            hab,
+            registry,
+            prefixer=prefixer,
+            seqner=seqner,
+            saider=coring.Saider(qb64=ixn.said),
+        )
+        op = agent.monitor.submit(
+            registry.regk,
+            longrunning.OpTypes.registry,
+            metadata=dict(pre=hab.kever.prefixer.qb64, anchor=anchor, depends=op),
+        )
 
         rep.status = falcon.HTTP_202
         rep.data = op.to_json().encode("utf-8")
 
 
 class RegistryResourceEnd:
-
     @staticmethod
     def on_get(req, rep, name, registryName):
-        """  Registry Resource GET endpoint
+        """Registry Resource GET endpoint
 
         Parameters:
             req: falcon.Request HTTP request
@@ -236,22 +262,32 @@ class RegistryResourceEnd:
         """
         agent = req.context.agent
 
-        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
+        hab = (
+            agent.hby.habs[name]
+            if name in agent.hby.habs
+            else agent.hby.habByName(name)
+        )
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(
+                description=f"{name} is not a valid reference to an identifier"
+            )
 
         registry = agent.rgy.registryByName(registryName)
         if registry is None:
-            raise falcon.HTTPNotFound(description=f"{registryName} is not a valid reference to a credential registry")
+            raise falcon.HTTPNotFound(
+                description=f"{registryName} is not a valid reference to a credential registry"
+            )
 
         if not registry.hab.pre == hab.pre:
-            raise falcon.HTTPNotFound(description=f"{registryName} is not a valid registry for AID {name}")
+            raise falcon.HTTPNotFound(
+                description=f"{registryName} is not a valid registry for AID {name}"
+            )
 
         rd = dict(
             name=registry.name,
             regk=registry.regk,
             pre=registry.hab.pre,
-            state=asdict(registry.tever.state())
+            state=asdict(registry.tever.state()),
         )
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
@@ -259,7 +295,7 @@ class RegistryResourceEnd:
 
     @staticmethod
     def on_put(req, rep, name, registryName):
-        """  Registry Resource PUT endpoint
+        """Registry Resource PUT endpoint
 
         Parameters:
             req: falcon.Request HTTP request
@@ -304,21 +340,31 @@ class RegistryResourceEnd:
         """
         agent = req.context.agent
 
-        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
+        hab = (
+            agent.hby.habs[name]
+            if name in agent.hby.habs
+            else agent.hby.habByName(name)
+        )
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(
+                description=f"{name} is not a valid reference to an identifier"
+            )
 
         body = req.get_media()
-        if 'name' not in body:
+        if "name" not in body:
             raise falcon.HTTPBadRequest(description="'name' is required in body")
 
-        name = body['name']
+        name = body["name"]
         if agent.rgy.registryByName(name) is not None:
-            raise falcon.HTTPBadRequest(description=f"{name} is already in use for a registry")
+            raise falcon.HTTPBadRequest(
+                description=f"{name} is already in use for a registry"
+            )
 
         registry = agent.rgy.registryByName(registryName)
         if registry is None:
-            if registryName in agent.rgy.regs:  # Check to see if the registryName parameter is a SAID
+            if (
+                registryName in agent.rgy.regs
+            ):  # Check to see if the registryName parameter is a SAID
                 registry = agent.rgy.regs[registryName]
             else:
                 regk = registryName
@@ -326,7 +372,8 @@ class RegistryResourceEnd:
                 raw = agent.rgy.reger.getTvt(key=key)
                 if raw is None:
                     raise falcon.HTTPNotFound(
-                        description=f"{registryName} is not a valid reference to a credential registry")
+                        description=f"{registryName} is not a valid reference to a credential registry"
+                    )
 
                 regser = serdering.SerderKERI(raw=bytes(raw))
                 registry = agent.rgy.makeSignifyRegistry(name, hab.pre, regser)
@@ -340,7 +387,7 @@ class RegistryResourceEnd:
             name=registry.name,
             regk=registry.regk,
             pre=registry.hab.pre,
-            state=asdict(registry.tever.state())
+            state=asdict(registry.tever.state()),
         )
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
@@ -348,33 +395,32 @@ class RegistryResourceEnd:
 
 
 class SchemaResourceEnd:
-
     @staticmethod
     def on_get(req, rep, said):
-        """ Schema GET endpoint
+        """Schema GET endpoint
 
-        Parameters:
-            req: falcon.Request HTTP request
-            rep: falcon.Response HTTP response
-            said: qb64 self-addressing identifier of schema to load
+         Parameters:
+             req: falcon.Request HTTP request
+             rep: falcon.Response HTTP response
+             said: qb64 self-addressing identifier of schema to load
 
-       ---
-        summary:  Get schema JSON of specified schema
-        description:  Get schema JSON of specified schema
-        tags:
-           - Schema
-        parameters:
-          - in: path
-            name: said
-            schema:
-              type: string
-            required: true
-            description: qb64 self-addressing identifier of schema to get
-        responses:
-           200:
-              description: Schema JSON successfully returned
-           404:
-              description: No schema found for SAID
+        ---
+         summary:  Get schema JSON of specified schema
+         description:  Get schema JSON of specified schema
+         tags:
+            - Schema
+         parameters:
+           - in: path
+             name: said
+             schema:
+               type: string
+             required: true
+             description: qb64 self-addressing identifier of schema to get
+         responses:
+            200:
+               description: Schema JSON successfully returned
+            404:
+               description: No schema found for SAID
         """
         agent = req.context.agent
         schemer = agent.hby.db.schema.get(keys=(said,))
@@ -387,23 +433,22 @@ class SchemaResourceEnd:
 
 
 class SchemaCollectionEnd:
-
     @staticmethod
     def on_get(req, rep):
-        """ Schema GET plural endpoint
+        """Schema GET plural endpoint
 
-        Parameters:
-            req: falcon.Request HTTP request
-            rep: falcon.Response HTTP response
+         Parameters:
+             req: falcon.Request HTTP request
+             rep: falcon.Response HTTP response
 
-       ---
-        summary:  Get schema JSON of all schema
-        description:  Get schema JSON of all schema
-        tags:
-           - Schema
-        responses:
-           200:
-              description: Array of all schema JSON
+        ---
+         summary:  Get schema JSON of all schema
+         description:  Get schema JSON of all schema
+         tags:
+            - Schema
+         responses:
+            200:
+               description: Array of all schema JSON
         """
         agent = req.context.agent
 
@@ -418,7 +463,7 @@ class SchemaCollectionEnd:
 class CredentialVerificationCollectionEnd:
     @staticmethod
     def on_post(req, rep):
-        """ Verify credential endpoint (no IPEX)
+        """Verify credential endpoint (no IPEX)
 
         Parameters:
             req: falcon.Request HTTP request
@@ -472,14 +517,15 @@ class CredentialVerificationCollectionEnd:
         saider = coring.Saider(qb64=iserder.said)
 
         agent.parser.ims.extend(signing.serialize(creder, prefixer, seqner, saider))
-        op = agent.monitor.submit(creder.said, longrunning.OpTypes.credential,
-                                  metadata=dict(ced=creder.sad))
+        op = agent.monitor.submit(
+            creder.said, longrunning.OpTypes.credential, metadata=dict(ced=creder.sad)
+        )
         rep.status = falcon.HTTP_202
         rep.data = op.to_json().encode("utf-8")
 
 
 class CredentialQueryCollectionEnd:
-    """ This class provides a collection endpoint for creating credential queries.
+    """This class provides a collection endpoint for creating credential queries.
 
     I fully admit that the semantics here are a big stretch.  I would rather have this as a GET against the
     credential collection endpoint, but the nature of the complicated input to this endpoint dictate a BODY
@@ -491,7 +537,7 @@ class CredentialQueryCollectionEnd:
 
     @staticmethod
     def on_post(req, rep):
-        """ Credentials GET endpoint
+        """Credentials GET endpoint
 
         Parameters:
             req: falcon.Request HTTP request
@@ -569,7 +615,6 @@ class CredentialQueryCollectionEnd:
 
 
 class CredentialCollectionEnd:
-
     def __init__(self, identifierResource):
         """
 
@@ -580,7 +625,7 @@ class CredentialCollectionEnd:
         self.identifierResource = identifierResource
 
     def on_post(self, req, rep, name):
-        """ Initiate a credential issuance
+        """Initiate a credential issuance
 
         Parameters:
             req: falcon.Request HTTP request
@@ -647,10 +692,16 @@ class CredentialCollectionEnd:
         agent = req.context.agent
 
         body = req.get_media()
-        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
+        hab = (
+            agent.hby.habs[name]
+            if name in agent.hby.habs
+            else agent.hby.habByName(name)
+        )
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
-        try: 
+            raise falcon.HTTPNotFound(
+                description=f"{name} is not a valid reference to an identifier"
+            )
+        try:
             creder = serdering.SerderACDC(sad=httping.getRequiredParam(body, "acdc"))
             iserder = serdering.SerderKERI(sad=httping.getRequiredParam(body, "iss"))
             if "ixn" in body:
@@ -662,9 +713,11 @@ class CredentialCollectionEnd:
             rep.text = e.args[0]
             return
 
-        regk = iserder.ked['ri']
+        regk = iserder.ked["ri"]
         if regk not in agent.rgy.tevers:
-            raise falcon.HTTPNotFound(description=f"issue against invalid registry SAID {regk}")
+            raise falcon.HTTPNotFound(
+                description=f"issue against invalid registry SAID {regk}"
+            )
 
         if hab.kever.estOnly:
             op = self.identifierResource.rotate(agent, name, body)
@@ -675,8 +728,11 @@ class CredentialCollectionEnd:
             agent.credentialer.validate(creder)
             agent.registrar.issue(regk, iserder, anc)
             agent.credentialer.issue(creder=creder, serder=iserder)
-            op = agent.monitor.submit(creder.said, longrunning.OpTypes.credential,
-                                      metadata=dict(ced=creder.sad, depends=op))
+            op = agent.monitor.submit(
+                creder.said,
+                longrunning.OpTypes.credential,
+                metadata=dict(ced=creder.sad, depends=op),
+            )
 
         except kering.ConfigurationError as e:
             rep.status = falcon.HTTP_400
@@ -689,13 +745,11 @@ class CredentialCollectionEnd:
 
 class CredentialResourceEnd:
     def __init__(self):
-        """
-
-        """
+        """ """
 
     @staticmethod
     def on_get(req, rep, said):
-        """ Credentials GET endpoint
+        """Credentials GET endpoint
 
         Parameters:
             req: falcon.Request HTTP request
@@ -733,10 +787,14 @@ class CredentialResourceEnd:
                 data = CredentialResourceEnd.outputCred(agent.hby, agent.rgy, said)
             else:
                 rep.content_type = "application/json"
-                creds = agent.rgy.reger.cloneCreds([coring.Saider(qb64=said)], db=agent.hby.db)
+                creds = agent.rgy.reger.cloneCreds(
+                    [coring.Saider(qb64=said)], db=agent.hby.db
+                )
                 data = json.dumps(creds[0]).encode("utf-8")
         except kering.MissingEntryError:
-            raise falcon.HTTPNotFound(description=f"credential for said {said} not found.")
+            raise falcon.HTTPNotFound(
+                description=f"credential for said {said} not found."
+            )
 
         rep.status = falcon.HTTP_200
         rep.data = bytes(data)
@@ -748,13 +806,13 @@ class CredentialResourceEnd:
         chains = creder.edge or dict()
         saids = []
         for key, source in chains.items():
-            if key == 'd':
+            if key == "d":
                 continue
 
             if not isinstance(source, dict):
                 continue
 
-            saids.append(source['n'])
+            saids.append(source["n"])
 
         for said in saids:
             out.extend(CredentialResourceEnd.outputCred(hby, rgy, said))
@@ -762,7 +820,7 @@ class CredentialResourceEnd:
         issr = creder.issuer
         for msg in hby.db.clonePreIter(pre=issr):
             serder = serdering.SerderKERI(raw=msg)
-            atc = msg[serder.size:]
+            atc = msg[serder.size :]
             out.extend(serder.raw)
             out.extend(atc)
 
@@ -770,20 +828,20 @@ class CredentialResourceEnd:
             subj = creder.attrib["i"]
             for msg in hby.db.clonePreIter(pre=subj):
                 serder = serdering.SerderKERI(raw=msg)
-                atc = msg[serder.size:]
+                atc = msg[serder.size :]
                 out.extend(serder.raw)
                 out.extend(atc)
 
         if creder.regi is not None:
             for msg in rgy.reger.clonePreIter(pre=creder.regi):
                 serder = serdering.SerderKERI(raw=msg)
-                atc = msg[serder.size:]
+                atc = msg[serder.size :]
                 out.extend(serder.raw)
                 out.extend(atc)
 
             for msg in rgy.reger.clonePreIter(pre=creder.said):
                 serder = serdering.SerderKERI(raw=msg)
-                atc = msg[serder.size:]
+                atc = msg[serder.size :]
                 out.extend(serder.raw)
                 out.extend(atc)
 
@@ -793,7 +851,7 @@ class CredentialResourceEnd:
 
     @staticmethod
     def on_delete(req, rep, said):
-        """ Credentials DELETE endpoint
+        """Credentials DELETE endpoint
 
         Parameters:
             req: falcon.Request HTTP request
@@ -824,12 +882,14 @@ class CredentialResourceEnd:
         try:
             creder, _, _, _ = reger.cloneCred(said)
         except kering.MissingEntryError:
-            raise falcon.HTTPNotFound(description=f"credential for said {said} not found.")
+            raise falcon.HTTPNotFound(
+                description=f"credential for said {said} not found."
+            )
 
         agent.seeker.unindex(said)
 
         saider = coring.Saider(qb64b=said)
-        if not isinstance(creder.attrib, str) and 'i' in creder.attrib:
+        if not isinstance(creder.attrib, str) and "i" in creder.attrib:
             subj = creder.attrib["i"]
             if subj:
                 reger.subjs.rem(keys=subj, val=saider)
@@ -845,16 +905,16 @@ class CredentialResourceEnd:
 
 class CredentialResourceDeleteEnd:
     def __init__(self, identifierResource):
-            """
+        """
 
-            Parameters:
-                identifierResource (IdentifierResourceEnd): endpoint class for creating rotation and interaction events
+        Parameters:
+            identifierResource (IdentifierResourceEnd): endpoint class for creating rotation and interaction events
 
-            """
-            self.identifierResource = identifierResource
+        """
+        self.identifierResource = identifierResource
 
     def on_delete(self, req, rep, name, said):
-        """ Initiate a credential revocation
+        """Initiate a credential revocation
 
         Parameters:
             req: falcon.Request HTTP request
@@ -917,20 +977,30 @@ class CredentialResourceDeleteEnd:
         agent = req.context.agent
 
         body = req.get_media()
-        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
+        hab = (
+            agent.hby.habs[name]
+            if name in agent.hby.habs
+            else agent.hby.habByName(name)
+        )
         if hab is None:
-            raise falcon.HTTPNotFound(description=f"{name} is not a valid reference to an identifier")
+            raise falcon.HTTPNotFound(
+                description=f"{name} is not a valid reference to an identifier"
+            )
 
         rserder = serdering.SerderKERI(sad=httping.getRequiredParam(body, "rev"))
 
-        regk = rserder.ked['ri']
+        regk = rserder.ked["ri"]
         if regk not in agent.rgy.tevers:
-            raise falcon.HTTPNotFound(description=f"revocation against invalid registry SAID {regk}")
+            raise falcon.HTTPNotFound(
+                description=f"revocation against invalid registry SAID {regk}"
+            )
 
         try:
             agent.rgy.reger.cloneCreds([coring.Saider(qb64=said)], db=agent.hby.db)
         except Exception:
-            raise falcon.HTTPNotFound(description=f"credential for said {said} not found.")
+            raise falcon.HTTPNotFound(
+                description=f"credential for said {said} not found."
+            )
 
         if hab.kever.estOnly:
             op = self.identifierResource.rotate(agent, name, body)
@@ -951,7 +1021,7 @@ class CredentialResourceDeleteEnd:
 class CredentialRegistryResourceEnd:
     @staticmethod
     def on_get(req, rep, ri, vci):
-        """ Get credential registry state
+        """Get credential registry state
 
         Parameters:
             req: falcon.Request HTTP request
@@ -993,7 +1063,9 @@ class CredentialRegistryResourceEnd:
 
         state = tever.vcState(vci)
         if not state:
-            raise falcon.HTTPNotFound(description=f"credential {vci} not found in registry {ri}")
+            raise falcon.HTTPNotFound(
+                description=f"credential {vci} not found in registry {ri}"
+            )
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
@@ -1001,7 +1073,7 @@ class CredentialRegistryResourceEnd:
 
 
 def signPaths(hab, pather, sigers):
-    """ Sign the SAD or SAIDs with the keys from the Habitat.
+    """Sign the SAD or SAIDs with the keys from the Habitat.
 
     Sign the SADs or SAIDs of the SADs as identified by the paths.
 
@@ -1064,16 +1136,27 @@ class Registrar:
         """
         rseq = coring.Seqner(sn=0)
         if not isinstance(hab, SignifyGroupHab):
-
             seqner = coring.Seqner(sn=hab.kever.sner.num)
             saider = coring.Saider(qb64=hab.kever.serder.said)
-            registry.anchorMsg(pre=registry.regk, regd=registry.regd, seqner=seqner, saider=saider)
+            registry.anchorMsg(
+                pre=registry.regk, regd=registry.regd, seqner=seqner, saider=saider
+            )
             self.witDoer.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
-            self.rgy.reger.tpwe.add(keys=(registry.regk, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
+            self.rgy.reger.tpwe.add(
+                keys=(registry.regk, rseq.qb64),
+                val=(hab.kever.prefixer, seqner, saider),
+            )
 
         else:
-            logger.info("[%s | %s]: Waiting for TEL registry vcp event mulisig anchoring event", hab.name, hab.pre)
-            self.rgy.reger.tmse.add(keys=(registry.regk, rseq.qb64, registry.regd), val=(prefixer, seqner, saider))
+            logger.info(
+                "[%s | %s]: Waiting for TEL registry vcp event mulisig anchoring event",
+                hab.name,
+                hab.pre,
+            )
+            self.rgy.reger.tmse.add(
+                keys=(registry.regk, rseq.qb64, registry.regd),
+                val=(prefixer, seqner, saider),
+            )
 
     def issue(self, regk, iserder, anc):
         """
@@ -1095,11 +1178,17 @@ class Registrar:
         if not isinstance(hab, SignifyGroupHab):  # not a multisig group
             seqner = coring.Seqner(sn=hab.kever.sner.num)
             saider = coring.Saider(qb64=hab.kever.serder.said)
-            registry.anchorMsg(pre=vcid, regd=iserder.said, seqner=seqner, saider=saider)
+            registry.anchorMsg(
+                pre=vcid, regd=iserder.said, seqner=seqner, saider=saider
+            )
 
-            logger.info("[%s | %s]: Waiting for TEL event witness receipts", hab.name, hab.pre)
+            logger.info(
+                "[%s | %s]: Waiting for TEL event witness receipts", hab.name, hab.pre
+            )
             self.witDoer.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
-            self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
+            self.rgy.reger.tpwe.add(
+                keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider)
+            )
             return vcid, rseq.sn
 
         else:  # multisig group hab
@@ -1110,8 +1199,15 @@ class Registrar:
             seqner = coring.Seqner(sn=sn)
             saider = coring.Saider(qb64=said)
 
-            logger.info("[%s | %s]: Waiting for TEL iss event mulisig anchoring event %s", hab.name, hab.pre, seqner.sn)
-            self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, iserder.said), val=(prefixer, seqner, saider))
+            logger.info(
+                "[%s | %s]: Waiting for TEL iss event mulisig anchoring event %s",
+                hab.name,
+                hab.pre,
+                seqner.sn,
+            )
+            self.rgy.reger.tmse.add(
+                keys=(vcid, rseq.qb64, iserder.said), val=(prefixer, seqner, saider)
+            )
             return vcid, rseq.sn
 
     def revoke(self, regk, rserder, anc):
@@ -1131,15 +1227,20 @@ class Registrar:
         rseq = coring.Seqner(snh=rserder.ked["s"])
 
         if not isinstance(hab, SignifyGroupHab):
-
             seqner = coring.Seqner(sn=hab.kever.sner.num)
             saider = coring.Saider(qb64=hab.kever.serder.said)
-            registry.anchorMsg(pre=vcid, regd=rserder.said, seqner=seqner, saider=saider)
+            registry.anchorMsg(
+                pre=vcid, regd=rserder.said, seqner=seqner, saider=saider
+            )
 
-            logger.info("[%s | %s]: Waiting for TEL event witness receipts", hab.name, hab.pre)
+            logger.info(
+                "[%s | %s]: Waiting for TEL event witness receipts", hab.name, hab.pre
+            )
             self.witDoer.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
 
-            self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
+            self.rgy.reger.tpwe.add(
+                keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider)
+            )
             return vcid, rseq.sn
         else:
             serder = serdering.SerderKERI(sad=anc)
@@ -1150,14 +1251,23 @@ class Registrar:
             seqner = coring.Seqner(sn=sn)
             saider = coring.Saider(qb64=said)
 
-            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
+            self.counselor.start(
+                prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab
+            )
 
-            logger.info("[%s | %s]: Waiting for TEL rev event mulisig anchoring event %s", hab.name, hab.pre, seqner.sn)
-            self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, rserder.said), val=(prefixer, seqner, saider))
+            logger.info(
+                "[%s | %s]: Waiting for TEL rev event mulisig anchoring event %s",
+                hab.name,
+                hab.pre,
+                seqner.sn,
+            )
+            self.rgy.reger.tmse.add(
+                keys=(vcid, rseq.qb64, rserder.said), val=(prefixer, seqner, saider)
+            )
             return vcid, rseq.sn
 
     def complete(self, pre, sn=0):
-        """ Determine if registry event (inception, issuance, revocation, etc.) is finished validation
+        """Determine if registry event (inception, issuance, revocation, etc.) is finished validation
 
         Parameters:
             pre (str): qb64 identifier of registry event
@@ -1187,14 +1297,20 @@ class Registrar:
         that the event is complete.
 
         """
-        for (regk, snq), (prefixer, seqner, saider) in self.rgy.reger.tpwe.getItemIter():  # partial witness escrow
+        for (regk, snq), (
+            prefixer,
+            seqner,
+            saider,
+        ) in self.rgy.reger.tpwe.getItemIter():  # partial witness escrow
             kever = self.hby.kevers[prefixer.qb64]
             dgkey = dbing.dgKey(prefixer.qb64b, saider.qb64)
 
             # Load all the witness receipts we have so far
             wigs = self.hby.db.getWigs(dgkey)
             if kever.wits:
-                if len(wigs) == len(kever.wits):  # We have all of them, this event is finished
+                if len(wigs) == len(
+                    kever.wits
+                ):  # We have all of them, this event is finished
                     hab = self.hby.habs[prefixer.qb64]
                     witnessed = False
                     for cue in self.witDoer.cues:
@@ -1209,7 +1325,9 @@ class Registrar:
             rseq = coring.Seqner(qb64=snq)
             self.rgy.reger.tpwe.rem(keys=(regk, snq))
 
-            self.rgy.reger.tede.add(keys=(regk, rseq.qb64), val=(prefixer, seqner, saider))
+            self.rgy.reger.tede.add(
+                keys=(regk, rseq.qb64), val=(prefixer, seqner, saider)
+            )
 
     def processMultisigEscrow(self):
         """
@@ -1218,7 +1336,11 @@ class Registrar:
         that the event is complete.
 
         """
-        for (regk, snq, regd), (prefixer, seqner, saider) in self.rgy.reger.tmse.getItemIter():  # multisig escrow
+        for (regk, snq, regd), (
+            prefixer,
+            seqner,
+            saider,
+        ) in self.rgy.reger.tmse.getItemIter():  # multisig escrow
             try:
                 if not self.counselor.complete(prefixer, seqner, saider):
                     continue
@@ -1234,10 +1356,16 @@ class Registrar:
             self.rgy.reger.putAnc(key, sealet)
 
             self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
-            self.rgy.reger.tede.add(keys=(regk, rseq.qb64), val=(prefixer, seqner, saider))
+            self.rgy.reger.tede.add(
+                keys=(regk, rseq.qb64), val=(prefixer, seqner, saider)
+            )
 
     def processDiseminationEscrow(self):
-        for (regk, snq), (prefixer, seqner, saider) in self.rgy.reger.tede.getItemIter():  # group multisig escrow
+        for (regk, snq), (
+            prefixer,
+            seqner,
+            saider,
+        ) in self.rgy.reger.tede.getItemIter():  # group multisig escrow
             rseq = coring.Seqner(qb64=snq)
             dig = self.rgy.reger.getTel(key=dbing.snKey(pre=regk, sn=rseq.sn))
             if dig is None:
@@ -1294,22 +1422,26 @@ class Credentialer:
         Raises:
             kering.ConfigurationError: if the credential schema is not found or validation fails
         """
-        schema = creder.sad['s']
+        schema = creder.sad["s"]
         scraw = self.verifier.resolver.resolve(schema)
         if not scraw:
-            raise kering.ConfigurationError("Credential schema {} not found.  It must be loaded with data oobi before "
-                                            "issuing credentials".format(schema))
+            raise kering.ConfigurationError(
+                "Credential schema {} not found.  It must be loaded with data oobi before "
+                "issuing credentials".format(schema)
+            )
 
         schemer = scheming.Schemer(raw=scraw)
         try:
             schemer.verify(creder.raw)
         except kering.ValidationError as ex:
-            raise kering.ConfigurationError(f"Credential schema validation failed for {schema}: {ex}")
+            raise kering.ConfigurationError(
+                f"Credential schema validation failed for {schema}: {ex}"
+            )
 
         return True
 
     def issue(self, creder, serder):
-        """ Issue the credential creder and handle witness propagation and communication
+        """Issue the credential creder and handle witness propagation and communication
 
         Parameters:
             creder (Creder): Credential object to issue
@@ -1322,8 +1454,12 @@ class Credentialer:
         self.rgy.reger.cmse.put(keys=(creder.said, seqner.qb64), val=creder)
 
         try:
-            self.verifier.processCredential(creder=creder, prefixer=prefixer, seqner=seqner,
-                                            saider=coring.Saider(qb64=serder.said))
+            self.verifier.processCredential(
+                creder=creder,
+                prefixer=prefixer,
+                seqner=seqner,
+                saider=coring.Saider(qb64=serder.said),
+            )
         except kering.MissingRegistryError:
             pass
 
