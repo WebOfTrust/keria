@@ -180,7 +180,7 @@ class ClonedCredential:
     chains: List[Dict[str, Any]]
     status: Union[CredentialStateIssOrRev, CredentialStateBisOrBrv]
     anchor: Anchor
-    anc: Union["IXN_V_1", "IXN_V_2", "ICP_V_1", "ICP_V_2", "ROT_V_1", "ROT_V_2"]
+    anc: Union["IXN_V_1", "IXN_V_2", "ICP_V_1", "ICP_V_2", "ROT_V_1", "ROT_V_2", "DIP_V_1", "DIP_V_2", "DRT_V_1", "DRT_V_2"]
     ancatc: str
 
 @dataclass
