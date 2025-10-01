@@ -5,12 +5,11 @@ keria.app.ipexing module
 
 services and endpoint for IPEX message managements
 """
-import json
 
 import falcon
 from keri import core
 from keri.app import habbing
-from keri.core import coring, eventing, serdering
+from keri.core import eventing, serdering
 from keri.peer import exchanging
 
 from keria.core import httping, longrunning
@@ -93,7 +92,7 @@ class IpexAdmitCollectionEnd:
         ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
 
         # make a copy and parse
-        agent.hby.psr.parseOne(ims=bytearray(ims))
+        agent.parser.parseOne(ims=bytearray(ims))
 
         # now get rid of the event so we can pass it as atc to send
         del ims[:serder.size]
@@ -119,7 +118,7 @@ class IpexAdmitCollectionEnd:
 
         # Have to add the atc to the end... this will be Pathed signatures for embeds
         if not atc:
-            raise falcon.HTTPBadRequest(description=f"attachment missing for multi-sig admit, unable to process request.")
+            raise falcon.HTTPBadRequest(description="attachment missing for multi-sig admit, unable to process request.")
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
@@ -133,7 +132,7 @@ class IpexAdmitCollectionEnd:
         ims.extend(atc.encode("utf-8"))  # add the pathed attachments
 
         # make a copy and parse
-        agent.hby.psr.parseOne(ims=bytearray(ims))
+        agent.parser.parseOne(ims=bytearray(ims))
 
         exn, pathed = exchanging.cloneMessage(agent.hby, serder.said)
         if not exn:
@@ -147,7 +146,7 @@ class IpexAdmitCollectionEnd:
 
         serder = serdering.SerderKERI(sad=admitked)
         ims = bytearray(serder.raw) + pathed['exn']
-        agent.hby.psr.parseOne(ims=ims)
+        agent.parser.parseOne(ims=ims)
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=[admitked['a']['i']], topic="credential"))
         agent.admits.append(dict(said=admitked['d'], pre=hab.pre))
 
@@ -218,7 +217,7 @@ class IpexGrantCollectionEnd:
         ims = ims + atc.encode("utf-8")
 
         # make a copy and parse
-        agent.hby.psr.parseOne(ims=bytearray(ims))
+        agent.parser.parseOne(ims=bytearray(ims))
 
         # now get rid of the event so we can pass it as atc to send
         del ims[:serder.size]
@@ -243,7 +242,7 @@ class IpexGrantCollectionEnd:
             raise falcon.HTTPBadRequest(description=f"invalid route for embedded ipex grant {ked['r']}")
 
         if not atc:
-            raise falcon.HTTPBadRequest(description=f"attachment missing for multi-sig grant, unable to process request.")
+            raise falcon.HTTPBadRequest(description="attachment missing for multi-sig grant, unable to process request.")
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
@@ -258,7 +257,7 @@ class IpexGrantCollectionEnd:
         ims.extend(atc.encode("utf-8"))  # add the pathed attachments
 
         # make a copy and parse
-        agent.hby.psr.parseOne(ims=bytearray(ims))
+        agent.parser.parseOne(ims=bytearray(ims))
 
         exn, pathed = exchanging.cloneMessage(agent.hby, serder.said)
         if not exn:
@@ -269,7 +268,7 @@ class IpexGrantCollectionEnd:
         grantRec = grant['a']['i']
         serder = serdering.SerderKERI(sad=grant)
         ims = bytearray(serder.raw) + pathed['exn']
-        agent.hby.psr.parseOne(ims=ims)
+        agent.parser.parseOne(ims=ims)
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=[grantRec], topic="credential"))
         agent.grants.append(dict(said=grant['d'], pre=hab.pre, rec=[grantRec]))
 
@@ -340,7 +339,7 @@ class IpexApplyCollectionEnd:
         ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
 
         # make a copy and parse
-        agent.hby.psr.parseOne(ims=bytearray(ims))
+        agent.parser.parseOne(ims=bytearray(ims))
 
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=rec, topic='credential'))
         return agent.monitor.submit(serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
@@ -360,7 +359,7 @@ class IpexApplyCollectionEnd:
             raise falcon.HTTPBadRequest(description=f"invalid route for embedded ipex apply {ked['r']}")
 
         if not atc:
-            raise falcon.HTTPBadRequest(description=f"attachment missing for multi-sig apply, unable to process request.")
+            raise falcon.HTTPBadRequest(description="attachment missing for multi-sig apply, unable to process request.")
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
@@ -374,7 +373,7 @@ class IpexApplyCollectionEnd:
         ims.extend(atc.encode("utf-8"))  # add the pathed attachments
 
         # make a copy and parse
-        agent.hby.psr.parseOne(ims=bytearray(ims))
+        agent.parser.parseOne(ims=bytearray(ims))
         exn, pathed = exchanging.cloneMessage(agent.hby, serder.said)
         if not exn:
             raise falcon.HTTPBadRequest(description=f"invalid exn request message {serder.said}")
@@ -384,7 +383,7 @@ class IpexApplyCollectionEnd:
         applyRec = applyked['a']['i']
         serder = serdering.SerderKERI(sad=applyked)
         ims = bytearray(serder.raw) + pathed['exn']
-        agent.hby.psr.parseOne(ims=ims)
+        agent.parser.parseOne(ims=ims)
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=[applyRec], topic="credential"))
 
         return agent.monitor.submit(serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
@@ -454,7 +453,7 @@ class IpexOfferCollectionEnd:
         ims = ims + atc.encode("utf-8")
 
         # make a copy and parse
-        agent.hby.psr.parseOne(ims=bytearray(ims))
+        agent.parser.parseOne(ims=bytearray(ims))
 
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=rec, topic='credential'))
         return agent.monitor.submit(serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
@@ -474,7 +473,7 @@ class IpexOfferCollectionEnd:
             raise falcon.HTTPBadRequest(description=f"invalid route for embedded ipex offer {ked['r']}")
 
         if not atc:
-            raise falcon.HTTPBadRequest(description=f"attachment missing for multi-sig offer, unable to process request.")
+            raise falcon.HTTPBadRequest(description="attachment missing for multi-sig offer, unable to process request.")
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
@@ -488,7 +487,7 @@ class IpexOfferCollectionEnd:
         ims.extend(atc.encode("utf-8"))  # add the pathed attachments
 
         # make a copy and parse
-        agent.hby.psr.parseOne(ims=bytearray(ims))
+        agent.parser.parseOne(ims=bytearray(ims))
         exn, pathed = exchanging.cloneMessage(agent.hby, serder.said)
         if not exn:
             raise falcon.HTTPBadRequest(description=f"invalid exn request message {serder.said}")
@@ -502,7 +501,7 @@ class IpexOfferCollectionEnd:
         offerRec = offerked['a']['i']
         serder = serdering.SerderKERI(sad=offerked)
         ims = bytearray(serder.raw) + pathed['exn']
-        agent.hby.psr.parseOne(ims=ims)
+        agent.parser.parseOne(ims=ims)
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=[offerRec], topic="credential"))
 
         return agent.monitor.submit(serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
@@ -571,7 +570,7 @@ class IpexAgreeCollectionEnd:
         ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
 
         # make a copy and parse
-        agent.hby.psr.parseOne(ims=bytearray(ims))
+        agent.parser.parseOne(ims=bytearray(ims))
 
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=rec, topic='credential'))
         return agent.monitor.submit(serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))
@@ -591,7 +590,7 @@ class IpexAgreeCollectionEnd:
             raise falcon.HTTPBadRequest(description=f"invalid route for embedded ipex agree {ked['r']}")
 
         if not atc:
-            raise falcon.HTTPBadRequest(description=f"attachment missing for multi-sig agree, unable to process request.")
+            raise falcon.HTTPBadRequest(description="attachment missing for multi-sig agree, unable to process request.")
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
@@ -605,7 +604,7 @@ class IpexAgreeCollectionEnd:
         ims.extend(atc.encode("utf-8"))  # add the pathed attachments
 
         # make a copy and parse
-        agent.hby.psr.parseOne(ims=bytearray(ims))
+        agent.parser.parseOne(ims=bytearray(ims))
         exn, pathed = exchanging.cloneMessage(agent.hby, serder.said)
         if not exn:
             raise falcon.HTTPBadRequest(description=f"invalid exn request message {serder.said}")
@@ -619,7 +618,7 @@ class IpexAgreeCollectionEnd:
         agreeRec = agreeKed['a']['i']
         serder = serdering.SerderKERI(sad=agreeKed)
         ims = bytearray(serder.raw) + pathed['exn']
-        agent.hby.psr.parseOne(ims=ims)
+        agent.parser.parseOne(ims=ims)
         agent.exchanges.append(dict(said=serder.said, pre=hab.pre, rec=[agreeRec], topic="credential"))
 
         return agent.monitor.submit(serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said))

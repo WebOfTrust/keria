@@ -195,7 +195,7 @@ class MultisigJoinCollectionEnd:
         
         try:
             hab.make(serder=serder, sigers=sigers)
-        except (ValueError) as e:
+        except (ValueError):
             logger.info("Already incepted group, continuing...")
 
         agent.inceptGroup(pre=gid, mpre=mhab.pre, verfers=verfers, digers=digers)

@@ -9,7 +9,7 @@ import falcon.testing
 from hio.help import Hict
 from keri import core
 from keri.app import habbing, httping
-from keri.core import coring, serdering
+from keri.core import serdering
 from keri.core.coring import MtrDex
 from keri.core.signing import Salter
 from keri.vdr import eventing

@@ -12,7 +12,7 @@ import pytest
 from hio.base import doing
 from keri import kering
 from keri.app import habbing
-from keri.core import coring, eventing, parsing, serdering
+from keri.core import coring, eventing, parsing
 
 from keria.app import aiding, delegating
 from keria.core import longrunning
@@ -117,7 +117,6 @@ def test_delegator_end(helpers):
         doist.recur(deeds=deeds)
         
         # normally postman would take care of this but we can do it manually here
-        teeser = teehab.kever.serder
         for msg in teehab.db.clonePreIter(pre=teehab.pre):
             parsing.Parser().parse(ims=bytearray(msg), kvy=toragent.kvy, local=True) # Local true otherwise it will be a misfit
 
@@ -149,7 +148,7 @@ def test_delegator_end(helpers):
         opResEnd = longrunning.OperationResourceEnd()
         torapp.add_route("/operations/{name}", opResEnd)
         count=0
-        while not op or not "done" in op or not op["done"]:
+        while not op or "done" not in op or not op["done"]:
             doist.recur(deeds=deeds)
             time.sleep(1)
             res = torclient.simulate_get(path=f'/operations/{op["name"]}')

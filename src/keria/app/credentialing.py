@@ -1137,7 +1137,7 @@ class CredentialResourceDeleteEnd:
 
         try:
             agent.rgy.reger.cloneCreds([coring.Saider(qb64=said)], db=agent.hby.db)
-        except:
+        except Exception:
             raise falcon.HTTPNotFound(description=f"credential for said {said} not found.")
 
         if hab.kever.estOnly:
@@ -1149,8 +1149,8 @@ class CredentialResourceDeleteEnd:
 
         try:
             agent.registrar.revoke(regk, rserder, anc)
-        except Exception as e:
-            raise falcon.HTTPBadRequest(description=f"invalid revocation event.")
+        except Exception:
+            raise falcon.HTTPBadRequest(description="invalid revocation event.")
 
         rep.status = falcon.HTTP_200
         rep.data = op.to_json().encode("utf-8")
@@ -1361,7 +1361,7 @@ class Registrar:
 
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
 
-            logger.info(f"[%s | %s]: Waiting for TEL rev event mulisig anchoring event %s", hab.name, hab.pre, seqner.sn)
+            logger.info("[%s | %s]: Waiting for TEL rev event mulisig anchoring event %s", hab.name, hab.pre, seqner.sn)
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, rserder.said), val=(prefixer, seqner, saider))
             return vcid, rseq.sn
 
@@ -1458,7 +1458,7 @@ class Registrar:
             for msg in self.rgy.reger.clonePreIter(pre=regk, fn=rseq.sn):
                 tevt.extend(msg)
 
-            logger.info(f"Sending TEL events to witnesses")
+            logger.info("Sending TEL events to witnesses")
             # Fire and forget the TEL event to the witnesses.  Consumers will have to query
             # to determine when the Witnesses have received the TEL events.
             self.witPub.msgs.append(dict(pre=prefixer.qb64, msg=tevt))
