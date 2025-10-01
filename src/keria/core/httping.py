@@ -90,29 +90,25 @@ class RequestLoggerMiddleware:
         logger.info('Response status  : %s on %s %s', resp.status, req.method, req.url)
         logger.debug('Response headers: %s', resp.headers)
 
+keriHeaders = [
+    'cesr-attachment',
+    'cesr-date',
+    'content-type',
+    'signature',
+    'signature-input',
+    'signify-resource',
+    'signify-timestamp'
+]
 
-def keri_headers():
-    return [
-        'cesr-attachment',
-        'cesr-date',
-        'content-type',
-        'signature',
-        'signature-input',
-        'signify-resource',
-        'signify-timestamp'
-    ]
-
-
-def corsMiddleware():
-    return falcon.CORSMiddleware(
-        allow_origins='*',
-        allow_credentials='*',
-        expose_headers=keri_headers()
-    )
+corsMiddleware = falcon.CORSMiddleware(
+    allow_origins='*',
+    allow_credentials='*',
+    expose_headers=keriHeaders
+)
 
 
 def falconApp():
-    return falcon.App(middleware=[corsMiddleware(), RequestLoggerMiddleware()])
+    return falcon.App(middleware=[corsMiddleware, RequestLoggerMiddleware()])
 
 
 def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):

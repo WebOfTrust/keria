@@ -216,7 +216,7 @@ class Agency(doing.DoDoer):
         self.adb = adb if adb is not None else basing.AgencyBaser(name="TheAgency", base=base, reopen=True, temp=temp)
         super(Agency, self).__init__(doers=[Releaser(self, releaseTimeout=releaseTimeout)])
 
-    def _load_config_for_agent(self, caid):
+    def _loadConfigForAgent(self, caid):
         """
         Loads configuration data for an agent by looking up the Agency's configuration and copying
         the agency config for the agent merged with curls, iurls, and durls specified by environment
@@ -252,7 +252,7 @@ class Agency(doing.DoDoer):
             config["durls"] = config["durls"] + self.durls
         return config
 
-    def _write_agent_config(self, caid):
+    def _writeAgentConfig(self, caid):
         """
         Writes the agent configuration as a modified copy of the agency configuration.
 
@@ -261,7 +261,7 @@ class Agency(doing.DoDoer):
         Returns:
             configing.Configer: A Configer instance containing the agent's configuration data.
         """
-        config = self._load_config_for_agent(caid)
+        config = self._loadConfigForAgent(caid)
         cf = configing.Configer(name=f"{caid}",
                                 base="",
                                 human=False,
@@ -287,7 +287,7 @@ class Agency(doing.DoDoer):
                             base=self.base,
                             temp=self.temp,
                             reopen=True)
-        agent_cf = self._write_agent_config(caid)
+        agent_cf = self._writeAgentConfig(caid)
         # Create the Hab for the Agent with only 2 AIDs
         agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, cf=agent_cf, temp=self.temp, salt=salt)
         agentHab = agentHby.makeHab(habName, ns="agent", transferable=True, delpre=caid)
@@ -954,24 +954,22 @@ class Granter(doing.DoDoer):
         self.tock = tock
         super(Granter, self).__init__(always=True, tock=self.tock)
 
-    def _makeDoer(self, grant_msg: dict):
-        return GrantDoer(
+    def postGrants(self):
+        """
+        Makes a GrantDoer per grant message to process the grant.
+        """
+        while self.grants:
+            grantMsg = self.grants.popleft()
+            grantDoer = GrantDoer(
                 hby=self.hby,
                 rgy=self.rgy,
                 agentHab=self.agentHab,
                 exc=self.exc,
                 granter=self,
                 grants=self.grants,
-                grant_msg=grant_msg,
+                grant_msg=grantMsg,
                 tock=self.tock)
-
-    def postGrants(self):
-        """
-        Makes a GrantDoer per grant message to process the grant.
-        """
-        while self.grants:
-            grant_msg = self.grants.popleft()
-            self.extend([self._makeDoer(grant_msg)])
+            self.extend([grantDoer])
 
     def recur(self, tyme, deeds=None):
         """Doer lifecycle method to process grants. Continuously processes grants as they arrive."""
