@@ -7,7 +7,7 @@ __version__ = '0.2.0'  # also change in setup.py
 
 import logging
 from hio.help import ogling
-from .app.logs import TruncatedFormatter
+from .monitoring.logs import TruncatedFormatter
 
 log_name = 'keria'  # name of this project that shows up in log messages
 log_format_str = f'%(asctime)s [{log_name}] %(levelname)-8s %(module)s.%(funcName)s-%(lineno)s %(message)s'
