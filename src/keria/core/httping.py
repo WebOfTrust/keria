@@ -70,9 +70,13 @@ def parseRangeHeader(header, name, start=0, end=9):
 # noinspection PyMethodMayBeStatic
 class RequestLoggerMiddleware:
     """Simple request logger Falcon middleware."""
+    def __init__(self, log_requests: bool = False):
+        self.log_requests = log_requests
 
     def process_request(self, req: falcon.Request, resp: falcon.Response):
         """Log incoming requests."""
+        if not self.log_requests:
+            return
         logger.info('Request received : %s %s', req.method, req.url)
         logger.debug('Request headers : %s', req.headers)
         if req.content_length and logger.isEnabledFor(logging.DEBUG):
@@ -87,6 +91,8 @@ class RequestLoggerMiddleware:
 
     def process_response(self, req: falcon.Request, resp: falcon.Response, resource, req_succeeded):
         """Log outgoing responses."""
+        if not self.log_requests:
+            return
         logger.info('Response status  : %s on %s %s', resp.status, req.method, req.url)
         logger.debug('Response headers: %s', resp.headers)
 
@@ -107,8 +113,8 @@ corsMiddleware = falcon.CORSMiddleware(
 )
 
 
-def falconApp():
-    return falcon.App(middleware=[corsMiddleware, RequestLoggerMiddleware()])
+def falconApp(logRequests=False):
+    return falcon.App(middleware=[corsMiddleware, RequestLoggerMiddleware(logRequests)])
 
 
 def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):

@@ -102,6 +102,8 @@ class KERIAServerConfig:
     logLevel: str = "CRITICAL"
     # path of the log file. If not defined, logs will not be written to the file.
     logFile: str = None
+    # log HTTP requests with the RequestLoggerMiddleware
+    logRequests: bool = False
 
     # Agency configuration
     # Use CORS headers in the HTTP responses. Default is False
@@ -718,7 +720,7 @@ class Agent(doing.DoDoer):
 
 def createBootServerDoer(config: KERIAServerConfig, agency: Agency):
     """Create the Agent boot HTTP server and the Doer to run it. Returns only the Doer."""
-    bootApp = falconApp()
+    bootApp = falconApp(config.logRequests)
 
     bootEnd = BootEnd(agency, username=config.bootUsername, password=config.bootPassword)
     bootApp.add_route("/boot", bootEnd)
@@ -737,7 +739,7 @@ def createAdminServerDoer(config: KERIAServerConfig, agency: Agency):
     # Create Authenticater for verifying signatures on all requests
     authn = Authenticater(agency=agency)
 
-    adminApp = falconApp()
+    adminApp = falconApp(config.logRequests)
     if config.cors:
         adminApp.add_middleware(middleware=httping.HandleCORS())
     adminApp.add_middleware(authing.SignatureValidationComponent(agency=agency, authn=authn, allowed=["/agent"]))
@@ -761,7 +763,7 @@ def createAdminServerDoer(config: KERIAServerConfig, agency: Agency):
 
 def createHttpServerDoer(config: KERIAServerConfig, agency: Agency, adminApp: falcon.App):
     """Create the main HTTP server and the Doer to run it. Returns only the Doer."""
-    happ = falconApp()
+    happ = falconApp(config.logRequests)
     happ.req_options.media_handlers.update(media.Handlers())
     happ.resp_options.media_handlers.update(media.Handlers())
 
