@@ -22,7 +22,6 @@ from keri.core.serdering import Protocols, Vrsn_1_0, Vrsn_2_0, SerderKERI
 from ..core import httping, longrunning
 from marshmallow import fields, Schema as MarshmallowSchema
 from typing import List, Dict, Any, Optional, Tuple, Literal, Union
-from marshmallow_dataclass import class_schema
 
 
 logger = help.ogler.getLogger()

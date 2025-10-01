@@ -226,7 +226,7 @@ def createRegularField(key: str, value: Any, isOptional: bool = True) -> tuple[t
     
     marshmallowField = None
     if isOptional and key not in ("a", "A"):
-        if inferredType == str or inferredType == Optional[str]:
+        if inferredType is str or inferredType is Optional[str]:
             marshmallowField = mm_fields.String(
                 required=False,
                 missing=mm_fields.missing_,
