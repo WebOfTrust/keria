@@ -44,6 +44,10 @@ class AgentSpecResource:
         self.spec.components.schema("ICP_V_2", schema=marshmallow_dataclass.class_schema(credentialing.ICP_V_2)())
         self.spec.components.schema("ROT_V_1", schema=marshmallow_dataclass.class_schema(credentialing.ROT_V_1)())
         self.spec.components.schema("ROT_V_2", schema=marshmallow_dataclass.class_schema(credentialing.ROT_V_2)())
+        self.spec.components.schema("DIP_V_1", schema=marshmallow_dataclass.class_schema(credentialing.DIP_V_1)())
+        self.spec.components.schema("DIP_V_2", schema=marshmallow_dataclass.class_schema(credentialing.DIP_V_2)())
+        self.spec.components.schema("DRT_V_1", schema=marshmallow_dataclass.class_schema(credentialing.DRT_V_1)())
+        self.spec.components.schema("DRT_V_2", schema=marshmallow_dataclass.class_schema(credentialing.DRT_V_2)())
         self.spec.components.schema("Credential", schema=marshmallow_dataclass.class_schema(credentialing.ClonedCredential)())
         self.spec.components.schema("Operation", schema=marshmallow_dataclass.class_schema(longrunning.Operation)())
         self.spec.components.schema("CredentialStateIssOrRev", schema=marshmallow_dataclass.class_schema(credentialing.CredentialStateIssOrRev))
@@ -83,6 +87,10 @@ class AgentSpecResource:
                 {"$ref": "#/components/schemas/ICP_V_2"},
                 {"$ref": "#/components/schemas/ROT_V_1"},
                 {"$ref": "#/components/schemas/ROT_V_2"},
+                {"$ref": "#/components/schemas/DIP_V_1"},
+                {"$ref": "#/components/schemas/DIP_V_2"},
+                {"$ref": "#/components/schemas/DRT_V_1"},
+                {"$ref": "#/components/schemas/DRT_V_2"},
             ]
         }
 

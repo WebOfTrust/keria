@@ -160,6 +160,16 @@ ROT_V_1, ROTSchema_V_1 = dataclassFromFielddom("ROT_V_1", rotFieldDomV1)
 rotFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.rot]
 ROT_V_2, ROTSchema_V_2 = dataclassFromFielddom("ROT_V_2", rotFieldDomV2)
 
+dipFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.dip]
+DIP_V_1, DIPSchema_V_1 = dataclassFromFielddom("DIP_V_1", dipFieldDomV1)
+dipFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.dip]
+DIP_V_2, DIPSchema_V_2 = dataclassFromFielddom("DIP_V_2", dipFieldDomV2)
+
+drtFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.drt]
+DRT_V_1, DRTSchema_V_1 = dataclassFromFielddom("DRT_V_1", drtFieldDomV1)
+drtFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.drt]
+DRT_V_2, DRTSchema_V_2 = dataclassFromFielddom("DRT_V_2", drtFieldDomV2)
+
 @dataclass
 class ClonedCredential:
     sad: Union["ACDC_V_1", "ACDC_V_2"]  # Use string annotation for dynamically generated class
