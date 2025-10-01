@@ -6,7 +6,7 @@ keria.app.credentialing module
 services and endpoint for ACDC credential managements
 """
 import json
-from dataclasses import asdict
+from dataclasses import asdict, dataclass, field
 
 import falcon
 from keri import kering, help
@@ -17,7 +17,11 @@ from keri.db import dbing
 from keri.db.dbing import dgKey
 from keri.vdr import viring
 
-from keria.core import httping, longrunning
+from ..utils.openapi import dataclassFromFielddom
+from keri.core.serdering import Protocols, Vrsn_1_0, Vrsn_2_0, SerderKERI
+from ..core import httping, longrunning
+from marshmallow import fields, Schema as MarshmallowSchema
+from typing import List, Dict, Any, Optional, Tuple, Literal, Union
 
 
 logger = help.ogler.getLogger()
@@ -51,6 +55,140 @@ def loadEnds(app, identifierResource):
     credentialVerificationEnd = CredentialVerificationCollectionEnd()
     app.add_route("/credentials/verify", credentialVerificationEnd)
 
+class EmptyDictSchema(MarshmallowSchema):
+    class Meta:
+        additional = ()
+
+@dataclass
+class ACDCAttributes:
+    dt: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
+    i: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
+    u: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
+    # Override the schema to force additionalProperties=True
+
+@dataclass
+class Seal:
+    s: str
+    d: str
+    i: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
+
+acdcCustomTypes = {
+    'a': ACDCAttributes,
+    'A': Union[str, List[Any]],
+}
+acdcFieldDomV1 = SerderKERI.Fields[Protocols.acdc][Vrsn_1_0][None]
+ACDC_V_1, ACDCSchema_V_1 = dataclassFromFielddom("ACDC_V_1", acdcFieldDomV1, acdcCustomTypes)
+acdcFieldDomV2 = SerderKERI.Fields[Protocols.acdc][Vrsn_2_0][None]
+ACDC_V_2, ACDCSchema_V_2 = dataclassFromFielddom("ACDC_V_2", acdcFieldDomV2, acdcCustomTypes)
+
+@dataclass
+class IssEvent:
+    v: str
+    t: Literal['iss', 'bis']
+    d: str
+    i: str
+    s: str
+    ri: str
+    dt: str
+
+@dataclass
+class Schema:
+    id_: str = field(metadata={"data_key": "$id"})
+    schema: str = field(metadata={"data_key": "$schema"})
+    title: str
+    description: str
+    type: str
+    credentialType: str
+    version: str
+    properties: Dict[str, Any]
+    additionalProperties: bool
+    required: List[str]
+
+@dataclass
+class CredentialStateBase:
+    vn: Tuple[int, int]
+    i: str
+    s: str
+    d: str
+    ri: str
+    a: Seal
+    dt: str
+    et: str  # Will be narrowed in the subclasses
+
+@dataclass
+class CredentialStateIssOrRev(CredentialStateBase):
+    et: Literal['iss', 'rev']
+    ra: Dict[str, Any] = field(
+        metadata={
+            "marshmallow_field": fields.Nested(EmptyDictSchema(), allow_none=False, required=True)
+        }
+    )
+
+@dataclass
+class RaFields:
+    i: str
+    s: str
+    d: str
+
+@dataclass
+class CredentialStateBisOrBrv(CredentialStateBase):
+    et: Literal['bis', 'brv']
+    ra: RaFields
+
+@dataclass
+class Anchor:
+    pre: str
+    sn: int
+    d: str
+
+ixnCustomTypes = {
+    'a': List[Seal],
+}
+ixnFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.ixn]
+IXN_V_1, IXNSchema_V_1 = dataclassFromFielddom("IXN_V_1", ixnFieldDomV1, ixnCustomTypes)
+ixnFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.ixn]
+IXN_V_2, IXNSchema_V_2 = dataclassFromFielddom("IXN_V_2", ixnFieldDomV2, ixnCustomTypes)
+
+icpFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.icp]
+ICP_V_1, ICPSchema_V_1 = dataclassFromFielddom("ICP_V_1", icpFieldDomV1)
+icpFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.icp]
+ICP_V_2, ICPSchema_V_2 = dataclassFromFielddom("ICP_V_2", icpFieldDomV2)
+
+rotFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.rot]
+ROT_V_1, ROTSchema_V_1 = dataclassFromFielddom("ROT_V_1", rotFieldDomV1)
+rotFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.rot]
+ROT_V_2, ROTSchema_V_2 = dataclassFromFielddom("ROT_V_2", rotFieldDomV2)
+
+dipFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.dip]
+DIP_V_1, DIPSchema_V_1 = dataclassFromFielddom("DIP_V_1", dipFieldDomV1)
+dipFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.dip]
+DIP_V_2, DIPSchema_V_2 = dataclassFromFielddom("DIP_V_2", dipFieldDomV2)
+
+drtFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.drt]
+DRT_V_1, DRTSchema_V_1 = dataclassFromFielddom("DRT_V_1", drtFieldDomV1)
+drtFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.drt]
+DRT_V_2, DRTSchema_V_2 = dataclassFromFielddom("DRT_V_2", drtFieldDomV2)
+
+@dataclass
+class ClonedCredential:
+    sad: Union["ACDC_V_1", "ACDC_V_2"]  # Use string annotation for dynamically generated class
+    atc: str
+    iss: IssEvent
+    issatc: str
+    pre: str
+    schema: Schema
+    chains: List[Dict[str, Any]]
+    status: Union[CredentialStateIssOrRev, CredentialStateBisOrBrv]
+    anchor: Anchor
+    anc: Union["IXN_V_1", "IXN_V_2", "ICP_V_1", "ICP_V_2", "ROT_V_1", "ROT_V_2", "DIP_V_1", "DIP_V_2", "DRT_V_1", "DRT_V_2"]
+    ancatc: str
+
+@dataclass
+class Registry:
+    name: str
+    regk: str
+    pre: str
+    state: Union[CredentialStateIssOrRev, CredentialStateBisOrBrv]
 
 class RegistryCollectionEnd:
     """
@@ -77,13 +215,30 @@ class RegistryCollectionEnd:
             name (str): human readable name or prefix for AID
 
         ---
-        summary: List credential issuance and revocation registies
-        description: List credential issuance and revocation registies
+        summary: List credential issuance and revocation registries
+        description: List credential issuance and revocation registries
+        operationId: listRegistries
         tags:
            - Registries
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: human readable name or prefix of Hab to load credentials for
         responses:
            200:
               description:  array of current credential issuance and revocation registies
+              content:
+                  application/json:
+                    schema:
+                        description: Registries
+                        type: array
+                        items:
+                           $ref: '#/components/schemas/Registry'
+           404:
+              description: The requested registry is not a valid reference to an identifier
 
         """
         agent = req.context.agent
@@ -121,8 +276,16 @@ class RegistryCollectionEnd:
         ---
         summary: Request to create a credential issuance and revocation registry
         description: Request to create a credential issuance and revocation registry
+        operationId: createRegistry
         tags:
            - Registries
+        parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: human readable name or prefix of Hab to load credentials for
         requestBody:
             required: true
             content:
@@ -144,7 +307,6 @@ class RegistryCollectionEnd:
                       description: qb64 encoded ed25519 random seed for registry
                     noBackers:
                       type: boolean
-                      required: False
                       description: True means to not allow seperate backers from identifier's witnesses.
                     baks:
                       type: array
@@ -153,12 +315,25 @@ class RegistryCollectionEnd:
                       description: List of qb64 AIDs of witnesses to be used for the new group identifier.
                     estOnly:
                       type: boolean
-                      required: false
                       default: false
                       description: True means to not allow interaction events to anchor credential events.
+                  required:
+                    - name
+                    - alias
+                    - toad
+                    - nonce
+                    - baks
         responses:
            202:
               description:  registry inception request has been submitted
+              content:
+                  application/json:
+                    schema:
+                        $ref: '#/components/schemas/Operation'
+           404:
+              description: The requested registry is not a valid reference to an identifier.
+           400:
+              description: Registry already in use.
 
         """
         agent = req.context.agent
@@ -213,6 +388,7 @@ class RegistryResourceEnd:
         ---
         summary: Get a single credential issuance and revocation registy
         description: Get a single credential issuance and revocation registy
+        operationId: getRegistry
         tags:
            - Registries
         parameters:
@@ -231,6 +407,10 @@ class RegistryResourceEnd:
         responses:
            200:
               description:  credential issuance and revocation registy
+              content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/Registry'
            404:
             description: The requested registry was not found.
         """
@@ -268,8 +448,9 @@ class RegistryResourceEnd:
             registryName(str): human readable name for registry or its SAID
 
         ---
-        summary: Get a single credential issuance and revocation registy
-        description: Get a single credential issuance and revocation registy
+        summary: Get a single credential issuance and revocation registry
+        description: Get a single credential issuance and revocation registry
+        operationId: renameRegistry
         tags:
            - Registries
         parameters:
@@ -297,6 +478,10 @@ class RegistryResourceEnd:
         responses:
            200:
                 description:  credential issuance and revocation registy
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/Registry'
            400:
                 description: Bad request. This could be due to missing or invalid parameters.
            404:
@@ -361,6 +546,7 @@ class SchemaResourceEnd:
        ---
         summary:  Get schema JSON of specified schema
         description:  Get schema JSON of specified schema
+        operationId: getSchema
         tags:
            - Schema
         parameters:
@@ -373,6 +559,10 @@ class SchemaResourceEnd:
         responses:
            200:
               description: Schema JSON successfully returned
+              content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/Schema'
            404:
               description: No schema found for SAID
         """
@@ -399,11 +589,18 @@ class SchemaCollectionEnd:
        ---
         summary:  Get schema JSON of all schema
         description:  Get schema JSON of all schema
+        operationId: listSchemas
         tags:
            - Schema
         responses:
            200:
               description: Array of all schema JSON
+              content:
+                  application/json:
+                    schema:
+                        type: array
+                        items:
+                           $ref: '#/components/schemas/Schema'
         """
         agent = req.context.agent
 
@@ -427,6 +624,7 @@ class CredentialVerificationCollectionEnd:
         ---
         summary: Verify a credential without IPEX
         description: Verify a credential without using IPEX (TEL should be updated separately)
+        operationId: verifyCredential
         tags:
            - Credentials
         requestBody:
@@ -452,7 +650,7 @@ class CredentialVerificationCollectionEnd:
                   application/json:
                     schema:
                         description: long running operation of credential processing
-                        type: object
+                        $ref: '#/components/schemas/Operation'
            404:
               description: Malformed ACDC or iss event
         """
@@ -500,6 +698,7 @@ class CredentialQueryCollectionEnd:
         ---
         summary:  List credentials in credential store (wallet)
         description: List issued or received credentials current verified
+        operationId: listCredentials
         tags:
            - Credentials
         parameters:
@@ -524,7 +723,7 @@ class CredentialQueryCollectionEnd:
                         description: Credentials
                         type: array
                         items:
-                           type: object
+                           $ref: '#/components/schemas/Credential'
 
         """
         agent = req.context.agent
@@ -590,11 +789,13 @@ class CredentialCollectionEnd:
         ---
         summary: Perform credential issuance
         description: Perform credential issuance
+        operationId: issueCredential
         tags:
            - Credentials
         parameters:
           - in: path
-            name: alias or prefix
+            name: name
+            description: human readable alias or prefix for AID to use as issuer
             schema:
               type: string
             required: true
@@ -635,13 +836,14 @@ class CredentialCollectionEnd:
                       type: boolean
                       description: flag to inidicate this credential should support privacy preserving presentations
         responses:
-           200:
-              description: Credential issued.
-              content:
-                  application/json:
-                    schema:
-                        description: Credential
-                        type: object
+            200:
+                description: Credential issued.
+                content:
+                    application/json:
+                        schema: 
+                            $ref: '#/components/schemas/Credential'
+            400:
+                description: Bad request. This could be due to missing or invalid data.
 
         """
         agent = req.context.agent
@@ -705,6 +907,7 @@ class CredentialResourceEnd:
         ---
         summary:  Export credential and all supporting cryptographic material
         description: Export credential and all supporting cryptographic material
+        operationId: getCredential
         tags:
            - Credentials
         parameters:
@@ -720,8 +923,7 @@ class CredentialResourceEnd:
               content:
                   application/json+cesr:
                     schema:
-                        description: Credential
-                        type: object
+                        $ref: '#/components/schemas/Credential'
            400:
              description: The requested credential was not found.
         """
@@ -803,6 +1005,7 @@ class CredentialResourceEnd:
         ---
         summary: Delete a credential from the database
         description: Delete a credential from the database and remove any associated indices
+        operationId: deleteCredential
         tags:
            - Credentials
         parameters:
@@ -870,6 +1073,7 @@ class CredentialResourceDeleteEnd:
         ---
         summary: Perform credential revocation
         description: Initiates a credential revocation for a given identifier and SAID.
+        operationId: revokeCredential
         tags:
          - Credentials
         parameters:
@@ -908,6 +1112,10 @@ class CredentialResourceDeleteEnd:
         responses:
             200:
                 description: Credential revocation initiated successfully.
+                content:
+                  application/json+cesr:
+                    schema:
+                        $ref: '#/components/schemas/Operation'
             400:
                 description: Bad request. This could be due to invalid revocation event or other invalid parameters.
             404:
@@ -960,6 +1168,7 @@ class CredentialRegistryResourceEnd:
         ---
         summary: Get credential registry state
         description: Get credential registry state from any known Tever (does not need be controlled by us)
+        operationId: getCredentialState
         tags:
            - Credentials
         parameters:
@@ -982,7 +1191,7 @@ class CredentialRegistryResourceEnd:
                   application/json:
                     schema:
                         description: Credential registry state
-                        type: object
+                        $ref: '#/components/schemas/CredentialState'
            404:
               description: Unknown management registry or credential
         """
