@@ -956,10 +956,8 @@ class Granter(doing.DoDoer):
         self.tock = tock
         super(Granter, self).__init__(always=True, tock=self.tock)
 
-    def postGrants(self):
-        """
-        Makes a GrantDoer per grant message to process the grant.
-        """
+    def recur(self, tyme, deeds=None):
+        """Doer lifecycle method to process grants. Continuously processes grants as they arrive."""
         while self.grants:
             grantMsg = self.grants.popleft()
             grantDoer = GrantDoer(
@@ -970,12 +968,9 @@ class Granter(doing.DoDoer):
                 granter=self,
                 grants=self.grants,
                 grant_msg=grantMsg,
-                tock=self.tock)
+                tock=self.tock,
+            )
             self.extend([grantDoer])
-
-    def recur(self, tyme, deeds=None):
-        """Doer lifecycle method to process grants. Continuously processes grants as they arrive."""
-        self.postGrants()
         return super(Granter, self).recur(tyme, deeds)
 
 
