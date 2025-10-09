@@ -45,6 +45,23 @@ export class SignifyClient {
     public tier: Tier;
     public bootUrl: string;
     public exteralModules: ExternalModule[];
+    private _identifiers = new Identifier(this);
+    private _operations = new Operations(this);
+    private _keyEvents = new KeyEvents(this);
+    private _keyStates = new KeyStates(this);
+    private _oobis = new Oobis(this);
+    private _config = new Config(this);
+    private _delegations = new Delegations(this);
+    private _exchanges = new Exchanges(this);
+    private _groups = new Groups(this);
+    private _escrows = new Escrows(this);
+    private _credentials = new Credentials(this);
+    private _registries = new Registries(this);
+    private _ipex = new Ipex(this);
+    private _notifications = new Notifications(this);
+    private _contacts = new Contacts(this);
+    private _challenges = new Challenges(this);
+    private _schemas = new Schemas(this);
 
     /**
      * SignifyClient constructor
@@ -359,7 +376,7 @@ export class SignifyClient {
      * @returns {Identifier}
      */
     identifiers(): Identifier {
-        return new Identifier(this);
+        return this._identifiers;
     }
 
     /**
@@ -367,7 +384,7 @@ export class SignifyClient {
      * @returns {Oobis}
      */
     oobis(): Oobis {
-        return new Oobis(this);
+        return this._oobis;
     }
 
     /**
@@ -375,7 +392,7 @@ export class SignifyClient {
      * @returns {Operations}
      */
     operations(): Operations {
-        return new Operations(this);
+        return this._operations;
     }
 
     /**
@@ -383,7 +400,7 @@ export class SignifyClient {
      * @returns {KeyEvents}
      */
     keyEvents(): KeyEvents {
-        return new KeyEvents(this);
+        return this._keyEvents;
     }
 
     /**
@@ -391,7 +408,7 @@ export class SignifyClient {
      * @returns {KeyStates}
      */
     keyStates(): KeyStates {
-        return new KeyStates(this);
+        return this._keyStates;
     }
 
     /**
@@ -399,7 +416,7 @@ export class SignifyClient {
      * @returns {Credentials}
      */
     credentials(): Credentials {
-        return new Credentials(this);
+        return this._credentials;
     }
 
     /**
@@ -407,7 +424,7 @@ export class SignifyClient {
      * @returns {Ipex}
      */
     ipex(): Ipex {
-        return new Ipex(this);
+        return this._ipex;
     }
 
     /**
@@ -415,7 +432,7 @@ export class SignifyClient {
      * @returns {Registries}
      */
     registries(): Registries {
-        return new Registries(this);
+        return this._registries;
     }
 
     /**
@@ -423,7 +440,7 @@ export class SignifyClient {
      * @returns {Schemas}
      */
     schemas(): Schemas {
-        return new Schemas(this);
+        return this._schemas;
     }
 
     /**
@@ -431,7 +448,7 @@ export class SignifyClient {
      * @returns {Challenges}
      */
     challenges(): Challenges {
-        return new Challenges(this);
+        return this._challenges;
     }
 
     /**
@@ -439,7 +456,7 @@ export class SignifyClient {
      * @returns {Contacts}
      */
     contacts(): Contacts {
-        return new Contacts(this);
+        return this._contacts;
     }
 
     /**
@@ -447,7 +464,7 @@ export class SignifyClient {
      * @returns {Notifications}
      */
     notifications(): Notifications {
-        return new Notifications(this);
+        return this._notifications;
     }
 
     /**
@@ -455,7 +472,7 @@ export class SignifyClient {
      * @returns {Escrows}
      */
     escrows(): Escrows {
-        return new Escrows(this);
+        return this._escrows;
     }
 
     /**
@@ -463,7 +480,7 @@ export class SignifyClient {
      * @returns {Groups}
      */
     groups(): Groups {
-        return new Groups(this);
+        return this._groups;
     }
 
     /**
@@ -471,7 +488,7 @@ export class SignifyClient {
      * @returns {Exchanges}
      */
     exchanges(): Exchanges {
-        return new Exchanges(this);
+        return this._exchanges;
     }
 
     /**
@@ -479,7 +496,7 @@ export class SignifyClient {
      * @returns {Delegations}
      */
     delegations(): Delegations {
-        return new Delegations(this);
+        return this._delegations;
     }
 
     /**
@@ -487,6 +504,6 @@ export class SignifyClient {
      * @returns {Config}
      */
     config(): Config {
-        return new Config(this);
+        return this._config;
     }
 }
