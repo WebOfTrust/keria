@@ -21,6 +21,8 @@ from mnemonic import mnemonic
 from keri.db import basing
 from marshmallow import fields
 from marshmallow_dataclass import class_schema
+
+from keria.app.credentialing import ICP_V_1, ICP_V_2, ROT_V_1, ROT_V_2, DIP_V_1, DIP_V_2, DRT_V_1, DRT_V_2
 from ..core import longrunning, httping
 from ..utils.openapi import namedtupleToEnum, dataclassFromFielddom
 
@@ -76,16 +78,10 @@ def loadEnds(app, agency, authn):
 
     return aidEnd
 
-IcpV1, IcpV1Schema = dataclassFromFielddom("IcpV1", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.icp]) 
-IcpV2, IcpV2Schema = dataclassFromFielddom("IcpV2", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_2_0][kering.Ilks.icp])
-RotV1, RotV1Schema = dataclassFromFielddom("RotV1", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.rot])
-RotV2, RotV2Schema = dataclassFromFielddom("RotV2", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_2_0][kering.Ilks.rot])
-DipV1, DipV1Schema = dataclassFromFielddom("DipV1", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.dip])
-DipV2, DipV2Schema = dataclassFromFielddom("DipV2", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_2_0][kering.Ilks.dip])
-DrtV1, DrtV1Schema = dataclassFromFielddom("DrtV1", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.drt])
-DrtV2, DrtV2Schema = dataclassFromFielddom("DrtV2", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_2_0][kering.Ilks.drt])
-VcpV1, VcpV1Schema = dataclassFromFielddom("VcpV1", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.vcp])
-VrtV1, VrtV1Schema = dataclassFromFielddom("VrtV1", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.vrt])
+vcpFieldDomV1 = serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.vcp]
+VCP_V_1, VCPSchema_V_1 = dataclassFromFielddom("VCP_V_1", vcpFieldDomV1)
+vrtFieldDomV1 = serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.vrt]
+VRT_V_1, VRTSchema_V_1 = dataclassFromFielddom("VRT_V_1", vrtFieldDomV1)
 
 
 @dataclass
@@ -99,7 +95,7 @@ class KeyStateRecord(basing.KeyStateRecord):
 @dataclass
 class Controller:
     state: KeyStateRecord
-    ee: Union[IcpV1, IcpV2, RotV1, RotV2, DipV1, DipV2, DrtV1, DrtV2, VcpV1, VrtV1]
+    ee: Union["ICP_V_1", "ICP_V_2", "ROT_V_1", "ROT_V_2", "DIP_V_1", "DIP_V_2", "DRT_V_1", "DRT_V_2", "VCP_V_1", "VRT_V_1"] # type: ignore
 
 @dataclass
 class AgentResourceResult:
@@ -1582,9 +1578,10 @@ class LocSchemeCollectionEnd:
         rep.data = op.to_json().encode("utf-8")
 
 
-
-RpyV1, RpyV1Schema = dataclassFromFielddom("RpyV1", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.rpy])
-RpyV2, RpyV2Schema = dataclassFromFielddom("RpyV2", serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_2_0][kering.Ilks.rpy])
+rpyFieldDomV1 = serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.rpy]
+RPY_V_1, RpySchema_V_1 = dataclassFromFielddom("RPY_V_1", rpyFieldDomV1)
+rpyFieldDomV2 = serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_2_0][kering.Ilks.rpy]
+RPY_V_2, RpySchema_V_2 = dataclassFromFielddom("RPY_V_2", rpyFieldDomV2)
 
 class RpyEscrowCollectionEnd:
 

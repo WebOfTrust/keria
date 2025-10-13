@@ -52,6 +52,10 @@ class AgentSpecResource:
         self.spec.components.schema("DIP_V_2", schema=marshmallow_dataclass.class_schema(credentialing.DIP_V_2)())
         self.spec.components.schema("DRT_V_1", schema=marshmallow_dataclass.class_schema(credentialing.DRT_V_1)())
         self.spec.components.schema("DRT_V_2", schema=marshmallow_dataclass.class_schema(credentialing.DRT_V_2)())
+        self.spec.components.schema("VCP_V_1", schema=marshmallow_dataclass.class_schema(aiding.VCP_V_1)())
+        self.spec.components.schema("VRT_V_1", schema=marshmallow_dataclass.class_schema(aiding.VRT_V_1)())
+        self.spec.components.schema("RPY_V_1", schema=marshmallow_dataclass.class_schema(aiding.RPY_V_1)())
+        self.spec.components.schema("RPY_V_2", schema=marshmallow_dataclass.class_schema(aiding.RPY_V_2)())
         self.spec.components.schema("Credential", schema=marshmallow_dataclass.class_schema(credentialing.ClonedCredential)())
         self.spec.components.schema("Operation", schema=marshmallow_dataclass.class_schema(longrunning.Operation)())
         self.spec.components.schema("CredentialStateIssOrRev", schema=marshmallow_dataclass.class_schema(credentialing.CredentialStateIssOrRev))
@@ -122,33 +126,21 @@ class AgentSpecResource:
             "$ref": "#/components/schemas/CredentialState"
         }
 
-        # Register the AgentSpecResource
-        self.spec.components.schema("IcpV1", schema=aiding.IcpV1Schema)
-        self.spec.components.schema("IcpV2", schema=aiding.IcpV2Schema)
-        self.spec.components.schema("RotV1", schema=aiding.RotV1Schema)
-        self.spec.components.schema("RotV2", schema=aiding.RotV2Schema)
-        self.spec.components.schema("DipV1", schema=aiding.DipV1Schema)
-        self.spec.components.schema("DipV2", schema=aiding.DipV2Schema)
-        self.spec.components.schema("DrtV1", schema=aiding.DrtV1Schema)
-        self.spec.components.schema("DrtV2", schema=aiding.DrtV2Schema)
-        self.spec.components.schema("VcpV1", schema=aiding.VcpV1Schema)
-        self.spec.components.schema("VrtV1", schema=aiding.VrtV1Schema)
-
         self.spec.components.schema("AgentResourceResult", schema=marshmallow_dataclass.class_schema(aiding.AgentResourceResult)())
 
         agentControllerSchema = self.spec.components.schemas["Controller"]
         agentControllerSchema["properties"]["ee"] = {
             "oneOf": [
-                {"$ref": "#/components/schemas/IcpV1"},
-                {"$ref": "#/components/schemas/IcpV2"},
-                {"$ref": "#/components/schemas/RotV1"},
-                {"$ref": "#/components/schemas/RotV2"},
-                {"$ref": "#/components/schemas/DipV1"},
-                {"$ref": "#/components/schemas/DipV2"},
-                {"$ref": "#/components/schemas/DrtV1"},
-                {"$ref": "#/components/schemas/DrtV2"},
-                {"$ref": "#/components/schemas/VcpV1"},
-                {"$ref": "#/components/schemas/VrtV1"},
+                {"$ref": "#/components/schemas/ICP_V_1"},
+                {"$ref": "#/components/schemas/ICP_V_2"},
+                {"$ref": "#/components/schemas/ROT_V_1"},
+                {"$ref": "#/components/schemas/ROT_V_2"},
+                {"$ref": "#/components/schemas/DIP_V_1"},
+                {"$ref": "#/components/schemas/DIP_V_2"},
+                {"$ref": "#/components/schemas/DRT_V_1"},
+                {"$ref": "#/components/schemas/DRT_V_2"},
+                {"$ref": "#/components/schemas/VCP_V_1"},
+                {"$ref": "#/components/schemas/VRT_V_1"},
             ]
         }
 
@@ -198,13 +190,10 @@ class AgentSpecResource:
         # End Roles
         self.spec.components.schema("EndRole", schema=marshmallow_dataclass.class_schema(aiding.EndRole)())
 
-        # RpyEndRole
-        self.spec.components.schema("RpyV1", schema=aiding.RpyV1Schema)
-        self.spec.components.schema("RpyV2", schema=aiding.RpyV2Schema)
         self.spec.components.schemas["Rpy"] = {
             "oneOf": [
-                {"$ref": "#/components/schemas/RpyV1"},
-                {"$ref": "#/components/schemas/RpyV2"},
+                {"$ref": "#/components/schemas/RPY_V_1"},
+                {"$ref": "#/components/schemas/RPY_V_2"},
             ]
         }
 
