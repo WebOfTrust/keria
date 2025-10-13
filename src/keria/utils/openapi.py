@@ -5,20 +5,43 @@ from marshmallow_dataclass import class_schema
 from marshmallow import fields as mm_fields
 from keri.core import serdering
 
-class StringOrStringArrayField(mm_fields.Field):
-    """Custom field for Union[str, List[str]] types that generates oneOf schema."""
+
+class OneOfField(mm_fields.Field):
+    """Generic field for oneOf schema types that generates proper OpenAPI oneOf schema."""
+    
     def _serialize(self, value, attr, obj, **kwargs):
         return value
         
     def _deserialize(self, value, attr, data, **kwargs):
         return value
         
-    def __init__(self, **kwargs):
+    def __init__(self, schema_options: List[Dict[str, Any]], **kwargs):
+        """
+        Initialize OneOfField with schema options.
+        
+        Args:
+            schema_options: List of OpenAPI schema dictionaries for oneOf
+            **kwargs: Additional marshmallow field kwargs
+        """
         super().__init__(**kwargs)
-        self.metadata['oneOf'] = [
+        self.metadata['oneOf'] = schema_options
+
+
+class StringOrStringArrayField(OneOfField):
+    def __init__(self, **kwargs):
+        super().__init__([
             {'type': 'string'},
             {'type': 'array', 'items': {'type': 'string'}}
-        ]
+        ], **kwargs)
+
+
+class StringOrArrayOrArrayOfArraysField(OneOfField):
+    def __init__(self, **kwargs):
+        super().__init__([
+            {'type': 'string'},
+            {'type': 'array', 'items': {'type': 'string'}},
+            {'type': 'array', 'items': {'type': 'array', 'items': {'type': 'string'}}}
+        ], **kwargs)
 
 
 class UnionField(mm_fields.Field):
@@ -197,7 +220,7 @@ def createKtNtField(key: str, isOptional: bool) -> tuple[tuple, mm_fields.Field]
     # Type can be string, List[str], or List[List[str]]
     pyType = Union[str, List[str], List[List[str]]]
     
-    return createOptionalField(key, pyType, mm_fields.String, (), {}, isOptional)
+    return createOptionalField(key, pyType, StringOrArrayOrArrayOfArraysField, (), {}, isOptional)
 
 
 def createRegularField(key: str, value: Any, isOptional: bool = True) -> tuple[tuple, Optional[mm_fields.Field]]:
