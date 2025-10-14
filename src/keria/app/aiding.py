@@ -6,7 +6,6 @@ keria.app.aiding module
 """
 import falcon
 import json
-from enum import Enum
 from dataclasses import asdict, dataclass, field
 from typing import Dict, Optional, List, Union
 from urllib.parse import urlparse, urljoin
