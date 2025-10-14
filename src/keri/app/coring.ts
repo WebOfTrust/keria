@@ -2,6 +2,7 @@ import { SignifyClient } from './clienting.ts';
 import libsodium from 'libsodium-wrappers-sumo';
 import { Salter } from '../core/salter.ts';
 import { Matter, MtrDex } from '../core/matter.ts';
+import { components } from '../../types/keria-api-schema.ts';
 
 export function randomPasscode(): string {
     const raw = libsodium.randombytes_buf(16);
@@ -61,16 +62,17 @@ export class Oobis {
     }
 }
 
-export interface Operation<T = unknown> {
-    name: string;
+// TODO: the generic will be replaced by specific overrides like IpexOperation
+export type Operation<T = unknown> = Omit<
+    components['schemas']['Operation'],
+    'response' | 'metadata'
+> & {
+    response?: T;
     metadata?: {
         depends?: Operation;
         [property: string]: any;
     };
-    done?: boolean;
-    error?: any;
-    response?: T;
-}
+};
 
 export interface OperationsDeps {
     fetch(

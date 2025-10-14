@@ -3,6 +3,7 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
+import globals from 'globals';
 
 export default tseslint.config(
     eslint.configs.recommended,
@@ -12,6 +13,9 @@ export default tseslint.config(
         // These are files with more lenient lint config because they have not been "fixed" yet
         // Once a directory here is fixed, it should be removed from here so the strict rules applies
         files: ['src/keri/app/**', 'src/keri/core/**', 'test-integration/**'],
+        languageOptions: {
+            globals: globals['shared-node-browser'],
+        },
         rules: {
             'prefer-const': 'warn',
             'no-var': 'warn',
@@ -24,6 +28,12 @@ export default tseslint.config(
             '@typescript-eslint/no-namespace': 'warn',
             // '@typescript-eslint/ban-types': 'warn',
             '@typescript-eslint/no-unused-vars': 'warn',
+        },
+    },
+    {
+        files: ['scripts/*.js'],
+        languageOptions: {
+            globals: globals.node,
         },
     }
 );
