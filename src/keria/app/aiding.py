@@ -34,6 +34,7 @@ from keria.app.credentialing import (
 )
 from ..core import longrunning, httping
 from ..utils.openapi import namedtupleToEnum, dataclassFromFielddom
+from .credentialing import ICP_V_1, ICP_V_2, ROT_V_1, ROT_V_2, DIP_V_1, DIP_V_2, DRT_V_1, DRT_V_2
 
 logger = ogler.getLogger()
 
@@ -138,7 +139,6 @@ class AgentResourceResult:
     pidx: int
     ridx: Optional[int] = None
     sxlt: Optional[str] = None
-
 
 class AgentResourceEnd:
     """Resource class for getting agent specific launch information"""
@@ -2029,36 +2029,6 @@ class ChallengeVerifyResourceEnd:
         agent.hby.db.chas.add(keys=(source,), val=saider)
 
         rep.status = falcon.HTTP_202
-
-
-@dataclass
-class WellKnown:
-    """Data class for Well Known URLs"""
-    url: str = field(metadata={"marshmallow_field": fields.String(required=True)})
-    dt: str = field(metadata={"marshmallow_field": fields.String(required=True)})
-
-@dataclass
-class MemberEnds:
-    agent: Dict[str, str]
-    controller: Optional[Dict[str, str]] = None
-    witness: Optional[Dict[str, str]] = None
-    registrar: Optional[Dict[str, str]] = None
-    watcher: Optional[Dict[str, str]] = None
-    judge: Optional[Dict[str, str]] = None
-    juror: Optional[Dict[str, str]] = None
-    peer: Optional[Dict[str, str]] = None
-    mailbox: Optional[Dict[str, str]] = None
-    
-@dataclass
-class Contact:
-    id: str = field(metadata={"marshmallow_field": fields.String(required=True)})
-    alias: str = field(default=None, metadata={"marshmallow_field": fields.String(required=True)})
-    oobi: str = field(default=None, metadata={"marshmallow_field": fields.String(required=True)})
-    end: MemberEnds = field(default=None, metadata={"marshmallow_field": fields.Nested(class_schema(MemberEnds), allow_none=False)})
-    challenges: List[Challenge] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Nested(class_schema(Challenge), allow_none=False))})
-    wellKnowns: List[WellKnown] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Nested(class_schema(WellKnown), allow_none=False))})
-
-    # override this in spec to add additional fields
 
 @dataclass
 class WellKnown:

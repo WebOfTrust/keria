@@ -56,6 +56,8 @@ from keri.vdr.credentialing import Regery
 from keri.vdr.eventing import Tevery
 from keri.app import challenging
 
+from keria.utils.openapi import dataclassFromFielddom
+
 from . import aiding, notifying, indirecting, credentialing, ipexing, delegating
 from . import grouping as keriagrouping
 from .serving import GracefulShutdownDoer
@@ -67,6 +69,8 @@ from ..core import authing, longrunning, httping
 from ..core.authing import Authenticater
 from ..core.keeping import RemoteManager
 from ..db import basing
+from .credentialing import ICP_V_1, ICP_V_2, ROT_V_1, ROT_V_2, DIP_V_1, DIP_V_2, DRT_V_1, DRT_V_2, IXN_V_1, IXN_V_2
+from .aiding import VCP_V_1, VRT_V_1, RPY_V_1, RPY_V_2
 
 logger = ogler.getLogger(log_name)
 
@@ -1833,12 +1837,52 @@ class KeyStateCollectionEnd:
         rep.data = json.dumps(states).encode("utf-8")
 
 
+rctFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_1_0][serdering.Ilks.rct]
+RCT_V_1, RCTSchema_V_1 = dataclassFromFielddom("RCT_V_1", rctFieldDomV1)
+rctFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_2_0][serdering.Ilks.rct]
+RCT_V_2, RCTSchema_V_2 = dataclassFromFielddom("RCT_V_2", rctFieldDomV2)
+
+qryFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_1_0][serdering.Ilks.qry]
+QRY_V_1, QRYSchema_V_1 = dataclassFromFielddom("QRY_V_1", qryFieldDomV1)
+qryFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_2_0][serdering.Ilks.qry]
+QRY_V_2, QRYSchema_V_2 = dataclassFromFielddom("QRY_V_2", qryFieldDomV2)
+
+proFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_1_0][serdering.Ilks.pro]
+PRO_V_1, PROSchema_V_1 = dataclassFromFielddom("PRO_V_1", proFieldDomV1)
+proFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_2_0][serdering.Ilks.pro]
+PRO_V_2, PROSchema_V_2 = dataclassFromFielddom("PRO_V_2", proFieldDomV2)
+
+barFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_1_0][serdering.Ilks.bar]
+BAR_V_1, BARSchema_V_1 = dataclassFromFielddom("BAR_V_1", barFieldDomV1)
+barFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_2_0][serdering.Ilks.bar]
+BAR_V_2, BARSchema_V_2 = dataclassFromFielddom("BAR_V_2", barFieldDomV2)
+
+exnFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_1_0][serdering.Ilks.exn]
+EXN_V_1, EXNSchema_V_1 = dataclassFromFielddom("EXN_V_1", exnFieldDomV1)
+exnFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_2_0][serdering.Ilks.exn]
+EXN_V_2, EXNSchema_V_2 = dataclassFromFielddom("EXN_V_2", exnFieldDomV2)
+
+issFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_1_0][serdering.Ilks.iss]
+ISS_V_1, ISSSchema_V_1 = dataclassFromFielddom("ISS_V_1", issFieldDomV1)
+
+revFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_1_0][serdering.Ilks.rev]
+REV_V_1, REVSchema_V_1 = dataclassFromFielddom("REV_V_1", revFieldDomV1)
+
+bisFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_1_0][serdering.Ilks.bis]
+BIS_V_1, BISSchema_V_1 = dataclassFromFielddom("BIS_V_1", bisFieldDomV1)
+
+brvFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_1_0][serdering.Ilks.brv]
+BRV_V_1, BRVSchema_V_1 = dataclassFromFielddom("BRV_V_1", brvFieldDomV1)
+
+xipFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_2_0][serdering.Ilks.xip]
+XIP_V_2, XIPSchema_V_2 = dataclassFromFielddom("XIP_V_2", xipFieldDomV2)
+
 @dataclass
 class KeyEventRecord:
     """ Key Event Record for KEL """
     ked: Union[
-        aiding.IcpV1, aiding.RotV1, aiding.IxnV1, aiding.DipV1, aiding.DrtV1, aiding.RctV1, aiding.QryV1, aiding.RpyV1, aiding.ProV1, aiding.BarV1, aiding.ExnV1, aiding.VcpV1, aiding.VrtV1, aiding.IssV1, aiding.RevV1, aiding.BisV1, aiding.BrvV1, # type: ignore
-        aiding.IcpV2, aiding.RotV2, aiding.IxnV2, aiding.DipV2, aiding.DrtV2, aiding.RctV2, aiding.QryV2, aiding.RpyV2, aiding.ProV2, aiding.BarV2, aiding.XipV2, aiding.ExnV2 # type: ignore
+        "ICP_V_1", "ROT_V_1", "IXN_V_1", "DIP_V_1", "DRT_V_1", "RCT_V_1", "QRY_V_1", "RPY_V_1", "PRO_V_1", "BAR_V_1", "EXN_V_1", "VCP_V_1", "VRT_V_1", "ISS_V_1", "REV_V_1", "BIS_V_1", "BRV_V_1", # type: ignore
+        "ICP_V_2", "ROT_V_2", "IXN_V_2", "DIP_V_2", "DRT_V_2", "RCT_V_2", "QRY_V_2", "RPY_V_2", "PRO_V_2", "BAR_V_2", "XIP_V_2", "EXN_V_2" # type: ignore
     ]
     atc: str
 
