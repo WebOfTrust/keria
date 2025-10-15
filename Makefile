@@ -35,14 +35,13 @@ install:
 	@uv sync
 
 install-dev:
-	@uv sync --all-extras
+	@uv sync --group dev
 
 test:
-	@uv run pytest
+	@uv run pytest tests/
 
 test-coverage:
-	@uv run coverage run -m pytest
-	@uv run coverage report
+	@uv run pytest --cov=src --cov-report=term-missing --cov-report=xml tests/
 
 lint:
 	@uv run ruff check src tests
@@ -51,7 +50,10 @@ lint-fix:
 	@uv run ruff check --fix src tests
 
 format:
-	@uv run ruff format src tests
+	@uv run ruff format
+
+format-check:
+	@uv run ruff format --check
 
 clean:
 	@rm -rf build/ dist/ *.egg-info/

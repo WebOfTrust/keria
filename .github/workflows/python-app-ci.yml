@@ -29,17 +29,13 @@ jobs:
         with:
           version: "latest"
       - name: Install dependencies
-        run: |
-          uv sync --all-extras
+        run: make install-dev
       - name: Lint changes
-        run: |
-          uv run ruff check
+        run: make lint
       - name: Check formatting
-        run: |
-          uv run ruff format --check
+        run: make format-check
       - name: Run core KERIA tests
-        run: |
-          uv run pytest tests/
+        run: make test
 
   docker:
     runs-on: ubuntu-latest
@@ -60,9 +56,9 @@ jobs:
       - name: Set up Python 3.12.8
         run: uv python install 3.12.8
       - name: Install dependencies
-        run: uv sync --all-extras
+        run: make install-dev
       - name: Run core KERIA tests
-        run: uv run pytest --cov=./ --cov-report=xml
+        run: make test-coverage
       - name: Upload
         uses: codecov/codecov-action@v4
         with:
