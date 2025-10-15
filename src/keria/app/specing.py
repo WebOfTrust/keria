@@ -7,12 +7,14 @@ from apispec.ext.marshmallow import MarshmallowPlugin
 from ..core import longrunning
 from ..utils.openapi import applyAltConstraintsToOpenApiSchema
 from . import credentialing
+
 """
 KERIA
 keria.app.specing module
 
 OpenAPI Description Resource for the KERI and ACDC ReST interface
 """
+
 
 class AgentSpecResource:
     """
@@ -23,7 +25,7 @@ class AgentSpecResource:
     2. Creating and managing authentic chained data containers (ACDCs)
     """
 
-    def __init__(self, app, title, version='1.0.1', openapi_version="3.1.0"):
+    def __init__(self, app, title, version="1.0.1", openapi_version="3.1.0"):
         self.spec = APISpec(
             title=title,
             version=version,
@@ -34,42 +36,95 @@ class AgentSpecResource:
         # Register marshmallow schemas (pass class)
         self.spec.components.schema("ACDC_V_1", schema=credentialing.ACDCSchema_V_1)
         self.spec.components.schema("ACDC_V_2", schema=credentialing.ACDCSchema_V_2)
-        self.spec.components.schema("IssEvent", schema=marshmallow_dataclass.class_schema(credentialing.IssEvent)())
-        self.spec.components.schema("Schema", schema=marshmallow_dataclass.class_schema(credentialing.Schema)())
-        self.spec.components.schema("Anchor", schema=marshmallow_dataclass.class_schema(credentialing.Anchor)())
-        self.spec.components.schema("Seal", schema=marshmallow_dataclass.class_schema(credentialing.Seal)())
-        self.spec.components.schema("IXN_V_1", schema=marshmallow_dataclass.class_schema(credentialing.IXN_V_1)())
-        self.spec.components.schema("IXN_V_2", schema=marshmallow_dataclass.class_schema(credentialing.IXN_V_2)())
-        self.spec.components.schema("ICP_V_1", schema=marshmallow_dataclass.class_schema(credentialing.ICP_V_1)())
-        self.spec.components.schema("ICP_V_2", schema=marshmallow_dataclass.class_schema(credentialing.ICP_V_2)())
-        self.spec.components.schema("ROT_V_1", schema=marshmallow_dataclass.class_schema(credentialing.ROT_V_1)())
-        self.spec.components.schema("ROT_V_2", schema=marshmallow_dataclass.class_schema(credentialing.ROT_V_2)())
-        self.spec.components.schema("DIP_V_1", schema=marshmallow_dataclass.class_schema(credentialing.DIP_V_1)())
-        self.spec.components.schema("DIP_V_2", schema=marshmallow_dataclass.class_schema(credentialing.DIP_V_2)())
-        self.spec.components.schema("DRT_V_1", schema=marshmallow_dataclass.class_schema(credentialing.DRT_V_1)())
-        self.spec.components.schema("DRT_V_2", schema=marshmallow_dataclass.class_schema(credentialing.DRT_V_2)())
-        self.spec.components.schema("Credential", schema=marshmallow_dataclass.class_schema(credentialing.ClonedCredential)())
-        self.spec.components.schema("Operation", schema=marshmallow_dataclass.class_schema(longrunning.Operation)())
-        self.spec.components.schema("CredentialStateIssOrRev", schema=marshmallow_dataclass.class_schema(credentialing.CredentialStateIssOrRev))
-        self.spec.components.schema("CredentialStateBisOrBrv", schema=marshmallow_dataclass.class_schema(credentialing.CredentialStateBisOrBrv))
+        self.spec.components.schema(
+            "IssEvent",
+            schema=marshmallow_dataclass.class_schema(credentialing.IssEvent)(),
+        )
+        self.spec.components.schema(
+            "Schema", schema=marshmallow_dataclass.class_schema(credentialing.Schema)()
+        )
+        self.spec.components.schema(
+            "Anchor", schema=marshmallow_dataclass.class_schema(credentialing.Anchor)()
+        )
+        self.spec.components.schema(
+            "Seal", schema=marshmallow_dataclass.class_schema(credentialing.Seal)()
+        )
+        self.spec.components.schema(
+            "IXN_V_1",
+            schema=marshmallow_dataclass.class_schema(credentialing.IXN_V_1)(),
+        )
+        self.spec.components.schema(
+            "IXN_V_2",
+            schema=marshmallow_dataclass.class_schema(credentialing.IXN_V_2)(),
+        )
+        self.spec.components.schema(
+            "ICP_V_1",
+            schema=marshmallow_dataclass.class_schema(credentialing.ICP_V_1)(),
+        )
+        self.spec.components.schema(
+            "ICP_V_2",
+            schema=marshmallow_dataclass.class_schema(credentialing.ICP_V_2)(),
+        )
+        self.spec.components.schema(
+            "ROT_V_1",
+            schema=marshmallow_dataclass.class_schema(credentialing.ROT_V_1)(),
+        )
+        self.spec.components.schema(
+            "ROT_V_2",
+            schema=marshmallow_dataclass.class_schema(credentialing.ROT_V_2)(),
+        )
+        self.spec.components.schema(
+            "DIP_V_1",
+            schema=marshmallow_dataclass.class_schema(credentialing.DIP_V_1)(),
+        )
+        self.spec.components.schema(
+            "DIP_V_2",
+            schema=marshmallow_dataclass.class_schema(credentialing.DIP_V_2)(),
+        )
+        self.spec.components.schema(
+            "DRT_V_1",
+            schema=marshmallow_dataclass.class_schema(credentialing.DRT_V_1)(),
+        )
+        self.spec.components.schema(
+            "DRT_V_2",
+            schema=marshmallow_dataclass.class_schema(credentialing.DRT_V_2)(),
+        )
+        self.spec.components.schema(
+            "Credential",
+            schema=marshmallow_dataclass.class_schema(credentialing.ClonedCredential)(),
+        )
+        self.spec.components.schema(
+            "Operation",
+            schema=marshmallow_dataclass.class_schema(longrunning.Operation)(),
+        )
+        self.spec.components.schema(
+            "CredentialStateIssOrRev",
+            schema=marshmallow_dataclass.class_schema(
+                credentialing.CredentialStateIssOrRev
+            ),
+        )
+        self.spec.components.schema(
+            "CredentialStateBisOrBrv",
+            schema=marshmallow_dataclass.class_schema(
+                credentialing.CredentialStateBisOrBrv
+            ),
+        )
 
         # Patch the schema to force additionalProperties=True
         acdc_attributes_schema = self.spec.components.schemas["ACDCAttributes"]
         acdc_attributes_schema["additionalProperties"] = True
-        
+
         # The ACDC class has alts constraints like {'a': 'A', 'A': 'a'}
         acdc_schema_v1 = self.spec.components.schemas["ACDC_V_1"]
-        if hasattr(credentialing.ACDCSchema_V_1, '_alt_constraints'):
+        if hasattr(credentialing.ACDCSchema_V_1, "_alt_constraints"):
             applyAltConstraintsToOpenApiSchema(
-                acdc_schema_v1,
-                credentialing.ACDCSchema_V_1._alt_constraints
+                acdc_schema_v1, credentialing.ACDCSchema_V_1._alt_constraints
             )
 
         acdc_schema_v2 = self.spec.components.schemas["ACDC_V_2"]
-        if hasattr(credentialing.ACDCSchema_V_2, '_alt_constraints'):
+        if hasattr(credentialing.ACDCSchema_V_2, "_alt_constraints"):
             applyAltConstraintsToOpenApiSchema(
-                acdc_schema_v2,
-                credentialing.ACDCSchema_V_2._alt_constraints
+                acdc_schema_v2, credentialing.ACDCSchema_V_2._alt_constraints
             )
 
         credentialSchema = self.spec.components.schemas["Credential"]
@@ -108,16 +163,18 @@ class AgentSpecResource:
 
         # Operation
         operationSchema = self.spec.components.schemas["Operation"]
-        operationSchema["properties"]["metadata"] = { "type": "object" }
-        operationSchema["properties"]["response"] = { "type": "object" }
+        operationSchema["properties"]["metadata"] = {"type": "object"}
+        operationSchema["properties"]["response"] = {"type": "object"}
 
         # Registries
-        self.spec.components.schema("Registry", schema=marshmallow_dataclass.class_schema(credentialing.Registry)())
+        self.spec.components.schema(
+            "Registry",
+            schema=marshmallow_dataclass.class_schema(credentialing.Registry)(),
+        )
         registrySchema = self.spec.components.schemas["Registry"]
         registrySchema["properties"]["state"] = {
             "$ref": "#/components/schemas/CredentialState"
         }
-
 
         self.addRoutes(app)
 
@@ -128,7 +185,10 @@ class AgentSpecResource:
         for route in routes_to_check:
             if route.resource is not None:
                 operations = dict()
-                operations.update(yaml_utils.load_operations_from_docstring(route.resource.__doc__) or {})
+                operations.update(
+                    yaml_utils.load_operations_from_docstring(route.resource.__doc__)
+                    or {}
+                )
 
                 if route.method_map:
                     for method_name, method_handler in route.method_map.items():
@@ -136,7 +196,9 @@ class AgentSpecResource:
                             continue
                         if method_name.lower() not in valid_methods:
                             continue
-                        docstring_yaml = yaml_utils.load_yaml_from_docstring(method_handler.__doc__)
+                        docstring_yaml = yaml_utils.load_yaml_from_docstring(
+                            method_handler.__doc__
+                        )
                         operations[method_name.lower()] = docstring_yaml or dict()
 
                 self.spec.path(path=route.uri_template, operations=operations)

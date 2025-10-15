@@ -5,6 +5,7 @@ keria.app.delegating module
 
 Testing the Mark II Agent Anchorer
 """
+
 import json
 import time
 import pytest
@@ -18,6 +19,7 @@ from keria.app import aiding, delegating
 from keria.core import longrunning
 from keria.end import ending
 from keria.app import agenting
+
 
 def test_sealer():
     with habbing.openHby(name="p1", temp=True) as hby:
@@ -59,23 +61,30 @@ def test_sealer():
             anchorer.complete(prefixer=prefixer, seqner=seqner, saider=saider)
 
         assert anchorer.complete(prefixer=prefixer, seqner=seqner) is True
-        
+
+
 def test_delegator_end(helpers):
     torname = "delegator"
     teename = "delegatee"
     saltb = b"0123456789abcdef"
-    
-    with habbing.openHby(name="p1", temp=True) as hby, \
-        helpers.openKeria() as (toragency, toragent, torapp, torclient):
 
+    with (
+        habbing.openHby(name="p1", temp=True) as hby,
+        helpers.openKeria() as (toragency, toragent, torapp, torclient),
+    ):
         # Create Anchorer to test
         anchorer = delegating.Anchorer(hby=hby)
 
-        escrower = next((doer for doer in toragent.doers if isinstance(doer, agenting.Escrower)), None)
+        escrower = next(
+            (doer for doer in toragent.doers if isinstance(doer, agenting.Escrower)),
+            None,
+        )
         assert escrower is not None
-        dipEvtProcDelay = escrower.tock * 60 + 10 # 60 seconds * escrower.tock + 10 seconds
-        
-        #setup agency endpoints
+        dipEvtProcDelay = (
+            escrower.tock * 60 + 10
+        )  # 60 seconds * escrower.tock + 10 seconds
+
+        # setup agency endpoints
         ending.loadEnds(app=torapp, agency=toragency)
         end = aiding.IdentifierCollectionEnd()
         resend = aiding.IdentifierResourceEnd()
@@ -84,28 +93,30 @@ def test_delegator_end(helpers):
         torapp.add_route("/identifiers/{name}/events", resend)
         torend = delegating.DelegatorEnd(resend)
         torapp.add_route(delegating.DELEGATION_ROUTE, torend)
-        
+
         # Create delegator
         salt = b"0123456789abcdef"
         op = helpers.createAid(torclient, torname, salt)
         aid = op["response"]
         torpre = aid["i"]
         assert torpre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
-        
+
         # setup delegatee
         fakeproxy = hby.makeHab("proxy")
         teehab = hby.makeHab(teename, delpre=torpre)
-        
+
         # Use valid AID, role and EID
-        toroobi = torclient.simulate_get(path=f"/oobi/{torpre}/agent/{toragent.agentHab.pre}")
+        toroobi = torclient.simulate_get(
+            path=f"/oobi/{torpre}/agent/{toragent.agentHab.pre}"
+        )
         assert toroobi.status_code == 200
-        assert toroobi.headers['Content-Type'] == "application/json+cesr"
+        assert toroobi.headers["Content-Type"] == "application/json+cesr"
 
         # Try before knowing delegator key state
         with pytest.raises(kering.ValidationError):
             anchorer.delegation(pre=teehab.pre, proxy=fakeproxy)
 
-        #introduce delegator to delegatee
+        # introduce delegator to delegatee
         teehab.psr.parse(ims=toroobi.content)
 
         # Doer hierarchy
@@ -115,10 +126,12 @@ def test_delegator_end(helpers):
         # Run delegation to escrow inception event
         anchorer.delegation(pre=teehab.pre)
         doist.recur(deeds=deeds)
-        
+
         # normally postman would take care of this but we can do it manually here
         for msg in teehab.db.clonePreIter(pre=teehab.pre):
-            parsing.Parser().parse(ims=bytearray(msg), kvy=toragent.kvy, local=True) # Local true otherwise it will be a misfit
+            parsing.Parser().parse(
+                ims=bytearray(msg), kvy=toragent.kvy, local=True
+            )  # Local true otherwise it will be a misfit
 
         # Delegatee hasn't seen delegator anchor
         prefixer = coring.Prefixer(qb64=teehab.pre)
@@ -131,41 +144,47 @@ def test_delegator_end(helpers):
 
         # Anchor the seal in delegator's KEL and approve the escrowed dip event
         seal = dict(i=prefixer.qb64, s="0", d=prefixer.qb64)
-        iserder, isigers = helpers.interact(pre=aid["i"], bran=saltb, pidx=0, ridx=0, dig=aid["d"], sn='1', data=[seal])
+        iserder, isigers = helpers.interact(
+            pre=aid["i"], bran=saltb, pidx=0, ridx=0, dig=aid["d"], sn="1", data=[seal]
+        )
         appDelBody = {"ixn": iserder.ked, "sigs": isigers}
-        apprDelRes = torclient.simulate_post(path=f"/identifiers/{torname}/delegation", body=json.dumps(appDelBody))
+        apprDelRes = torclient.simulate_post(
+            path=f"/identifiers/{torname}/delegation", body=json.dumps(appDelBody)
+        )
         assert apprDelRes.status_code == 200
         op = apprDelRes.json
-        assert op["metadata"]["teepre"] == iserder.ked['a'][0]['i']
+        assert op["metadata"]["teepre"] == iserder.ked["a"][0]["i"]
 
         # Delegator still hasn't processed the delegatee dip event
         assert teehab.pre not in toragent.agentHab.kevers
 
-        # Monitor long running operation indicating escrowed delegatee 
+        # Monitor long running operation indicating escrowed delegatee
         # dip event was successfully processed
         opColEnd = longrunning.OperationCollectionEnd()
         torapp.add_route("/operations", opColEnd)
         opResEnd = longrunning.OperationResourceEnd()
         torapp.add_route("/operations/{name}", opResEnd)
-        count=0
+        count = 0
         while not op or "done" not in op or not op["done"]:
             doist.recur(deeds=deeds)
             time.sleep(1)
-            res = torclient.simulate_get(path=f'/operations/{op["name"]}')
+            res = torclient.simulate_get(path=f"/operations/{op['name']}")
             assert res.status_code == 200
             op = res.json
             count += 1
             if count > dipEvtProcDelay:
                 raise Exception("Delegator never processed the delegatee dip event")
-        
+
         # Delegator escrows completed and now aknowledges the delegatee dip event
         assert teehab.pre in toragent.agentHab.kevers
-        
+
         # Delegatee hasn't seen the anchor yet
         assert anchorer.complete(prefixer=prefixer, seqner=seqner) is False
-        
+
         # update delegatee with delegator KEL w/ interaction event
-        toroobi = torclient.simulate_get(path=f"/oobi/{torpre}/agent/{toragent.agentHab.pre}")
+        toroobi = torclient.simulate_get(
+            path=f"/oobi/{torpre}/agent/{toragent.agentHab.pre}"
+        )
         teehab.psr.parse(ims=toroobi.content)
         count = 0
         while anchorer.complete(prefixer=prefixer, seqner=seqner) is False:

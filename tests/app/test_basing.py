@@ -5,6 +5,7 @@ keria.app.basing module
 
 Testing the database classes
 """
+
 import random
 
 import pytest
@@ -20,12 +21,16 @@ LE_SAID = "ENTAoj2oNBFpaniRswwPcca9W1ElEeH2V7ahw68HV4G5"
 
 
 def test_seeker(helpers, seeder, mockHelpingNowUTC):
-    salt = b'0123456789abcdef'
+    salt = b"0123456789abcdef"
 
-    with habbing.openHab(name="hal", salt=salt, temp=True) as (issueeHby, issueeHab), \
-            habbing.openHab(name="issuer", salt=salt, temp=True) as (issuerHby, issuerHab), \
-            helpers.withIssuer(name="issuer", hby=issuerHby) as issuer:
-        seeker = basing.Seeker(db=issuerHby.db, reger=issuer.rgy.reger, reopen=True, temp=True)
+    with (
+        habbing.openHab(name="hal", salt=salt, temp=True) as (issueeHby, issueeHab),
+        habbing.openHab(name="issuer", salt=salt, temp=True) as (issuerHby, issuerHab),
+        helpers.withIssuer(name="issuer", hby=issuerHby) as issuer,
+    ):
+        seeker = basing.Seeker(
+            db=issuerHby.db, reger=issuer.rgy.reger, reopen=True, temp=True
+        )
 
         seeder.seedSchema(issueeHby.db)
         seeder.seedSchema(issuerHby.db)
@@ -36,35 +41,37 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
         indexes = seeker.generateIndexes(QVI_SAID)
 
         # Verify the indexes created for the QVI schema
-        assert indexes == ['5AABAA-s',
-                           '5AABAA-i',
-                           '4AABA-ri',
-                           '5AABAA-i.5AABAA-s',
-                           '4AAB-a-i',
-                           '4AAB-a-i.5AABAA-s',
-                           '4AAB-a-d',
-                           '5AABAA-s.4AAB-a-d',
-                           '5AABAA-i.4AAB-a-d',
-                           '5AABAA-i.5AABAA-s.4AAB-a-d',
-                           '4AAB-a-i.4AAB-a-d',
-                           '4AAB-a-i.5AABAA-s.4AAB-a-d',
-                           '5AABAA-s.4AAB-a-i',
-                           '5AABAA-i.4AAB-a-i',
-                           '5AABAA-i.5AABAA-s.4AAB-a-i',
-                           '4AAB-a-i.4AAB-a-i',
-                           '4AAB-a-i.5AABAA-s.4AAB-a-i',
-                           '6AACAAA-a-dt',
-                           '5AABAA-s.6AACAAA-a-dt',
-                           '5AABAA-i.6AACAAA-a-dt',
-                           '5AABAA-i.5AABAA-s.6AACAAA-a-dt',
-                           '4AAB-a-i.6AACAAA-a-dt',
-                           '4AAB-a-i.5AABAA-s.6AACAAA-a-dt',
-                           '5AACAA-a-LEI',
-                           '5AABAA-s.5AACAA-a-LEI',
-                           '5AABAA-i.5AACAA-a-LEI',
-                           '5AABAA-i.5AABAA-s.5AACAA-a-LEI',
-                           '4AAB-a-i.5AACAA-a-LEI',
-                           '4AAB-a-i.5AABAA-s.5AACAA-a-LEI']
+        assert indexes == [
+            "5AABAA-s",
+            "5AABAA-i",
+            "4AABA-ri",
+            "5AABAA-i.5AABAA-s",
+            "4AAB-a-i",
+            "4AAB-a-i.5AABAA-s",
+            "4AAB-a-d",
+            "5AABAA-s.4AAB-a-d",
+            "5AABAA-i.4AAB-a-d",
+            "5AABAA-i.5AABAA-s.4AAB-a-d",
+            "4AAB-a-i.4AAB-a-d",
+            "4AAB-a-i.5AABAA-s.4AAB-a-d",
+            "5AABAA-s.4AAB-a-i",
+            "5AABAA-i.4AAB-a-i",
+            "5AABAA-i.5AABAA-s.4AAB-a-i",
+            "4AAB-a-i.4AAB-a-i",
+            "4AAB-a-i.5AABAA-s.4AAB-a-i",
+            "6AACAAA-a-dt",
+            "5AABAA-s.6AACAAA-a-dt",
+            "5AABAA-i.6AACAAA-a-dt",
+            "5AABAA-i.5AABAA-s.6AACAAA-a-dt",
+            "4AAB-a-i.6AACAAA-a-dt",
+            "4AAB-a-i.5AABAA-s.6AACAAA-a-dt",
+            "5AACAA-a-LEI",
+            "5AABAA-s.5AACAA-a-LEI",
+            "5AABAA-i.5AACAA-a-LEI",
+            "5AABAA-i.5AABAA-s.5AACAA-a-LEI",
+            "4AAB-a-i.5AACAA-a-LEI",
+            "4AAB-a-i.5AABAA-s.5AACAA-a-LEI",
+        ]
 
         # Test that the index tables were correctly created
         assert len(seeker.indexes) == 29
@@ -72,35 +79,37 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
         indexes = seeker.generateIndexes(LE_SAID)
 
         # Test the indexes assigned to the LE schema
-        assert indexes == ['5AABAA-s',
-                           '5AABAA-i',
-                           '4AABA-ri',
-                           '5AABAA-i.5AABAA-s',
-                           '4AAB-a-i',
-                           '4AAB-a-i.5AABAA-s',
-                           '4AAB-a-d',
-                           '5AABAA-s.4AAB-a-d',
-                           '5AABAA-i.4AAB-a-d',
-                           '5AABAA-i.5AABAA-s.4AAB-a-d',
-                           '4AAB-a-i.4AAB-a-d',
-                           '4AAB-a-i.5AABAA-s.4AAB-a-d',
-                           '5AABAA-s.4AAB-a-i',
-                           '5AABAA-i.4AAB-a-i',
-                           '5AABAA-i.5AABAA-s.4AAB-a-i',
-                           '4AAB-a-i.4AAB-a-i',
-                           '4AAB-a-i.5AABAA-s.4AAB-a-i',
-                           '6AACAAA-a-dt',
-                           '5AABAA-s.6AACAAA-a-dt',
-                           '5AABAA-i.6AACAAA-a-dt',
-                           '5AABAA-i.5AABAA-s.6AACAAA-a-dt',
-                           '4AAB-a-i.6AACAAA-a-dt',
-                           '4AAB-a-i.5AABAA-s.6AACAAA-a-dt',
-                           '5AACAA-a-LEI',
-                           '5AABAA-s.5AACAA-a-LEI',
-                           '5AABAA-i.5AACAA-a-LEI',
-                           '5AABAA-i.5AABAA-s.5AACAA-a-LEI',
-                           '4AAB-a-i.5AACAA-a-LEI',
-                           '4AAB-a-i.5AABAA-s.5AACAA-a-LEI']
+        assert indexes == [
+            "5AABAA-s",
+            "5AABAA-i",
+            "4AABA-ri",
+            "5AABAA-i.5AABAA-s",
+            "4AAB-a-i",
+            "4AAB-a-i.5AABAA-s",
+            "4AAB-a-d",
+            "5AABAA-s.4AAB-a-d",
+            "5AABAA-i.4AAB-a-d",
+            "5AABAA-i.5AABAA-s.4AAB-a-d",
+            "4AAB-a-i.4AAB-a-d",
+            "4AAB-a-i.5AABAA-s.4AAB-a-d",
+            "5AABAA-s.4AAB-a-i",
+            "5AABAA-i.4AAB-a-i",
+            "5AABAA-i.5AABAA-s.4AAB-a-i",
+            "4AAB-a-i.4AAB-a-i",
+            "4AAB-a-i.5AABAA-s.4AAB-a-i",
+            "6AACAAA-a-dt",
+            "5AABAA-s.6AACAAA-a-dt",
+            "5AABAA-i.6AACAAA-a-dt",
+            "5AABAA-i.5AABAA-s.6AACAAA-a-dt",
+            "4AAB-a-i.6AACAAA-a-dt",
+            "4AAB-a-i.5AABAA-s.6AACAAA-a-dt",
+            "5AACAA-a-LEI",
+            "5AABAA-s.5AACAA-a-LEI",
+            "5AABAA-i.5AACAA-a-LEI",
+            "5AABAA-i.5AABAA-s.5AACAA-a-LEI",
+            "4AAB-a-i.5AACAA-a-LEI",
+            "4AAB-a-i.5AABAA-s.5AACAA-a-LEI",
+        ]
 
         # Assure that no new index tables needed to be created
         assert len(seeker.indexes) == 29
@@ -124,48 +133,60 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
         saids = seeker.find({}).limit(50)
         assert len(list(saids)) == 50
 
-        saids = seeker.find({ '-ri': "EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4" })
+        saids = seeker.find({"-ri": "EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4"})
         assert len(list(saids)) == 25
 
-        saids = seeker.find({ '-ri': "EAzc9zFLaK22zbrKDGIgKtrpDBNKWKvl8B0FKYAo19z_" })
+        saids = seeker.find({"-ri": "EAzc9zFLaK22zbrKDGIgKtrpDBNKWKvl8B0FKYAo19z_"})
         assert len(list(saids)) == 0
 
-        saids = seeker.find({'-d': "EAzc9zFLaK22zbrKDGIgKtrpDBNKWKvl8B0FKYAo19z_"})
-        assert list(saids) == ['EAzc9zFLaK22zbrKDGIgKtrpDBNKWKvl8B0FKYAo19z_']
+        saids = seeker.find({"-d": "EAzc9zFLaK22zbrKDGIgKtrpDBNKWKvl8B0FKYAo19z_"})
+        assert list(saids) == ["EAzc9zFLaK22zbrKDGIgKtrpDBNKWKvl8B0FKYAo19z_"]
 
-        saids = seeker.find({'-a-LEI': "OKB9487U4IDOG92KVVFN"})
-        assert list(saids) == ['EJJzx89f1sTNdOPGHRx3e7ukcFW0F4nq9o7e8taLoNXt']
+        saids = seeker.find({"-a-LEI": "OKB9487U4IDOG92KVVFN"})
+        assert list(saids) == ["EJJzx89f1sTNdOPGHRx3e7ukcFW0F4nq9o7e8taLoNXt"]
 
-        saids = seeker.find({'-a-LEI': {"$eq": "OKB9487U4IDOG92KVVFN"}})
-        assert list(saids) == ['EJJzx89f1sTNdOPGHRx3e7ukcFW0F4nq9o7e8taLoNXt']
+        saids = seeker.find({"-a-LEI": {"$eq": "OKB9487U4IDOG92KVVFN"}})
+        assert list(saids) == ["EJJzx89f1sTNdOPGHRx3e7ukcFW0F4nq9o7e8taLoNXt"]
 
-        saids = seeker.find({}).sort(['-a-LEI']).limit(5)
-        assert list(saids) == ['EAzc9zFLaK22zbrKDGIgKtrpDBNKWKvl8B0FKYAo19z_',
-                               'EFW50stHOz-0_8Dh7EcYs0DsLZ06d4hwGKjRbOB8hgnR',
-                               'EBiyZ2iyZodulzaUACzl_Cg6fRc1D0EPyNOooFemFK3e',
-                               'EIn3igRf049kPQvpLjjLjU80QITreObH4BJguAxMPqis',
-                               'ENnhxrOOeKIESS7_Yk7yVkJLm6blSOedACZvKFdMcxg5']
+        saids = seeker.find({}).sort(["-a-LEI"]).limit(5)
+        assert list(saids) == [
+            "EAzc9zFLaK22zbrKDGIgKtrpDBNKWKvl8B0FKYAo19z_",
+            "EFW50stHOz-0_8Dh7EcYs0DsLZ06d4hwGKjRbOB8hgnR",
+            "EBiyZ2iyZodulzaUACzl_Cg6fRc1D0EPyNOooFemFK3e",
+            "EIn3igRf049kPQvpLjjLjU80QITreObH4BJguAxMPqis",
+            "ENnhxrOOeKIESS7_Yk7yVkJLm6blSOedACZvKFdMcxg5",
+        ]
 
-        saids = seeker.find({}).sort(['-a-LEI']).skip(10).limit(5)
-        assert list(saids) == ['EDuqEITx0Jx8zZOCdqJU3e-RHvJS0UDZjeeBYPvB-XcK',
-                               'ELic0LPsg_J9XietLYJ4MrOgSv3v6WqqBscrJMhZOV-V',
-                               'EJ8_Bzr5vYZkaHmB-MW7VFYdgADg_W8MCZwWG7syjsu3',
-                               'EPk5vCk-LLOmwityjKBn7HB92w2ViP-vro5_QaK2ueAd',
-                               'EF7vDsfikOf_rEX2Lc_LFQoQSSxJxUr1Xkxlj9XeMu_l']
+        saids = seeker.find({}).sort(["-a-LEI"]).skip(10).limit(5)
+        assert list(saids) == [
+            "EDuqEITx0Jx8zZOCdqJU3e-RHvJS0UDZjeeBYPvB-XcK",
+            "ELic0LPsg_J9XietLYJ4MrOgSv3v6WqqBscrJMhZOV-V",
+            "EJ8_Bzr5vYZkaHmB-MW7VFYdgADg_W8MCZwWG7syjsu3",
+            "EPk5vCk-LLOmwityjKBn7HB92w2ViP-vro5_QaK2ueAd",
+            "EF7vDsfikOf_rEX2Lc_LFQoQSSxJxUr1Xkxlj9XeMu_l",
+        ]
 
-        saids = seeker.find({'-a-LEI': {'$begins': 'Q'}}).sort(['-a-LEI'])
-        assert list(saids) == ['EJCprDNJIkHzDkMm__X1zcz65YBMtaBhjugIPXN0R2iC',
-                               'EGO5Dh4ADbgDSTj-0X3452s7R6iAjFG2amY1qXlhqVxe',
-                               'EOMWNhcIYPuXkh-LDZTc--sVL-cOINWNINfqO9kUhnBG']
+        saids = seeker.find({"-a-LEI": {"$begins": "Q"}}).sort(["-a-LEI"])
+        assert list(saids) == [
+            "EJCprDNJIkHzDkMm__X1zcz65YBMtaBhjugIPXN0R2iC",
+            "EGO5Dh4ADbgDSTj-0X3452s7R6iAjFG2amY1qXlhqVxe",
+            "EOMWNhcIYPuXkh-LDZTc--sVL-cOINWNINfqO9kUhnBG",
+        ]
 
-        saids = seeker.find({'-i': {'$eq': issuerHab.pre}, '-a-LEI': {'$begins': 'Y'}}).sort(['-a-LEI'])
-        assert list(saids) == ['EA4KV-yecOHV8jt0F2vG7tYRkyikhuOloCXliit_KTHI',
-                               'EI9K4digb0UgEPi0ZT4Rw1DlSSx5NewLpxl4M-XurJMO',
-                               'ELAcuTv3lYs7P6N9uP6Ob2oQ10CWhTLpGWJOht5VPvPT',
-                               'EFl7rgKSxQdEsFomKbeXfSDfGG_9QE0oDzNQ9v8DsJmJ']
+        saids = seeker.find(
+            {"-i": {"$eq": issuerHab.pre}, "-a-LEI": {"$begins": "Y"}}
+        ).sort(["-a-LEI"])
+        assert list(saids) == [
+            "EA4KV-yecOHV8jt0F2vG7tYRkyikhuOloCXliit_KTHI",
+            "EI9K4digb0UgEPi0ZT4Rw1DlSSx5NewLpxl4M-XurJMO",
+            "ELAcuTv3lYs7P6N9uP6Ob2oQ10CWhTLpGWJOht5VPvPT",
+            "EFl7rgKSxQdEsFomKbeXfSDfGG_9QE0oDzNQ9v8DsJmJ",
+        ]
 
-        saids = seeker.find({'-i': {'$eq': issuerHab.pre}, '-a-LEI': {'$eq': 'U6452GAE5C4TVRUY9EIX'}}).sort(['-a-LEI'])
-        assert list(saids) == ['ELDA-hNidE8nsNOYAg993mOLiYAew_eIgicEiK_ilb9Y']
+        saids = seeker.find(
+            {"-i": {"$eq": issuerHab.pre}, "-a-LEI": {"$eq": "U6452GAE5C4TVRUY9EIX"}}
+        ).sort(["-a-LEI"])
+        assert list(saids) == ["ELDA-hNidE8nsNOYAg993mOLiYAew_eIgicEiK_ilb9Y"]
 
         # Try to unindex unknown credential
         with pytest.raises(ValueError):
@@ -174,22 +195,28 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
         # Unindex the last one in prep for deletion from DB
         seeker.unindex(qvisaid)
 
-        saids = seeker.find({'-a-LEI': "ZUQA6QTJDNYPF3DLP9NH"})
+        saids = seeker.find({"-a-LEI": "ZUQA6QTJDNYPF3DLP9NH"})
         assert list(saids) == []
 
-        saids = seeker.find({'-a-LEI': {"$eq": "ZUQA6QTJDNYPF3DLP9NH"}})
+        saids = seeker.find({"-a-LEI": {"$eq": "ZUQA6QTJDNYPF3DLP9NH"}})
         assert list(saids) == []
 
-        saids = seeker.find({}).sort(['-a-LEI']).skip(45).limit(5)
-        assert list(saids) == ['EI9K4digb0UgEPi0ZT4Rw1DlSSx5NewLpxl4M-XurJMO',
-                               'ELAcuTv3lYs7P6N9uP6Ob2oQ10CWhTLpGWJOht5VPvPT',
-                               'EFl7rgKSxQdEsFomKbeXfSDfGG_9QE0oDzNQ9v8DsJmJ',
-                               'EOP0GO5JXnEq8BbcRHzUOeokxV45efXzyeDzJsV8_aTn']
+        saids = seeker.find({}).sort(["-a-LEI"]).skip(45).limit(5)
+        assert list(saids) == [
+            "EI9K4digb0UgEPi0ZT4Rw1DlSSx5NewLpxl4M-XurJMO",
+            "ELAcuTv3lYs7P6N9uP6Ob2oQ10CWhTLpGWJOht5VPvPT",
+            "EFl7rgKSxQdEsFomKbeXfSDfGG_9QE0oDzNQ9v8DsJmJ",
+            "EOP0GO5JXnEq8BbcRHzUOeokxV45efXzyeDzJsV8_aTn",
+        ]
 
-        saids = seeker.find({'-i': {'$eq': issuerHab.pre}, '-a-LEI': {'$begins': 'Z'}}).sort(['-a-LEI'])
-        assert list(saids) == ['EOP0GO5JXnEq8BbcRHzUOeokxV45efXzyeDzJsV8_aTn']
+        saids = seeker.find(
+            {"-i": {"$eq": issuerHab.pre}, "-a-LEI": {"$begins": "Z"}}
+        ).sort(["-a-LEI"])
+        assert list(saids) == ["EOP0GO5JXnEq8BbcRHzUOeokxV45efXzyeDzJsV8_aTn"]
 
-        saids = seeker.find({'-i': {'$eq': issuerHab.pre}, '-a-LEI': {'$eq': 'ZUQA6QTJDNYPF3DLP9NH'}}).sort(['-a-LEI'])
+        saids = seeker.find(
+            {"-i": {"$eq": issuerHab.pre}, "-a-LEI": {"$eq": "ZUQA6QTJDNYPF3DLP9NH"}}
+        ).sort(["-a-LEI"])
         assert list(saids) == []
 
 
@@ -257,11 +284,13 @@ LEIs = [
 
 
 def test_exnseeker(helpers, seeder, mockHelpingNowUTC):
-    salt = b'0123456789abcdef'
+    salt = b"0123456789abcdef"
 
-    with habbing.openHab(name="hal", salt=salt, temp=True) as (issueeHby, issueeHab), \
-            habbing.openHab(name="issuer", salt=salt, temp=True) as (issuerHby, issuerHab), \
-            helpers.withIssuer(name="issuer", hby=issuerHby) as issuer:
+    with (
+        habbing.openHab(name="hal", salt=salt, temp=True) as (issueeHby, issueeHab),
+        habbing.openHab(name="issuer", salt=salt, temp=True) as (issuerHby, issuerHab),
+        helpers.withIssuer(name="issuer", hby=issuerHby) as issuer,
+    ):
         seeder.seedSchema(issueeHby.db)
         seeder.seedSchema(issuerHby.db)
 
@@ -269,38 +298,44 @@ def test_exnseeker(helpers, seeder, mockHelpingNowUTC):
 
         seeker = basing.ExnSeeker(db=issuerHby.db, reopen=True, temp=True)
 
-        assert list(seeker.indexes.keys()) == ['5AABAA-r',
-                                               '5AABAA-r.5AABAA-i',
-                                               '5AABAA-r.4AAB-a-i',
-                                               '5AABAA-r.4AABA-dt',
-                                               '5AABAA-r.6AADAAA-e-acdc-s',
-                                               '5AABAA-i',
-                                               '5AABAA-i.5AABAA-r',
-                                               '5AABAA-i.4AAB-a-i',
-                                               '5AABAA-i.4AABA-dt',
-                                               '5AABAA-i.6AADAAA-e-acdc-s',
-                                               '4AAB-a-i',
-                                               '4AAB-a-i.5AABAA-r',
-                                               '4AAB-a-i.5AABAA-i',
-                                               '4AAB-a-i.4AABA-dt',
-                                               '4AAB-a-i.6AADAAA-e-acdc-s',
-                                               '4AABA-dt',
-                                               '4AABA-dt.5AABAA-r',
-                                               '4AABA-dt.5AABAA-i',
-                                               '4AABA-dt.4AAB-a-i',
-                                               '4AABA-dt.6AADAAA-e-acdc-s',
-                                               '6AADAAA-e-acdc-s',
-                                               '6AADAAA-e-acdc-s.5AABAA-r',
-                                               '6AADAAA-e-acdc-s.5AABAA-i',
-                                               '6AADAAA-e-acdc-s.4AAB-a-i',
-                                               '6AADAAA-e-acdc-s.4AABA-dt']
+        assert list(seeker.indexes.keys()) == [
+            "5AABAA-r",
+            "5AABAA-r.5AABAA-i",
+            "5AABAA-r.4AAB-a-i",
+            "5AABAA-r.4AABA-dt",
+            "5AABAA-r.6AADAAA-e-acdc-s",
+            "5AABAA-i",
+            "5AABAA-i.5AABAA-r",
+            "5AABAA-i.4AAB-a-i",
+            "5AABAA-i.4AABA-dt",
+            "5AABAA-i.6AADAAA-e-acdc-s",
+            "4AAB-a-i",
+            "4AAB-a-i.5AABAA-r",
+            "4AAB-a-i.5AABAA-i",
+            "4AAB-a-i.4AABA-dt",
+            "4AAB-a-i.6AADAAA-e-acdc-s",
+            "4AABA-dt",
+            "4AABA-dt.5AABAA-r",
+            "4AABA-dt.5AABAA-i",
+            "4AABA-dt.4AAB-a-i",
+            "4AABA-dt.6AADAAA-e-acdc-s",
+            "6AADAAA-e-acdc-s",
+            "6AADAAA-e-acdc-s.5AABAA-r",
+            "6AADAAA-e-acdc-s.5AABAA-i",
+            "6AADAAA-e-acdc-s.4AAB-a-i",
+            "6AADAAA-e-acdc-s.4AABA-dt",
+        ]
 
         issuer.createRegistry(issuerHab.pre, name="issuer")
         issuer.issueQVIvLEI("issuer", issuerHab, issueeHab.pre, "LEYGGPUNV3LJY3KPFDHP")
         issuer.issueQVIvLEI("issuer", issuerHab, issueeHab.pre, "LRK3QNUZJNJY1VD08MV2")
-        qvisaid = issuer.issueQVIvLEI("issuer", issuerHab, issueeHab.pre, "MNUHRN28GQN7VM0G0AKE")
+        qvisaid = issuer.issueQVIvLEI(
+            "issuer", issuerHab, issueeHab.pre, "MNUHRN28GQN7VM0G0AKE"
+        )
 
-        apply, atc = protocoling.ipexApplyExn(issuerHab, issueeHab.pre, "Please give me credential", QVI_SAID, dict())
+        apply, atc = protocoling.ipexApplyExn(
+            issuerHab, issueeHab.pre, "Please give me credential", QVI_SAID, dict()
+        )
 
         msg = bytearray(apply.raw)
         msg.extend(atc)
@@ -310,37 +345,45 @@ def test_exnseeker(helpers, seeder, mockHelpingNowUTC):
         saids = seeker.find({})
         assert list(saids) == [apply.said]
 
-        saids = seeker.find({'-i': {'$eq': issuerHab.pre}})
+        saids = seeker.find({"-i": {"$eq": issuerHab.pre}})
         assert list(saids) == [apply.said]
 
-        saids = seeker.find({'-a-i': {'$eq': issueeHab.pre}})
+        saids = seeker.find({"-a-i": {"$eq": issueeHab.pre}})
         assert list(saids) == [apply.said]
 
-        saids = seeker.find({'-i': {'$eq': issuerHab.pre}, '-a-i': {'$eq': issueeHab.pre}})
+        saids = seeker.find(
+            {"-i": {"$eq": issuerHab.pre}, "-a-i": {"$eq": issueeHab.pre}}
+        )
         assert list(saids) == [apply.said]
 
-        saids = seeker.find({'-i': {'$eq': issueeHab.pre}, '-a-i': {'$eq': issuerHab.pre}})
+        saids = seeker.find(
+            {"-i": {"$eq": issueeHab.pre}, "-a-i": {"$eq": issuerHab.pre}}
+        )
         assert list(saids) == []
 
         msg = signing.serialize(*issuer.rgy.reger.cloneCred(qvisaid))
         iss = issuer.rgy.reger.cloneTvtAt(qvisaid)
         anc = issuerHab.makeOwnEvent(sn=issuerHab.kever.sn)
 
-        grant, atc = protocoling.ipexGrantExn(issuerHab, message="Here's a credential", recp=issueeHab.pre,
-                                              acdc=msg, iss=iss, anc=anc)
+        grant, atc = protocoling.ipexGrantExn(
+            issuerHab,
+            message="Here's a credential",
+            recp=issueeHab.pre,
+            acdc=msg,
+            iss=iss,
+            anc=anc,
+        )
 
         gmsg = bytearray(grant.raw)
         gmsg.extend(atc)
         parsing.Parser().parseOne(ims=gmsg, exc=exc)
         seeker.index(grant.said)
 
-        saids = seeker.find({'-e-acdc-s': {'$eq': QVI_SAID}})
+        saids = seeker.find({"-e-acdc-s": {"$eq": QVI_SAID}})
         assert list(saids) == [grant.said]
 
-        saids = seeker.find({'-i': {'$eq': issuerHab.pre}})
+        saids = seeker.find({"-i": {"$eq": issuerHab.pre}})
         assert list(saids) == [grant.said, apply.said]
 
-        saids = seeker.find({'-a-i': {'$eq': issueeHab.pre}})
+        saids = seeker.find({"-a-i": {"$eq": issueeHab.pre}})
         assert list(saids) == [grant.said, apply.said]
-
-

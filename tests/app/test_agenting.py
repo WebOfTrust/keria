@@ -5,6 +5,7 @@ keria.app.agenting module
 
 Testing the Mark II Agent (KERIA)
 """
+
 import json
 import multiprocessing
 import os
@@ -48,6 +49,7 @@ def test_setup_no_http():
     assert len(doers) == 3
     assert isinstance(doers[0], agenting.Agency) is True
 
+
 def test_setup():
     config = agenting.KERIAServerConfig(
         name="test",
@@ -59,19 +61,21 @@ def test_setup():
     doers = agenting.setupDoers(agency, config)
     assert len(doers) == 4
 
+
 def wait_for_server(port, timeout=10):
     """Poll server until it responds or until timeout"""
-    url=f"http://127.0.0.1:{port}/health"
-    start_time=time.time()
+    url = f"http://127.0.0.1:{port}/health"
+    start_time = time.time()
     while time.time() - start_time < timeout:
         try:
             response = requests.get(url)
             if response.status_code == 200:
-                return True # Server is up
+                return True  # Server is up
         except requests.ConnectionError:
-            pass # Server not ready yet
-        time.sleep(0.25) # Retry every 1/4 second
-    return False # Timeout
+            pass  # Server not ready yet
+        time.sleep(0.25)  # Retry every 1/4 second
+    return False  # Timeout
+
 
 def test_shutdown_signals():
     config = agenting.KERIAServerConfig(
@@ -85,10 +89,16 @@ def test_shutdown_signals():
     agency_process.start()
     assert wait_for_server(config.bootPort), "Agency did not start as expected."
 
-    os.kill(agency_process.pid, signal.SIGTERM)  # Send SigTerm to the process, signal 15
+    os.kill(
+        agency_process.pid, signal.SIGTERM
+    )  # Send SigTerm to the process, signal 15
     agency_process.join(timeout=10)
-    assert not agency_process.is_alive(), "SIGTERM: Agency process did not shut down as expected."
-    assert agency_process.exitcode == 0, f"SIGTERM: Agency exited with non-zero exit code {agency_process.exitcode}"
+    assert not agency_process.is_alive(), (
+        "SIGTERM: Agency process did not shut down as expected."
+    )
+    assert agency_process.exitcode == 0, (
+        f"SIGTERM: Agency exited with non-zero exit code {agency_process.exitcode}"
+    )
 
     # Test SIGINT
     agency_process = multiprocessing.Process(target=agenting.runAgency, args=[config])
@@ -97,18 +107,32 @@ def test_shutdown_signals():
 
     os.kill(agency_process.pid, signal.SIGINT)  # Sends SigInt to the process, signal 2
     agency_process.join(timeout=10)
-    assert not agency_process.is_alive(), "SIGINT: Agency process did not shut down as expected."
-    assert agency_process.exitcode == 0, f"SIGINT: Agency exited with non-zero exit code {agency_process.exitcode}"
+    assert not agency_process.is_alive(), (
+        "SIGINT: Agency process did not shut down as expected."
+    )
+    assert agency_process.exitcode == 0, (
+        f"SIGINT: Agency exited with non-zero exit code {agency_process.exitcode}"
+    )
+
 
 def test_graceful_shutdown_doer():
-    salt = b'0123456789abcdef'
+    salt = b"0123456789abcdef"
     salter = core.Salter(raw=salt)
-    cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
+    cf = configing.Configer(
+        name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False
+    )
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
         hby.makeHab(name="test")
 
-        agency = agenting.Agency(name="agency", base="", bran=None, temp=True, configFile="keria",
-                                 releaseTimeout=0, configDir=SCRIPTS_DIR)
+        agency = agenting.Agency(
+            name="agency",
+            base="",
+            bran=None,
+            temp=True,
+            configFile="keria",
+            releaseTimeout=0,
+            configDir=SCRIPTS_DIR,
+        )
 
         tock = 0.03125
         limit = 1.0
@@ -125,7 +149,9 @@ def test_graceful_shutdown_doer():
         assert shutdownDoer.shutdown_received is False
         shutdownDoer.enter()
         sigterm_handler = signal.getsignal(signal.SIGTERM)
-        assert sigterm_handler == shutdownDoer.handle_sigterm, "SIGTERM handler not set as expected."
+        assert sigterm_handler == shutdownDoer.handle_sigterm, (
+            "SIGTERM handler not set as expected."
+        )
 
         # Call SIGTERM handler manually since can't send sigterm to self in test.
         # See test_shutdown_signals test above for an example of sending signals.
@@ -136,11 +162,10 @@ def test_graceful_shutdown_doer():
         except KeyboardInterrupt as ex:
             # This simulates the Doist loop being interrupted by the shutdown signal
             assert str(ex) == "Graceful shutdown finished, causing Doist loop to exit"
-        assert  shutdownDoer.shutdown_received is True
+        assert shutdownDoer.shutdown_received is True
 
         # shutdownDoer.shutdown_agents(agency.agents)
         assert len(agency.agents) == 0, "Agents not shut down as expected."
-
 
 
 def test_load_ends(helpers):
@@ -176,56 +201,64 @@ def test_load_tocks_config(helpers):
             "dt": "2022-01-20T12:57:59.823350+00:00",
             "keria": {
                 "dt": "2022-01-20T12:57:59.823350+00:00",
-                "curls": ["http://127.0.0.1:3902/"]
+                "curls": ["http://127.0.0.1:3902/"],
             },
             "EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx": {
                 "dt": "2022-01-20T12:57:59.823350+00:00",
-                "curls": ["http://127.0.0.1:3902/"]
+                "curls": ["http://127.0.0.1:3902/"],
             },
             "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9": {
                 "dt": "2022-01-20T12:57:59.823350+00:00",
-                "curls": ["http://127.0.0.1:3902/"]
+                "curls": ["http://127.0.0.1:3902/"],
             },
             "iurls": [
                 "http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller&tag=witness"
             ],
-            "tocks": {
-                "initer": 0.0,
-                "escrower": 1.0
-            }
+            "tocks": {"initer": 0.0, "escrower": 1.0},
         }
 
-        assert agent.tocks == {
-            "initer": 0.0,
-            "escrower": 1.0
-        }
+        assert agent.tocks == {"initer": 0.0, "escrower": 1.0}
 
-        escrower_doer = next((doer for doer in agent.doers if isinstance(doer, agenting.Escrower)), None)
+        escrower_doer = next(
+            (doer for doer in agent.doers if isinstance(doer, agenting.Escrower)), None
+        )
         assert escrower_doer is not None
         assert escrower_doer.tock == 1.0
 
-        initer_doer = next((doer for doer in agent.doers if isinstance(doer, agenting.Initer)), None)
+        initer_doer = next(
+            (doer for doer in agent.doers if isinstance(doer, agenting.Initer)), None
+        )
         assert initer_doer is not None
         assert initer_doer.tock == 0.0
 
-        querier_doer = next((doer for doer in agent.doers if isinstance(doer, agenting.Querier)), None)
+        querier_doer = next(
+            (doer for doer in agent.doers if isinstance(doer, agenting.Querier)), None
+        )
         assert querier_doer is not None
         assert querier_doer.tock == 0.0
 
         with pytest.raises(TypeError):
-            agent.tocks["initer"] = 1.0 # agent.tocks is read-only
+            agent.tocks["initer"] = 1.0  # agent.tocks is read-only
 
 
 def test_agency():
-    salt = b'0123456789aaaaaa'
+    salt = b"0123456789aaaaaa"
     salter = core.Salter(raw=salt)
-    cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
+    cf = configing.Configer(
+        name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False
+    )
 
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
         hab = hby.makeHab(name="test")
 
-        agency = agenting.Agency(name="agency", base="", bran=None, temp=True, configFile="keria",
-                                 configDir=SCRIPTS_DIR)
+        agency = agenting.Agency(
+            name="agency",
+            base="",
+            bran=None,
+            temp=True,
+            configFile="keria",
+            configDir=SCRIPTS_DIR,
+        )
         assert agency.cf is not None
         assert agency.cf.path.endswith("keri/cf/keria.json") is True
 
@@ -257,17 +290,22 @@ def test_agency():
         base = "keria-temp"
 
         # Clean up afterwards
-        if os.path.exists(f'/usr/local/var/keri/db/{base}'):
-            shutil.rmtree(f'/usr/local/var/keri/db/{base}')
-        if os.path.exists(f'/usr/local/var/keri/ks/{base}'):
-            shutil.rmtree(f'/usr/local/var/keri/ks/{base}')
-        if os.path.exists(f'/usr/local/var/keri/ks/{base}'):
-            shutil.rmtree(f'/usr/local/var/keri/ks/{base}')
-        if os.path.exists(f'/usr/local/var/keri/adb/{base}'):
-            shutil.rmtree(f'/usr/local/var/keri/adb/{base}')
+        if os.path.exists(f"/usr/local/var/keri/db/{base}"):
+            shutil.rmtree(f"/usr/local/var/keri/db/{base}")
+        if os.path.exists(f"/usr/local/var/keri/ks/{base}"):
+            shutil.rmtree(f"/usr/local/var/keri/ks/{base}")
+        if os.path.exists(f"/usr/local/var/keri/ks/{base}"):
+            shutil.rmtree(f"/usr/local/var/keri/ks/{base}")
+        if os.path.exists(f"/usr/local/var/keri/adb/{base}"):
+            shutil.rmtree(f"/usr/local/var/keri/adb/{base}")
 
-        agency = agenting.Agency(name="agency", base=base, bran=None, configFile="keria",
-                                 configDir=SCRIPTS_DIR)
+        agency = agenting.Agency(
+            name="agency",
+            base=base,
+            bran=None,
+            configFile="keria",
+            configDir=SCRIPTS_DIR,
+        )
         assert agency.cf is not None
         assert agency.cf.path.endswith("scripts/keri/cf/keria.json") is True
 
@@ -281,36 +319,51 @@ def test_agency():
         assert agent.pre == "EBtONOpwylm2krDPNyvfN8F1dlbAxpGcKBcY7WRzs3aq"
 
         # Rcreate the agency to see if agent is reloaded from disk
-        agency = agenting.Agency(name="agency", base=base, bran=None, configFile="keria",
-                                 configDir=SCRIPTS_DIR)
+        agency = agenting.Agency(
+            name="agency",
+            base=base,
+            bran=None,
+            configFile="keria",
+            configDir=SCRIPTS_DIR,
+        )
         doist.enter(doers=[agency])
 
         agent = agency.get(caid)
         assert agent.pre == "EBtONOpwylm2krDPNyvfN8F1dlbAxpGcKBcY7WRzs3aq"
 
         # Clean up afterwards
-        if os.path.exists(f'/usr/local/var/keri/db/{base}'):
-            shutil.rmtree(f'/usr/local/var/keri/db/{base}')
-        if os.path.exists(f'/usr/local/var/keri/ks/{base}'):
-            shutil.rmtree(f'/usr/local/var/keri/ks/{base}')
-        if os.path.exists(f'/usr/local/var/keri/ks/{base}'):
-            shutil.rmtree(f'/usr/local/var/keri/ks/{base}')
-        if os.path.exists(f'/usr/local/var/keri/adb/{base}'):
-            shutil.rmtree(f'/usr/local/var/keri/adb/{base}')
+        if os.path.exists(f"/usr/local/var/keri/db/{base}"):
+            shutil.rmtree(f"/usr/local/var/keri/db/{base}")
+        if os.path.exists(f"/usr/local/var/keri/ks/{base}"):
+            shutil.rmtree(f"/usr/local/var/keri/ks/{base}")
+        if os.path.exists(f"/usr/local/var/keri/ks/{base}"):
+            shutil.rmtree(f"/usr/local/var/keri/ks/{base}")
+        if os.path.exists(f"/usr/local/var/keri/adb/{base}"):
+            shutil.rmtree(f"/usr/local/var/keri/adb/{base}")
 
         agency.shut(agent)
         assert caid not in agency.agents
         assert len(agent.doers) == 0
 
+
 def test_agency_without_config_file():
-    salt = b'0123456789bbbbbb'
+    salt = b"0123456789bbbbbb"
     salter = core.Salter(raw=salt)
-    cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
+    cf = configing.Configer(
+        name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False
+    )
 
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
         hby.makeHab(name="test")
 
-        agency = agenting.Agency(name="agency", base="", bran=None, temp=True, configFile=None, configDir=SCRIPTS_DIR)
+        agency = agenting.Agency(
+            name="agency",
+            base="",
+            bran=None,
+            temp=True,
+            configFile=None,
+            configDir=SCRIPTS_DIR,
+        )
         assert agency.cf is None
 
         doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
@@ -321,10 +374,13 @@ def test_agency_without_config_file():
         agent = agency.create(caid, salt=salter.qb64)
         assert agent.pre == "EMoA-qVulQDVuRD08WkxzFyMUcmelTew0cvDnOOzjwPr"
 
+
 def test_agency_with_urls_from_arguments():
-    salt = b'0123456789dddddd'
+    salt = b"0123456789dddddd"
     salter = core.Salter(raw=salt)
-    cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
+    cf = configing.Configer(
+        name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False
+    )
 
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
         hby.makeHab(name="test")
@@ -332,7 +388,16 @@ def test_agency_with_urls_from_arguments():
         curls = ["http://example.com:3902/"]
         iurls = ["http://example.com:5432/oobi"]
         durls = ["http://example.com:7723/oobi"]
-        agency = agenting.Agency(name="agency", base="", bran=None, temp=True, configDir=SCRIPTS_DIR, curls=curls, iurls=iurls, durls=durls)
+        agency = agenting.Agency(
+            name="agency",
+            base="",
+            bran=None,
+            temp=True,
+            configDir=SCRIPTS_DIR,
+            curls=curls,
+            iurls=iurls,
+            durls=durls,
+        )
         assert agency.cf is None
 
         doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
@@ -347,6 +412,7 @@ def test_agency_with_urls_from_arguments():
         assert agent.hby.cf.get()[f"agent-{caid}"]["curls"] == curls
         assert agent.hby.cf.get()["iurls"] == iurls
         assert agent.hby.cf.get()["durls"] == durls
+
 
 def test_unprotected_boot_ends(helpers):
     agency = agenting.Agency(name="agency", bran=None, temp=True)
@@ -366,9 +432,13 @@ def test_unprotected_boot_ends(helpers):
         icp=serder.ked,
         sig=sigers[0].qb64,
         salty=dict(
-            stem='signify:aid', pidx=0, tier='low', sxlt='OBXYZ',
-            icodes=[MtrDex.Ed25519_Seed], ncodes=[MtrDex.Ed25519_Seed]
-        )
+            stem="signify:aid",
+            pidx=0,
+            tier="low",
+            sxlt="OBXYZ",
+            icodes=[MtrDex.Ed25519_Seed],
+            ncodes=[MtrDex.Ed25519_Seed],
+        ),
     )
 
     rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"))
@@ -377,15 +447,24 @@ def test_unprotected_boot_ends(helpers):
     rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"))
     assert rep.status_code == 409
     assert rep.json == {
-        'title': 'agent already exists',
-        'description': 'agent for controller EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx already exists'
+        "title": "agent already exists",
+        "description": "agent for controller EK35JRNdfVkO4JwhXaSTdV4qzB_ibk_tGJmSVcY4pZqx already exists",
     }
+
 
 def test_protected_boot_ends(helpers):
     credentials = [
-        dict(bran=b'0123456789aaaaaaghija', username="user", password="secret"),
-        dict(bran=b'0123456789bbbbbbghijb', username="admin", password="secret with spaces"),
-        dict(bran=b'0123456789ccccccghijc', username="admin", password="secret : with colon")
+        dict(bran=b"0123456789aaaaaaghija", username="user", password="secret"),
+        dict(
+            bran=b"0123456789bbbbbbghijb",
+            username="admin",
+            password="secret with spaces",
+        ),
+        dict(
+            bran=b"0123456789ccccccghijc",
+            username="admin",
+            password="secret : with colon",
+        ),
     ]
 
     for credential in credentials:
@@ -409,32 +488,67 @@ def test_protected_boot_ends(helpers):
             icp=serder.ked,
             sig=sigers[0].qb64,
             salty=dict(
-                stem='signify:aid', pidx=0, tier='low', sxlt='OBXYZ',
-                icodes=[MtrDex.Ed25519_Seed], ncodes=[MtrDex.Ed25519_Seed]
-            )
+                stem="signify:aid",
+                pidx=0,
+                tier="low",
+                sxlt="OBXYZ",
+                icodes=[MtrDex.Ed25519_Seed],
+                ncodes=[MtrDex.Ed25519_Seed],
+            ),
         )
 
         rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"))
         assert rep.status_code == 401
 
-        rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": "Something test"})
+        rep = client.simulate_post(
+            "/boot",
+            body=json.dumps(body).encode("utf-8"),
+            headers={"Authorization": "Something test"},
+        )
         assert rep.status_code == 401
 
-        rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": f"Basic {username}:{password}"})
+        rep = client.simulate_post(
+            "/boot",
+            body=json.dumps(body).encode("utf-8"),
+            headers={"Authorization": f"Basic {username}:{password}"},
+        )
         assert rep.status_code == 401
 
-        rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": f"Basic {b64encode(bytes(f'test:{password}', 'utf-8')).decode('utf-8')}"} )
+        rep = client.simulate_post(
+            "/boot",
+            body=json.dumps(body).encode("utf-8"),
+            headers={
+                "Authorization": f"Basic {b64encode(bytes(f'test:{password}', 'utf-8')).decode('utf-8')}"
+            },
+        )
         assert rep.status_code == 401
 
-        rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": f"Basic {b64encode(bytes(f'{username}', 'utf-8')).decode('utf-8')}"} )
+        rep = client.simulate_post(
+            "/boot",
+            body=json.dumps(body).encode("utf-8"),
+            headers={
+                "Authorization": f"Basic {b64encode(bytes(f'{username}', 'utf-8')).decode('utf-8')}"
+            },
+        )
         assert rep.status_code == 401
 
-        rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": f"Basic {b64encode(bytes(f'{username}:test', 'utf-8')).decode('utf-8')}"} )
+        rep = client.simulate_post(
+            "/boot",
+            body=json.dumps(body).encode("utf-8"),
+            headers={
+                "Authorization": f"Basic {b64encode(bytes(f'{username}:test', 'utf-8')).decode('utf-8')}"
+            },
+        )
         assert rep.status_code == 401
 
         authorization = f"Basic {b64encode(bytes(f'{username}:{password}', 'utf-8')).decode('utf-8')}"
-        rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": authorization})
+        rep = client.simulate_post(
+            "/boot",
+            body=json.dumps(body).encode("utf-8"),
+            headers={"Authorization": authorization},
+        )
         assert rep.status_code == 202
+
 
 def test_misconfigured_protected_boot_ends(helpers):
     agency = agenting.Agency(name="agency", bran=None, temp=True)
@@ -455,21 +569,34 @@ def test_misconfigured_protected_boot_ends(helpers):
         icp=serder.ked,
         sig=sigers[0].qb64,
         salty=dict(
-            stem='signify:aid', pidx=0, tier='low', sxlt='OBXYZ',
-            icodes=[MtrDex.Ed25519_Seed], ncodes=[MtrDex.Ed25519_Seed]
-        )
+            stem="signify:aid",
+            pidx=0,
+            tier="low",
+            sxlt="OBXYZ",
+            icodes=[MtrDex.Ed25519_Seed],
+            ncodes=[MtrDex.Ed25519_Seed],
+        ),
     )
 
     authorization = f"Basic {b64encode(b'user').decode('utf-8')}"
-    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": authorization})
+    rep = client.simulate_post(
+        "/boot",
+        body=json.dumps(body).encode("utf-8"),
+        headers={"Authorization": authorization},
+    )
     assert rep.status_code == 401
 
     authorization = f"Basic {b64encode(b'user:secret').decode('utf-8')}"
-    rep = client.simulate_post("/boot", body=json.dumps(body).encode("utf-8"), headers={"Authorization": authorization})
+    rep = client.simulate_post(
+        "/boot",
+        body=json.dumps(body).encode("utf-8"),
+        headers={"Authorization": authorization},
+    )
     assert rep.status_code == 401
 
+
 def test_witnesser(helpers):
-    salt = b'0123456789abcdef'
+    salt = b"0123456789abcdef"
     salter = core.Salter(raw=salt)
 
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True) as hby:
@@ -488,17 +615,23 @@ def test_witnesser(helpers):
 
 def test_keystate_ends(helpers):
     caid = "ELI7pg979AdhmvrjDeam2eAO2SR5niCgnjAJXJHtDose"
-    salt = b'0123456789cccccc'
+    salt = b"0123456789cccccc"
     salter = core.Salter(raw=salt)
-    cf = configing.Configer(name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False)
+    cf = configing.Configer(
+        name="keria", headDirPath=SCRIPTS_DIR, temp=True, reopen=True, clear=False
+    )
 
     with habbing.openHby(name="keria", salt=salter.qb64, temp=True, cf=cf) as hby:
         hab = hby.makeHab(name="test")
         agency = agenting.Agency(name="agency", bran=None, temp=True)
         agentHab = hby.makeHab(caid, ns="agent", transferable=True, data=[caid])
 
-        rgy = credentialing.Regery(hby=hby, name=agentHab.name, base=hby.base, temp=True)
-        agent = agenting.Agent(hby=hby, rgy=rgy, agentHab=agentHab, agency=agency, caid=caid)
+        rgy = credentialing.Regery(
+            hby=hby, name=agentHab.name, base=hby.base, temp=True
+        )
+        agent = agenting.Agent(
+            hby=hby, rgy=rgy, agentHab=agentHab, agency=agency, caid=caid
+        )
 
         end = agenting.KeyStateCollectionEnd()
 
@@ -513,20 +646,26 @@ def test_keystate_ends(helpers):
         assert len(states) == 1
 
         state = states[0]
-        assert state['i'] == hab.pre
-        assert state['d'] == "EJ9ZaKf0e89CsaowWPjEpJ_oZc-OYWgRNTYULjQcGOwp"
-        assert state['et'] == 'icp'
-        assert state['k'] == ['DFbG433Fct2JBjNzRFT_lnk_-7Ymnl5Ig6RRsEE9fCS2']
-        assert state['n'] == ['EIgTsJ65kMPQGWXM5FB81Hcgyfz9iv4gWmZVP5a_RIOF']
-        assert state['ee'] == {'ba': [],
-                               'br': [],
-                               'd': 'EJ9ZaKf0e89CsaowWPjEpJ_oZc-OYWgRNTYULjQcGOwp',
-                               's': '0'}
+        assert state["i"] == hab.pre
+        assert state["d"] == "EJ9ZaKf0e89CsaowWPjEpJ_oZc-OYWgRNTYULjQcGOwp"
+        assert state["et"] == "icp"
+        assert state["k"] == ["DFbG433Fct2JBjNzRFT_lnk_-7Ymnl5Ig6RRsEE9fCS2"]
+        assert state["n"] == ["EIgTsJ65kMPQGWXM5FB81Hcgyfz9iv4gWmZVP5a_RIOF"]
+        assert state["ee"] == {
+            "ba": [],
+            "br": [],
+            "d": "EJ9ZaKf0e89CsaowWPjEpJ_oZc-OYWgRNTYULjQcGOwp",
+            "s": "0",
+        }
 
 
 def test_oobi_ends(seeder, helpers):
-    with helpers.openKeria() as (agency, agent, app, client), \
-            habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby:
+    with (
+        helpers.openKeria() as (agency, agent, app, client),
+        habbing.openHby(
+            name="wes", salt=core.Salter(raw=b"wess-the-witness").qb64
+        ) as wesHby,
+    ):
         wesHab = wesHby.makeHab(name="wes", transferable=False)
 
         result = client.simulate_get(path="/oobi/pal?role=witness")
@@ -534,12 +673,14 @@ def test_oobi_ends(seeder, helpers):
 
         # Add witness endpoints
         url = "http://127.0.0.1:9999"
-        agent.hby.db.locs.put(keys=(wesHab.pre, kering.Schemes.http), val=basing.LocationRecord(url=url))
+        agent.hby.db.locs.put(
+            keys=(wesHab.pre, kering.Schemes.http), val=basing.LocationRecord(url=url)
+        )
 
         # Register the identifier endpoint so we can create an AID for the test
         end = aiding.IdentifierCollectionEnd()
         app.add_route("/identifiers", end)
-        salt = b'0123456789abcdef'
+        salt = b"0123456789abcdef"
         helpers.createAid(client, "pal", salt, wits=[wesHab.pre], toad="1")
         palPre = "EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0"
 
@@ -564,23 +705,34 @@ def test_oobi_ends(seeder, helpers):
 
         # Add controller endpoints
         url = "http://127.0.0.1:9999"
-        agent.hby.db.locs.put(keys=(palPre, kering.Schemes.http), val=basing.LocationRecord(url=url))
+        agent.hby.db.locs.put(
+            keys=(palPre, kering.Schemes.http), val=basing.LocationRecord(url=url)
+        )
         result = client.simulate_get(path="/oobi/pal?role=controller")
         assert result.status == falcon.HTTP_200  # Missing OOBI controller endpoints
         assert result.json == {
-            'oobis': ['http://127.0.0.1:9999/oobi/EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0/controller'],
-            'role': 'controller'}
+            "oobis": [
+                "http://127.0.0.1:9999/oobi/EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0/controller"
+            ],
+            "role": "controller",
+        }
 
         # Seed with witness endpoints
-        seeder.seedWitEnds(agent.hby.db, witHabs=[wesHab], protocols=[kering.Schemes.http, kering.Schemes.tcp])
+        seeder.seedWitEnds(
+            agent.hby.db,
+            witHabs=[wesHab],
+            protocols=[kering.Schemes.http, kering.Schemes.tcp],
+        )
 
         result = client.simulate_get(path="/oobi/pal?role=witness")
         assert result.status == falcon.HTTP_200
         assert result.json == {
-            'oobis': [
-                'http://127.0.0.1:5644/oobi/EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0/witness/BN8t3n1lxcV0SWGJIIF'
-                '46fpSUqA7Mqre5KJNN3nbx3mr'],
-            'role': 'witness'}
+            "oobis": [
+                "http://127.0.0.1:5644/oobi/EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0/witness/BN8t3n1lxcV0SWGJIIF"
+                "46fpSUqA7Mqre5KJNN3nbx3mr"
+            ],
+            "role": "witness",
+        }
 
         # Post without a URL or RPY
         data = dict()
@@ -595,16 +747,25 @@ def test_oobi_ends(seeder, helpers):
         assert result.status == falcon.HTTP_501
 
         # initiated from keria.json config file (iurls), so remove
-        oobiery.hby.db.oobis.rem(keys=("http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller&tag=witness",))
+        oobiery.hby.db.oobis.rem(
+            keys=(
+                "http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller&tag=witness",
+            )
+        )
 
-        data = dict(url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/")
+        data = dict(
+            url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/"
+        )
         b = json.dumps(data).encode("utf-8")
         result = client.simulate_post(path="/oobi", body=b)
         assert result.status == falcon.HTTP_202
         assert oobiery.hby.db.oobis.cntAll() == 1
         (url,), item = next(oobiery.hby.db.oobis.getItemIter())
         assert item is not None
-        assert url == 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'
+        assert (
+            url
+            == "http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/"
+        )
         oobiery.hby.db.oobis.rem(keys=(url,))
 
         # Post an RPY
@@ -614,54 +775,78 @@ def test_oobi_ends(seeder, helpers):
         assert result.status == falcon.HTTP_501
 
         # POST without an oobialias
-        data = dict(url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/")
+        data = dict(
+            url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/"
+        )
         b = json.dumps(data).encode("utf-8")
         result = client.simulate_post(path="/oobi", body=b)
         assert result.status == falcon.HTTP_202
         assert oobiery.hby.db.oobis.cntAll() == 1
         (url,), item = next(oobiery.hby.db.oobis.getItemIter())
         assert item is not None
-        assert url == 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'
+        assert (
+            url
+            == "http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/"
+        )
         assert item.oobialias is None
         oobiery.hby.db.oobis.rem(keys=(url,))
 
-        data = dict(oobialias="sal", url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A"
-                                         "/witness/")
+        data = dict(
+            oobialias="sal",
+            url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A"
+            "/witness/",
+        )
         b = json.dumps(data).encode("utf-8")
         result = client.simulate_post(path="/oobi", body=b)
         assert result.status == falcon.HTTP_202
         assert oobiery.hby.db.oobis.cntAll() == 1
         (url,), item = next(oobiery.hby.db.oobis.getItemIter())
         assert item is not None
-        assert url == 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'
-        assert item.oobialias == 'sal'
+        assert (
+            url
+            == "http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/"
+        )
+        assert item.oobialias == "sal"
 
         op = helpers.createAid(client, "aggie", salt)
         aid = op["response"]
-        aggiePre = aid['i']
+        aggiePre = aid["i"]
         assert aggiePre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
 
         keys = (aggiePre, kering.Roles.agent, agent.agentHab.pre)
         ender = basing.EndpointRecord(allowed=True)
         agent.hby.db.ends.pin(keys=keys, val=ender)  # overwrite
         url = "http://127.0.0.1:3902"
-        agent.hby.db.locs.put(keys=(agent.agentHab.pre, kering.Schemes.http), val=basing.LocationRecord(url=url))
+        agent.hby.db.locs.put(
+            keys=(agent.agentHab.pre, kering.Schemes.http),
+            val=basing.LocationRecord(url=url),
+        )
 
         result = client.simulate_get(path="/oobi/aggie?role=agent")
         assert result.status == falcon.HTTP_200
-        assert result.json == {'oobis': ['http://127.0.0.1:3902/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/agent'
-                                         '/EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9'],
-                               'role': 'agent'}
-
+        assert result.json == {
+            "oobis": [
+                "http://127.0.0.1:3902/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/agent"
+                "/EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
+            ],
+            "role": "agent",
+        }
 
 
 def test_querier(helpers):
     with helpers.openKeria() as (agency, agent, app, client):
-        qry = agenting.Querier(hby=agent.hby, agentHab=agent.agentHab, queries=decking.Deck(), kvy=agent.kvy)
+        qry = agenting.Querier(
+            hby=agent.hby,
+            agentHab=agent.agentHab,
+            queries=decking.Deck(),
+            kvy=agent.kvy,
+        )
         doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
         deeds = doist.enter(doers=[qry])
 
-        qry.queries.append(dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9", sn="1"))
+        qry.queries.append(
+            dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9", sn="1")
+        )
         qry.recur(1.0, deeds=deeds)
 
         assert len(qry.doers) == 1
@@ -673,7 +858,9 @@ def test_querier(helpers):
         qry.doers.remove(seqNoDoer)
 
         # Anchor not implemented yet
-        qry.queries.append(dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9", anchor={}))
+        qry.queries.append(
+            dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9", anchor={})
+        )
         qry.recur(1.0, deeds=deeds)
         assert len(qry.doers) == 1
         anchorDoer = qry.doers[0]
@@ -705,40 +892,59 @@ def test_query_ends(helpers):
         body = dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9")
         result = client.simulate_post(path="/queries", body=json.dumps(body))
         assert result.status == falcon.HTTP_202
-        assert result.json == {'done': False,
-                               'error': None,
-                               'metadata': {'pre': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9'},
-                               'name': 'query.EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9',
-                               'response': None}
+        assert result.json == {
+            "done": False,
+            "error": None,
+            "metadata": {"pre": "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"},
+            "name": "query.EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9",
+            "response": None,
+        }
         assert len(agent.queries) == 1
 
         snbody = dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9", sn="2")
         result = client.simulate_post(path="/queries", body=json.dumps(snbody))
         assert result.status == falcon.HTTP_202
-        assert result.json == {'done': False,
-                               'error': None,
-                               'metadata': {'pre': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9', 'sn': '2'},
-                               'name': 'query.EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9.2',
-                               'response': None}
+        assert result.json == {
+            "done": False,
+            "error": None,
+            "metadata": {
+                "pre": "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9",
+                "sn": "2",
+            },
+            "name": "query.EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9.2",
+            "response": None,
+        }
         assert len(agent.queries) == 2
 
         ancbody = dict(
             pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9",
-            anchor={"i": "EKQSWRXh_JHX61NdrL6wJ8ELMwG4zFY8y-sU1nymYzXZ", "s": "1", "d": "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"}
+            anchor={
+                "i": "EKQSWRXh_JHX61NdrL6wJ8ELMwG4zFY8y-sU1nymYzXZ",
+                "s": "1",
+                "d": "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY",
+            },
         )
         result = client.simulate_post(path="/queries", body=json.dumps(ancbody))
         assert result.status == falcon.HTTP_202
-        assert result.json == {'done': False,
-                               'error': None,
-                               'metadata': {'pre': 'EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9',
-                                            'anchor': {'i': 'EKQSWRXh_JHX61NdrL6wJ8ELMwG4zFY8y-sU1nymYzXZ', 's': '1', 'd': 'EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY'}},
-                               'name': 'query.EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9.EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY',
-                               'response': None}
+        assert result.json == {
+            "done": False,
+            "error": None,
+            "metadata": {
+                "pre": "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9",
+                "anchor": {
+                    "i": "EKQSWRXh_JHX61NdrL6wJ8ELMwG4zFY8y-sU1nymYzXZ",
+                    "s": "1",
+                    "d": "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY",
+                },
+            },
+            "name": "query.EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9.EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY",
+            "response": None,
+        }
         assert len(agent.queries) == 3
 
 
 class MockServerTls:
-    def __init__(self,  certify, keypath, certpath, cafilepath, port):
+    def __init__(self, certify, keypath, certpath, cafilepath, port):
         pass
 
 
@@ -753,11 +959,12 @@ def test_createHttpServer(monkeypatch):
     server = httping.createHttpServer(port, app)
     assert isinstance(server, http.Server)
 
-    monkeypatch.setattr(hio.core.tcp, 'ServerTls', MockServerTls)
-    monkeypatch.setattr(hio.core.http, 'Server', MockHttpServer)
+    monkeypatch.setattr(hio.core.tcp, "ServerTls", MockServerTls)
+    monkeypatch.setattr(hio.core.http, "Server", MockHttpServer)
 
-    server = httping.createHttpServer(port, app, keypath='keypath', certpath='certpath',
-                                                 cafilepath='cafilepath')
+    server = httping.createHttpServer(
+        port, app, keypath="keypath", certpath="certpath", cafilepath="cafilepath"
+    )
 
     assert isinstance(server, MockHttpServer)
     assert isinstance(server.servant, MockServerTls)
@@ -768,19 +975,21 @@ def test_seeker_doer(helpers):
         cues = decking.Deck()
         seeker = agenting.SeekerDoer(agent.seeker, cues)
 
-        creder = serdering.SerderACDC(sad={
-            "v": "ACDC10JSON000197_",
-            "d": "EG7ZlUq0Z6a1EUPTM_Qg1LGEg1BWiypHLAekxo8crGzK",
-            "i": "EPbOCiPM7IItIMzMwslKWfPM4tqNIKUCyVVuYJNQHwMB",
-            "ri": "EE5upBEf9JlH0ZCkZwLcNOOQYkiowcF7QBa-SDZg3GLo",
-            "s": "EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao",
-            "a": {
-                "d": "EH8sB2FZuSYBi6dj8edmPMxS-ZoikR2ova3LAVJvelMe",
-                "i": "ECfRBXooQPoNNQC4i0bkwNfKm-VwV3QsUce14uFfejyj",
-                "dt": "2023-11-07T23:38:05.508152+00:00",
-                "LEI": "5493001KJTIIGC8Y1R17"
+        creder = serdering.SerderACDC(
+            sad={
+                "v": "ACDC10JSON000197_",
+                "d": "EG7ZlUq0Z6a1EUPTM_Qg1LGEg1BWiypHLAekxo8crGzK",
+                "i": "EPbOCiPM7IItIMzMwslKWfPM4tqNIKUCyVVuYJNQHwMB",
+                "ri": "EE5upBEf9JlH0ZCkZwLcNOOQYkiowcF7QBa-SDZg3GLo",
+                "s": "EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao",
+                "a": {
+                    "d": "EH8sB2FZuSYBi6dj8edmPMxS-ZoikR2ova3LAVJvelMe",
+                    "i": "ECfRBXooQPoNNQC4i0bkwNfKm-VwV3QsUce14uFfejyj",
+                    "dt": "2023-11-07T23:38:05.508152+00:00",
+                    "LEI": "5493001KJTIIGC8Y1R17",
+                },
             }
-        })
+        )
 
         assert creder.said == "EG7ZlUq0Z6a1EUPTM_Qg1LGEg1BWiypHLAekxo8crGzK"
 
@@ -790,13 +999,17 @@ def test_seeker_doer(helpers):
         assert result is False
         assert len(cues) == 1
 
+
 def test_submitter(seeder, helpers):
-    with helpers.openKeria() as (agency, agent, app, client), habbing.openHby(
-        name="wes", salt=core.Salter(raw=b"wess-the-witness").qb64, temp=True
-    ) as wesHby, habbing.openHby(
-        name="wan", salt=core.Salter(raw=b"wann-the-witness").qb64, temp=True
-    ) as wanHby:
-        
+    with (
+        helpers.openKeria() as (agency, agent, app, client),
+        habbing.openHby(
+            name="wes", salt=core.Salter(raw=b"wess-the-witness").qb64, temp=True
+        ) as wesHby,
+        habbing.openHby(
+            name="wan", salt=core.Salter(raw=b"wann-the-witness").qb64, temp=True
+        ) as wanHby,
+    ):
         wesHab = wesHby.makeHab(name="wes", transferable=False)
         assert not wesHab.kever.prefixer.transferable
 
@@ -824,7 +1037,9 @@ def test_submitter(seeder, helpers):
 
         salt = b"0123456789abcdef"
         alias = "pal"
-        createAidOp = helpers.createAid(client, name=alias, salt=salt, wits=witPrefixes, toad="1")
+        createAidOp = helpers.createAid(
+            client, name=alias, salt=salt, wits=witPrefixes, toad="1"
+        )
         hab = agent.hby.habByName(alias)
         serder = hab.iserder
 
@@ -843,18 +1058,22 @@ def test_submitter(seeder, helpers):
         msg = hab.makeOwnEvent(sn=sn)
         helpers.witnessMsg(hab=hab, msg=msg, sn=sn, witHabs=[wesHab])
         wigs = hab.db.getWigs(dgkey)
-        assert len(wigs) == 1 # only witnessed by one witness
+        assert len(wigs) == 1  # only witnessed by one witness
         assert len(wesHab.kvy.db.getWigs(dgkey)) == 1  # only witnessed by one witness
-        assert len(wanHab.kvy.db.getWigs(dgkey)) == 0  # only witnessed by the other witness
+        assert (
+            len(wanHab.kvy.db.getWigs(dgkey)) == 0
+        )  # only witnessed by the other witness
         assert len(wesHab.kvy.cues) == 0  # witness cues are empty
         assert hab.pre in wesHab.kvy.kevers  # id key state in wit hab
         assert hab.pre not in wanHab.kvy.kevers  # id key state not in wit hab yet
-        
-        witAidOp = client.simulate_get(path=f'/operations/{createAidOp["name"]}') # witnessing of created aid completed
-        assert witAidOp.json["done"] is True # succeed because toad is 1
+
+        witAidOp = client.simulate_get(
+            path=f"/operations/{createAidOp['name']}"
+        )  # witnessing of created aid completed
+        assert witAidOp.json["done"] is True  # succeed because toad is 1
         assert witAidOp.json["response"]["i"] == hab.pre
 
-        # Now we will setup to 'submit' (resubmit) the KEL to both witnesses 
+        # Now we will setup to 'submit' (resubmit) the KEL to both witnesses
         limit = 5.0
         tock = 0.03125
         wdoist = doing.Doist(limit=limit, tock=tock, doers=wanDoers)
@@ -866,24 +1085,36 @@ def test_submitter(seeder, helpers):
             path=f"/identifiers/{alias}/submit",
             body=json.dumps(dict(submit=alias)).encode("utf-8"),
         )
-        submitter = agent.submitter # get the submitter that was triggered by the submit request
+        submitter = (
+            agent.submitter
+        )  # get the submitter that was triggered by the submit request
         sdoist = doing.Doist(limit=1.0, tock=0.03125, real=True)
         sdeeds = sdoist.enter(doers=[submitter])
-        submitter.recur(tyme=1.0, deeds=sdeeds) # run the submitter to get witness receipts (with WitnessReceiptor) for sn=0 of the KEL
+        submitter.recur(
+            tyme=1.0, deeds=sdeeds
+        )  # run the submitter to get witness receipts (with WitnessReceiptor) for sn=0 of the KEL
         assert len(submitter.doers) == 1
         rectDoer = submitter.doers[0]
         assert isinstance(rectDoer, WitnessReceiptor) is True
-        resSubmit = client.simulate_get(path=f'/operations/{resSubmit.json["name"]}')
+        resSubmit = client.simulate_get(path=f"/operations/{resSubmit.json['name']}")
         assert resSubmit.json["done"] is False
 
         stamp = nowIso8601()  # need same time stamp or not duplicate
-        agent.witq.query(src=hab.pre, pre=wanHab.pre, stamp=stamp, wits=wanHab.kever.wits)
-        agent.witq.query(src=hab.pre, pre=wanHab.pre, stamp=stamp, wits=wanHab.kever.wits)
-        agent.witq.query(src=hab.pre, pre=wanHab.pre, stamp=stamp, wits=wanHab.kever.wits)
+        agent.witq.query(
+            src=hab.pre, pre=wanHab.pre, stamp=stamp, wits=wanHab.kever.wits
+        )
+        agent.witq.query(
+            src=hab.pre, pre=wanHab.pre, stamp=stamp, wits=wanHab.kever.wits
+        )
+        agent.witq.query(
+            src=hab.pre, pre=wanHab.pre, stamp=stamp, wits=wanHab.kever.wits
+        )
 
         # while not (resSubmit.json["done"] or tymer.expired):
-        submitter.recur(tyme=1.0, deeds=sdeeds) # run the submitter to check for witness receipts (with WitnessReceiptor) for sn=0 of the KEL
-        resSubmit = client.simulate_get(path=f'/operations/{resSubmit.json["name"]}')
+        submitter.recur(
+            tyme=1.0, deeds=sdeeds
+        )  # run the submitter to check for witness receipts (with WitnessReceiptor) for sn=0 of the KEL
+        resSubmit = client.simulate_get(path=f"/operations/{resSubmit.json['name']}")
 
         limit = 5.0
         tock = 0.03125
@@ -891,26 +1122,28 @@ def test_submitter(seeder, helpers):
         doers = wanDoers + [rectDoer]
         doist.do(doers=doers)
         doist.recur()
-        
+
         assert hab.pre in wanHab.kvy.kevers  # id key state in wit hab
         assert wanHab.kvy.kevers[hab.pre].sn == 0
         wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
-        assert len(wanHab.kvy.db.getWigs(dgkey)) == 2  # now witnessed by the other witness
+        assert (
+            len(wanHab.kvy.db.getWigs(dgkey)) == 2
+        )  # now witnessed by the other witness
         assert len(wanHab.kvy.cues) == 0  # witness cues are empty
         assert hab.pre in wanHab.kvy.kevers  # id key state in wit hab yet
         assert wanHby.db.fullyWitnessed(hab.kever.serder)  # fully witnessed
 
-        rctMsg = wanHab.replyToOobi(aid=hab.pre, role='controller')
+        rctMsg = wanHab.replyToOobi(aid=hab.pre, role="controller")
         hab.psr.parse(ims=bytearray(rctMsg), kvy=hab.kvy, local=True)
-        witMsg = wanHab.replyToOobi(aid=wanHab.pre, role='controller')
+        witMsg = wanHab.replyToOobi(aid=wanHab.pre, role="controller")
         hab.psr.parse(ims=bytearray(witMsg), kvy=hab.kvy, local=True)
         assert wanHab.pre in hab.kvy.kevers
         wigs = hab.db.getWigs(dgkey)
         assert len(wigs) == 2
 
-        rectDoer.cues.append(dict(pre=hab.pre, sn=0)) # append expected cue
+        rectDoer.cues.append(dict(pre=hab.pre, sn=0))  # append expected cue
         submitter.recur(tyme=1.0, deeds=sdeeds)
-        resSubmit = client.simulate_get(path=f'/operations/{resSubmit.json["name"]}')
+        resSubmit = client.simulate_get(path=f"/operations/{resSubmit.json['name']}")
         assert resSubmit.status_code == 200
         assert resSubmit.text == json.dumps(
             dict(
@@ -932,7 +1165,10 @@ def test_submitter(seeder, helpers):
                     "nt": "1",
                     "n": ["EHj7rmVHVkQKqnfeer068PiYvYm-WFSTVZZpFGsClfT-"],
                     "bt": "1",
-                    "b": ["BN8t3n1lxcV0SWGJIIF46fpSUqA7Mqre5KJNN3nbx3mr","BOigXdxpp1r43JhO--czUTwrCXzoWrIwW8i41KWDlr8s"],
+                    "b": [
+                        "BN8t3n1lxcV0SWGJIIF46fpSUqA7Mqre5KJNN3nbx3mr",
+                        "BOigXdxpp1r43JhO--czUTwrCXzoWrIwW8i41KWDlr8s",
+                    ],
                     "c": [],
                     "ee": {
                         "s": "0",
@@ -952,5 +1188,8 @@ def test_config_ends(helpers):
         app.add_route("/config", configEnd)
         res = client.simulate_get(path="/config")
         assert res.status == falcon.HTTP_200
-        assert res.json == {'iurls':
-                            ['http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller&tag=witness']}
+        assert res.json == {
+            "iurls": [
+                "http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller&tag=witness"
+            ]
+        }

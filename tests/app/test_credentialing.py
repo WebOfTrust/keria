@@ -5,6 +5,7 @@ keria.app.credentialing module
 
 Testing credentialing endpoint in the Mark II Agent
 """
+
 import json
 
 import falcon
@@ -52,43 +53,65 @@ def test_schema_ends(helpers):
         sed["$id"] = ""
         sed["$schema"] = "http://json-schema.org/draft-07/schema#"
         sed.update(dict(type="object", properties=dict(a=dict(type="string"))))
-        sce = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
+        sce = scheming.Schemer(
+            sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256
+        )
         agent.hby.db.schema.pin(sce.said, sce)
 
         sed = dict()
         sed["$id"] = ""
         sed["$schema"] = "http://json-schema.org/draft-07/schema#"
-        sed.update(dict(type="object", properties=dict(b=dict(type="number"), )))
-        sce = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
+        sed.update(
+            dict(
+                type="object",
+                properties=dict(
+                    b=dict(type="number"),
+                ),
+            )
+        )
+        sce = scheming.Schemer(
+            sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256
+        )
         agent.hby.db.schema.pin(sce.said, sce)
 
         sed = dict()
         sed["$id"] = ""
         sed["$schema"] = "http://json-schema.org/draft-07/schema#"
-        sed.update(dict(type="object", properties=dict(c=dict(type="string", format="date-time"))))
-        sce = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
+        sed.update(
+            dict(
+                type="object",
+                properties=dict(c=dict(type="string", format="date-time")),
+            )
+        )
+        sce = scheming.Schemer(
+            sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256
+        )
         agent.hby.db.schema.pin(sce.said, sce)
 
         response = client.simulate_get("/schema")
         assert response.status == falcon.HTTP_200
         assert len(response.json) == 3
-        assert response.json[0]["$id"] == 'EHoMjhY-5V5jdSXr0yHEYWxSH8MeFfNEqnmhXbClTepe'
-        schema0id = 'EHoMjhY-5V5jdSXr0yHEYWxSH8MeFfNEqnmhXbClTepe'
-        assert response.json[1]["$id"] == 'ELrCCNUmu7t9OS5XX6MYwuyLHY13IWuJoFVPfBkjkGAd'
-        assert response.json[2]["$id"] == 'ENW0ZoANRhLAHczo7BwgzBlkDMZWFU2QilCCIbg98PK6'
+        assert response.json[0]["$id"] == "EHoMjhY-5V5jdSXr0yHEYWxSH8MeFfNEqnmhXbClTepe"
+        schema0id = "EHoMjhY-5V5jdSXr0yHEYWxSH8MeFfNEqnmhXbClTepe"
+        assert response.json[1]["$id"] == "ELrCCNUmu7t9OS5XX6MYwuyLHY13IWuJoFVPfBkjkGAd"
+        assert response.json[2]["$id"] == "ENW0ZoANRhLAHczo7BwgzBlkDMZWFU2QilCCIbg98PK6"
 
-        assert response.json[2]["properties"] == {'b': {'type': 'number'}}
-        assert response.json[0]["properties"] == {'c': {'format': 'date-time', 'type': 'string'}}
-        assert response.json[1]["properties"] == {'a': {'type': 'string'}}
+        assert response.json[2]["properties"] == {"b": {"type": "number"}}
+        assert response.json[0]["properties"] == {
+            "c": {"format": "date-time", "type": "string"}
+        }
+        assert response.json[1]["properties"] == {"a": {"type": "string"}}
 
-        badschemaid = 'EH1MjhY-5V5jdSXr0yHEYWxSH8MeFfNEqnmhXbClTepe'
+        badschemaid = "EH1MjhY-5V5jdSXr0yHEYWxSH8MeFfNEqnmhXbClTepe"
         response = client.simulate_get(f"/schema/{badschemaid}")
         assert response.status == falcon.HTTP_404
 
         response = client.simulate_get(f"/schema/{schema0id}")
         assert response.status == falcon.HTTP_200
         assert response.json["$id"] == schema0id
-        assert response.json["properties"] == {'c': {'format': 'date-time', 'type': 'string'}}
+        assert response.json["properties"] == {
+            "c": {"format": "date-time", "type": "string"}
+        }
 
 
 def test_registry_end(helpers, seeder):
@@ -105,29 +128,39 @@ def test_registry_end(helpers, seeder):
 
         end = aiding.IdentifierCollectionEnd()
         app.add_route("/identifiers", end)
-        salt = b'0123456789abcdef'
+        salt = b"0123456789abcdef"
         op = helpers.createAid(client, "test", salt)
         aid = op["response"]
-        pre = aid['i']
+        pre = aid["i"]
         assert pre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
 
-        result = client.simulate_post(path="/identifiers/test/registries", body=b'{}')
+        result = client.simulate_post(path="/identifiers/test/registries", body=b"{}")
         assert result.status == falcon.HTTP_400  # Bad request, missing name
 
-        result = client.simulate_post(path="/identifiers/test123/registries", body=b'{"name": "test"}')
+        result = client.simulate_post(
+            path="/identifiers/test123/registries", body=b'{"name": "test"}'
+        )
         assert result.status == falcon.HTTP_400  # Bad Request, invalid aid name
 
         nonce = Salter().qb64
-        regser = eventing.incept(pre,
-                                 baks=[],
-                                 toad="0",
-                                 nonce=nonce,
-                                 cnfg=[TraitCodex.NoBackers],
-                                 code=coring.MtrDex.Blake3_256)
-        anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)
-        serder, sigers = helpers.interact(pre=pre, bran=salt, pidx=0, ridx=0, dig=aid['d'], sn='1', data=[anchor])
-        body = dict(name="test", alias="test", vcp=regser.ked, ixn=serder.ked, sigs=sigers)
-        result = client.simulate_post(path="/identifiers/test/registries", body=json.dumps(body).encode("utf-8"))
+        regser = eventing.incept(
+            pre,
+            baks=[],
+            toad="0",
+            nonce=nonce,
+            cnfg=[TraitCodex.NoBackers],
+            code=coring.MtrDex.Blake3_256,
+        )
+        anchor = dict(i=regser.ked["i"], s=regser.ked["s"], d=regser.said)
+        serder, sigers = helpers.interact(
+            pre=pre, bran=salt, pidx=0, ridx=0, dig=aid["d"], sn="1", data=[anchor]
+        )
+        body = dict(
+            name="test", alias="test", vcp=regser.ked, ixn=serder.ked, sigs=sigers
+        )
+        result = client.simulate_post(
+            path="/identifiers/test/registries", body=json.dumps(body).encode("utf-8")
+        )
         op2 = result.json
         metadata = op2["metadata"]
 
@@ -154,52 +187,88 @@ def test_registry_end(helpers, seeder):
         result = client.simulate_get(path="/identifiers/test/registries")
         assert result.status == falcon.HTTP_200
         assert len(result.json) == 1
-        result = client.simulate_post(path="/identifiers/test/registries", body=json.dumps(body).encode("utf-8"))
+        result = client.simulate_post(
+            path="/identifiers/test/registries", body=json.dumps(body).encode("utf-8")
+        )
         assert result.status == falcon.HTTP_400
-        assert result.json == {'description': 'registry name test already in use', 'title': '400 Bad Request'}
+        assert result.json == {
+            "description": "registry name test already in use",
+            "title": "400 Bad Request",
+        }
 
-        body = dict(name="test", alias="test", vcp=regser.ked, ixn=serder.ked, sigs=sigers)
-        result = client.simulate_post(path="/identifiers/bad_test/registries", body=json.dumps(body).encode("utf-8"))
+        body = dict(
+            name="test", alias="test", vcp=regser.ked, ixn=serder.ked, sigs=sigers
+        )
+        result = client.simulate_post(
+            path="/identifiers/bad_test/registries",
+            body=json.dumps(body).encode("utf-8"),
+        )
         assert result.status == falcon.HTTP_404
-        assert result.json == {'description': 'bad_test is not a valid reference to an identifier',
-                              'title': '404 Not Found'}
+        assert result.json == {
+            "description": "bad_test is not a valid reference to an identifier",
+            "title": "404 Not Found",
+        }
 
         # Try with bad identifier name
         body = b'{"name": "new-name"}'
-        result = client.simulate_put(path="/identifiers/test-bad/registries/test", body=body)
+        result = client.simulate_put(
+            path="/identifiers/test-bad/registries/test", body=body
+        )
         assert result.status == falcon.HTTP_404
-        assert result.json == {'description': 'test-bad is not a valid reference to an identifier',
-                               'title': '404 Not Found'}
+        assert result.json == {
+            "description": "test-bad is not a valid reference to an identifier",
+            "title": "404 Not Found",
+        }
 
-        result = client.simulate_put(path="/identifiers/test/registries/test", body=body)
+        result = client.simulate_put(
+            path="/identifiers/test/registries/test", body=body
+        )
         assert result.status == falcon.HTTP_200
-        regk = result.json['regk']
+        regk = result.json["regk"]
 
         # Try to rename a the now used name
-        result = client.simulate_put(path="/identifiers/test/registries/new-name", body=b'{}')
+        result = client.simulate_put(
+            path="/identifiers/test/registries/new-name", body=b"{}"
+        )
         assert result.status == falcon.HTTP_400
-        assert result.json == {'description': "'name' is required in body", 'title': '400 Bad Request'}
+        assert result.json == {
+            "description": "'name' is required in body",
+            "title": "400 Bad Request",
+        }
 
         # Try to rename a the now used name
-        result = client.simulate_put(path="/identifiers/test/registries/test", body=body)
+        result = client.simulate_put(
+            path="/identifiers/test/registries/test", body=body
+        )
         assert result.status == falcon.HTTP_400
-        assert result.json == {'description': 'new-name is already in use for a registry',
-                               'title': '400 Bad Request'}
+        assert result.json == {
+            "description": "new-name is already in use for a registry",
+            "title": "400 Bad Request",
+        }
 
         # Try to rename a now non-existant registry
         body = b'{"name": "newnew-name"}'
-        result = client.simulate_put(path="/identifiers/test/registries/test", body=body)
+        result = client.simulate_put(
+            path="/identifiers/test/registries/test", body=body
+        )
         assert result.status == falcon.HTTP_404
-        assert result.json == {'description': 'test is not a valid reference to a credential registry',
-                               'title': '404 Not Found'}
+        assert result.json == {
+            "description": "test is not a valid reference to a credential registry",
+            "title": "404 Not Found",
+        }
         # Rename registry by SAID
         body = b'{"name": "newnew-name"}'
-        result = client.simulate_put(path=f"/identifiers/test/registries/{regk}", body=body)
+        result = client.simulate_put(
+            path=f"/identifiers/test/registries/{regk}", body=body
+        )
         assert result.status == falcon.HTTP_200
 
         result = client.simulate_get(path="/identifiers/not_test/registries")
         assert result.status == falcon.HTTP_404
-        assert result.json == {'description': 'not_test is not a valid reference to an identifier', 'title': '404 Not Found'}
+        assert result.json == {
+            "description": "not_test is not a valid reference to an identifier",
+            "title": "404 Not Found",
+        }
 
         # Test Operation Resource
         result = client.simulate_get(path=f"/operations/{op['name']}")
@@ -212,19 +281,21 @@ def test_registry_end(helpers, seeder):
 
         result = client.simulate_get(path="/operations/bad_name")
         assert result.status == falcon.HTTP_404
-        assert result.json == {'title': "long running operation 'bad_name' not found"}
+        assert result.json == {"title": "long running operation 'bad_name' not found"}
 
         result = client.simulate_delete(path=f"/operations/{op['name']}")
         assert result.status == falcon.HTTP_204
 
         result = client.simulate_delete(path="/operations/bad_name")
         assert result.status == falcon.HTTP_404
-        assert result.json == {'title': "long running operation 'bad_name' not found"}
+        assert result.json == {"title": "long running operation 'bad_name' not found"}
 
 
 def test_issue_credential(helpers, seeder):
-    with (helpers.openKeria() as (agency, agent, app, client),
-          helpers.openKeria() as (agency1, agent1, app1, client1)):
+    with (
+        helpers.openKeria() as (agency, agent, app, client),
+        helpers.openKeria() as (agency1, agent1, app1, client1),
+    ):
         idResEnd = aiding.IdentifierResourceEnd()
         app.add_route("/identifiers/{name}", idResEnd)
         registryEnd = credentialing.RegistryCollectionEnd(idResEnd)
@@ -249,16 +320,16 @@ def test_issue_credential(helpers, seeder):
         doist = doing.Doist(limit=limit, tock=tock, real=True)
         deeds = doist.enter(doers=[agent, serverDoer])
 
-        isalt = b'0123456789abcdef'
+        isalt = b"0123456789abcdef"
         registry, issuer = helpers.createRegistry(client, agent, isalt, doist, deeds)
 
         iaid = issuer["prefix"]
-        idig = issuer['state']['d']
+        idig = issuer["state"]["d"]
 
-        rsalt = b'abcdef0123456789'
+        rsalt = b"abcdef0123456789"
         op = helpers.createAid(client, "recipient", rsalt)
         aid = op["response"]
-        recp = aid['i']
+        recp = aid["i"]
         assert recp == "EMgdjM1qALk3jlh4P2YyLRSTcjSOjLXD3e_uYpxbdbg6"
 
         helpers.createEndRole(client, agent, recp, "recipient", rsalt)
@@ -266,20 +337,24 @@ def test_issue_credential(helpers, seeder):
         dt = "2021-01-01T00:00:00.000000+00:00"
         schema = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
         data = dict(LEI="254900DA0GOGCFVWB618", dt=dt)
-        creder = proving.credential(issuer=iaid,
-                                    schema=schema,
-                                    recipient=recp,
-                                    data=data,
-                                    source={},
-                                    status=registry["regk"])
+        creder = proving.credential(
+            issuer=iaid,
+            schema=schema,
+            recipient=recp,
+            data=data,
+            source={},
+            status=registry["regk"],
+        )
 
         csigers = helpers.sign(bran=isalt, pidx=0, ridx=0, ser=creder.raw)
 
         # Test no backers... backers would use backerIssue
         regser = eventing.issue(vcdig=creder.said, regk=registry["regk"], dt=dt)
 
-        anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)
-        serder, sigers = helpers.interact(pre=iaid, bran=isalt, pidx=0, ridx=0, dig=idig, sn='2', data=[anchor])
+        anchor = dict(i=regser.ked["i"], s=regser.ked["s"], d=regser.said)
+        serder, sigers = helpers.interact(
+            pre=iaid, bran=isalt, pidx=0, ridx=0, dig=idig, sn="2", data=[anchor]
+        )
 
         pather = coring.Pather(path=[])
 
@@ -289,18 +364,27 @@ def test_issue_credential(helpers, seeder):
             sigs=sigers,
             acdc=creder.sad,
             csigs=csigers,
-            path=pather.qb64)
-        
-        result = client.simulate_post(path="/identifiers/badname/credentials", body=json.dumps(body).encode("utf-8"))
-        assert result.status_code == 404
-        assert result.json == {'description': "badname is not a valid reference to an identifier",
-                               'title': '404 Not Found'}
+            path=pather.qb64,
+        )
 
-        result = client.simulate_post(path="/identifiers/issuer/credentials", body=json.dumps(body).encode("utf-8"))
+        result = client.simulate_post(
+            path="/identifiers/badname/credentials",
+            body=json.dumps(body).encode("utf-8"),
+        )
+        assert result.status_code == 404
+        assert result.json == {
+            "description": "badname is not a valid reference to an identifier",
+            "title": "404 Not Found",
+        }
+
+        result = client.simulate_post(
+            path="/identifiers/issuer/credentials",
+            body=json.dumps(body).encode("utf-8"),
+        )
         op = result.json
 
-        assert 'ced' in op['metadata']
-        assert op['metadata']['ced'] == creder.sad
+        assert "ced" in op["metadata"]
+        assert op["metadata"]["ced"] == creder.sad
 
         while not agent.credentialer.complete(creder.said):
             doist.recur(deeds=deeds)
@@ -308,7 +392,10 @@ def test_issue_credential(helpers, seeder):
         assert agent.credentialer.complete(creder.said) is True
 
         body["acdc"]["a"]["LEI"] = "ACDC10JSON000197_"
-        result = client.simulate_post(path="/identifiers/issuer/credentials", body=json.dumps(body).encode("utf-8"))
+        result = client.simulate_post(
+            path="/identifiers/issuer/credentials",
+            body=json.dumps(body).encode("utf-8"),
+        )
         assert result.status_code == 400
 
         # Try to load into another agent after TEL query without IPEX
@@ -325,11 +412,15 @@ def test_issue_credential(helpers, seeder):
         app1.add_route("/credentials/verify", credVerifyEnd)
 
         body = dict(acdc=creder.sad, iss=regser.ked)  # still has changed LEI
-        result = client1.simulate_post(path="/credentials/verify", body=json.dumps(body).encode("utf-8"))
+        result = client1.simulate_post(
+            path="/credentials/verify", body=json.dumps(body).encode("utf-8")
+        )
         assert result.status_code == 400
 
         body["acdc"]["a"]["LEI"] = "254900DA0GOGCFVWB618"  # change back
-        result = client1.simulate_post(path="/credentials/verify", body=json.dumps(body).encode("utf-8"))
+        result = client1.simulate_post(
+            path="/credentials/verify", body=json.dumps(body).encode("utf-8")
+        )
         assert result.status_code == 202
 
         deeds = doist.enter(doers=[agent1])
@@ -338,11 +429,13 @@ def test_issue_credential(helpers, seeder):
 
 
 def test_credentialing_ends(helpers, seeder):
-    salt = b'0123456789abcdef'
+    salt = b"0123456789abcdef"
 
-    with helpers.openKeria() as (agency, agent, app, client), \
-            habbing.openHab(name="issuer", salt=salt, temp=True) as (hby, hab), \
-            helpers.withIssuer(name="issuer", hby=hby) as issuer:
+    with (
+        helpers.openKeria() as (agency, agent, app, client),
+        habbing.openHab(name="issuer", salt=salt, temp=True) as (hby, hab),
+        helpers.withIssuer(name="issuer", hby=hby) as issuer,
+    ):
         idResEnd = aiding.IdentifierResourceEnd()
         credEnd = credentialing.CredentialCollectionEnd(idResEnd)
         app.add_route("/identifiers/{name}/credentials", credEnd)
@@ -362,13 +455,13 @@ def test_credentialing_ends(helpers, seeder):
         app.add_route("/identifiers", end)
         op = helpers.createAid(client, "test", salt)
         aid = op["response"]
-        issuee = aid['i']
+        issuee = aid["i"]
         assert issuee == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
 
         rgy = Regery(hby=hby, name="issuer", temp=True)
         registrar = Registrar(hby=hby, rgy=rgy, counselor=None)
 
-        conf = dict(nonce='AGu8jwfkyvVXQ2nqEb5yVigEtR31KSytcpe2U2f7NArr')
+        conf = dict(nonce="AGu8jwfkyvVXQ2nqEb5yVigEtR31KSytcpe2U2f7NArr")
 
         registry = rgy.makeRegistry(name="issuer", prefix=hab.pre, **conf)
         assert registry.regk == "EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4"
@@ -389,14 +482,18 @@ def test_credentialing_ends(helpers, seeder):
             issuer.issueQVIvLEI("issuer", hab, issuee, "984500AAFEB59DDC0E43"),
             issuer.issueLegalEntityvLEI("issuer", hab, issuee, "254900OPPU84GM83MG36"),
             issuer.issueLegalEntityvLEI("issuer", hab, issuee, "9845004CC7884BN85018"),
-            issuer.issueLegalEntityvLEI("issuer", hab, issuee, "98450030F6X9EC7C8336")
+            issuer.issueLegalEntityvLEI("issuer", hab, issuee, "98450030F6X9EC7C8336"),
         ]
 
         ims = bytearray()
         for said in saids:
-            ims.extend(credentialing.CredentialResourceEnd.outputCred(hby, issuer.rgy, said))
+            ims.extend(
+                credentialing.CredentialResourceEnd.outputCred(hby, issuer.rgy, said)
+            )
 
-        parsing.Parser(kvy=agent.kvy, rvy=agent.rvy, tvy=agent.tvy, vry=agent.verifier).parse(ims)
+        parsing.Parser(
+            kvy=agent.kvy, rvy=agent.rvy, tvy=agent.tvy, vry=agent.verifier
+        ).parse(ims)
 
         for said in saids:
             agent.seeker.index(said)
@@ -405,107 +502,132 @@ def test_credentialing_ends(helpers, seeder):
         assert res.status_code == 200
         assert len(res.json) == 5
 
-        body = json.dumps({'filter': {'-i': issuee}}).encode("utf-8")
+        body = json.dumps({"filter": {"-i": issuee}}).encode("utf-8")
         res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert res.json == []
 
-        body = json.dumps({'filter': {'-a-i': issuee}}).encode("utf-8")
+        body = json.dumps({"filter": {"-a-i": issuee}}).encode("utf-8")
         res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 5
 
-        body = json.dumps({'filter': {'-i': hab.pre}}).encode("utf-8")
+        body = json.dumps({"filter": {"-i": hab.pre}}).encode("utf-8")
         res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 5
 
-        body = json.dumps({'filter': {'-s': {'$eq': issuer.LE}}}).encode("utf-8")
+        body = json.dumps({"filter": {"-s": {"$eq": issuer.LE}}}).encode("utf-8")
         res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 3
 
-        body = json.dumps({'filter': {'-s': {'$eq': issuer.QVI}}}).encode("utf-8")
+        body = json.dumps({"filter": {"-s": {"$eq": issuer.QVI}}}).encode("utf-8")
         res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 2
 
-        body = json.dumps({'limit': 1}).encode("utf-8")
+        body = json.dumps({"limit": 1}).encode("utf-8")
         res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 1
 
-        body = json.dumps({'limit': 2}).encode("utf-8")
+        body = json.dumps({"limit": 2}).encode("utf-8")
         res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 2
 
-        body = json.dumps({'limit': 4, 'skip':0}).encode("utf-8")
+        body = json.dumps({"limit": 4, "skip": 0}).encode("utf-8")
         res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 4
 
-        body = json.dumps({'limit': 4, 'skip':4}).encode("utf-8")
+        body = json.dumps({"limit": 4, "skip": 4}).encode("utf-8")
         res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 1
 
-        body = json.dumps({'limit': 4, 'skip':0, 'sort': ['-i']}).encode("utf-8")
+        body = json.dumps({"limit": 4, "skip": 0, "sort": ["-i"]}).encode("utf-8")
         res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 4
 
         res = client.simulate_get(f"/credentials/{saids[0]}")
         assert res.status_code == 200
-        assert res.headers['content-type'] == "application/json"
-        assert res.json['sad']['d'] == saids[0]
+        assert res.headers["content-type"] == "application/json"
+        assert res.json["sad"]["d"] == saids[0]
 
-        res = client.simulate_get("/credentials/EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy")
+        res = client.simulate_get(
+            "/credentials/EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy"
+        )
         assert res.status_code == 404
-        assert res.json == {'description': "credential for said EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy not found.",
-                            'title': '404 Not Found'}
+        assert res.json == {
+            "description": "credential for said EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy not found.",
+            "title": "404 Not Found",
+        }
 
         headers = {"Accept": "application/json+cesr"}
         res = client.simulate_get(f"/credentials/{saids[0]}", headers=headers)
         assert res.status_code == 200
-        assert res.headers['content-type'] == "application/json+cesr"
+        assert res.headers["content-type"] == "application/json+cesr"
 
         res = client.simulate_get(f"/registries/{registry.regk}/{saids[0]}")
         assert res.status_code == 200
-        assert res.json == {'vn': [1, 0], 'i': 'EIO9uC3K6MvyjFD-RB3RYW3dfL49kCyz3OPqv3gi1dek', 's': '0',
-                            'd': 'EBVaw6pCqfMIiZGkA6qevzRUGsxTRuZXxl6YG1neeCGF', 'ri': 'EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4',
-                            'ra': {}, 'a': {'s': 3, 'd': 'EO_rknKiU14E0I-rN6yttRE0OSDKaQpVSozAcghjS4dj'},
-                            'dt': '2021-06-27T21:26:21.233257+00:00', 'et': 'iss'}
+        assert res.json == {
+            "vn": [1, 0],
+            "i": "EIO9uC3K6MvyjFD-RB3RYW3dfL49kCyz3OPqv3gi1dek",
+            "s": "0",
+            "d": "EBVaw6pCqfMIiZGkA6qevzRUGsxTRuZXxl6YG1neeCGF",
+            "ri": "EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4",
+            "ra": {},
+            "a": {"s": 3, "d": "EO_rknKiU14E0I-rN6yttRE0OSDKaQpVSozAcghjS4dj"},
+            "dt": "2021-06-27T21:26:21.233257+00:00",
+            "et": "iss",
+        }
 
-        res = client.simulate_get(f"/registries/{registry.regk}/EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy")
+        res = client.simulate_get(
+            f"/registries/{registry.regk}/EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy"
+        )
         assert res.status_code == 404
-        assert res.json == {'description': "credential EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy not found in registry EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4",
-                            'title': '404 Not Found'}
+        assert res.json == {
+            "description": "credential EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy not found in registry EACehJRd0wfteUAJgaTTJjMSaQqWvzeeHqAMMqxuqxU4",
+            "title": "404 Not Found",
+        }
 
-        res = client.simulate_get(f"/registries/EBVaw6pCqfMIiZGkA6qevzRUGsxTRuZXxl6YG1neeCGF/{saids[0]}")
+        res = client.simulate_get(
+            f"/registries/EBVaw6pCqfMIiZGkA6qevzRUGsxTRuZXxl6YG1neeCGF/{saids[0]}"
+        )
         assert res.status_code == 404
-        assert res.json == {'description': "registry EBVaw6pCqfMIiZGkA6qevzRUGsxTRuZXxl6YG1neeCGF not found",
-                            'title': '404 Not Found'}
+        assert res.json == {
+            "description": "registry EBVaw6pCqfMIiZGkA6qevzRUGsxTRuZXxl6YG1neeCGF not found",
+            "title": "404 Not Found",
+        }
 
         res = client.simulate_delete("/credentials/doesnotexist")
         assert res.status_code == 404
-        assert res.json == {'description': "credential for said doesnotexist not found.",
-                            'title': '404 Not Found'}
+        assert res.json == {
+            "description": "credential for said doesnotexist not found.",
+            "title": "404 Not Found",
+        }
 
         res = client.simulate_delete(f"/credentials/{saids[0]}")
         assert res.status_code == 204
 
         res = client.simulate_get(f"/credentials/{saids[0]}")
         assert res.status_code == 404
-        assert res.json == {'description': "credential for said EIO9uC3K6MvyjFD-RB3RYW3dfL49kCyz3OPqv3gi1dek not found.",
-                            'title': '404 Not Found'}
+        assert res.json == {
+            "description": "credential for said EIO9uC3K6MvyjFD-RB3RYW3dfL49kCyz3OPqv3gi1dek not found.",
+            "title": "404 Not Found",
+        }
 
         res = client.simulate_post("/credentials/query")
         assert res.status_code == 200
         assert len(res.json) == 4
 
         # Query using specific filter to check indexes
-        body = json.dumps({'filter': {'-a-LEI': "984500E5DEFDBQ1O9038"}}).encode("utf-8")
+        body = json.dumps({"filter": {"-a-LEI": "984500E5DEFDBQ1O9038"}}).encode(
+            "utf-8"
+        )
         res = client.simulate_post("/credentials/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 0
@@ -515,7 +637,12 @@ def test_credentialing_ends(helpers, seeder):
         assert agent.rgy.reger.cancs.get(keys=saids[0]) is None
         assert agent.rgy.reger.saved.get(keys=saids[0]) is None
         assert agent.rgy.reger.issus.cnt(keys=hab.pre) == 4
-        assert agent.rgy.reger.schms.cnt(keys="EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs") == 1
+        assert (
+            agent.rgy.reger.schms.cnt(
+                keys="EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
+            )
+            == 1
+        )
         assert agent.rgy.reger.subjs.cnt(keys=issuee) == 4
 
 
@@ -552,16 +679,16 @@ def test_revoke_credential(helpers, seeder):
         doist = doing.Doist(limit=limit, tock=tock, real=True)
         deeds = doist.enter(doers=[agent, serverDoer])
 
-        isalt = b'0123456789abcdef'
+        isalt = b"0123456789abcdef"
         registry, issuer = helpers.createRegistry(client, agent, isalt, doist, deeds)
 
         iaid = issuer["prefix"]
-        idig = issuer['state']['d']
+        idig = issuer["state"]["d"]
 
-        rsalt = b'abcdef0123456789'
+        rsalt = b"abcdef0123456789"
         op = helpers.createAid(client, "recipient", rsalt)
         aid = op["response"]
-        recp = aid['i']
+        recp = aid["i"]
         assert recp == "EMgdjM1qALk3jlh4P2YyLRSTcjSOjLXD3e_uYpxbdbg6"
 
         helpers.createEndRole(client, agent, recp, "recipient", rsalt)
@@ -569,20 +696,24 @@ def test_revoke_credential(helpers, seeder):
         dt = "2021-01-01T00:00:00.000000+00:00"
         schema = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
         data = dict(LEI="254900DA0GOGCFVWB618", dt=dt)
-        creder = proving.credential(issuer=iaid,
-                                    schema=schema,
-                                    recipient=recp,
-                                    data=data,
-                                    source={},
-                                    status=registry["regk"])
+        creder = proving.credential(
+            issuer=iaid,
+            schema=schema,
+            recipient=recp,
+            data=data,
+            source={},
+            status=registry["regk"],
+        )
 
         csigers = helpers.sign(bran=isalt, pidx=0, ridx=0, ser=creder.raw)
 
         # Test no backers... backers would use backerIssue
         regser = eventing.issue(vcdig=creder.said, regk=registry["regk"], dt=dt)
 
-        anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)
-        serder, sigers = helpers.interact(pre=iaid, bran=isalt, pidx=0, ridx=0, dig=idig, sn='2', data=[anchor])
+        anchor = dict(i=regser.ked["i"], s=regser.ked["s"], d=regser.said)
+        serder, sigers = helpers.interact(
+            pre=iaid, bran=isalt, pidx=0, ridx=0, dig=idig, sn="2", data=[anchor]
+        )
 
         pather = coring.Pather(path=[])
 
@@ -592,18 +723,27 @@ def test_revoke_credential(helpers, seeder):
             sigs=sigers,
             acdc=creder.sad,
             csigs=csigers,
-            path=pather.qb64)
-        
-        result = client.simulate_post(path="/identifiers/badname/credentials", body=json.dumps(body).encode("utf-8"))
+            path=pather.qb64,
+        )
+
+        result = client.simulate_post(
+            path="/identifiers/badname/credentials",
+            body=json.dumps(body).encode("utf-8"),
+        )
         assert result.status_code == 404
-        assert result.json == {'description': "badname is not a valid reference to an identifier",
-                               'title': '404 Not Found'}
-        
-        result = client.simulate_post(path="/identifiers/issuer/credentials", body=json.dumps(body).encode("utf-8"))
+        assert result.json == {
+            "description": "badname is not a valid reference to an identifier",
+            "title": "404 Not Found",
+        }
+
+        result = client.simulate_post(
+            path="/identifiers/issuer/credentials",
+            body=json.dumps(body).encode("utf-8"),
+        )
         op = result.json
 
-        assert 'ced' in op['metadata']
-        assert op['metadata']['ced'] == creder.sad
+        assert "ced" in op["metadata"]
+        assert op["metadata"]["ced"] == creder.sad
 
         while not agent.credentialer.complete(creder.said):
             doist.recur(deeds=deeds)
@@ -613,82 +753,97 @@ def test_revoke_credential(helpers, seeder):
         res = client.simulate_post("/credentials/query")
         assert res.status_code == 200
         assert len(res.json) == 1
-        assert res.json[0]['sad']['d'] == creder.said
-        assert res.json[0]['status']['s'] == "0"
+        assert res.json[0]["sad"]["d"] == creder.said
+        assert res.json[0]["status"]["s"] == "0"
 
         res = client.simulate_post("/credentials/query")
         assert res.status_code == 200
         assert len(res.json) == 1
-        assert res.json[0]['sad']['d'] == creder.said
-        assert res.json[0]['status']['s'] == "0"
+        assert res.json[0]["sad"]["d"] == creder.said
+        assert res.json[0]["status"]["s"] == "0"
 
-        regser = eventing.revoke(vcdig=creder.said, regk=registry["regk"], dig=regser.said, dt=dt)
-        anchor = dict(i=regser.ked['i'], s=regser.ked["s"], d=regser.said)
-        serder, sigers = helpers.interact(pre=iaid, bran=isalt, pidx=0, ridx=0, dig=serder.said, sn='3', data=[anchor])
+        regser = eventing.revoke(
+            vcdig=creder.said, regk=registry["regk"], dig=regser.said, dt=dt
+        )
+        anchor = dict(i=regser.ked["i"], s=regser.ked["s"], d=regser.said)
+        serder, sigers = helpers.interact(
+            pre=iaid, bran=isalt, pidx=0, ridx=0, dig=serder.said, sn="3", data=[anchor]
+        )
 
-        body = dict(
-            rev=regser.ked,
-            ixn=serder.ked,
-            sigs=sigers)
-        res = client.simulate_delete(path=f"/identifiers/badname/credentials/{creder.said}", body=json.dumps(body).encode("utf-8"))
+        body = dict(rev=regser.ked, ixn=serder.ked, sigs=sigers)
+        res = client.simulate_delete(
+            path=f"/identifiers/badname/credentials/{creder.said}",
+            body=json.dumps(body).encode("utf-8"),
+        )
         assert res.status_code == 404
-        assert res.json == {'description': "badname is not a valid reference to an identifier",
-                            'title': '404 Not Found'}
-        
-        res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{regser.said}", body=json.dumps(body).encode("utf-8"))
+        assert res.json == {
+            "description": "badname is not a valid reference to an identifier",
+            "title": "404 Not Found",
+        }
+
+        res = client.simulate_delete(
+            path=f"/identifiers/issuer/credentials/{regser.said}",
+            body=json.dumps(body).encode("utf-8"),
+        )
         assert res.status_code == 404
-        assert res.json == {'description': f"credential for said {regser.said} not found.",
-                            'title': '404 Not Found'}
+        assert res.json == {
+            "description": f"credential for said {regser.said} not found.",
+            "title": "404 Not Found",
+        }
 
         badrev = regser.ked.copy()
         badrev["ri"] = "EIVtei3pGKGUw8H2Ri0h1uOevtSA6QGAq5wifbtHIaNI"
         _, sad = coring.Saider.saidify(badrev)
 
-        badbody = dict(
-            rev=sad,
-            ixn=serder.ked,
-            sigs=sigers)
-        res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}",
-                                     body=json.dumps(badbody).encode("utf-8"))
+        badbody = dict(rev=sad, ixn=serder.ked, sigs=sigers)
+        res = client.simulate_delete(
+            path=f"/identifiers/issuer/credentials/{creder.said}",
+            body=json.dumps(badbody).encode("utf-8"),
+        )
         assert res.status_code == 404
-        assert res.json == {'description': 'revocation against invalid registry SAID '
-                                           'EIVtei3pGKGUw8H2Ri0h1uOevtSA6QGAq5wifbtHIaNI',
-                            'title': '404 Not Found'}
+        assert res.json == {
+            "description": "revocation against invalid registry SAID "
+            "EIVtei3pGKGUw8H2Ri0h1uOevtSA6QGAq5wifbtHIaNI",
+            "title": "404 Not Found",
+        }
 
         badrev = regser.ked.copy()
         badrev["i"] = "EMgdjM1qALk3jlh4P2YyLRSTcjSOjLXD3e_uYpxbdbg6"
         _, sad = coring.Saider.saidify(badrev)
 
-        badbody = dict(
-            rev=sad,
-            ixn=serder.ked,
-            sigs=sigers)
-        res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}",
-                                     body=json.dumps(badbody).encode("utf-8"))
+        badbody = dict(rev=sad, ixn=serder.ked, sigs=sigers)
+        res = client.simulate_delete(
+            path=f"/identifiers/issuer/credentials/{creder.said}",
+            body=json.dumps(badbody).encode("utf-8"),
+        )
         assert res.status_code == 400
-        assert res.json == {'description': "invalid revocation event.",
-                            'title': '400 Bad Request'}
+        assert res.json == {
+            "description": "invalid revocation event.",
+            "title": "400 Bad Request",
+        }
 
-        res = client.simulate_delete(path=f"/identifiers/issuer/credentials/{creder.said}",
-                                     body=json.dumps(body).encode("utf-8"))
+        res = client.simulate_delete(
+            path=f"/identifiers/issuer/credentials/{creder.said}",
+            body=json.dumps(body).encode("utf-8"),
+        )
         assert res.status_code == 200
-        
+
         while not agent.registrar.complete(creder.said, sn=1):
             doist.recur(deeds=deeds)
-        
-        res = client.simulate_post("/credentials/query")
-        assert res.status_code == 200
-        assert len(res.json) == 1
-        assert res.json[0]['sad']['d'] == creder.said
-        assert res.json[0]['status']['s'] == "1"
 
         res = client.simulate_post("/credentials/query")
         assert res.status_code == 200
         assert len(res.json) == 1
-        assert res.json[0]['sad']['d'] == creder.said
-        assert res.json[0]['status']['s'] == "1"
+        assert res.json[0]["sad"]["d"] == creder.said
+        assert res.json[0]["status"]["s"] == "1"
 
-        res = client.simulate_get(f"/registries/{registry["regk"]}/{creder.said}")
+        res = client.simulate_post("/credentials/query")
+        assert res.status_code == 200
+        assert len(res.json) == 1
+        assert res.json[0]["sad"]["d"] == creder.said
+        assert res.json[0]["status"]["s"] == "1"
+
+        res = client.simulate_get(f"/registries/{registry['regk']}/{creder.said}")
         assert res.status_code == 200
         assert res.json["s"] == "1"
         assert res.json["et"] == "rev"

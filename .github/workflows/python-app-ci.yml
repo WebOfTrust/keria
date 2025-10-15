@@ -32,6 +32,9 @@ jobs:
       - name: Lint changes
         run: |
           ruff check
+      - name: Check formatting
+        run: |
+          ruff format --check
       - name: Run core KERIA tests
         run: |
           pytest tests/
