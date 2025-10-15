@@ -91,13 +91,13 @@ dev-dependencies = [
 members = []
 
 # Ruff configuration (if not in separate config file)
-[tool.ruff]
-line-length = 120
-target-version = "py312"
-
-[tool.ruff.lint]
-select = ["E", "F", "W", "I"]
-ignore = []
+# [tool.ruff]
+# line-length = 120
+# target-version = "py312"
+# 
+# [tool.ruff.lint]
+# select = ["E", "F", "W", "I"]
+# ignore = []
 
 [tool.coverage.run]
 source = ["src"]
