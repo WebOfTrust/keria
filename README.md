@@ -37,10 +37,22 @@ All Agent db access is through the associated Agent.
 ### Setup
 
 * Ensure [Python](https://www.python.org/downloads/) `version 3.12.2+` is installed
+* Install [uv](https://docs.astral.sh/uv/getting-started/installation/) for Python package management
 * Install [Keripy dependency](https://github.com/WebOfTrust/keripy#dependencies) (`libsodium 1.0.18+`)
 
 
-#### Build from source
+#### Build from source with uv (Recommended)
+
+* Install dependencies and create virtual environment:
+    ```bash
+    uv sync
+    ```
+* Run agent:
+    ```bash
+    uv run keria start --config-dir scripts --config-file demo-witness-oobis
+    ```
+
+#### Alternative: Build from source with pip/venv
 
 * Setup virtual environment:
     ```bash
@@ -52,7 +64,7 @@ All Agent db access is through the associated Agent.
     ```
 * Install dependencies:
     ```bash
-    pip install -r requirements.txt
+    pip install -e .
     ```
 * Run agent:
     ```bash
@@ -88,15 +100,28 @@ You can see a [working example here](https://github.com/WebOfTrust/signify-ts/bl
 
 ### Running Tests
 
-* Install `pytest`:
-    ```bash
-      pip install pytest
-    ```
-
 * Run the test suites:
     ```bash
-      pytest tests/
+    uv run pytest tests/
     ```
+
+* Run tests with coverage:
+    ```bash
+    make test-coverage
+    ```
+
+### Development Commands
+
+All development commands are available via `make` targets:
+
+* Install dependencies: `make install`
+* Install with dev dependencies: `make install-dev`
+* Run tests: `make test`
+* Run linting: `make lint`
+* Auto-fix linting issues: `make lint-fix`
+* Format code: `make format`
+* Build package: `make build-wheel`
+* Clean build artifacts: `make clean`
 
 ## Publishing containers
 

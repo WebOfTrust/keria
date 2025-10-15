@@ -16,20 +16,17 @@ SHELL ["/bin/bash", "-c"]
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 WORKDIR /keria
 
-RUN python -m venv venv
-ENV PATH=/keria/venv/bin:${PATH}
-
-RUN pip install --upgrade pip
-# "src/" dir required for installation of dependencies with setup.py
-RUN mkdir /keria/src
 # Copy in Python dependency files
-COPY requirements.txt setup.py ./
+COPY pyproject.toml uv.lock ./
+COPY src/ src/
 
-# Install Python dependencies
-RUN . "$HOME/.cargo/env"
-RUN pip install -r requirements.txt
+# Install Python dependencies with uv
+RUN . "$HOME/.cargo/env" && uv sync --frozen --no-dev
 
 # Runtime stage
 FROM python:3.12.8-alpine3.21
@@ -41,20 +38,25 @@ RUN apk --no-cache add \
     libsodium-dev \
     gcc
 
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 WORKDIR /keria
 
-# Copy over compiled dependencies
-COPY --from=builder /keria /keria
-# Copy in KERIA source files - enables near instantaneous builds for source only changes
+# Copy over compiled dependencies from builder
+COPY --from=builder /keria/.venv /keria/.venv
+COPY --from=builder /keria/src /keria/src
+
+# Create required directories
 RUN mkdir -p /usr/local/var/keri
 ENV KERI_AGENT_CORS=${KERI_AGENT_CORS:-false}
-ENV PATH=/keria/venv/bin:${PATH}
+
+# Make sure we can run our app
+ENV PATH="/keria/.venv/bin:$PATH"
 
 EXPOSE 3901
 EXPOSE 3902
 EXPOSE 3903
-
-COPY src/ src/
 
 ENTRYPOINT ["keria"]
 
