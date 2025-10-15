@@ -19,7 +19,7 @@ import falcon
 import lmdb
 from falcon import media
 from hio.base import doing, Doer
-from hio.core import http, tcp
+from hio.core import http
 from hio.help import decking
 
 from keri import core, kering
@@ -37,16 +37,18 @@ from keri.db.basing import OobiRecord
 from keri.vc import protocoling
 
 from keria.end import ending
-from keri.help import helping, ogler, nowIso8601
+from keri.help import helping, nowIso8601
 from keri.peer import exchanging
 from keri.vdr import verifying
-from keri.vdr.credentialing import Regery, sendArtifacts
+from keri.vdr.credentialing import Regery
 from keri.vdr.eventing import Tevery
 from keri.app import challenging
 
 from . import aiding, notifying, indirecting, credentialing, ipexing, delegating
 from . import grouping as keriagrouping
 from .serving import GracefulShutdownDoer
+from .. import log_name, ogler, set_log_level
+from ..core.httping import falconApp, createHttpServer
 from ..peer import exchanging as keriaexchanging
 from .specing import AgentSpecResource
 from ..core import authing, longrunning, httping
@@ -54,27 +56,7 @@ from ..core.authing import Authenticater
 from ..core.keeping import RemoteManager
 from ..db import basing
 
-class TruncatedFormatter(logging.Formatter):
-    """Formats log records with shorter module and function names and a right justified line number for readability."""
-    def __init__(self, fmt=None, datefmt=None, style='%'):
-        super().__init__(fmt, datefmt, style)
-
-    def format(self, record):
-        # Truncate module and funcName to first 'chars' characters
-        mod_chars = 10 # number of spaces to truncate to
-        fn_chars = 14 # number of spaces to truncate to
-        record.module = (record.module[:mod_chars] + ' ' * mod_chars)[:mod_chars]
-        record.funcName = (record.funcName[:fn_chars] + ' ' * fn_chars)[:fn_chars]
-        record.lineno = str(record.lineno).rjust(5)  # Ensure line number is right-aligned
-        return super().format(record)
-
-formatter = TruncatedFormatter('%(asctime)s [keria] %(levelname)-8s %(module)s.%(funcName)s-%(lineno)s %(message)s')
-formatter.default_msec_format = None
-logHandler = logging.StreamHandler()
-logHandler.setFormatter(formatter)
-ogler.baseFormatter = formatter
-ogler.baseConsoleHandler = logHandler
-logger = ogler.getLogger()
+logger = ogler.getLogger(log_name)
 
 @dataclass
 class KERIAServerConfig:
@@ -120,6 +102,8 @@ class KERIAServerConfig:
     logLevel: str = "CRITICAL"
     # path of the log file. If not defined, logs will not be written to the file.
     logFile: str = None
+    # log HTTP requests with the RequestLoggerMiddleware
+    logRequests: bool = False
 
     # Agency configuration
     # Use CORS headers in the HTTP responses. Default is False
@@ -139,19 +123,28 @@ class KERIAServerConfig:
     # Experimental username for boot endpoint. Enables HTTP Basic Authentication for the boot endpoint. Only meant to be used for testing purposes.
     bootUsername: str = None
 
-def runAgency(config: KERIAServerConfig):
+def readConfigFile(configDir: str, configFile: str, temp=False):
+    return configing.Configer(name=configFile,
+                       base="",
+                       headDirPath=configDir,
+                       temp=temp,
+                       reopen=True,
+                       clear=False)
+
+def runAgency(config: KERIAServerConfig, temp=False):
     """Runs a KERIA Agency with the given Doers by calling Doist.do(). Useful for testing."""
-    ogler.level = logging.getLevelName(config.logLevel)
-    logger.setLevel(ogler.level)
+    set_log_level(config.logLevel, logger)
     if config.logFile is not None:
         ogler.headDirPath = config.logFile
-        ogler.reopen(name="keria", temp=False, clear=True)
+        ogler.reopen(name="keria", temp=temp, clear=True)
 
     logger.info("Starting Agent for %s listening: admin/%s, http/%s, boot/%s",
                 config.name, config.adminPort, config.httpPort, config.bootPort)
     logger.info("PID: %s", os.getpid())
-
-    doist = agencyDoist(setupDoers(config))
+    cf = readConfigFile(config.configDir, config.configFile, temp=temp) if config.configFile is not None else None
+    agency = createAgency(config, temp=temp, cf=cf)
+    doist = agencyDoist(setupDoers(agency, config))
+    logger.info("The Agency is loaded and waiting for requests...")
     doist.do()
 
 def agencyDoist(doers: List[Doer]):
@@ -167,124 +160,7 @@ def getAgency(doers):
     for doer in doers:
         if isinstance(doer, Agency):
             return doer
-        return None
-
-def setupDoers(config: KERIAServerConfig):
-    """
-    Sets up the HIO coroutines the KERIA agent server is composed of including three HTTP servers for a KERIA agent server:
-    1. Boot server for bootstrapping agents. Signify calls this with a signed inception event.
-    2. Admin server for administrative tasks like creating agents.
-    3. HTTP server for all other agent operations.
-    """
-    agency = Agency(
-        name=config.name,
-        base=config.base,
-        bran=config.bran,
-        configFile=config.configFile,
-        configDir=config.configDir,
-        releaseTimeout=config.releaseTimeout,
-        curls=config.curls,
-        iurls=config.iurls,
-        durls=config.durls
-    )
-    allowed_cors_headers = [
-        'cesr-attachment',
-        'cesr-date',
-        'content-type',
-        'signature',
-        'signature-input',
-        'signify-resource',
-        'signify-timestamp'
-    ]
-    bootApp = falcon.App(middleware=falcon.CORSMiddleware(
-        allow_origins='*', allow_credentials='*',
-        expose_headers=allowed_cors_headers))
-
-    bootServer = createHttpServer(config.bootPort, bootApp, config.keyPath, config.certPath, config.caFilePath)
-    if not bootServer.reopen():
-        raise RuntimeError(f"Cannot create boot HTTP server on port {config.bootPort}")
-    bootServerDoer = http.ServerDoer(server=bootServer)
-    bootEnd = BootEnd(agency, username=config.bootUsername, password=config.bootPassword)
-    bootApp.add_route("/boot", bootEnd)
-    bootApp.add_route("/health", HealthEnd())
-
-    # Create Authenticater for verifying signatures on all requests
-    authn = Authenticater(agency=agency)
-
-    app = falcon.App(middleware=falcon.CORSMiddleware(
-        allow_origins='*', allow_credentials='*',
-        expose_headers=allowed_cors_headers))
-    if config.cors:
-        app.add_middleware(middleware=httping.HandleCORS())
-    app.add_middleware(authing.SignatureValidationComponent(agency=agency, authn=authn, allowed=["/agent"]))
-    app.req_options.media_handlers.update(media.Handlers())
-    app.resp_options.media_handlers.update(media.Handlers())
-
-    adminServer = createHttpServer(config.adminPort, app, config.keyPath, config.certPath, config.caFilePath)
-    if not adminServer.reopen():
-        raise RuntimeError(f"cannot create admin HTTP server on port {config.adminPort}")
-    adminServerDoer = http.ServerDoer(server=adminServer)
-
-    doers = [agency, bootServerDoer, adminServerDoer]
-    loadEnds(app=app)
-    aidEnd = aiding.loadEnds(app=app, agency=agency, authn=authn)
-    credentialing.loadEnds(app=app, identifierResource=aidEnd)
-    delegating.loadEnds(app=app, identifierResource=aidEnd)
-    notifying.loadEnds(app=app)
-    keriagrouping.loadEnds(app=app)
-    keriaexchanging.loadEnds(app=app)
-    ipexing.loadEnds(app=app)
-
-    if config.httpPort:
-        happ = falcon.App(middleware=falcon.CORSMiddleware(
-            allow_origins='*', allow_credentials='*',
-            expose_headers=allowed_cors_headers))
-        happ.req_options.media_handlers.update(media.Handlers())
-        happ.resp_options.media_handlers.update(media.Handlers())
-
-        ending.loadEnds(agency=agency, app=happ)
-        indirecting.loadEnds(agency=agency, app=happ)
-
-        server = createHttpServer(config.httpPort, happ, config.keyPath, config.certPath, config.caFilePath)
-        if not server.reopen():
-            raise RuntimeError(f"cannot create local http server on port {config.httpPort}")
-        httpServerDoer = http.ServerDoer(server=server)
-        doers.append(httpServerDoer)
-
-        swagsink = http.serving.StaticSink(staticDirPath="./static")
-        happ.add_sink(swagsink, prefix="/swaggerui")
-
-        specEnd = AgentSpecResource(app=app, title='KERIA Interactive Web Interface API')
-        specEnd.addRoutes(happ)
-        happ.add_route("/spec.yaml", specEnd)
-
-    logger.info("The Agency is loaded and waiting for requests...")
-    return doers
-
-
-def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):
-    """
-    Create an HTTP or HTTPS server depending on whether TLS key material is present
-
-    Parameters:
-        port (int)         : port to listen on for all HTTP(s) server instances
-        app (falcon.App)   : application instance to pass to the http.Server instance
-        keypath (string)   : the file path to the TLS private key
-        certpath (string)  : the file path to the TLS signed certificate (public key)
-        cafilepath (string): the file path to the TLS CA certificate chain file
-    Returns:
-        hio.core.http.Server
-    """
-    if keypath is not None and certpath is not None and cafilepath is not None:
-        servant = tcp.ServerTls(certify=False,
-                                keypath=keypath,
-                                certpath=certpath,
-                                cafilepath=cafilepath,
-                                port=port)
-        server = http.Server(port=port, app=app, servant=servant)
-    else:
-        server = http.Server(port=port, app=app)
-    return server
+    return None
 
 
 class Agency(doing.DoDoer):
@@ -297,7 +173,7 @@ class Agency(doing.DoDoer):
 
     def __init__(self, name, bran, base="", releaseTimeout=None,
                  configFile=None, configDir=None, adb=None, temp=False,
-                 curls=None, iurls=None, durls=None):
+                 curls=None, iurls=None, durls=None, cf=None):
         """
         Initialize the Agency with the given parameters.
 
@@ -313,6 +189,7 @@ class Agency(doing.DoDoer):
             curls (list | None): Controller Service Endpoint Location OOBI URLs to resolve at startup of each Agent.
             iurls (list | None): General Introduction OOBI URLs to resolve at startup of each Agent.
             durls (list | None): Data OOBI URLs resolved at startup of each Agent.
+            cf (configing.Configer | None): Optional Configer instance for configuration data.
         """
         self.name = name
         self.base = base
@@ -326,18 +203,75 @@ class Agency(doing.DoDoer):
         self.iurls = iurls
         self.durls = durls
 
-        if self.configFile is not None:
+        if cf is None and self.configFile is not None:
             self.cf = configing.Configer(name=self.configFile,
                                          base="",
                                          headDirPath=self.configDir,
-                                         temp=False,
+                                         temp=temp,
                                          reopen=True,
                                          clear=False)
+        else:
+            self.cf = cf
 
         self.agents = dict()
 
         self.adb = adb if adb is not None else basing.AgencyBaser(name="TheAgency", base=base, reopen=True, temp=temp)
         super(Agency, self).__init__(doers=[Releaser(self, releaseTimeout=releaseTimeout)])
+
+    def _loadConfigForAgent(self, caid):
+        """
+        Loads configuration data for an agent by looking up the Agency's configuration and copying
+        the agency config for the agent merged with curls, iurls, and durls specified by environment
+        variables.
+
+        Parameters:
+            caid (str): The controller AID (Agent Identifier) for the agent.
+        Returns:
+            dict: A dictionary containing the agent's configuration data.
+        """
+        timestamp = nowIso8601()
+        config = dict(self.cf.get() if self.cf is not None else { "dt": timestamp })
+
+        # Renames sub-section of config
+        habName = f"agent-{caid}"
+        config_name = self.name if self.name else "keria"
+        if config_name in config:
+            config[habName] = config[config_name]
+            del config[config_name]
+        else:
+            config[habName] = {}
+
+        config[habName]["curls"] = config[habName].get("curls", [])
+        config["iurls"] = config.get("iurls", [])
+        config["durls"] = config.get("durls", [])
+        if self.curls is not None and isinstance(self.curls, list):
+            config[habName]["curls"] = config[habName]["curls"] + self.curls
+
+        if self.iurls is not None and isinstance(self.iurls, list):
+            config["iurls"] = config["iurls"] + self.iurls
+
+        if self.durls is not None and isinstance(self.durls, list):
+            config["durls"] = config["durls"] + self.durls
+        return config
+
+    def _writeAgentConfig(self, caid):
+        """
+        Writes the agent configuration as a modified copy of the agency configuration.
+
+        Parameters:
+            caid (str): The controller AID (Agent Identifier) for the agent.
+        Returns:
+            configing.Configer: A Configer instance containing the agent's configuration data.
+        """
+        config = self._loadConfigForAgent(caid)
+        cf = configing.Configer(name=f"{caid}",
+                                base="",
+                                human=False,
+                                temp=self.temp,
+                                reopen=True,
+                                clear=False)
+        cf.put(config)
+        return cf
 
     def create(self, caid, salt=None):
         """
@@ -350,39 +284,14 @@ class Agency(doing.DoDoer):
             caid (str): The controller AID (Agent Identifier) for the new agent.
             salt (str): Optional QB64 salt for the agent's Habery. If not provided, a random salt will be used.
         """
+        habName = f"agent-{caid}"
         ks = keeping.Keeper(name=caid,
                             base=self.base,
                             temp=self.temp,
                             reopen=True)
-
-        timestamp = nowIso8601()
-        data = dict(self.cf.get() if self.cf is not None else { "dt": timestamp })
-
-        habName = f"agent-{caid}"
-        if "keria" in data:
-            data[habName] = data["keria"]
-            del data["keria"]
-
-        if self.curls is not None and isinstance(self.curls, list):
-            data[habName] = { "dt": timestamp, "curls": self.curls }
-
-        if self.iurls is not None and isinstance(self.iurls, list):
-            data["iurls"] = self.iurls
-
-        if self.durls is not None and isinstance(self.durls, list):
-            data["durls"] = self.durls
-
-        config = configing.Configer(name=f"{caid}",
-                                base="",
-                                human=False,
-                                temp=self.temp,
-                                reopen=True,
-                                clear=False)
-
-        config.put(data)
-
+        agent_cf = self._writeAgentConfig(caid)
         # Create the Hab for the Agent with only 2 AIDs
-        agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, cf=config, temp=self.temp, salt=salt)
+        agentHby = habbing.Habery(name=caid, base=self.base, bran=self.bran, ks=ks, cf=agent_cf, temp=self.temp, salt=salt)
         agentHab = agentHby.makeHab(habName, ns="agent", transferable=True, delpre=caid)
         agentRgy = Regery(hby=agentHby, name=agentHab.name, base=self.base, temp=self.temp)
 
@@ -408,6 +317,7 @@ class Agency(doing.DoDoer):
     def delete(self, agent):
         """Deletes the agent from the agency and cleans up its resources."""
         self.adb.agnt.rem(key=agent.caid)
+        # TODO call the agent's shutdown method to clean up resources instead of manually closing them below
         agent.hby.deleteHab(agent.caid)
         agent.hby.ks.close(clear=True)
         agent.hby.close(clear=True)
@@ -475,7 +385,7 @@ class Agency(doing.DoDoer):
 
     def lookup(self, pre):
         """
-        Look up an agent by its prefix (pre) in the agency's database.
+        Look up an agent by either a managed AID prefix (pre) or its controller AID in the agency's database.
 
         Returns:
             Agent: The agent associated with the given prefix, or None if not found.
@@ -529,7 +439,7 @@ class Agency(doing.DoDoer):
         Should only trigger the Doist loop to exit once all agents have been removed.
         """
         super(Agency, self).exit(deeds=deeds if deeds else self.deeds)
-        if len(self.agents) == 0:
+        if len(self.agents) == 0 and self.shouldShutdown:
             raise KeyboardInterrupt("Agency shutdown complete. Exiting Agency.")
 
 class Agent(doing.DoDoer):
@@ -561,7 +471,7 @@ class Agent(doing.DoDoer):
 
         Attributes:
             .agency (Agency): The Agency instance managing this agent.
-            .caid (str): The controller AID identifier for this agent.
+            .caid (str): The Signify controller AID for this agent.
             .hby (Habery): The Habery instance for the agent's local database.
             .agentHab (Hab): The Hab instance representing the agent itself.
             .rgy (Regery): The Regery instance for the agent's registry access.
@@ -808,8 +718,109 @@ class Agent(doing.DoDoer):
                 logger.error(f"Error closing database {db.__class__.__name__} for agent {self.caid}: {ex}")
         logger.info(f"Agent {self.caid} shut down")
 
+def createBootServerDoer(config: KERIAServerConfig, agency: Agency):
+    """Create the Agent boot HTTP server and the Doer to run it. Returns only the Doer."""
+    bootApp = falconApp(config.logRequests)
+
+    bootEnd = BootEnd(agency, username=config.bootUsername, password=config.bootPassword)
+    bootApp.add_route("/boot", bootEnd)
+    bootApp.add_route("/health", HealthEnd())
+
+    bootServer = createHttpServer(config.bootPort, bootApp, config.keyPath, config.certPath, config.caFilePath)
+    if not bootServer.reopen():
+        raise RuntimeError(f"Cannot create boot HTTP server on port {config.bootPort}")
+    return http.ServerDoer(server=bootServer)
+
+def createAdminServerDoer(config: KERIAServerConfig, agency: Agency):
+    """
+    Create the Admin HTTP server and the Doer to run it.
+    Returns the Doer and the Falcon app so the HTTP app can use it for OpenAPI docs.
+    """
+    # Create Authenticater for verifying signatures on all requests
+    authn = Authenticater(agency=agency)
+
+    adminApp = falconApp(config.logRequests)
+    if config.cors:
+        adminApp.add_middleware(middleware=httping.HandleCORS())
+    adminApp.add_middleware(authing.SignatureValidationComponent(agency=agency, authn=authn, allowed=["/agent"]))
+    adminApp.req_options.media_handlers.update(media.Handlers())
+    adminApp.resp_options.media_handlers.update(media.Handlers())
+
+    loadEnds(app=adminApp)
+    aidEnd = aiding.loadEnds(app=adminApp, agency=agency, authn=authn)
+    credentialing.loadEnds(app=adminApp, identifierResource=aidEnd)
+    delegating.loadEnds(app=adminApp, identifierResource=aidEnd)
+    notifying.loadEnds(app=adminApp)
+    keriagrouping.loadEnds(app=adminApp)
+
+    keriaexchanging.loadEnds(app=adminApp)
+    ipexing.loadEnds(app=adminApp)
+
+    adminServer = createHttpServer(config.adminPort, adminApp, config.keyPath, config.certPath, config.caFilePath)
+    if not adminServer.reopen():
+        raise RuntimeError(f"cannot create admin HTTP server on port {config.adminPort}")
+    return adminApp, http.ServerDoer(server=adminServer)
+
+def createHttpServerDoer(config: KERIAServerConfig, agency: Agency, adminApp: falcon.App):
+    """Create the main HTTP server and the Doer to run it. Returns only the Doer."""
+    happ = falconApp(config.logRequests)
+    happ.req_options.media_handlers.update(media.Handlers())
+    happ.resp_options.media_handlers.update(media.Handlers())
+
+    ending.loadEnds(agency=agency, app=happ)
+    indirecting.loadEnds(agency=agency, app=happ)
+
+    swagsink = http.serving.StaticSink(staticDirPath="./static")
+    happ.add_sink(swagsink, prefix="/swaggerui")
+
+    specEnd = AgentSpecResource(app=adminApp, title='KERIA Interactive Web Interface API')
+    specEnd.addRoutes(happ)
+    happ.add_route("/spec.yaml", specEnd)
+    server = createHttpServer(config.httpPort, happ, config.keyPath, config.certPath, config.caFilePath)
+    if not server.reopen():
+        raise RuntimeError(f"cannot create local http server on port {config.httpPort}")
+    return http.ServerDoer(server=server)
+
+def createAgency(config: KERIAServerConfig, temp=False, cf=None):
+    return Agency(
+        name=config.name,
+        base=config.base,
+        bran=config.bran,
+        configFile=config.configFile,
+        configDir=config.configDir,
+        releaseTimeout=config.releaseTimeout,
+        curls=config.curls,
+        iurls=config.iurls,
+        durls=config.durls,
+        temp=temp,
+        cf=cf
+    )
+
+def setupDoers(agency: Agency, config: KERIAServerConfig, temp=False, cf=None):
+    """
+    Sets up the HIO coroutines the KERIA agent server is composed of including three HTTP servers for a KERIA agent server:
+    1. Boot server for bootstrapping agents. Signify calls this with a signed inception event.
+    2. Admin server for administrative tasks like creating agents.
+    3. HTTP server for all other agent operations.
+
+    Parameters:
+        config (KERIAServerConfig): Configuration for the KERIA server.
+        temp (bool): Whether to use a temporary database. Default is False. Useful for testing.
+        cf (configing.Configer | None): Optional Configer instance for configuration data. Useful for testing.
+    """
+    bootServerDoer = createBootServerDoer(config, agency)
+    adminApp, adminServerDoer = createAdminServerDoer(config, agency)
+
+    doers = [agency, bootServerDoer, adminServerDoer]
+
+    if config.httpPort:
+        httpServerDoer = createHttpServerDoer(config, agency, adminApp)
+        doers.append(httpServerDoer)
+    return doers
+
 
 class ParserDoer(doing.Doer):
+    """ A Doer that continuously processes messages from the Parser."""
 
     def __init__(self, kvy, parser, tock=0.0):
         self.kvy = kvy
@@ -817,7 +828,12 @@ class ParserDoer(doing.Doer):
         self.tock = tock
         super(ParserDoer, self).__init__(tock=self.tock)
 
-    def recur(self, tyme=None):
+    def recur(self, tyme=None, tock=0.0, **opts):
+        """
+        Continually processes messages on the incoming message stream (ims).
+        Inner parsator yields continually when the stream is empty, making this good for long-running
+        servers.
+        """
         if self.parser.ims:
             logger.info("Agent %s received:\n%s\n...\n", self.kvy, self.parser.ims[:1024])
         done = yield from self.parser.parsator()  # process messages continuously
@@ -836,7 +852,7 @@ class Witnesser(doing.Doer):
         self.tock = tock
         super(Witnesser, self).__init__(tock=self.tock)
 
-    def recur(self, tyme=None):
+    def recur(self, tyme=None, tock=0.0, **opts):
         while True:
             if self.witners:
                 msg = self.witners.popleft()
@@ -862,7 +878,7 @@ class Delegator(doing.Doer):
         self.tock = tock
         super(Delegator, self).__init__(tock=self.tock)
 
-    def recur(self, tyme=None):
+    def recur(self, tyme=None, tock=0.0, **opts):
         if self.anchors:
             msg = self.anchors.popleft()
             sn = msg["sn"] if "sn" in msg else None
@@ -936,34 +952,92 @@ class Granter(doing.DoDoer):
         self.rgy = rgy
         self.agentHab = agentHab
         self.exc = exc
-        self.grants = grants
+        self.grants: decking.Deck = grants
         self.tock = tock
         super(Granter, self).__init__(always=True, tock=self.tock)
 
-    def sendAgentKEL(self, pre, recp, postman):
+    def recur(self, tyme, deeds=None):
+        """Doer lifecycle method to process grants. Continuously processes grants as they arrive."""
+        while self.grants:
+            grantMsg = self.grants.popleft()
+            grantDoer = GrantDoer(
+                hby=self.hby,
+                rgy=self.rgy,
+                agentHab=self.agentHab,
+                exc=self.exc,
+                granter=self,
+                grants=self.grants,
+                grant_msg=grantMsg,
+                tock=self.tock,
+            )
+            self.extend([grantDoer])
+        return super(Granter, self).recur(tyme, deeds)
+
+
+class GrantDoer(doing.Doer):
+    """
+    GrantDoer is a Doer for a single IPEX Grant operation that runs the message transmission process
+    for all KEL, TEL, and credential artifacts included in the Grant.
+
+    This GrantDoer allows for KLI-like behavior where the .postGrant can use yield expressions to
+    wait on the parent driver DoDoer to finish running the child StreamPoster DoDoer prior to
+    cleaning itself up.
+    """
+    def __init__(self, hby, rgy, agentHab, exc, granter, grants, grant_msg, tock=0.0, **kwa):
+        """
+        Accepts a list of IPEX Grant cues to process.
+
+        Parameters:
+            hby (Habery): The Agent Habery.
+            rgy (Regery): The Agent Regery.
+            agentHab (Hab): The Agent Hab.
+            exc (Exchanger): The Exchanger instance for this Agent.
+            granter (Granter): The Granter instance to use for processing grants.
+            grants (decking.Deck): Queue of grant messages to process.
+            grant_msg
+            tock (float): The time interval for processing grants.
+        """
+        if not grant_msg or not isinstance(grant_msg, dict):
+            raise ValueError(f"Grant message missing or invalid: {grant_msg}")
+        self.grant_msg = grant_msg
+        self.hby = hby
+        self.rgy = rgy
+        self.agentHab = agentHab
+        self.exc = exc
+        self.parent = granter
+        self.grants = grants
+        self.tock = tock
+        super(GrantDoer, self).__init__(tock=self.tock, **kwa)
+
+    def gatherAgentKEL(self, pre, recp, postman):
         """Send the KEL of the agent to the recipient."""
+        agent_evts = []
         for msg in self.agentHab.db.cloneDelegation(self.agentHab.kever):
             serder = serdering.SerderKERI(raw=msg)
             atc = msg[serder.size:]
-            postman.send(serder=serder, attachment=atc)
+            agent_evts.append((serder, atc))
+        return agent_evts
 
-    def sendCredArtifacts(self, recp, credSaid, postman):
+    def getCredArtifacts(self, recp, credSaid):
         """Send to the recipient the ACDC and the KELs of the issuer, holder, and any delegators."""
         creder = self.rgy.reger.creds.get(keys=(credSaid,))
-        sendArtifacts(self.hby, self.rgy.reger, postman, creder, recp)
-        self.sendChainedArtifacts(recp, creder, postman)
+        cred_artifacts = ipexing.gatherArtifacts(self.hby, self.rgy.reger, creder, recp)
+        chain_artifacts = self.getChainedArtifacts(recp, creder)
+        return cred_artifacts + chain_artifacts
 
-    def sendChainedArtifacts(self, recp, creder, postman):
+    def getChainedArtifacts(self, recp, creder):
         """
         Send to the recipient any chained ACDCs and the KELs of the issuers and holders of those
         ACDCS and the KELs of any of their delegators.
         """
+        chain_artifacts = []
         sources = self.rgy.reger.sources(self.hby.db, creder)
         for source, atc in sources:
-            sendArtifacts(self.hby, self.rgy.reger, postman, source, recp)
-            postman.send(serder=source, attachment=atc)
+            chain_artifacts.extend(ipexing.gatherArtifacts(self.hby, self.rgy.reger, source, recp))
+            chain_artifacts.append((source, atc))
+        return chain_artifacts
 
-    def postGrants(self):
+    def postGrant(self):
         """
         Presents an ACDC by sending all relevant data and cryptographic artifacts in the following order:
         - the agent KEL artifacts, including any delegation chain artifats
@@ -973,37 +1047,41 @@ class Granter(doing.DoDoer):
         - the ACDC credential itself
         This is repeated for any chained credentials except that the agent KEL is only sent once.
         """
-        if self.grants:
-            msg = self.grants.popleft()
-            said = msg['said']
-            if not self.exc.complete(said=said):
-                self.grants.append(msg)
-                return
+        msg = self.grant_msg
+        said = msg['said']
+        if not self.exc.complete(said=said):
+            self.grants.append(msg)
+            return
 
-            serder, pathed = exchanging.cloneMessage(self.hby, said)
+        serder, pathed = exchanging.cloneMessage(self.hby, said)
 
-            pre = msg["pre"]
-            rec = msg["rec"]
-            hab = self.hby.habs[pre]
-            if self.exc.lead(hab, said=said):
-                for recp in rec:
-                    postman = forwarding.StreamPoster(hby=self.hby, hab=self.agentHab, recp=recp, topic="credential")
-                    try:
-                        self.sendAgentKEL(pre, recp, postman)
-                        credSaid = serder.ked['e']['acdc']['d']
-                        self.sendCredArtifacts(recp, credSaid, postman)
-                    except kering.ValidationError:
-                        logger.info(f"unable to send to recipient={recp}")
-                    except KeyError:
-                        logger.info(f"invalid grant message={serder.ked}")
-                    else:
-                        doer = doing.DoDoer(doers=postman.deliver())
-                        self.extend([doer])
+        pre = msg["pre"]
+        rec = msg["rec"]
+        hab = self.hby.habs[pre]
+        if self.exc.lead(hab, said=said):
+            for recp in rec:
+                postman = forwarding.StreamPoster(hby=self.hby, hab=self.agentHab, recp=recp, topic="credential")
+                try:
+                    agent_evts = self.gatherAgentKEL(pre, recp, postman)
+                    credSaid = serder.ked['e']['acdc']['d']
+                    cred_artifacts = self.getCredArtifacts(recp, credSaid)
+                    artifacts = agent_evts + cred_artifacts
+                    # Queue the artifacts for later sending by postman.deliver()
+                    for serder, atc in artifacts:
+                        postman.send(serder=serder, attachment=atc)
+                except kering.ValidationError:
+                    logger.info(f"unable to send to recipient={recp}")
+                except KeyError:
+                    logger.info(f"invalid grant message={serder.ked}")
+                else:
+                    doer = doing.DoDoer(doers=postman.deliver())
+                    self.parent.extend([doer])
+        return True
 
-    def recur(self, tyme, deeds=None):
-        """Doer lifecycle method to process grants."""
-        self.postGrants()
-        return super(Granter, self).recur(tyme, deeds)
+    def recur(self, tock=0.0, **opts):
+        """Processes the IPEX Grant operation and then exits by returning True (done)."""
+        self.postGrant()
+        return True
 
 
 class Admitter(doing.Doer):
@@ -1018,7 +1096,7 @@ class Admitter(doing.Doer):
         self.tock = tock
         super(Admitter, self).__init__(tock=self.tock)
 
-    def recur(self, tyme):
+    def recur(self, tyme, tock=0.0, **opts):
         if self.admits:
             msg = self.admits.popleft()
             said = msg['said']
@@ -1062,7 +1140,7 @@ class SeekerDoer(doing.Doer):
         self.tock = tock
         super(SeekerDoer, self).__init__(tock=self.tock)
 
-    def recur(self, tyme=None):
+    def recur(self, tyme=None, tock=0.0, **opts):
         if self.cues:
             cue = self.cues.popleft()
             if cue["kin"] == "saved":
@@ -1086,7 +1164,7 @@ class ExchangeCueDoer(doing.Doer):
         self.tock = tock
         super(ExchangeCueDoer, self).__init__(tock=self.tock)
 
-    def recur(self, tyme=None):
+    def recur(self, tyme=None, tock=0.0, **opts):
         if self.cues:
             cue = self.cues.popleft()
             if cue["kin"] == "saved":
@@ -1124,7 +1202,7 @@ class Initer(doing.Doer):
             logger.info(agent_label)
         return True
 
-    def recur(self, tyme):
+    def recur(self, tyme, tock=0.0, **opts):
         return self.print_agent()
 
 
@@ -1138,7 +1216,7 @@ class GroupRequester(doing.Doer):
         self.tock = tock
         super(GroupRequester, self).__init__(tock=self.tock)
 
-    def recur(self, tyme):
+    def recur(self, tyme, tock=0.0, **opts):
         """ Checks cue for group processing requests and handles any with Counselor """
         if self.groups:
             msg = self.groups.popleft()
@@ -1217,7 +1295,7 @@ class Escrower(doing.Doer):
 
         super(Escrower, self).__init__(tock=self.tock)
 
-    def recur(self, tyme):
+    def recur(self, tyme, tock=0.0, **opts):
         """ Process all escrows once per loop. """
         self.kvy.processEscrows()
         self.kvy.processEscrowDelegables()
@@ -1246,7 +1324,7 @@ class Releaser(doing.Doer):
 
         super(Releaser, self).__init__(tock=self.tock)
 
-    def recur(self, tyme=None):
+    def recur(self, tyme=None, tock=0.0, **opts):
         while True:
             idle = []
             for caid in self.agents:

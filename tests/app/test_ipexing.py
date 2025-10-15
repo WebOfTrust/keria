@@ -8,6 +8,8 @@ Testing credentialing endpoint in the Mark II Agent
 import json
 
 import falcon
+import keri
+import pytest
 from falcon import testing
 from hio.base import doing
 from hio.help import decking
@@ -1465,14 +1467,17 @@ def test_granter(helpers):
 
         deeds = doist.enter(doers=[granter])
 
-        said = "EHwjDEsub6XT19ISLft1m1xMNvVXnSfH0IsDGllox4Y8"
+        exn, _ = exchanging.exchange(route="/ipex/grant", payload=dict(), sender=agent.agentHab.pre)
+        said = exn.sad['d']
         msg = dict(said=said)
+        agent.hby.db.exns.pin(keys=(said,), val=exn)
 
         grants.append(msg)
 
-        doist.recur(deeds=deeds)
+        with pytest.raises(keri.kering.MissingSignatureError):
+            doist.recur(deeds=deeds)
 
-        assert len(grants) == 1
+        assert len(grants) == 0, "Granter should have removed the grant from the queue"
 
 
 def test_ipex_apply(helpers, mockHelpingNowIso8601):
