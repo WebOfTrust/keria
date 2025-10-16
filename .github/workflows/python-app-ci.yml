@@ -1,13 +1,12 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-
 name: GitHub Actions for KERIA
 on:
   push:
     branches:
-      - 'main'
-      - 'development'
+      - "main"
+      - "development"
   pull_request:
   workflow_dispatch:
 
@@ -17,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ macos-13, ubuntu-latest ]
+        os: [macos-13, ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +37,14 @@ jobs:
       - name: Run core KERIA tests
         run: |
           pytest tests/
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run docker container
+        # Ensure that the image can be built and started
+        run: docker compose up --build --wait
 
   coverage:
     runs-on: ubuntu-latest

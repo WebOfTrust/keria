@@ -90,6 +90,9 @@ setup(
         "apispec==6.8.1",
         "marshmallow_dataclass==8.7.1",
         "deprecation==2.1.0",
+        # Pinning lmdb because https://github.com/WebOfTrust/keria/issues/387
+        # Remove when upgrade has been resolved
+        "lmdb==1.6.2",
     ],
     extras_require={
         "test": ["pytest", "coverage"],
