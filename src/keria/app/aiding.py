@@ -77,12 +77,6 @@ def loadEnds(app, agency, authn):
 
     return aidEnd
 
-vcpFieldDomV1 = serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.vcp]
-VCP_V_1, VCPSchema_V_1 = dataclassFromFielddom("VCP_V_1", vcpFieldDomV1)
-vrtFieldDomV1 = serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.vrt]
-VRT_V_1, VRTSchema_V_1 = dataclassFromFielddom("VRT_V_1", vrtFieldDomV1)
-
-
 @dataclass
 class KeyStateRecord(basing.KeyStateRecord):
     k: list[str] = field(default_factory=list, metadata={"marshmallow_field": fields.List(fields.String(), required=True)})
@@ -94,7 +88,7 @@ class KeyStateRecord(basing.KeyStateRecord):
 @dataclass
 class Controller:
     state: KeyStateRecord
-    ee: Union["ICP_V_1", "ICP_V_2", "ROT_V_1", "ROT_V_2", "DIP_V_1", "DIP_V_2", "DRT_V_1", "DRT_V_2", "VCP_V_1", "VRT_V_1"] # type: ignore
+    ee: Union["ICP_V_1", "ICP_V_2", "ROT_V_1", "ROT_V_2", "DIP_V_1", "DIP_V_2", "DRT_V_1", "DRT_V_2"] # type: ignore
 
 @dataclass
 class AgentResourceResult:
@@ -1901,9 +1895,9 @@ class MemberEnds:
 @dataclass
 class Contact:
     id: str = field(metadata={"marshmallow_field": fields.String(required=True)})
-    alias: str = field(default=None, metadata={"marshmallow_field": fields.String(required=True)})
-    oobi: str = field(default=None, metadata={"marshmallow_field": fields.String(required=True)})
-    end: MemberEnds = field(default=None, metadata={"marshmallow_field": fields.Nested(class_schema(MemberEnds), allow_none=False)})
+    alias: str = field(default=None, metadata={"marshmallow_field": fields.String(required=False)})
+    oobi: str = field(default=None, metadata={"marshmallow_field": fields.String(required=False)})
+    ends: MemberEnds = field(default=None, metadata={"marshmallow_field": fields.Nested(class_schema(MemberEnds), allow_none=False)})
     challenges: List[Challenge] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Nested(class_schema(Challenge), allow_none=False))})
     wellKnowns: List[WellKnown] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Nested(class_schema(WellKnown), allow_none=False))})
 

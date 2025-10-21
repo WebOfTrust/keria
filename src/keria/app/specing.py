@@ -52,8 +52,6 @@ class AgentSpecResource:
         self.spec.components.schema("DIP_V_2", schema=marshmallow_dataclass.class_schema(credentialing.DIP_V_2)())
         self.spec.components.schema("DRT_V_1", schema=marshmallow_dataclass.class_schema(credentialing.DRT_V_1)())
         self.spec.components.schema("DRT_V_2", schema=marshmallow_dataclass.class_schema(credentialing.DRT_V_2)())
-        self.spec.components.schema("VCP_V_1", schema=marshmallow_dataclass.class_schema(aiding.VCP_V_1)())
-        self.spec.components.schema("VRT_V_1", schema=marshmallow_dataclass.class_schema(aiding.VRT_V_1)())
         self.spec.components.schema("RPY_V_1", schema=marshmallow_dataclass.class_schema(aiding.RPY_V_1)())
         self.spec.components.schema("RPY_V_2", schema=marshmallow_dataclass.class_schema(aiding.RPY_V_2)())
         self.spec.components.schema("Credential", schema=marshmallow_dataclass.class_schema(credentialing.ClonedCredential)())
@@ -139,8 +137,6 @@ class AgentSpecResource:
                 {"$ref": "#/components/schemas/DIP_V_2"},
                 {"$ref": "#/components/schemas/DRT_V_1"},
                 {"$ref": "#/components/schemas/DRT_V_2"},
-                {"$ref": "#/components/schemas/VCP_V_1"},
-                {"$ref": "#/components/schemas/VRT_V_1"},
             ]
         }
 
