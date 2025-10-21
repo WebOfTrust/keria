@@ -4,6 +4,7 @@ KERIA
 keria.db.basing module
 
 """
+
 from dataclasses import dataclass
 from ordered_set import OrderedSet as oset
 
@@ -12,23 +13,23 @@ from keri.db import dbing, subing, koming
 
 SCALAR_TYPES = ("string", "number")
 
-ISSUER_FIELD = coring.Pather(path=['i'])
-ISSUEE_FIELD = coring.Pather(path=['a', 'i'])
-SCHEMA_FIELD = coring.Pather(path=['s'])
-REGISTRY_FIELD = coring.Pather(path=['ri'])
+ISSUER_FIELD = coring.Pather(path=["i"])
+ISSUEE_FIELD = coring.Pather(path=["a", "i"])
+SCHEMA_FIELD = coring.Pather(path=["s"])
+REGISTRY_FIELD = coring.Pather(path=["ri"])
 
 
 @dataclass
 class IndexRecord:
-    """ Registry Key keyed by Registry name
-    """
+    """Registry Key keyed by Registry name"""
+
     subkey: str
     paths: list
 
 
 class AgencyBaser(dbing.LMDBer):
     """
-    Agency database for tracking Agent tenants in this KERIA instance.
+    Agency database for tracking Agent tenants and their managed identifiers in this KERIA instance.
 
     """
 
@@ -48,7 +49,7 @@ class AgencyBaser(dbing.LMDBer):
                 default name='main'
             temp is boolean, assign to .temp
                 True then open in temporary directory, clear on close
-                Othewise then open persistent directory, do not clear on close
+                Otherwise then open persistent directory, do not clear on close
                 default temp=False
             headDirPath is optional str head directory pathname for main database
                 If not provided use default .HeadDirpath
@@ -58,17 +59,26 @@ class AgencyBaser(dbing.LMDBer):
             reopen is boolean, IF True then database will be reopened by this init
                 default reopen=True
 
+        Attributes:
+            .agnt values are Prefixer of Agent AID
+                keyed by controller AID (caid).
+                Maps Controller AIDs to their Signify Agent AID (agent.pre).
+            .ctrl values are Prefixer of Controller AID (caid)
+                keyed by Agent AID.
+                Maps Agent AIDs to their Signify Controller AID (caid).
+            .aids values are Prefixer of Controller AID (caid)
+                keyed by managed AID.
+                Maps managed AIDs to their Signify Controller AID (caid).
+
         Notes:
+            dupsort=True for sub DB means allow unique (key,pair) duplicates at a key.
+            Duplicate means that is more than one value at a key but not a redundant
+            copies a (key,value) pair per key. In other words the pair (key,value)
+            must be unique both key and value in combination.
+            Attempting to put the same (key,value) pair a second time does
+            not add another copy.
 
-        dupsort=True for sub DB means allow unique (key,pair) duplicates at a key.
-        Duplicate means that is more than one value at a key but not a redundant
-        copies a (key,value) pair per key. In other words the pair (key,value)
-        must be unique both key and value in combination.
-        Attempting to put the same (key,value) pair a second time does
-        not add another copy.
-
-        Duplicates are inserted in lexocographic order by value, insertion order.
-
+            Duplicates are inserted in lexicographic order by value, insertion order.
         """
         if perm is None:
             perm = self.Perm  # defaults to restricted permissions for non temp
@@ -77,8 +87,9 @@ class AgencyBaser(dbing.LMDBer):
         self.ctrl = None
         self.aids = None
 
-        super(AgencyBaser, self).__init__(headDirPath=headDirPath, perm=perm,
-                                          reopen=reopen, **kwa)
+        super(AgencyBaser, self).__init__(
+            headDirPath=headDirPath, perm=perm, reopen=reopen, **kwa
+        )
 
     def reopen(self, **kwa):
         """
@@ -91,15 +102,13 @@ class AgencyBaser(dbing.LMDBer):
         # to avoid namespace collisions with Base64 identifier prefixes.
 
         # Sub-database keyed by qb64 controller AID mapping to the Prefixer object of the AID of an agent
-        self.agnt = subing.CesrSuber(db=self, subkey='agnt.', klas=coring.Prefixer)
+        self.agnt = subing.CesrSuber(db=self, subkey="agnt.", klas=coring.Prefixer)
 
         # Sub-database keyed by qb64 agent AID mapping to the Prefixer object of the AID of an controller
-        self.ctrl = subing.CesrSuber(db=self, subkey='ctrl.', klas=coring.Prefixer)
+        self.ctrl = subing.CesrSuber(db=self, subkey="ctrl.", klas=coring.Prefixer)
 
         # Sub-database keyed by qb64 AID mapping to the Prefixer object of the AID of its Agent
-        self.aids = subing.CesrSuber(db=self,
-                                     subkey='aids.',
-                                     klas=coring.Prefixer)
+        self.aids = subing.CesrSuber(db=self, subkey="aids.", klas=coring.Prefixer)
 
 
 class Seeker(dbing.LMDBer):
@@ -147,8 +156,9 @@ class Seeker(dbing.LMDBer):
         self.schIdx = None
         self.dynIdx = None
 
-        super(Seeker, self).__init__(headDirPath=headDirPath, perm=perm,
-                                     reopen=reopen, **kwa)
+        super(Seeker, self).__init__(
+            headDirPath=headDirPath, perm=perm, reopen=reopen, **kwa
+        )
 
     def reopen(self, **kwa):
         super(Seeker, self).reopen(**kwa)
@@ -156,13 +166,17 @@ class Seeker(dbing.LMDBer):
         # List of indexs for a given schema
         self.schIdx = subing.IoSetSuber(db=self, subkey="schIdx.")
         # List of dynamically created indexes to be recreated at load
-        self.dynIdx = koming.Komer(db=self,
-                                   subkey='dynIdx.',
-                                   schema=IndexRecord, )
+        self.dynIdx = koming.Komer(
+            db=self,
+            subkey="dynIdx.",
+            schema=IndexRecord,
+        )
 
         for name, idx in self.dynIdx.getItemIter():
             key = ".".join(name)
-            self.indexes[key] = subing.CesrDupSuber(db=self, subkey=idx.subkey, klas=coring.Saider)
+            self.indexes[key] = subing.CesrDupSuber(
+                db=self, subkey=idx.subkey, klas=coring.Saider
+            )
 
         # Create persistent Indexes if they don't already exist
         self.createIndex(SCHEMA_FIELD.qb64)
@@ -188,7 +202,9 @@ class Seeker(dbing.LMDBer):
 
     def createIndex(self, key):
         if self.dynIdx.get(keys=(key,)) is None:
-            self.indexes[key] = subing.CesrDupSuber(db=self, subkey=key, klas=coring.Saider)
+            self.indexes[key] = subing.CesrDupSuber(
+                db=self, subkey=key, klas=coring.Saider
+            )
             self.dynIdx.pin(keys=(key,), val=IndexRecord(subkey=key, paths=[key]))
 
     def index(self, said):
@@ -235,7 +251,7 @@ class Seeker(dbing.LMDBer):
             db.rem(keys=(value,), val=saider)
 
     def generateIndexes(self, said):
-        """ Parse schema of said, create schIdx entry keyed to said of schema and the subkey indexes in
+        """Parse schema of said, create schIdx entry keyed to said of schema and the subkey indexes in
         self.indexes
 
         """
@@ -243,7 +259,7 @@ class Seeker(dbing.LMDBer):
             raise ValueError(f"{said} is not a valid schema SAID to index")
 
         properties = schemer.sed["properties"]
-        payload = properties['a']
+        payload = properties["a"]
         if "oneOf" in payload:
             oo = payload["oneOf"]
             for p in oo:
@@ -252,11 +268,13 @@ class Seeker(dbing.LMDBer):
                     break
 
         if not isinstance(payload, dict):
-            raise ValueError(f"schema with SAID={said} is not value, no payload of values")
+            raise ValueError(
+                f"schema with SAID={said} is not value, no payload of values"
+            )
 
         properties = payload["properties"]
 
-        attestation = 'i' not in properties
+        attestation = "i" not in properties
 
         # Assign single field Schema and ISSUER index and ISSUER/SCHEMA:
         self.schIdx.add(keys=(said,), val=SCHEMA_FIELD.qb64b)
@@ -275,16 +293,20 @@ class Seeker(dbing.LMDBer):
             if val["type"] not in SCALAR_TYPES:
                 continue
 
-            pather = coring.Pather(path=['a', p])
+            pather = coring.Pather(path=["a", p])
             if pather.qb64 not in self.indexes:
-                self.indexes[pather.qb64] = subing.CesrDupSuber(db=self, subkey=pather.qb64, klas=coring.Saider)
+                self.indexes[pather.qb64] = subing.CesrDupSuber(
+                    db=self, subkey=pather.qb64, klas=coring.Saider
+                )
                 idx = IndexRecord(subkey=pather.qb64, paths=[pather.qb64])
                 self.dynIdx.pin(keys=(pather.qb64,), val=idx)
             self.schIdx.add(keys=(said,), val=pather.qb64b)
 
             subkey = f"{SCHEMA_FIELD.qb64}.{pather.qb64}"
             if subkey not in self.indexes:
-                self.indexes[subkey] = subing.CesrDupSuber(db=self, subkey=subkey, klas=coring.Saider)
+                self.indexes[subkey] = subing.CesrDupSuber(
+                    db=self, subkey=subkey, klas=coring.Saider
+                )
                 idx = IndexRecord(subkey=subkey, paths=[SCHEMA_FIELD.qb64, pather.qb64])
                 self.dynIdx.pin(keys=(subkey,), val=idx)
             self.schIdx.add(keys=(said,), val=subkey)
@@ -292,7 +314,9 @@ class Seeker(dbing.LMDBer):
             for field in (ISSUER_FIELD, ISSUEE_FIELD):
                 subkey = f"{field.qb64}.{pather.qb64}"
                 if subkey not in self.indexes:
-                    self.indexes[subkey] = subing.CesrDupSuber(db=self, subkey=subkey, klas=coring.Saider)
+                    self.indexes[subkey] = subing.CesrDupSuber(
+                        db=self, subkey=subkey, klas=coring.Saider
+                    )
                     idx = IndexRecord(subkey=subkey, paths=[field.qb64, pather.qb64])
                     self.dynIdx.pin(keys=(subkey,), val=idx)
 
@@ -300,8 +324,13 @@ class Seeker(dbing.LMDBer):
 
                 subkey = f"{field.qb64}.{SCHEMA_FIELD.qb64}.{pather.qb64}"
                 if subkey not in self.indexes:
-                    self.indexes[subkey] = subing.CesrDupSuber(db=self, subkey=subkey, klas=coring.Saider)
-                    idx = IndexRecord(subkey=subkey, paths=[field.qb64, SCHEMA_FIELD.qb64, pather.qb64])
+                    self.indexes[subkey] = subing.CesrDupSuber(
+                        db=self, subkey=subkey, klas=coring.Saider
+                    )
+                    idx = IndexRecord(
+                        subkey=subkey,
+                        paths=[field.qb64, SCHEMA_FIELD.qb64, pather.qb64],
+                    )
                     self.dynIdx.pin(keys=(subkey,), val=idx)
 
                 self.schIdx.add(keys=(said,), val=subkey)
@@ -327,13 +356,13 @@ class ExnSeeker(dbing.LMDBer):
     TempPrefix = "keri_exndb_"
     MaxNamedDBs = 36
 
-    DATE_FIELD = coring.Pather(path=['dt'])
-    SENDER_FIELD = coring.Pather(path=['i'])
-    RECIPIENT_FIELD = coring.Pather(path=['a', 'i'])
-    ROUTE_FIELD = coring.Pather(path=['r'])
+    DATE_FIELD = coring.Pather(path=["dt"])
+    SENDER_FIELD = coring.Pather(path=["i"])
+    RECIPIENT_FIELD = coring.Pather(path=["a", "i"])
+    ROUTE_FIELD = coring.Pather(path=["r"])
 
     # Special field for IPEX messages... consider moving to IpexSeeker if needed
-    SCHEMA = coring.Pather(path=['e', 'acdc', 's'])
+    SCHEMA = coring.Pather(path=["e", "acdc", "s"])
 
     def __init__(self, db, headDirPath=None, perm=None, reopen=False, **kwa):
         """
@@ -361,15 +390,22 @@ class ExnSeeker(dbing.LMDBer):
         self.db = db
         self.indexes = dict()
 
-        super(ExnSeeker, self).__init__(headDirPath=headDirPath, perm=perm,
-                                        reopen=reopen, **kwa)
+        super(ExnSeeker, self).__init__(
+            headDirPath=headDirPath, perm=perm, reopen=reopen, **kwa
+        )
 
     def reopen(self, **kwa):
         super(ExnSeeker, self).reopen(**kwa)
 
         # List of dynamically created indexes to be recreated at load
         # Create persistent Indexes if they don't already exist
-        fields = (self.ROUTE_FIELD, self.SENDER_FIELD, self.RECIPIENT_FIELD, self.DATE_FIELD, self.SCHEMA)
+        fields = (
+            self.ROUTE_FIELD,
+            self.SENDER_FIELD,
+            self.RECIPIENT_FIELD,
+            self.DATE_FIELD,
+            self.SCHEMA,
+        )
         # Index of credentials by issuer/issuee.
         for field in fields:
             self.createIndex(field.qb64)
@@ -421,12 +457,13 @@ class ExnSeeker(dbing.LMDBer):
 
 
 class Cursor:
-
     def __init__(self, seeker, filtr=None, sort=None, skip=None, limit=None):
         self.filtr = filtr
         self.operators = operators(self.filtr)
         self.names = [op.name for op in self.operators]
-        self.indexable = next((False for op in self.operators if not isinstance(op, Eq)), True)
+        self.indexable = next(
+            (False for op in self.operators if not isinstance(op, Eq)), True
+        )
         self.values = [op.value for op in self.operators]
 
         self.seeker = seeker
@@ -466,7 +503,9 @@ class Cursor:
     def _query(self):
         self.cur = 0
         if len(self.filtr) == 0:
-            self.saids = self.order([said for (said,), _ in self.seeker.table.getItemIter()])
+            self.saids = self.order(
+                [said for (said,), _ in self.seeker.table.getItemIter()]
+            )
         elif (saids := self.indexSearch()) is not None:
             self.saids = self.order(saids)
         elif (saids := self.indexScan()) is not None:
@@ -571,10 +610,10 @@ class Cursor:
             return []
 
         end = self._skip + self._limit
-        return saids[self._skip:end]
+        return saids[self._skip : end]
 
     def tableScanOrder(self, saids):
-        """ Should we bother implementing table scan sort order
+        """Should we bother implementing table scan sort order
 
         We have single field indexes for all fields in credentials so this situation will
         only occur if multiple fields are selected for which we don't have a multi-column
@@ -587,10 +626,10 @@ class Cursor:
 
 
 def operators(filtr):
-    """ Executable operator factory method
+    """Executable operator factory method
 
-     An factory for processing a filter dict and generating an array of
-     executable operators to apply to a given credential search
+    An factory for processing a filter dict and generating an array of
+    executable operators to apply to a given credential search
 
     """
     # filtr = {"-a-i": {"$begins": "984"}}
@@ -618,7 +657,9 @@ class Eq:
 
     def __call__(self, *args, **kwargs):
         if len(args) != 1:
-            raise ValueError(f"invalid argument length={len(args)} for equals operator, must be 2")
+            raise ValueError(
+                f"invalid argument length={len(args)} for equals operator, must be 2"
+            )
 
         val = self.pather.resolve(args[0])
         return val == self.value
@@ -642,7 +683,9 @@ class Begins:
 
     def __call__(self, *args, **kwargs):
         if len(args) != 1:
-            raise ValueError(f"invalid argument length={len(args)} for begins operator, must be 2")
+            raise ValueError(
+                f"invalid argument length={len(args)} for begins operator, must be 2"
+            )
 
         val = self.pather.resolve(args[0])
         if not isinstance(val, str):

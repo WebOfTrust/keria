@@ -6,6 +6,7 @@ keria.app.exchanging module
 Testing the Mark II Agent Grouping endpoints
 
 """
+
 import json
 
 from hio.base import doing
@@ -44,10 +45,10 @@ def test_exchange_end(helpers):
         app.add_route("/identifiers/{name}/endroles", endRolesEnd)
 
         # First create participants (aid1, aid2) in a multisig AID
-        salt = b'0123456789abcdef'
+        salt = b"0123456789abcdef"
         op = helpers.createAid(client, "aid1", salt)
         aid = op["response"]
-        pre = aid['i']
+        pre = aid["i"]
         assert pre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
         serder, sigers = helpers.incept(salt, "signify:aid", pidx=0)
         assert serder.pre == pre
@@ -55,23 +56,19 @@ def test_exchange_end(helpers):
 
         ims = eventing.messagize(serder=serder, sigers=sigers)
 
-        salt1 = b'abcdef0123456789'
+        salt1 = b"abcdef0123456789"
         op = helpers.createAid(client, "aid2", salt1)
         aid1 = op["response"]
-        pre1 = aid1['i']
+        pre1 = aid1["i"]
         assert pre1 == "EMgdjM1qALk3jlh4P2YyLRSTcjSOjLXD3e_uYpxbdbg6"
 
-        payload = dict(i=pre, words="these are the words being signed for this response")
+        payload = dict(
+            i=pre, words="these are the words being signed for this response"
+        )
         cexn, _ = exchange(route="/challenge/response", payload=payload, sender=pre)
         sig = signer.sign(ser=cexn.raw, index=0).qb64
 
-        body = dict(
-            exn=cexn.ked,
-            sigs=[sig],
-            atc="",
-            rec=[pre1],
-            tpc="/credentials"
-        )
+        body = dict(exn=cexn.ked, sigs=[sig], atc="", rec=[pre1], tpc="/credentials")
 
         res = client.simulate_post(path="/identifiers/aid1/exchanges", json=body)
         assert res.status_code == 202
@@ -82,7 +79,10 @@ def test_exchange_end(helpers):
         assert len(agent.exchanges) == 0
 
         # Use prefix instead of alias to send again
-        res = client.simulate_post(path="/identifiers/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/exchanges", json=body)
+        res = client.simulate_post(
+            path="/identifiers/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/exchanges",
+            json=body,
+        )
         assert res.status_code == 202
         assert res.json == cexn.ked
         assert len(agent.exchanges) == 1
@@ -92,22 +92,11 @@ def test_exchange_end(helpers):
         agent.exnseeker.index(cexn.said)
 
         QVI_SAID = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
-        payload = dict(
-            m="Please give me credential",
-            s=QVI_SAID,
-            a=dict(),
-            i=pre1
-        )
+        payload = dict(m="Please give me credential", s=QVI_SAID, a=dict(), i=pre1)
         exn, _ = exchange(route="/ipex/apply", payload=payload, sender=pre)
         sig = signer.sign(ser=exn.raw, index=0).qb64
 
-        body = dict(
-            exn=exn.ked,
-            sigs=[sig],
-            atc="",
-            rec=[pre1],
-            tpc="/credentials"
-        )
+        body = dict(exn=exn.ked, sigs=[sig], atc="", rec=[pre1], tpc="/credentials")
 
         res = client.simulate_post(path="/identifiers/bad/exchanges", json=body)
         assert res.status_code == 404
@@ -127,52 +116,47 @@ def test_exchange_end(helpers):
         assert res.status_code == 200
         assert len(res.json) == 2
 
-        body = json.dumps({'filter': {'-i': pre}, 'sort': ['-dt']}).encode("utf-8")
+        body = json.dumps({"filter": {"-i": pre}, "sort": ["-dt"]}).encode("utf-8")
         res = client.simulate_post("/exchanges/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 2
 
-        ked = res.json[0]['exn']
+        ked = res.json[0]["exn"]
         serder = serdering.SerderKERI(sad=ked)
         assert serder.said == cexn.said
 
-        ked = res.json[1]['exn']
+        ked = res.json[1]["exn"]
         serder = serdering.SerderKERI(sad=ked)
         assert serder.said == exn.said
 
-        body = json.dumps({'filter': {'-i': pre}, 'sort': ['-dt'], 'skip': 1, "limit": 1}).encode("utf-8")
+        body = json.dumps(
+            {"filter": {"-i": pre}, "sort": ["-dt"], "skip": 1, "limit": 1}
+        ).encode("utf-8")
         res = client.simulate_post("/exchanges/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 1
 
-        ked = res.json[0]['exn']
+        ked = res.json[0]["exn"]
         serder = serdering.SerderKERI(sad=ked)
         assert serder.said == exn.said
 
         res = client.simulate_get(f"/exchanges/{exn.said}")
         assert res.status_code == 200
-        serder = serdering.SerderKERI(sad=res.json['exn'])
+        serder = serdering.SerderKERI(sad=res.json["exn"])
         assert serder.said == exn.said
 
-        payload = dict(
-            m="Please give me credential",
-            s=QVI_SAID,
-            a=dict(),
-            i=pre1
-        )
+        payload = dict(m="Please give me credential", s=QVI_SAID, a=dict(), i=pre1)
 
         embeds = dict(
             icp=ims,
         )
-        exn, atc = exchange(route="/ipex/offer", payload=payload, sender=pre, embeds=embeds)
+        exn, atc = exchange(
+            route="/ipex/offer", payload=payload, sender=pre, embeds=embeds
+        )
         sig = signer.sign(ser=exn.raw, index=0).qb64
 
         body = dict(
-            exn=exn.ked,
-            sigs=[sig],
-            atc=atc.decode("utf-8"),
-            rec=[pre1],
-            tpc="/ipex"
+            exn=exn.ked, sigs=[sig], atc=atc.decode("utf-8"), rec=[pre1], tpc="/ipex"
         )
 
         res = client.simulate_post(path="/identifiers/aid1/exchanges", json=body)
@@ -183,13 +167,12 @@ def test_exchange_end(helpers):
         doist.recur(deeds=deeds)
         agent.exnseeker.index(exn.said)
 
-        body = json.dumps({'sort': ['-dt']}).encode("utf-8")
+        body = json.dumps({"sort": ["-dt"]}).encode("utf-8")
         res = client.simulate_post("/exchanges/query", body=body)
         assert res.status_code == 200
         assert len(res.json) == 3
 
         offer = res.json[2]
-        assert offer['pathed'] == {'icp': '-AABADzZ23DyzL4TLQqTtjx5IKkWwRt3_NYHHIqc9g1rBjwr'}
-
-
-
+        assert offer["pathed"] == {
+            "icp": "-AABADzZ23DyzL4TLQqTtjx5IKkWwRt3_NYHHIqc9g1rBjwr"
+        }

@@ -12,9 +12,11 @@ DELEGATION_ROUTE = "/identifiers/{name}/delegation"
 
 logger = help.ogler.getLogger()
 
+
 def loadEnds(app, identifierResource):
     gatorEnd = DelegatorEnd(identifierResource)
     app.add_route(DELEGATION_ROUTE, gatorEnd)
+
 
 class Anchorer(doing.DoDoer):
     """
@@ -40,12 +42,16 @@ class Anchorer(doing.DoDoer):
         self.witDoer = agenting.Receiptor(hby=self.hby)
         self.proxy = proxy
 
-        super(Anchorer, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)],
-                                     **kwa)
+        super(Anchorer, self).__init__(
+            doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)],
+            **kwa,
+        )
 
     def delegation(self, pre, sn=None, proxy=None):
         if pre not in self.hby.habs:
-            raise kering.ValidationError(f"{pre} is not a valid local AID for delegation")
+            raise kering.ValidationError(
+                f"{pre} is not a valid local AID for delegation"
+            )
 
         if proxy is not None:
             self.proxy = proxy
@@ -54,7 +60,9 @@ class Anchorer(doing.DoDoer):
         hab = self.hby.habs[pre]
         delpre = hab.kever.delpre  # get the delegator identifier
         if delpre not in hab.kevers:
-            raise kering.ValidationError(f"delegator {delpre} not found, unable to process delegation")
+            raise kering.ValidationError(
+                f"delegator {delpre} not found, unable to process delegation"
+            )
 
         sn = sn if sn is not None else hab.kever.sner.num
 
@@ -66,7 +74,7 @@ class Anchorer(doing.DoDoer):
         self.hby.db.dpwe.pin(keys=(srdr.pre, srdr.said), val=srdr)
 
     def complete(self, prefixer, seqner, saider=None):
-        """ Check for completed delegation protocol for the specific event
+        """Check for completed delegation protocol for the specific event
 
         Parameters:
             prefixer (Prefixer): qb64 identifier prefix of event to check
@@ -81,12 +89,14 @@ class Anchorer(doing.DoDoer):
             return False
         else:
             if saider and (csaider.qb64 != saider.qb64):
-                raise kering.ValidationError(f"invalid delegation protocol escrowed event {csaider.qb64}-{saider.qb64}")
+                raise kering.ValidationError(
+                    f"invalid delegation protocol escrowed event {csaider.qb64}-{saider.qb64}"
+                )
 
         return True
 
-    def escrowDo(self, tymth, tock=1.0):
-        """ Process escrows of group multisig identifiers waiting to be compeleted.
+    def escrowDo(self, tymth, tock=1.0, temp=False, **opts):
+        """Process escrows of group multisig identifiers waiting to be compeleted.
 
         Steps involve:
            1. Sending local event with sig to other participants
@@ -105,7 +115,7 @@ class Anchorer(doing.DoDoer):
         # enter context
         self.wind(tymth)
         self.tock = tock
-        _ = (yield self.tock)
+        _ = yield self.tock
 
         while True:
             self.processEscrows()
@@ -119,20 +129,32 @@ class Anchorer(doing.DoDoer):
         """
         Process escrow of unacnchored events that have been delegated and are waiting for delegator anchor/approval.
         """
-        for (pre, said), serder in self.hby.db.dune.getItemIter():  # group partial witness escrow
+        for (
+            pre,
+            said,
+        ), serder in self.hby.db.dune.getItemIter():  # group partial witness escrow
             kever = self.hby.kevers[pre]
             dkever = self.hby.kevers[kever.delpre]
 
             seal = dict(i=serder.pre, s=serder.snh, d=serder.said)
-            if dserder := self.hby.db.findAnchoringSealEvent(dkever.prefixer.qb64, seal=seal):
+            if dserder := self.hby.db.findAnchoringSealEvent(
+                dkever.prefixer.qb64, seal=seal
+            ):
                 seqner = coring.Seqner(sn=dserder.sn)
                 couple = seqner.qb64b + dserder.saidb
                 dgkey = dbing.dgKey(kever.prefixer.qb64b, kever.serder.saidb)
-                self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
+                self.hby.db.setAes(
+                    dgkey, couple
+                )  # authorizer event seal (delegator/issuer)
 
                 # Move to escrow waiting for witness receipts
-                logger.info("[%s]: Delegation approval received, %s confirmed", pre, serder.pre)
-                self.hby.db.cdel.put(keys=(pre, coring.Seqner(sn=serder.sn).qb64), val=coring.Saider(qb64=serder.said))
+                logger.info(
+                    "[%s]: Delegation approval received, %s confirmed", pre, serder.pre
+                )
+                self.hby.db.cdel.put(
+                    keys=(pre, coring.Seqner(sn=serder.sn).qb64),
+                    val=coring.Saider(qb64=serder.said),
+                )
                 self.hby.db.dune.rem(keys=(pre, said))
 
     def processPartialWitnessEscrow(self):
@@ -142,7 +164,10 @@ class Anchorer(doing.DoDoer):
         that the event is complete.
 
         """
-        for (pre, said), serder in self.hby.db.dpwe.getItemIter():  # group partial witness escrow
+        for (
+            pre,
+            said,
+        ), serder in self.hby.db.dpwe.getItemIter():  # group partial witness escrow
             hab = self.hby.habs[pre]
             kever = self.hby.kevers[pre]
             delpre = hab.kever.delpre  # get the delegator identifier
@@ -151,7 +176,9 @@ class Anchorer(doing.DoDoer):
 
             # Load all the witness receipts we have so far
             wigs = self.hby.db.getWigs(dgkey)
-            if len(wigs) == len(kever.wits):  # We have all of them, this event is finished
+            if len(wigs) == len(
+                kever.wits
+            ):  # We have all of them, this event is finished
                 if len(kever.wits) > 0:
                     witnessed = False
                     for cue in self.witDoer.cues:
@@ -159,7 +186,11 @@ class Anchorer(doing.DoDoer):
                             witnessed = True
                     if not witnessed:
                         continue
-                logger.info("[%s]: Witness receipts complete, waiting for delegation approval for %s", pre, serder.pre)
+                logger.info(
+                    "[%s]: Witness receipts complete, waiting for delegation approval for %s",
+                    pre,
+                    serder.pre,
+                )
                 if isinstance(hab, habbing.GroupHab):
                     phab = hab.mhab
                 elif self.proxy is not None:
@@ -167,20 +198,25 @@ class Anchorer(doing.DoDoer):
                 elif hab.kever.sn > 0:
                     phab = hab
                 else:
-                    raise kering.ValidationError("No proxy to send messages for delegation for AID %s]", pre)
+                    raise kering.ValidationError(
+                        "No proxy to send messages for delegation for AID %s]", pre
+                    )
 
                 evt = hab.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
 
                 srdr = serdering.SerderKERI(raw=evt)
-                del evt[:srdr.size]
-                self.postman.send(hab=phab, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
+                del evt[: srdr.size]
+                self.postman.send(
+                    hab=phab, dest=delpre, topic="delegate", serder=srdr, attachment=evt
+                )
 
                 self.hby.db.dpwe.rem(keys=(pre, said))
                 self.hby.db.dune.pin(keys=(srdr.pre, srdr.said), val=srdr)
-                
+
+
 class DelegatorEnd:
-    """ Resource class for handling delegator events"""
-    
+    """Resource class for handling delegator events"""
+
     def __init__(self, identifierResource) -> None:
         """
 
@@ -191,7 +227,7 @@ class DelegatorEnd:
         self.identifierResource = identifierResource
 
     def on_post(self, req, rep, name):
-        """ Identifier delegator endpoint POST to create the ixn anchor and approve the delegation
+        """Identifier delegator endpoint POST to create the ixn anchor and approve the delegation
 
         Parameters:
             req (Request): falcon.Request HTTP request object
@@ -202,21 +238,30 @@ class DelegatorEnd:
         if not name:
             raise falcon.HTTPBadRequest(description="name is required")
         agent = req.context.agent
-        hab = agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
+        hab = (
+            agent.hby.habs[name]
+            if name in agent.hby.habs
+            else agent.hby.habByName(name)
+        )
 
         if hab is None:
             raise falcon.HTTPNotFound(title=f"No AID with name or prefix {name} found")
-        
+
         body = req.get_media()
         anc = httping.getRequiredParam(body, "ixn")
-        
+
         if not agent.hby.db.findAnchoringSealEvent(hab.pre, seal=anc):
             op = self.identifierResource.interact(agent, name, body)
-        
+
         # successful approval returns the delegatee prefix
         teepre = approveDelegation(hab, anc)
-        adop = agent.monitor.submit(anc["d"], longrunning.OpTypes.delegation,
-                                    metadata=dict(pre=hab.kever.prefixer.qb64, teepre=teepre, anchor=anc, depends=op))
+        adop = agent.monitor.submit(
+            anc["d"],
+            longrunning.OpTypes.delegation,
+            metadata=dict(
+                pre=hab.kever.prefixer.qb64, teepre=teepre, anchor=anc, depends=op
+            ),
+        )
 
         try:
             rep.status = falcon.HTTP_200
@@ -225,23 +270,26 @@ class DelegatorEnd:
             return rep
         except (kering.AuthError, ValueError) as e:
             raise falcon.HTTPBadRequest(description=e.args[0])
-    
+
+
 def approveDelegation(hab, anc) -> str:
     serder = serdering.SerderKERI(sad=anc)
-    
-    teepre = anc['a'][0]['i']
-    teesaid = anc['a'][0]['d']
+
+    teepre = anc["a"][0]["i"]
+    teesaid = anc["a"][0]["d"]
 
     for (pre, sn), dig in hab.db.delegables.getItemIter():
         if pre == teepre:
             seqner = coring.Seqner(sn=serder.sn)
             couple = seqner.qb64b + serder.saidb
-            dgkey = dbing.dgKey(coring.Saider(qb64=teepre).qb64b, coring.Saider(qb64=teesaid).qb64b)
+            dgkey = dbing.dgKey(
+                coring.Saider(qb64=teepre).qb64b, coring.Saider(qb64=teesaid).qb64b
+            )
             # the dip event should have been received from the delegatee via a postman call
             # and will be sitting in the delegator escrows (hence the hab.db.delegables above)
             # adding the authorize event seal will allow the dip to be processed
             # and added to the delegator kever
             hab.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
-        
+
     return teepre
     # raise falcon.HTTPBadRequest(title=f"No delegables found for delegator {hab.pre} to approve delegatee {teepre}")

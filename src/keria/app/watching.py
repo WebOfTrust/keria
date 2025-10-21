@@ -4,5 +4,3 @@ KERIA
 keria.app.watching module
 
 """
-
-
