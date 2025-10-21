@@ -24,8 +24,11 @@ from marshmallow_dataclass import class_schema
 from keria.app import delegating
 
 # long running operation types
-Typeage = namedtuple("Tierage", 'oobi witness delegation group query registry credential endrole ' # type: ignore[name-match]
-                                'locscheme challenge exchange submit done')
+Typeage = namedtuple(
+    "Tierage",
+    "oobi witness delegation group query registry credential endrole "  # type: ignore[name-match]
+    "locscheme challenge exchange submit done",
+)
 
 OpTypes = Typeage(
     oobi="oobi",
@@ -49,7 +52,10 @@ OpTypes = Typeage(
 class OperationStatus:
     code: int
     message: str
-    details: Optional[Dict] = field(default=None, metadata={"marshmallow_field": fields.Dict(allow_none=True)})
+    details: Optional[Dict] = field(
+        default=None, metadata={"marshmallow_field": fields.Dict(allow_none=True)}
+    )
+
 
 @dataclass_json
 @dataclass
@@ -57,9 +63,15 @@ class Operation:
     name: str
     error: Optional[OperationStatus] = field(
         default=None,
-        metadata={"marshmallow_field": fields.Nested(class_schema(OperationStatus), required=False)}
+        metadata={
+            "marshmallow_field": fields.Nested(
+                class_schema(OperationStatus), required=False
+            )
+        },
     )
-    done: bool = field(default=False, metadata={"marshmallow_field": fields.Boolean(allow_none=False)})
+    done: bool = field(
+        default=False, metadata={"marshmallow_field": fields.Boolean(allow_none=False)}
+    )
     metadata: Optional[dict] = None
     response: Optional[dict] = None
 
@@ -197,7 +209,8 @@ class Monitor:
                     name=f"{op.type}.{op.oid}",
                     metadata=op.metadata,
                     done=True,
-                    error=OperationStatus(code=500, message=f"{err}"))
+                    error=OperationStatus(code=500, message=f"{err}"),
+                )
 
         return [get_status(op) for (_, op) in ops]
 
@@ -261,9 +274,11 @@ class Monitor:
                         seconds=eventing.Kevery.TimeoutPWE
                     ):
                         operation.done = True
-                        operation.error = OperationStatus(code=408,  # Using HTTP error codes here for lack of a better alternative
-                                                 message=f"long running {op.type} for {op.oid} (pre: {pre}) operation timed out before "
-                                                         f"receiving sufficient witness receipts")
+                        operation.error = OperationStatus(
+                            code=408,  # Using HTTP error codes here for lack of a better alternative
+                            message=f"long running {op.type} for {op.oid} (pre: {pre}) operation timed out before "
+                            f"receiving sufficient witness receipts",
+                        )
                     else:
                         operation.done = False
 
@@ -290,8 +305,9 @@ class Monitor:
 
             elif obr.state == Result.failed:
                 operation.done = True
-                operation.failed = OperationStatus(code=500,
-                                          message=f"resolving OOBI {op.oid} failed")
+                operation.failed = OperationStatus(
+                    code=500, message=f"resolving OOBI {op.oid} failed"
+                )
             else:
                 operation.done = False
 
@@ -544,8 +560,10 @@ class Monitor:
 
         else:
             operation.done = True
-            operation.error = OperationStatus(code=404,  # Using HTTP error codes here for lack of a better alternative
-                                     message=f"long running operation type {op.type} unknown")
+            operation.error = OperationStatus(
+                code=404,  # Using HTTP error codes here for lack of a better alternative
+                message=f"long running operation type {op.type} unknown",
+            )
 
         return operation
 

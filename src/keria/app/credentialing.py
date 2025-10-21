@@ -57,140 +57,6 @@ def loadEnds(app, identifierResource):
     credentialVerificationEnd = CredentialVerificationCollectionEnd()
     app.add_route("/credentials/verify", credentialVerificationEnd)
 
-class EmptyDictSchema(MarshmallowSchema):
-    class Meta:
-        additional = ()
-
-@dataclass
-class ACDCAttributes:
-    dt: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
-    i: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
-    u: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
-    # Override the schema to force additionalProperties=True
-
-@dataclass
-class Seal:
-    s: str
-    d: str
-    i: Optional[str] = field(default=None, metadata={"marshmallow_field": fields.String(allow_none=False)})
-
-acdcCustomTypes = {
-    'a': ACDCAttributes,
-    'A': Union[str, List[Any]],
-}
-acdcFieldDomV1 = SerderKERI.Fields[Protocols.acdc][Vrsn_1_0][None]
-ACDC_V_1, ACDCSchema_V_1 = dataclassFromFielddom("ACDC_V_1", acdcFieldDomV1, acdcCustomTypes)
-acdcFieldDomV2 = SerderKERI.Fields[Protocols.acdc][Vrsn_2_0][None]
-ACDC_V_2, ACDCSchema_V_2 = dataclassFromFielddom("ACDC_V_2", acdcFieldDomV2, acdcCustomTypes)
-
-@dataclass
-class IssEvent:
-    v: str
-    t: Literal['iss', 'bis']
-    d: str
-    i: str
-    s: str
-    ri: str
-    dt: str
-
-@dataclass
-class Schema:
-    id_: str = field(metadata={"data_key": "$id"})
-    schema: str = field(metadata={"data_key": "$schema"})
-    title: str
-    description: str
-    type: str
-    credentialType: str
-    version: str
-    properties: Dict[str, Any]
-    additionalProperties: bool
-    required: List[str]
-
-@dataclass
-class CredentialStateBase:
-    vn: Tuple[int, int]
-    i: str
-    s: str
-    d: str
-    ri: str
-    a: Seal
-    dt: str
-    et: str  # Will be narrowed in the subclasses
-
-@dataclass
-class CredentialStateIssOrRev(CredentialStateBase):
-    et: Literal['iss', 'rev']
-    ra: Dict[str, Any] = field(
-        metadata={
-            "marshmallow_field": fields.Nested(EmptyDictSchema(), allow_none=False, required=True)
-        }
-    )
-
-@dataclass
-class RaFields:
-    i: str
-    s: str
-    d: str
-
-@dataclass
-class CredentialStateBisOrBrv(CredentialStateBase):
-    et: Literal['bis', 'brv']
-    ra: RaFields
-
-@dataclass
-class Anchor:
-    pre: str
-    sn: int
-    d: str
-
-ixnCustomTypes = {
-    'a': List[Seal],
-}
-ixnFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.ixn]
-IXN_V_1, IXNSchema_V_1 = dataclassFromFielddom("IXN_V_1", ixnFieldDomV1, ixnCustomTypes)
-ixnFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.ixn]
-IXN_V_2, IXNSchema_V_2 = dataclassFromFielddom("IXN_V_2", ixnFieldDomV2, ixnCustomTypes)
-
-icpFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.icp]
-ICP_V_1, ICPSchema_V_1 = dataclassFromFielddom("ICP_V_1", icpFieldDomV1)
-icpFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.icp]
-ICP_V_2, ICPSchema_V_2 = dataclassFromFielddom("ICP_V_2", icpFieldDomV2)
-
-rotFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.rot]
-ROT_V_1, ROTSchema_V_1 = dataclassFromFielddom("ROT_V_1", rotFieldDomV1)
-rotFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.rot]
-ROT_V_2, ROTSchema_V_2 = dataclassFromFielddom("ROT_V_2", rotFieldDomV2)
-
-dipFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.dip]
-DIP_V_1, DIPSchema_V_1 = dataclassFromFielddom("DIP_V_1", dipFieldDomV1)
-dipFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.dip]
-DIP_V_2, DIPSchema_V_2 = dataclassFromFielddom("DIP_V_2", dipFieldDomV2)
-
-drtFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.drt]
-DRT_V_1, DRTSchema_V_1 = dataclassFromFielddom("DRT_V_1", drtFieldDomV1)
-drtFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.drt]
-DRT_V_2, DRTSchema_V_2 = dataclassFromFielddom("DRT_V_2", drtFieldDomV2)
-
-@dataclass
-class ClonedCredential:
-    sad: Union["ACDC_V_1", "ACDC_V_2"]  # Use string annotation for dynamically generated class
-    atc: str
-    iss: IssEvent
-    issatc: str
-    pre: str
-    schema: Schema
-    chains: List[Dict[str, Any]]
-    status: Union[CredentialStateIssOrRev, CredentialStateBisOrBrv]
-    anchor: Anchor
-    anc: Union["IXN_V_1", "IXN_V_2", "ICP_V_1", "ICP_V_2", "ROT_V_1", "ROT_V_2", "DIP_V_1", "DIP_V_2", "DRT_V_1", "DRT_V_2"]
-    ancatc: str
-
-@dataclass
-class Registry:
-    name: str
-    regk: str
-    pre: str
-    state: Union[CredentialStateIssOrRev, CredentialStateBisOrBrv]
 
 class EmptyDictSchema(MarshmallowSchema):
     class Meta:
@@ -760,33 +626,33 @@ class SchemaResourceEnd:
     def on_get(req, rep, said):
         """Schema GET endpoint
 
-         Parameters:
-             req: falcon.Request HTTP request
-             rep: falcon.Response HTTP response
-             said: qb64 self-addressing identifier of schema to load
+          Parameters:
+              req: falcon.Request HTTP request
+              rep: falcon.Response HTTP response
+              said: qb64 self-addressing identifier of schema to load
 
-       ---
-        summary:  Get schema JSON of specified schema
-        description:  Get schema JSON of specified schema
-        operationId: getSchema
-        tags:
-           - Schema
-        parameters:
-          - in: path
-            name: said
-            schema:
-              type: string
-            required: true
-            description: qb64 self-addressing identifier of schema to get
-        responses:
-           200:
-              description: Schema JSON successfully returned
-              content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/Schema'
-           404:
-              description: No schema found for SAID
+        ---
+         summary:  Get schema JSON of specified schema
+         description:  Get schema JSON of specified schema
+         operationId: getSchema
+         tags:
+            - Schema
+         parameters:
+           - in: path
+             name: said
+             schema:
+               type: string
+             required: true
+             description: qb64 self-addressing identifier of schema to get
+         responses:
+            200:
+               description: Schema JSON successfully returned
+               content:
+                   application/json:
+                     schema:
+                       $ref: '#/components/schemas/Schema'
+            404:
+               description: No schema found for SAID
         """
         agent = req.context.agent
         schemer = agent.hby.db.schema.get(keys=(said,))
@@ -803,25 +669,25 @@ class SchemaCollectionEnd:
     def on_get(req, rep):
         """Schema GET plural endpoint
 
-         Parameters:
-             req: falcon.Request HTTP request
-             rep: falcon.Response HTTP response
+          Parameters:
+              req: falcon.Request HTTP request
+              rep: falcon.Response HTTP response
 
-       ---
-        summary:  Get schema JSON of all schema
-        description:  Get schema JSON of all schema
-        operationId: listSchemas
-        tags:
-           - Schema
-        responses:
-           200:
-              description: Array of all schema JSON
-              content:
-                  application/json:
-                    schema:
-                        type: array
-                        items:
-                           $ref: '#/components/schemas/Schema'
+        ---
+         summary:  Get schema JSON of all schema
+         description:  Get schema JSON of all schema
+         operationId: listSchemas
+         tags:
+            - Schema
+         responses:
+            200:
+               description: Array of all schema JSON
+               content:
+                   application/json:
+                     schema:
+                         type: array
+                         items:
+                            $ref: '#/components/schemas/Schema'
         """
         agent = req.context.agent
 
@@ -1061,7 +927,7 @@ class CredentialCollectionEnd:
                 description: Credential issued.
                 content:
                     application/json:
-                        schema: 
+                        schema:
                             $ref: '#/components/schemas/Credential'
             400:
                 description: Bad request. This could be due to missing or invalid data.

@@ -4,6 +4,7 @@ KERIA
 keria.app.aiding module
 
 """
+
 import falcon
 import json
 from dataclasses import asdict, dataclass, field
@@ -21,7 +22,16 @@ from keri.db import basing
 from marshmallow import fields
 from marshmallow_dataclass import class_schema
 
-from keria.app.credentialing import ICP_V_1, ICP_V_2, ROT_V_1, ROT_V_2, DIP_V_1, DIP_V_2, DRT_V_1, DRT_V_2
+from keria.app.credentialing import (
+    ICP_V_1,
+    ICP_V_2,
+    ROT_V_1,
+    ROT_V_2,
+    DIP_V_1,
+    DIP_V_2,
+    DRT_V_1,
+    DRT_V_2,
+)
 from ..core import longrunning, httping
 from ..utils.openapi import namedtupleToEnum, dataclassFromFielddom
 
@@ -77,18 +87,49 @@ def loadEnds(app, agency, authn):
 
     return aidEnd
 
+
 @dataclass
 class KeyStateRecord(basing.KeyStateRecord):
-    k: list[str] = field(default_factory=list, metadata={"marshmallow_field": fields.List(fields.String(), required=True)})
-    n: list[str] =  field(default_factory=list, metadata={"marshmallow_field": fields.List(fields.String(), required=True)})
-    b: list = field(default_factory=list, metadata={"marshmallow_field": fields.List(fields.String(), required=True)})
-    c: list[str] =  field(default_factory=list, metadata={"marshmallow_field": fields.List(fields.String(), required=True)})
-    ee: basing.StateEERecord = field(default_factory=basing.StateEERecord, metadata={"marshmallow_field": fields.Nested(class_schema(basing.StateEERecord), required=True)})
+    k: list[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
+    n: list[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
+    b: list = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
+    c: list[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
+    ee: basing.StateEERecord = field(
+        default_factory=basing.StateEERecord,
+        metadata={
+            "marshmallow_field": fields.Nested(
+                class_schema(basing.StateEERecord), required=True
+            )
+        },
+    )
+
 
 @dataclass
 class Controller:
     state: KeyStateRecord
-    ee: Union["ICP_V_1", "ICP_V_2", "ROT_V_1", "ROT_V_2", "DIP_V_1", "DIP_V_2", "DRT_V_1", "DRT_V_2"] # type: ignore
+    ee: Union[
+        "ICP_V_1",
+        "ICP_V_2",
+        "ROT_V_1",
+        "ROT_V_2",
+        "DIP_V_1",
+        "DIP_V_2",
+        "DRT_V_1",
+        "DRT_V_2",
+    ]  # type: ignore
+
 
 @dataclass
 class AgentResourceResult:
@@ -97,6 +138,7 @@ class AgentResourceResult:
     pidx: int
     ridx: Optional[int] = None
     sxlt: Optional[str] = None
+
 
 class AgentResourceEnd:
     """Resource class for getting agent specific launch information"""
@@ -132,7 +174,7 @@ class AgentResourceEnd:
             description: Successfully retrieved the key state record.
             content:
                 application/json:
-                    schema: 
+                    schema:
                         $ref: '#/components/schemas/AgentResourceResult'
           400:
             description: Bad request. This could be due to an invalid agent or controller configuration.
@@ -373,35 +415,55 @@ class RandyKeyState:
     prxs: List[str]
     nxts: List[str]
 
+
 @dataclass
 class ExternState:
     extern_type: str
     pidx: int
     # Override the schema to force additionalProperties=True
 
+
 Tier = namedtupleToEnum(coring.Tiers, "Tier")
+
+
 @dataclass
 class SaltyState:
-    tier: Tier # type: ignore
-    sxlt: str = ''
+    tier: Tier  # type: ignore
+    sxlt: str = ""
     pidx: int = 0
     kidx: int = 0
-    stem: str = ''
-    dcode: str = ''
-    icodes: list[str] = field(default_factory=list, metadata={"marshmallow_field": fields.List(fields.String(), required=True)})
-    ncodes: list[str] = field(default_factory=list, metadata={"marshmallow_field": fields.List(fields.String(), required=True)})
+    stem: str = ""
+    dcode: str = ""
+    icodes: list[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
+    ncodes: list[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
     transferable: bool = False
-    
+
+
 @dataclass
 class GroupKeyState:
     """Data class for group key state"""
-    mhab: 'HabState'
-    keys: list[str] = field(default_factory=list, metadata={"marshmallow_field": fields.List(fields.String(), required=True)}) 
-    ndigs: list[str] = field(default_factory=list, metadata={"marshmallow_field": fields.List(fields.String(), required=True)}) 
+
+    mhab: "HabState"
+    keys: list[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
+    ndigs: list[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
+
 
 @dataclass
 class HabState:
     """Data class for identifier resource result"""
+
     name: str
     prefix: str
     icp_dt: str
@@ -414,7 +476,9 @@ class HabState:
     def __post_init__(self):
         present = [self.salty, self.randy, self.group, self.extern]
         if sum(x is not None for x in present) != 1:
-            raise ValueError("Exactly one of salty, randy, group, or extern must be present.")
+            raise ValueError(
+                "Exactly one of salty, randy, group, or extern must be present."
+            )
 
 
 class IdentifierCollectionEnd:
@@ -1158,12 +1222,20 @@ def info(hab, rm, full=False):
 
     return data
 
+
 Role = namedtupleToEnum(kering.Roles, "Role")
+
+
 @dataclass
 class OOBI:
     """Data class for OOBI URLs"""
-    role: Role # type: ignore
-    oobis: List[str] = field(default_factory=list, metadata={"marshmallow_field": fields.List(fields.String(), required=True)})
+
+    role: Role  # type: ignore
+    oobis: List[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
+
 
 class IdentifierOOBICollectionEnd:
     """
@@ -1329,12 +1401,15 @@ class IdentifierOOBICollectionEnd:
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
 
+
 @dataclass
 class EndRole:
     """Data class for End Role"""
+
     cid: str
     role: str
     eid: str
+
 
 class EndRoleCollectionEnd:
     @staticmethod
@@ -1638,10 +1713,15 @@ class LocSchemeCollectionEnd:
         rep.data = op.to_json().encode("utf-8")
 
 
-rpyFieldDomV1 = serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][kering.Ilks.rpy]
+rpyFieldDomV1 = serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][
+    kering.Ilks.rpy
+]
 RPY_V_1, RpySchema_V_1 = dataclassFromFielddom("RPY_V_1", rpyFieldDomV1)
-rpyFieldDomV2 = serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_2_0][kering.Ilks.rpy]
+rpyFieldDomV2 = serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_2_0][
+    kering.Ilks.rpy
+]
 RPY_V_2, RpySchema_V_2 = dataclassFromFielddom("RPY_V_2", rpyFieldDomV2)
+
 
 class RpyEscrowCollectionEnd:
     @staticmethod
@@ -1695,10 +1775,15 @@ class RpyEscrowCollectionEnd:
 @dataclass
 class Challenge:
     """Challenge data class"""
+
     words: list[str]
     dt: str = field(metadata={"marshmallow_field": fields.String(required=False)})
-    said: str = field(default=None, metadata={"marshmallow_field": fields.String(required=False)})
-    authenticated: bool = field(default=False, metadata={"marshmallow_field": fields.Boolean(required=False)})
+    said: str = field(
+        default=None, metadata={"marshmallow_field": fields.String(required=False)}
+    )
+    authenticated: bool = field(
+        default=False, metadata={"marshmallow_field": fields.Boolean(required=False)}
+    )
 
 
 class ChallengeCollectionEnd:
@@ -1949,8 +2034,10 @@ class ChallengeVerifyResourceEnd:
 @dataclass
 class WellKnown:
     """Data class for Well Known URLs"""
+
     url: str = field(metadata={"marshmallow_field": fields.String(required=True)})
     dt: str = field(metadata={"marshmallow_field": fields.String(required=True)})
+
 
 @dataclass
 class MemberEnds:
@@ -1963,17 +2050,44 @@ class MemberEnds:
     juror: Optional[Dict[str, str]] = None
     peer: Optional[Dict[str, str]] = None
     mailbox: Optional[Dict[str, str]] = None
-    
+
+
 @dataclass
 class Contact:
     id: str = field(metadata={"marshmallow_field": fields.String(required=True)})
-    alias: str = field(default=None, metadata={"marshmallow_field": fields.String(required=False)})
-    oobi: str = field(default=None, metadata={"marshmallow_field": fields.String(required=False)})
-    ends: MemberEnds = field(default=None, metadata={"marshmallow_field": fields.Nested(class_schema(MemberEnds), allow_none=False)})
-    challenges: List[Challenge] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Nested(class_schema(Challenge), allow_none=False))})
-    wellKnowns: List[WellKnown] = field(default=None, metadata={"marshmallow_field": fields.List(fields.Nested(class_schema(WellKnown), allow_none=False))})
+    alias: str = field(
+        default=None, metadata={"marshmallow_field": fields.String(required=False)}
+    )
+    oobi: str = field(
+        default=None, metadata={"marshmallow_field": fields.String(required=False)}
+    )
+    ends: MemberEnds = field(
+        default=None,
+        metadata={
+            "marshmallow_field": fields.Nested(
+                class_schema(MemberEnds), allow_none=False
+            )
+        },
+    )
+    challenges: List[Challenge] = field(
+        default=None,
+        metadata={
+            "marshmallow_field": fields.List(
+                fields.Nested(class_schema(Challenge), allow_none=False)
+            )
+        },
+    )
+    wellKnowns: List[WellKnown] = field(
+        default=None,
+        metadata={
+            "marshmallow_field": fields.List(
+                fields.Nested(class_schema(WellKnown), allow_none=False)
+            )
+        },
+    )
 
     # override this in spec to add additional fields
+
 
 class ContactCollectionEnd:
     def on_get(self, req, rep):
