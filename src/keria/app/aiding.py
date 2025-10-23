@@ -5,11 +5,11 @@ keria.app.aiding module
 
 """
 
-import json
-from dataclasses import asdict
-from urllib.parse import urlparse, urljoin
-
 import falcon
+import json
+from dataclasses import asdict, dataclass, field
+from typing import Dict, Optional, List, Union
+from urllib.parse import urlparse, urljoin
 from keri import kering
 from keri import core
 from keri.app import habbing
@@ -18,8 +18,22 @@ from keri.core import coring, serdering, eventing
 from keri.db import dbing
 from keri.help import ogler
 from mnemonic import mnemonic
+from keri.db import basing
+from marshmallow import fields
+from marshmallow_dataclass import class_schema
 
+from keria.app.credentialing import (
+    ICP_V_1,
+    ICP_V_2,
+    ROT_V_1,
+    ROT_V_2,
+    DIP_V_1,
+    DIP_V_2,
+    DRT_V_1,
+    DRT_V_2,
+)
 from ..core import longrunning, httping
+from ..utils.openapi import namedtupleToEnum, dataclassFromFielddom
 
 logger = ogler.getLogger()
 
@@ -74,6 +88,58 @@ def loadEnds(app, agency, authn):
     return aidEnd
 
 
+@dataclass
+class KeyStateRecord(basing.KeyStateRecord):
+    k: list[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
+    n: list[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
+    b: list = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
+    c: list[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
+    ee: basing.StateEERecord = field(
+        default_factory=basing.StateEERecord,
+        metadata={
+            "marshmallow_field": fields.Nested(
+                class_schema(basing.StateEERecord), required=True
+            )
+        },
+    )
+
+
+@dataclass
+class Controller:
+    state: KeyStateRecord
+    ee: Union[
+        "ICP_V_1",
+        "ICP_V_2",
+        "ROT_V_1",
+        "ROT_V_2",
+        "DIP_V_1",
+        "DIP_V_2",
+        "DRT_V_1",
+        "DRT_V_2",
+    ]  # type: ignore
+
+
+@dataclass
+class AgentResourceResult:
+    agent: KeyStateRecord
+    controller: Controller
+    pidx: int
+    ridx: Optional[int] = None
+    sxlt: Optional[str] = None
+
+
 class AgentResourceEnd:
     """Resource class for getting agent specific launch information"""
 
@@ -106,6 +172,10 @@ class AgentResourceEnd:
         responses:
           200:
             description: Successfully retrieved the key state record.
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/AgentResourceResult'
           400:
             description: Bad request. This could be due to an invalid agent or controller configuration.
           404:
@@ -340,6 +410,77 @@ class AgentResourceEnd:
         agent.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
 
 
+@dataclass
+class RandyKeyState:
+    prxs: List[str]
+    nxts: List[str]
+
+
+@dataclass
+class ExternState:
+    extern_type: str
+    pidx: int
+    # Override the schema to force additionalProperties=True
+
+
+Tier = namedtupleToEnum(coring.Tiers, "Tier")
+
+
+@dataclass
+class SaltyState:
+    tier: Tier  # type: ignore
+    sxlt: str = ""
+    pidx: int = 0
+    kidx: int = 0
+    stem: str = ""
+    dcode: str = ""
+    icodes: list[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
+    ncodes: list[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
+    transferable: bool = False
+
+
+@dataclass
+class GroupKeyState:
+    """Data class for group key state"""
+
+    mhab: "HabState"
+    keys: list[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
+    ndigs: list[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
+
+
+@dataclass
+class HabState:
+    """Data class for identifier resource result"""
+
+    name: str
+    prefix: str
+    icp_dt: str
+    state: KeyStateRecord
+    transferable: Optional[bool] = None
+    windexes: Optional[List[str]] = None
+    # One of salty, randy, group, or extern must be present
+    # Patch to ensure only one of these is set in specing
+
+    def __post_init__(self):
+        present = [self.salty, self.randy, self.group, self.extern]
+        if sum(x is not None for x in present) != 1:
+            raise ValueError(
+                "Exactly one of salty, randy, group, or extern must be present."
+            )
+
+
 class IdentifierCollectionEnd:
     """Resource class for creating and managing identifiers"""
 
@@ -372,6 +513,12 @@ class IdentifierCollectionEnd:
         responses:
             200:
                 description: Successfully retrieved identifiers.
+                content:
+                  application/json:
+                    schema:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Identifier'
             206:
                 description: Successfully retrieved identifiers within the specified range.
         """
@@ -457,6 +604,10 @@ class IdentifierCollectionEnd:
         responses:
             202:
                 description: Identifier creation is in progress. The response is a long running operation.
+                content:
+                  application/json:
+                    schema:
+                        $ref: '#/components/schemas/Operation'
             400:
                 description: Bad request. This could be due to missing or invalid parameters.
         """
@@ -672,6 +823,10 @@ class IdentifierResourceEnd:
         responses:
             200:
                 description: Successfully retrieved the identifier details.
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Identifier'
             400:
                 description: Bad request. This could be due to a missing or invalid name parameter.
             404:
@@ -730,6 +885,10 @@ class IdentifierResourceEnd:
         responses:
             200:
               description: Successfully renamed the identifier and returns the updated information.
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/Identifier'
             400:
               description: Bad request. This could be due to a missing or invalid name parameter.
             404:
@@ -806,6 +965,10 @@ class IdentifierResourceEnd:
         responses:
             200:
               description: Successfully processed the identifier's event.
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/Operation'
             400:
               description: Bad request. This could be due to missing or invalid parameters.
         """
@@ -1060,6 +1223,20 @@ def info(hab, rm, full=False):
     return data
 
 
+Role = namedtupleToEnum(kering.Roles, "Role")
+
+
+@dataclass
+class OOBI:
+    """Data class for OOBI URLs"""
+
+    role: Role  # type: ignore
+    oobis: List[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
+
+
 class IdentifierOOBICollectionEnd:
     """
     This class represents the OOBI subresource collection endpoint for identifiers
@@ -1095,6 +1272,10 @@ class IdentifierOOBICollectionEnd:
         responses:
             200:
               description: Successfully fetched the OOBI URLs. The response body contains the OOBI URLs.
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/OOBI'
             400:
               description: Bad request. This could be due to missing or invalid parameters.
             404:
@@ -1221,6 +1402,15 @@ class IdentifierOOBICollectionEnd:
         rep.data = json.dumps(res).encode("utf-8")
 
 
+@dataclass
+class EndRole:
+    """Data class for End Role"""
+
+    cid: str
+    role: str
+    eid: str
+
+
 class EndRoleCollectionEnd:
     @staticmethod
     def on_get(req, rep, name=None, aid=None, role=None):
@@ -1262,6 +1452,12 @@ class EndRoleCollectionEnd:
         responses:
             200:
                 description: Successfully retrieved the end roles. The response body contains the end roles.
+                content:
+                  application/json:
+                    schema:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/EndRole'
             400:
                 description: Bad request. This could be due to missing or invalid parameters.
             404:
@@ -1349,6 +1545,10 @@ class EndRoleCollectionEnd:
         responses:
             202:
                 description: Accepted. The end role creation is in progress.
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Operation'
             400:
                 description: Bad request. This could be due to missing or invalid parameters.
             404:
@@ -1454,6 +1654,10 @@ class LocSchemeCollectionEnd:
         responses:
             202:
                 description: Accepted. The loc scheme authorisation is in progress.
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Operation'
             400:
                 description: Bad request. This could be due to missing or invalid parameters.
             404:
@@ -1509,6 +1713,16 @@ class LocSchemeCollectionEnd:
         rep.data = op.to_json().encode("utf-8")
 
 
+rpyFieldDomV1 = serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][
+    kering.Ilks.rpy
+]
+RPY_V_1, RpySchema_V_1 = dataclassFromFielddom("RPY_V_1", rpyFieldDomV1)
+rpyFieldDomV2 = serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_2_0][
+    kering.Ilks.rpy
+]
+RPY_V_2, RpySchema_V_2 = dataclassFromFielddom("RPY_V_2", rpyFieldDomV2)
+
+
 class RpyEscrowCollectionEnd:
     @staticmethod
     def on_get(req, rep):
@@ -1534,6 +1748,12 @@ class RpyEscrowCollectionEnd:
         responses:
             200:
                 description: Successfully retrieved the reply escrows.
+                content:
+                  application/json:
+                    schema:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Rpy'
             400:
                 description: Bad request. This could be due to missing or invalid parameters.
         """
@@ -1550,6 +1770,20 @@ class RpyEscrowCollectionEnd:
         rep.set_header("Content-Type", "application/json")
         rep.status = falcon.HTTP_200
         rep.data = json.dumps(events).encode("utf-8")
+
+
+@dataclass
+class Challenge:
+    """Challenge data class"""
+
+    words: list[str]
+    dt: str = field(metadata={"marshmallow_field": fields.String(required=False)})
+    said: str = field(
+        default=None, metadata={"marshmallow_field": fields.String(required=False)}
+    )
+    authenticated: bool = field(
+        default=False, metadata={"marshmallow_field": fields.Boolean(required=False)}
+    )
 
 
 class ChallengeCollectionEnd:
@@ -1581,14 +1815,7 @@ class ChallengeCollectionEnd:
               content:
                   application/json:
                     schema:
-                        description: Random word list
-                        type: object
-                        properties:
-                            words:
-                                type: array
-                                description: random challenge word list
-                                items:
-                                    type: string
+                        $ref: '#/components/schemas/Challenge'
 
         """
         mnem = mnemonic.Mnemonic(language="english")
@@ -1723,6 +1950,10 @@ class ChallengeVerifyResourceEnd:
         responses:
            202:
               description: Success submission of signed challenge/response
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/Operation'
         """
         agent = req.context.agent
 
@@ -1800,6 +2031,64 @@ class ChallengeVerifyResourceEnd:
         rep.status = falcon.HTTP_202
 
 
+@dataclass
+class WellKnown:
+    """Data class for Well Known URLs"""
+
+    url: str = field(metadata={"marshmallow_field": fields.String(required=True)})
+    dt: str = field(metadata={"marshmallow_field": fields.String(required=True)})
+
+
+@dataclass
+class MemberEnds:
+    agent: Optional[Dict[str, str]] = None
+    controller: Optional[Dict[str, str]] = None
+    witness: Optional[Dict[str, str]] = None
+    registrar: Optional[Dict[str, str]] = None
+    watcher: Optional[Dict[str, str]] = None
+    judge: Optional[Dict[str, str]] = None
+    juror: Optional[Dict[str, str]] = None
+    peer: Optional[Dict[str, str]] = None
+    mailbox: Optional[Dict[str, str]] = None
+
+
+@dataclass
+class Contact:
+    id: str = field(metadata={"marshmallow_field": fields.String(required=True)})
+    alias: str = field(
+        default=None, metadata={"marshmallow_field": fields.String(required=False)}
+    )
+    oobi: str = field(
+        default=None, metadata={"marshmallow_field": fields.String(required=False)}
+    )
+    ends: MemberEnds = field(
+        default=None,
+        metadata={
+            "marshmallow_field": fields.Nested(
+                class_schema(MemberEnds), allow_none=False
+            )
+        },
+    )
+    challenges: List[Challenge] = field(
+        default=None,
+        metadata={
+            "marshmallow_field": fields.List(
+                fields.Nested(class_schema(Challenge), allow_none=False)
+            )
+        },
+    )
+    wellKnowns: List[WellKnown] = field(
+        default=None,
+        metadata={
+            "marshmallow_field": fields.List(
+                fields.Nested(class_schema(WellKnown), allow_none=False)
+            )
+        },
+    )
+
+    # override this in spec to add additional fields
+
+
 class ContactCollectionEnd:
     def on_get(self, req, rep):
         """Contact plural GET endpoint
@@ -1835,6 +2124,12 @@ class ContactCollectionEnd:
         responses:
            200:
               description: List of contact information for remote identifiers
+              content:
+                application/json:
+                    schema:
+                        type: array
+                        items:
+                            $ref: '#/components/schemas/Contact'
         """
         # TODO:  Add support for sorting
         agent = req.context.agent
@@ -2034,6 +2329,10 @@ class ContactResourceEnd:
          responses:
             200:
                description: Contact information successfully retrieved for prefix
+               content:
+                 application/json:
+                   schema:
+                     $ref: '#/components/schemas/Contact'
             404:
                description: No contact information found for prefix
         """
@@ -2083,6 +2382,10 @@ class ContactResourceEnd:
          responses:
             200:
                description: Updated contact information for remote identifier
+               content:
+                 application/json:
+                   schema:
+                     $ref: '#/components/schemas/Contact'
             400:
                description: Invalid identifier used to update contact information
             404:
@@ -2149,6 +2452,10 @@ class ContactResourceEnd:
         responses:
            200:
               description: Updated contact information for remote identifier
+              content:
+                  application/json:
+                     schema:
+                        $ref: '#/components/schemas/Contact'
            400:
               description: Invalid identifier used to update contact information
            404:
@@ -2212,6 +2519,18 @@ class ContactResourceEnd:
         rep.status = falcon.HTTP_202
 
 
+@dataclass
+class AidRecord:
+    aid: str
+    ends: MemberEnds
+
+
+@dataclass
+class GroupMember:
+    signing: List[AidRecord]
+    rotation: List[AidRecord]
+
+
 class GroupMemberCollectionEnd:
     @staticmethod
     def on_get(req, rep, name):
@@ -2237,6 +2556,10 @@ class GroupMemberCollectionEnd:
         responses:
             200:
                 description: Successfully fetched the group member information.
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/GroupMember'
             400:
                 description: Bad request. This could be due to missing or invalid parameters.
             404:

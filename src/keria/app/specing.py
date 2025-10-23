@@ -4,9 +4,13 @@ import marshmallow_dataclass
 from apispec import yaml_utils
 from apispec.core import VALID_METHODS, APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
+
+from keria.app import aiding
 from ..core import longrunning
 from ..utils.openapi import applyAltConstraintsToOpenApiSchema
 from . import credentialing
+from keri.core import coring
+from ..utils.openapi import enumSchemaFromNamedtuple
 
 """
 KERIA
@@ -88,6 +92,12 @@ class AgentSpecResource:
         self.spec.components.schema(
             "DRT_V_2",
             schema=marshmallow_dataclass.class_schema(credentialing.DRT_V_2)(),
+        )
+        self.spec.components.schema(
+            "RPY_V_1", schema=marshmallow_dataclass.class_schema(aiding.RPY_V_1)()
+        )
+        self.spec.components.schema(
+            "RPY_V_2", schema=marshmallow_dataclass.class_schema(aiding.RPY_V_2)()
         )
         self.spec.components.schema(
             "Credential",
@@ -175,6 +185,112 @@ class AgentSpecResource:
         registrySchema["properties"]["state"] = {
             "$ref": "#/components/schemas/CredentialState"
         }
+
+        self.spec.components.schema(
+            "AgentResourceResult",
+            schema=marshmallow_dataclass.class_schema(aiding.AgentResourceResult)(),
+        )
+
+        agentControllerSchema = self.spec.components.schemas["Controller"]
+        agentControllerSchema["properties"]["ee"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/ICP_V_1"},
+                {"$ref": "#/components/schemas/ICP_V_2"},
+                {"$ref": "#/components/schemas/ROT_V_1"},
+                {"$ref": "#/components/schemas/ROT_V_2"},
+                {"$ref": "#/components/schemas/DIP_V_1"},
+                {"$ref": "#/components/schemas/DIP_V_2"},
+                {"$ref": "#/components/schemas/DRT_V_1"},
+                {"$ref": "#/components/schemas/DRT_V_2"},
+            ]
+        }
+
+        # Identifiers
+        self.spec.components.schema(
+            "SaltyState", schema=marshmallow_dataclass.class_schema(aiding.SaltyState)()
+        )
+        self.spec.components.schema(
+            "RandyKeyState",
+            schema=marshmallow_dataclass.class_schema(aiding.RandyKeyState)(),
+        )
+        self.spec.components.schema(
+            "GroupKeyState",
+            schema=marshmallow_dataclass.class_schema(aiding.GroupKeyState)(),
+        )
+        self.spec.components.schema(
+            "ExternState",
+            schema=marshmallow_dataclass.class_schema(aiding.ExternState)(),
+        )
+        self.spec.components.schema(
+            "Identifier", schema=marshmallow_dataclass.class_schema(aiding.HabState)()
+        )
+        identifierSchema = self.spec.components.schemas["Identifier"]
+        identifierSchema["oneOf"] = [
+            {
+                "required": ["salty"],
+                "properties": {"salty": {"$ref": "#/components/schemas/SaltyState"}},
+            },
+            {
+                "required": ["randy"],
+                "properties": {"randy": {"$ref": "#/components/schemas/RandyKeyState"}},
+            },
+            {
+                "required": ["group"],
+                "properties": {"group": {"$ref": "#/components/schemas/GroupKeyState"}},
+            },
+            {
+                "required": ["extern"],
+                "properties": {"extern": {"$ref": "#/components/schemas/ExternState"}},
+            },
+        ]
+        self.spec.components.schemas["GroupKeyState"]["properties"]["mhab"] = {
+            "$ref": "#/components/schemas/Identifier"
+        }
+        self.spec.components.schemas["Tier"] = enumSchemaFromNamedtuple(
+            coring.Tiers, description="Tier of key material"
+        )
+        saltyStateSchema = self.spec.components.schemas["SaltyState"]
+        saltyStateSchema["properties"]["tier"] = {"$ref": "#/components/schemas/Tier"}
+
+        # Patch the schema to force additionalProperties=True
+        externStateSchema = self.spec.components.schemas["ExternState"]
+        externStateSchema["additionalProperties"] = True
+
+        # OOBIS
+        self.spec.components.schema(
+            "OOBI", schema=marshmallow_dataclass.class_schema(aiding.OOBI)()
+        )
+
+        # End Roles
+        self.spec.components.schema(
+            "EndRole", schema=marshmallow_dataclass.class_schema(aiding.EndRole)()
+        )
+
+        self.spec.components.schemas["Rpy"] = {
+            "oneOf": [
+                {"$ref": "#/components/schemas/RPY_V_1"},
+                {"$ref": "#/components/schemas/RPY_V_2"},
+            ]
+        }
+
+        # Register the Challenge schema
+        self.spec.components.schema(
+            "Challenge", schema=marshmallow_dataclass.class_schema(aiding.Challenge)()
+        )
+
+        # Register the Contact schema
+        self.spec.components.schema(
+            "Contact", schema=marshmallow_dataclass.class_schema(aiding.Contact)()
+        )
+        # Patch the schema to force additionalProperties=True
+        contactSchema = self.spec.components.schemas["Contact"]
+        contactSchema["additionalProperties"] = True
+
+        # Register the GroupMember schema
+        self.spec.components.schema(
+            "GroupMember",
+            schema=marshmallow_dataclass.class_schema(aiding.GroupMember)(),
+        )
 
         self.addRoutes(app)
 

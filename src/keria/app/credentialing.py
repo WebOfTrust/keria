@@ -626,10 +626,10 @@ class SchemaResourceEnd:
     def on_get(req, rep, said):
         """Schema GET endpoint
 
-         Parameters:
-             req: falcon.Request HTTP request
-             rep: falcon.Response HTTP response
-             said: qb64 self-addressing identifier of schema to load
+          Parameters:
+              req: falcon.Request HTTP request
+              rep: falcon.Response HTTP response
+              said: qb64 self-addressing identifier of schema to load
 
         ---
          summary:  Get schema JSON of specified schema
@@ -669,9 +669,9 @@ class SchemaCollectionEnd:
     def on_get(req, rep):
         """Schema GET plural endpoint
 
-         Parameters:
-             req: falcon.Request HTTP request
-             rep: falcon.Response HTTP response
+          Parameters:
+              req: falcon.Request HTTP request
+              rep: falcon.Response HTTP response
 
         ---
          summary:  Get schema JSON of all schema

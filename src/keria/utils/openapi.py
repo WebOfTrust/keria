@@ -1,12 +1,13 @@
 from typing import Any, Dict, List, Union, Optional
+from enum import Enum
 from dataclasses import field, make_dataclass
 from marshmallow_dataclass import class_schema
 from marshmallow import fields as mm_fields
 from keri.core import serdering
 
 
-class StringOrStringArrayField(mm_fields.Field):
-    """Custom field for Union[str, List[str]] types that generates oneOf schema."""
+class OneOfField(mm_fields.Field):
+    """Generic field for oneOf schema types that generates proper OpenAPI oneOf schema."""
 
     def _serialize(self, value, attr, obj, **kwargs):
         return value
@@ -14,12 +15,39 @@ class StringOrStringArrayField(mm_fields.Field):
     def _deserialize(self, value, attr, data, **kwargs):
         return value
 
-    def __init__(self, **kwargs):
+    def __init__(self, schema_options: List[Dict[str, Any]], **kwargs):
+        """
+        Initialize OneOfField with schema options.
+
+        Args:
+            schema_options: List of OpenAPI schema dictionaries for oneOf
+            **kwargs: Additional marshmallow field kwargs
+        """
         super().__init__(**kwargs)
-        self.metadata["oneOf"] = [
-            {"type": "string"},
-            {"type": "array", "items": {"type": "string"}},
-        ]
+        self.metadata["oneOf"] = schema_options
+
+
+class StringOrStringArrayField(OneOfField):
+    def __init__(self, **kwargs):
+        super().__init__(
+            [{"type": "string"}, {"type": "array", "items": {"type": "string"}}],
+            **kwargs,
+        )
+
+
+class StringOrArrayOrArrayOfArraysField(OneOfField):
+    def __init__(self, **kwargs):
+        super().__init__(
+            [
+                {"type": "string"},
+                {"type": "array", "items": {"type": "string"}},
+                {
+                    "type": "array",
+                    "items": {"type": "array", "items": {"type": "string"}},
+                },
+            ],
+            **kwargs,
+        )
 
 
 class UnionField(mm_fields.Field):
@@ -224,7 +252,9 @@ def createKtNtField(key: str, isOptional: bool) -> tuple[tuple, mm_fields.Field]
     # Type can be string, List[str], or List[List[str]]
     pyType = Union[str, List[str], List[List[str]]]
 
-    return createOptionalField(key, pyType, mm_fields.String, (), {}, isOptional)
+    return createOptionalField(
+        key, pyType, StringOrArrayOrArrayOfArraysField, (), {}, isOptional
+    )
 
 
 def createRegularField(
@@ -414,3 +444,25 @@ def applyAltConstraintsToOpenApiSchema(
     if oneOfSchemas:
         openApiSchemaDict.clear()
         openApiSchemaDict["oneOf"] = oneOfSchemas
+
+
+def enumSchemaFromNamedtuple(nt_instance, description=None):
+    """
+    Generate an OpenAPI schema dict for a namedtuple instance.
+    """
+    return {
+        "type": "string",
+        "enum": [v for v in nt_instance._asdict().values()],
+        "description": description or nt_instance.__class__.__name__,
+    }
+
+
+def namedtupleToEnum(nt_instance, enum_name="AutoEnum"):
+    if not isinstance(nt_instance, tuple) or not hasattr(nt_instance, "_fields"):
+        raise TypeError("Must pass a namedtuple instance")
+
+    # Build dict of {field_name: value}
+    members = {field: getattr(nt_instance, field) for field in nt_instance._fields}
+
+    # Dynamically create a subclass of str & Enum
+    return Enum(enum_name, members, type=str)
