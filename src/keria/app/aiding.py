@@ -34,7 +34,16 @@ from keria.app.credentialing import (
 )
 from ..core import longrunning, httping
 from ..utils.openapi import namedtupleToEnum, dataclassFromFielddom
-from .credentialing import ICP_V_1, ICP_V_2, ROT_V_1, ROT_V_2, DIP_V_1, DIP_V_2, DRT_V_1, DRT_V_2
+from .credentialing import (
+    ICP_V_1,
+    ICP_V_2,
+    ROT_V_1,
+    ROT_V_2,
+    DIP_V_1,
+    DIP_V_2,
+    DRT_V_1,
+    DRT_V_2,
+)
 
 logger = ogler.getLogger()
 
@@ -139,6 +148,7 @@ class AgentResourceResult:
     pidx: int
     ridx: Optional[int] = None
     sxlt: Optional[str] = None
+
 
 class AgentResourceEnd:
     """Resource class for getting agent specific launch information"""
@@ -2029,6 +2039,7 @@ class ChallengeVerifyResourceEnd:
         agent.hby.db.chas.add(keys=(source,), val=saider)
 
         rep.status = falcon.HTTP_202
+
 
 @dataclass
 class WellKnown:

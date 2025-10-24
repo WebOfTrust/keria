@@ -100,6 +100,62 @@ class AgentSpecResource:
             "RPY_V_2", schema=marshmallow_dataclass.class_schema(aiding.RPY_V_2)()
         )
         self.spec.components.schema(
+            "RCT_V_1", schema=marshmallow_dataclass.class_schema(agenting.RCT_V_1)()
+        )
+        self.spec.components.schema(
+            "RCT_V_2", schema=marshmallow_dataclass.class_schema(agenting.RCT_V_2)()
+        )
+        self.spec.components.schema(
+            "QRY_V_1", schema=marshmallow_dataclass.class_schema(agenting.QRY_V_1)()
+        )
+        self.spec.components.schema(
+            "QRY_V_2", schema=marshmallow_dataclass.class_schema(agenting.QRY_V_2)()
+        )
+        self.spec.components.schema(
+            "PRO_V_1", schema=marshmallow_dataclass.class_schema(agenting.PRO_V_1)()
+        )
+        self.spec.components.schema(
+            "PRO_V_2", schema=marshmallow_dataclass.class_schema(agenting.PRO_V_2)()
+        )
+        self.spec.components.schema(
+            "BAR_V_1", schema=marshmallow_dataclass.class_schema(agenting.BAR_V_1)()
+        )
+        self.spec.components.schema(
+            "BAR_V_2", schema=marshmallow_dataclass.class_schema(agenting.BAR_V_2)()
+        )
+        self.spec.components.schema(
+            "EXN_V_1", schema=marshmallow_dataclass.class_schema(agenting.EXN_V_1)()
+        )
+        self.spec.components.schema(
+            "EXN_V_2", schema=marshmallow_dataclass.class_schema(agenting.EXN_V_2)()
+        )
+        self.spec.components.schema(
+            "ISS_V_1",
+            schema=marshmallow_dataclass.class_schema(agenting.ISS_V_1)(),
+        )
+        self.spec.components.schema(
+            "REV_V_1",
+            schema=marshmallow_dataclass.class_schema(agenting.REV_V_1)(),
+        )
+        self.spec.components.schema(
+            "BIS_V_1",
+            schema=marshmallow_dataclass.class_schema(agenting.BIS_V_1)(),
+        )
+        self.spec.components.schema(
+            "BRV_V_1",
+            schema=marshmallow_dataclass.class_schema(agenting.BRV_V_1)(),
+        )
+        self.spec.components.schema(
+            "XIP_V_2",
+            schema=marshmallow_dataclass.class_schema(agenting.XIP_V_2)(),
+        )
+        self.spec.components.schema(
+            "VCP_V_1", schema=marshmallow_dataclass.class_schema(agenting.VCP_V_1)()
+        )
+        self.spec.components.schema(
+            "VRT_V_1", schema=marshmallow_dataclass.class_schema(agenting.VRT_V_1)()
+        )
+        self.spec.components.schema(
             "Credential",
             schema=marshmallow_dataclass.class_schema(credentialing.ClonedCredential)(),
         )
@@ -293,7 +349,10 @@ class AgentSpecResource:
         )
 
         # Register the KeyEventRecord schema
-        self.spec.components.schema("KeyEventRecord", schema=marshmallow_dataclass.class_schema(agenting.KeyEventRecord)())
+        self.spec.components.schema(
+            "KeyEventRecord",
+            schema=marshmallow_dataclass.class_schema(agenting.KeyEventRecord)(),
+        )
         keyEventRecordSchema = self.spec.components.schemas["KeyEventRecord"]
         keyEventRecordSchema["properties"]["ked"] = {
             "oneOf": [
@@ -327,12 +386,15 @@ class AgentSpecResource:
                 {"$ref": "#/components/schemas/PRO_V_2"},
                 {"$ref": "#/components/schemas/BAR_V_2"},
                 {"$ref": "#/components/schemas/XIP_V_2"},
-                {"$ref": "#/components/schemas/EXN_V_2"}
+                {"$ref": "#/components/schemas/EXN_V_2"},
             ]
         }
 
         # Register the AgentConfig schema
-        self.spec.components.schema("AgentConfig", schema=marshmallow_dataclass.class_schema(agenting.AgentConfig)())
+        self.spec.components.schema(
+            "AgentConfig",
+            schema=marshmallow_dataclass.class_schema(agenting.AgentConfig)(),
+        )
 
         self.addRoutes(app)
 

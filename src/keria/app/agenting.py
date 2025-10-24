@@ -69,8 +69,19 @@ from ..core import authing, longrunning, httping
 from ..core.authing import Authenticater
 from ..core.keeping import RemoteManager
 from ..db import basing
-from .credentialing import ICP_V_1, ICP_V_2, ROT_V_1, ROT_V_2, DIP_V_1, DIP_V_2, DRT_V_1, DRT_V_2, IXN_V_1, IXN_V_2
-from .aiding import VCP_V_1, VRT_V_1, RPY_V_1, RPY_V_2
+from .credentialing import (
+    ICP_V_1,
+    ICP_V_2,
+    ROT_V_1,
+    ROT_V_2,
+    DIP_V_1,
+    DIP_V_2,
+    DRT_V_1,
+    DRT_V_2,
+    IXN_V_1,
+    IXN_V_2,
+)
+from .aiding import RPY_V_1, RPY_V_2
 
 logger = ogler.getLogger(log_name)
 
@@ -1806,7 +1817,7 @@ class KeyStateCollectionEnd:
               description: Key event log and key state of identifier
               content:
                 application/json:
-                    schema: 
+                    schema:
                         type: array
                         items:
                             $ref: '#/components/schemas/KeyStateRecord'
@@ -1837,52 +1848,121 @@ class KeyStateCollectionEnd:
         rep.data = json.dumps(states).encode("utf-8")
 
 
-rctFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_1_0][serdering.Ilks.rct]
+rctFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.rct]
 RCT_V_1, RCTSchema_V_1 = dataclassFromFielddom("RCT_V_1", rctFieldDomV1)
-rctFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_2_0][serdering.Ilks.rct]
+rctFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_2_0
+][serdering.Ilks.rct]
 RCT_V_2, RCTSchema_V_2 = dataclassFromFielddom("RCT_V_2", rctFieldDomV2)
 
-qryFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_1_0][serdering.Ilks.qry]
+qryFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.qry]
 QRY_V_1, QRYSchema_V_1 = dataclassFromFielddom("QRY_V_1", qryFieldDomV1)
-qryFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_2_0][serdering.Ilks.qry]
+qryFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_2_0
+][serdering.Ilks.qry]
 QRY_V_2, QRYSchema_V_2 = dataclassFromFielddom("QRY_V_2", qryFieldDomV2)
 
-proFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_1_0][serdering.Ilks.pro]
+proFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.pro]
 PRO_V_1, PROSchema_V_1 = dataclassFromFielddom("PRO_V_1", proFieldDomV1)
-proFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_2_0][serdering.Ilks.pro]
+proFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_2_0
+][serdering.Ilks.pro]
 PRO_V_2, PROSchema_V_2 = dataclassFromFielddom("PRO_V_2", proFieldDomV2)
 
-barFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_1_0][serdering.Ilks.bar]
+barFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.bar]
 BAR_V_1, BARSchema_V_1 = dataclassFromFielddom("BAR_V_1", barFieldDomV1)
-barFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_2_0][serdering.Ilks.bar]
+barFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_2_0
+][serdering.Ilks.bar]
 BAR_V_2, BARSchema_V_2 = dataclassFromFielddom("BAR_V_2", barFieldDomV2)
 
-exnFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_1_0][serdering.Ilks.exn]
+exnFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.exn]
 EXN_V_1, EXNSchema_V_1 = dataclassFromFielddom("EXN_V_1", exnFieldDomV1)
-exnFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_2_0][serdering.Ilks.exn]
+exnFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_2_0
+][serdering.Ilks.exn]
 EXN_V_2, EXNSchema_V_2 = dataclassFromFielddom("EXN_V_2", exnFieldDomV2)
 
-issFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_1_0][serdering.Ilks.iss]
+issFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.iss]
 ISS_V_1, ISSSchema_V_1 = dataclassFromFielddom("ISS_V_1", issFieldDomV1)
 
-revFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_1_0][serdering.Ilks.rev]
+revFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.rev]
 REV_V_1, REVSchema_V_1 = dataclassFromFielddom("REV_V_1", revFieldDomV1)
 
-bisFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_1_0][serdering.Ilks.bis]
+bisFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.bis]
 BIS_V_1, BISSchema_V_1 = dataclassFromFielddom("BIS_V_1", bisFieldDomV1)
 
-brvFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_1_0][serdering.Ilks.brv]
+brvFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.brv]
 BRV_V_1, BRVSchema_V_1 = dataclassFromFielddom("BRV_V_1", brvFieldDomV1)
 
-xipFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][serdering.Vrsn_2_0][serdering.Ilks.xip]
+xipFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_2_0
+][serdering.Ilks.xip]
 XIP_V_2, XIPSchema_V_2 = dataclassFromFielddom("XIP_V_2", xipFieldDomV2)
+
+vcpFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.vcp]
+VCP_V_1, VCPSchema_V_1 = dataclassFromFielddom("VCP_V_1", vcpFieldDomV1)
+
+vrtFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.vrt]
+VRT_V_1, VRTSchema_V_1 = dataclassFromFielddom("VRT_V_1", vrtFieldDomV1)
+
 
 @dataclass
 class KeyEventRecord:
-    """ Key Event Record for KEL """
+    """Key Event Record for KEL"""
+
     ked: Union[
-        "ICP_V_1", "ROT_V_1", "IXN_V_1", "DIP_V_1", "DRT_V_1", "RCT_V_1", "QRY_V_1", "RPY_V_1", "PRO_V_1", "BAR_V_1", "EXN_V_1", "VCP_V_1", "VRT_V_1", "ISS_V_1", "REV_V_1", "BIS_V_1", "BRV_V_1", # type: ignore
-        "ICP_V_2", "ROT_V_2", "IXN_V_2", "DIP_V_2", "DRT_V_2", "RCT_V_2", "QRY_V_2", "RPY_V_2", "PRO_V_2", "BAR_V_2", "XIP_V_2", "EXN_V_2" # type: ignore
+        "ICP_V_1",
+        "ROT_V_1",
+        "IXN_V_1",
+        "DIP_V_1",
+        "DRT_V_1",
+        "RCT_V_1",
+        "QRY_V_1",
+        "RPY_V_1",
+        "PRO_V_1",
+        "BAR_V_1",
+        "EXN_V_1",
+        "VCP_V_1",
+        "VRT_V_1",
+        "ISS_V_1",
+        "REV_V_1",
+        "BIS_V_1",
+        "BRV_V_1",  # type: ignore
+        "ICP_V_2",
+        "ROT_V_2",
+        "IXN_V_2",
+        "DIP_V_2",
+        "DRT_V_2",
+        "RCT_V_2",
+        "QRY_V_2",
+        "RPY_V_2",
+        "PRO_V_2",
+        "BAR_V_2",
+        "XIP_V_2",
+        "EXN_V_2",  # type: ignore
     ]
     atc: str
 
@@ -1914,7 +1994,7 @@ class KeyEventCollectionEnd:
               description: Key event log and key state of identifier
               content:
                 application/json:
-                    schema: 
+                    schema:
                         type: array
                         items:
                             $ref: '#/components/schemas/KeyEventRecord'
@@ -1984,7 +2064,7 @@ class OOBICollectionEnd:
               description: OOBI resolution to key state successful
               content:
                 application/json:
-                  schema: 
+                  schema:
                     $ref: '#/components/schemas/Operation'
 
         """
@@ -2170,7 +2250,7 @@ class QueryCollectionEnd:
               description: Key event log and key state of identifier
               content:
                 application/json:
-                    schema: 
+                    schema:
                         $ref: '#/components/schemas/Operation'
            404:
               description: Identifier not found in Key event database
@@ -2248,8 +2328,10 @@ class Submitter(doing.DoDoer):
 
 @dataclass
 class AgentConfig:
-    """ Agent configuration data class """
+    """Agent configuration data class"""
+
     iurls: list[str] = field(default_factory=list)
+
 
 class ConfigResourceEnd:
     @staticmethod
