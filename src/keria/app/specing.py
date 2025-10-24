@@ -100,62 +100,6 @@ class AgentSpecResource:
             "RPY_V_2", schema=marshmallow_dataclass.class_schema(aiding.RPY_V_2)()
         )
         self.spec.components.schema(
-            "RCT_V_1", schema=marshmallow_dataclass.class_schema(agenting.RCT_V_1)()
-        )
-        self.spec.components.schema(
-            "RCT_V_2", schema=marshmallow_dataclass.class_schema(agenting.RCT_V_2)()
-        )
-        self.spec.components.schema(
-            "QRY_V_1", schema=marshmallow_dataclass.class_schema(agenting.QRY_V_1)()
-        )
-        self.spec.components.schema(
-            "QRY_V_2", schema=marshmallow_dataclass.class_schema(agenting.QRY_V_2)()
-        )
-        self.spec.components.schema(
-            "PRO_V_1", schema=marshmallow_dataclass.class_schema(agenting.PRO_V_1)()
-        )
-        self.spec.components.schema(
-            "PRO_V_2", schema=marshmallow_dataclass.class_schema(agenting.PRO_V_2)()
-        )
-        self.spec.components.schema(
-            "BAR_V_1", schema=marshmallow_dataclass.class_schema(agenting.BAR_V_1)()
-        )
-        self.spec.components.schema(
-            "BAR_V_2", schema=marshmallow_dataclass.class_schema(agenting.BAR_V_2)()
-        )
-        self.spec.components.schema(
-            "EXN_V_1", schema=marshmallow_dataclass.class_schema(agenting.EXN_V_1)()
-        )
-        self.spec.components.schema(
-            "EXN_V_2", schema=marshmallow_dataclass.class_schema(agenting.EXN_V_2)()
-        )
-        self.spec.components.schema(
-            "ISS_V_1",
-            schema=marshmallow_dataclass.class_schema(agenting.ISS_V_1)(),
-        )
-        self.spec.components.schema(
-            "REV_V_1",
-            schema=marshmallow_dataclass.class_schema(agenting.REV_V_1)(),
-        )
-        self.spec.components.schema(
-            "BIS_V_1",
-            schema=marshmallow_dataclass.class_schema(agenting.BIS_V_1)(),
-        )
-        self.spec.components.schema(
-            "BRV_V_1",
-            schema=marshmallow_dataclass.class_schema(agenting.BRV_V_1)(),
-        )
-        self.spec.components.schema(
-            "XIP_V_2",
-            schema=marshmallow_dataclass.class_schema(agenting.XIP_V_2)(),
-        )
-        self.spec.components.schema(
-            "VCP_V_1", schema=marshmallow_dataclass.class_schema(agenting.VCP_V_1)()
-        )
-        self.spec.components.schema(
-            "VRT_V_1", schema=marshmallow_dataclass.class_schema(agenting.VRT_V_1)()
-        )
-        self.spec.components.schema(
             "Credential",
             schema=marshmallow_dataclass.class_schema(credentialing.ClonedCredential)(),
         )
@@ -356,37 +300,18 @@ class AgentSpecResource:
         keyEventRecordSchema = self.spec.components.schemas["KeyEventRecord"]
         keyEventRecordSchema["properties"]["ked"] = {
             "oneOf": [
-                # Keri V1.0
+                # Key events V1.0
                 {"$ref": "#/components/schemas/ICP_V_1"},
                 {"$ref": "#/components/schemas/ROT_V_1"},
                 {"$ref": "#/components/schemas/IXN_V_1"},
                 {"$ref": "#/components/schemas/DIP_V_1"},
                 {"$ref": "#/components/schemas/DRT_V_1"},
-                {"$ref": "#/components/schemas/RCT_V_1"},
-                {"$ref": "#/components/schemas/QRY_V_1"},
-                {"$ref": "#/components/schemas/RPY_V_1"},
-                {"$ref": "#/components/schemas/PRO_V_1"},
-                {"$ref": "#/components/schemas/BAR_V_1"},
-                {"$ref": "#/components/schemas/EXN_V_1"},
-                {"$ref": "#/components/schemas/VCP_V_1"},
-                {"$ref": "#/components/schemas/VRT_V_1"},
-                {"$ref": "#/components/schemas/ISS_V_1"},
-                {"$ref": "#/components/schemas/REV_V_1"},
-                {"$ref": "#/components/schemas/BIS_V_1"},
-                {"$ref": "#/components/schemas/BRV_V_1"},
-                # Keri V2.0
+                # Key events V2.0
                 {"$ref": "#/components/schemas/ICP_V_2"},
                 {"$ref": "#/components/schemas/ROT_V_2"},
                 {"$ref": "#/components/schemas/IXN_V_2"},
                 {"$ref": "#/components/schemas/DIP_V_2"},
                 {"$ref": "#/components/schemas/DRT_V_2"},
-                {"$ref": "#/components/schemas/RCT_V_2"},
-                {"$ref": "#/components/schemas/QRY_V_2"},
-                {"$ref": "#/components/schemas/RPY_V_2"},
-                {"$ref": "#/components/schemas/PRO_V_2"},
-                {"$ref": "#/components/schemas/BAR_V_2"},
-                {"$ref": "#/components/schemas/XIP_V_2"},
-                {"$ref": "#/components/schemas/EXN_V_2"},
             ]
         }
 

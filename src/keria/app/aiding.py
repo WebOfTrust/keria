@@ -21,17 +21,6 @@ from mnemonic import mnemonic
 from keri.db import basing
 from marshmallow import fields
 from marshmallow_dataclass import class_schema
-
-from keria.app.credentialing import (
-    ICP_V_1,
-    ICP_V_2,
-    ROT_V_1,
-    ROT_V_2,
-    DIP_V_1,
-    DIP_V_2,
-    DRT_V_1,
-    DRT_V_2,
-)
 from ..core import longrunning, httping
 from ..utils.openapi import namedtupleToEnum, dataclassFromFielddom
 from .credentialing import (
