@@ -1,14 +1,12 @@
 FROM python:3.12.8-alpine3.21 AS builder
 
-RUN apk add --no-cache \
-    build-base \
+RUN apk --no-cache add \
     curl \
-    gcc \
+    bash \
+    alpine-sdk \
     libffi-dev \
-    libsodium-dev \
-    musl-dev \
-    patch \
-    pkgconfig
+    libsodium \
+    libsodium-dev
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
@@ -26,7 +24,7 @@ RUN uv sync --locked --no-dev
 FROM python:3.12.8-alpine3.21
 WORKDIR /keria
 
-RUN apk add --no-cache \
+RUN apk --no-cache add \
     bash \
     curl \
     libsodium-dev \
