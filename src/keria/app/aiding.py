@@ -895,7 +895,20 @@ class IdentifierResourceEnd:
         """
         if not name:
             raise falcon.HTTPBadRequest(description="name is required")
+
+        body = req.get_media()
+        newName = body.get("name")
+
+        if not newName:
+            raise falcon.HTTPBadRequest(description="new name is required")
+
         agent = req.context.agent
+
+        if agent.hby.habByName(newName) is not None:
+            raise falcon.HTTPBadRequest(
+                title=f"AID with name {newName} already incepted"
+            )
+
         hab = (
             agent.hby.habs[name]
             if name in agent.hby.habs
@@ -904,8 +917,7 @@ class IdentifierResourceEnd:
 
         if hab is None:
             raise falcon.HTTPNotFound(title=f"No AID with name or prefix {name} found")
-        body = req.get_media()
-        newName = body.get("name")
+
         habord = hab.db.habs.get(keys=(hab.pre,))
         oldName = habord.name
         habord.name = newName

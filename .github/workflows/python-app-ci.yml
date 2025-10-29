@@ -24,19 +24,18 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.12.8
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.9.5"
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt keria[dev]
+        run: make install-dev
       - name: Lint changes
-        run: |
-          ruff check
+        run: make lint
       - name: Check formatting
-        run: |
-          ruff format --check
+        run: make format-check
       - name: Run core KERIA tests
-        run: |
-          pytest tests/
+        run: make test
 
   docker:
     runs-on: ubuntu-latest
@@ -51,17 +50,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.12.8
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: 3.12.8
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.9.5"
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest pytest-cov hio requests
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        run: make install-dev
       - name: Run core KERIA tests
-        run: |
-          pytest --cov=./ --cov-report=xml
+        run: make test-coverage
       - name: Upload
         uses: codecov/codecov-action@v4
         with:

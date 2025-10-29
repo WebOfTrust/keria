@@ -1659,6 +1659,108 @@ def test_identifier_resource_end(helpers):
         assert res.status_code == 200
         assert res.json["prefix"] == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
 
+        # Testing name conflicts
+        salt1 = b"abcdef0123456789"
+        salter1 = core.Salter(raw=salt1)
+        serder2, signers2 = helpers.incept(salt1, "signify:aid", pidx=0)
+        sigers2 = [signer.sign(ser=serder2.raw, index=0).qb64 for signer in signers2]
+        encrypter2 = core.Encrypter(verkey=signers2[0].verfer.qb64)
+        sxlt2 = encrypter2.encrypt(ser=salter1.qb64).qb64
+
+        body2 = {
+            "name": "aid2",
+            "icp": serder2.ked,
+            "sigs": sigers2,
+            "salty": {
+                "stem": "signify:aid",
+                "pidx": 1,
+                "tier": "low",
+                "sxlt": sxlt2,
+                "icodes": [MtrDex.Ed25519_Seed],
+                "ncodes": [MtrDex.Ed25519_Seed],
+            },
+        }
+
+        res = client.simulate_post(path="/identifiers", body=json.dumps(body2))
+        assert res.status_code == 202
+
+        # Test: Successful rename by name
+        res = client.simulate_put(
+            path="/identifiers/aid1", body=json.dumps({"name": "aid1Renamed"})
+        )
+        assert res.status_code == 200
+        aid = res.json
+        assert aid["name"] == "aid1Renamed"
+        assert aid["prefix"] == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+
+        # Verify the old name no longer works
+        res = client.simulate_get(path="/identifiers/aid1")
+        assert res.status_code == 404
+
+        # Verify the new name works
+        res = client.simulate_get(path="/identifiers/aid1Renamed")
+        assert res.status_code == 200
+        assert res.json["name"] == "aid1Renamed"
+
+        # Test: Successful rename by prefix
+        prefix = "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+        res = client.simulate_put(
+            path=f"/identifiers/{prefix}", body=json.dumps({"name": "aid1Final"})
+        )
+        assert res.status_code == 200
+        aid = res.json
+        assert aid["name"] == "aid1Final"
+        assert aid["prefix"] == prefix
+
+        # Test: Missing name parameter (empty path)
+        res = client.simulate_put(
+            path="/identifiers/", body=json.dumps({"name": "newName"})
+        )
+        assert res.status_code == 400  # Returns 400 for missing name parameter
+        assert res.json == {
+            "description": "name is required",
+            "title": "400 Bad Request",
+        }
+
+        # Test: Missing new name in request body
+        res = client.simulate_put(path="/identifiers/aid2", body=json.dumps({}))
+        assert res.status_code == 400
+        assert res.json == {
+            "description": "new name is required",
+            "title": "400 Bad Request",
+        }
+
+        # Test: Empty new name in request body
+        res = client.simulate_put(
+            path="/identifiers/aid2", body=json.dumps({"name": ""})
+        )
+        assert res.status_code == 400
+        assert res.json == {
+            "description": "new name is required",
+            "title": "400 Bad Request",
+        }
+
+        # Test: Trying to rename to an existing name
+        res = client.simulate_put(
+            path="/identifiers/aid2", body=json.dumps({"name": "aid1Final"})
+        )
+        assert res.status_code == 400
+        assert res.json == {"title": "AID with name aid1Final already incepted"}
+
+        # Test: Trying to rename a non-existent identifier
+        res = client.simulate_put(
+            path="/identifiers/nonexistent", body=json.dumps({"name": "newName"})
+        )
+        assert res.status_code == 404
+        assert res.json == {"title": "No AID with name or prefix nonexistent found"}
+
+        # Test: Trying to rename with an invalid prefix
+        res = client.simulate_put(
+            path="/identifiers/EInvalidPrefix", body=json.dumps({"name": "newName"})
+        )
+        assert res.status_code == 404
+        assert res.json == {"title": "No AID with name or prefix EInvalidPrefix found"}
+
 
 def test_oobi_ends(helpers):
     with helpers.openKeria() as (agency, agent, app, client):
