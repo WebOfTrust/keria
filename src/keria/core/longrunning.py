@@ -594,17 +594,7 @@ class OperationCollectionEnd:
                     schema:
                         type: array
                         items:
-                          properties:
-                            name:
-                              type: string
-                            metadata:
-                              type: object
-                            done:
-                              type: boolean
-                            error:
-                              type: object
-                            response:
-                              type: object
+                          $ref: '#/components/schemas/Operation'
         """
         agent = req.context.agent
         type = req.params.get("type")
@@ -639,7 +629,11 @@ class OperationResourceEnd:
             description: The name of the long running operation to retrieve.
         responses:
           200:
-              description: Successfully retrieved the status of the long running operation.
+            description: Successfully retrieved the status of the long running operation.
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Operation'
           404:
             description: The requested long running operation was not found.
 
