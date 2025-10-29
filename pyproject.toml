@@ -1,0 +1,60 @@
+[project]
+name = "keria"
+version = "0.2.0"
+description = "KERIA: KERI Agent in the cloud"
+readme = "README.md"
+license = { text = "Apache Software License 2.0" }
+authors = [
+    { name = "Philip S. Feairheller", email = "pfeairheller@gmail.com" }
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: Unix",
+    "Operating System :: POSIX",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Utilities",
+]
+keywords = [
+    "secure attribution",
+    "authentic data",
+    "discovery",
+    "resolver"
+]
+requires-python = ">=3.12.2"
+dependencies = [
+    "hio==0.6.14",
+    "keri==1.2.7",
+    "mnemonic==0.21",
+    "multicommand==1.0.0",
+    "falcon==4.0.2",
+    "http_sfv==0.9.9",
+    "dataclasses_json==0.6.7",
+    "apispec==6.8.1",
+    "marshmallow_dataclass==8.7.1",
+    "deprecation==2.1.0",
+]
+
+[project.scripts]
+keria = "keria.app.cli.keria:main"
+
+[tool.uv]
+package = true
+
+[dependency-groups]
+dev = [
+    "ruff>=0.8.0",
+    "pytest>=8.3.4",
+    "coverage>=7.6.10",
+    "pytest-cov>=6.0.0",
+    "requests",
+    "sphinx",
+    "sphinx-rtd-theme",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers --disable-warnings"
