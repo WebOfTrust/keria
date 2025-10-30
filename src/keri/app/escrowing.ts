@@ -1,5 +1,7 @@
 import { SignifyClient } from './clienting.ts';
+import { components } from '../../types/keria-api-schema.ts';
 
+export type Rpy = components['schemas']['Rpy'];
 /**
  * Escrows
  */
@@ -18,9 +20,9 @@ export class Escrows {
      * List replay messages
      * @async
      * @param {string} [route] Optional route in the replay message
-     * @returns {Promise<any>} A promise to the list of replay messages
+     * @returns {Promise<Rpy[]>} A promise to the list of replay messages
      */
-    async listReply(route?: string): Promise<any> {
+    async listReply(route?: string): Promise<Rpy[]> {
         const params = new URLSearchParams();
         if (route !== undefined) {
             params.append('route', route);

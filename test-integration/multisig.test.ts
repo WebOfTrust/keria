@@ -302,7 +302,11 @@ test('multisig', async function run() {
     let hab = await client1.identifiers().get('multisig');
     let aid = hab['prefix'];
     const signing = members['signing'];
-    const eid1 = Object.keys(signing[0].ends.agent)[0]; //agent of member 1
+    const agentEnds1 = signing[0].ends.agent;
+    if (!agentEnds1) {
+        throw new Error('signing[0].ends.agent is null or undefined');
+    }
+    const eid1 = Object.keys(agentEnds1)[0]; // agent of member 1
     // other agent eids can be obtained with
     // let eid2 = Object.keys(signing[1].ends.agent)[0];
     // let eid3 = Object.keys(signing[2].ends.agent)[0];

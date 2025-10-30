@@ -3,15 +3,9 @@ import { Signer } from './signer.ts';
 import { Matter, MtrDex } from './matter.ts';
 import { EmptyMaterialError } from './kering.ts';
 import libsodium from 'libsodium-wrappers-sumo';
+import { Tier } from '../../types/keria-api-schema.ts';
 
-/**
- * Secret derivation security tier.
- */
-export enum Tier {
-    low = 'low',
-    med = 'med',
-    high = 'high',
-}
+export { Tier } from '../../types/keria-api-schema.ts';
 
 interface SalterArgs {
     raw?: Uint8Array | undefined;

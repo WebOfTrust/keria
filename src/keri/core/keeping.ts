@@ -177,79 +177,57 @@ export class IdentifierManagerFactory {
      * @returns IdentifierManager instance
      */
     get(aid: HabState): IdentifierManager {
-        const algo = aid[Algos.salty]
-            ? Algos.salty
-            : aid[Algos.randy]
-              ? Algos.randy
-              : aid[Algos.group]
-                ? Algos.group
-                : aid[Algos.extern]
-                  ? Algos.extern
-                  : undefined;
-        if (!algo) {
-            throw new Error('No algo specified');
-        }
-        let kargs = aid[algo];
-        if (!kargs) {
-            throw new Error('No kargs found in HabState');
-        }
-        switch (algo) {
-            case Algos.salty:
-                kargs = kargs as SaltyKeyState;
-                return new SaltyIdentifierManager(
-                    this.salter,
-                    kargs.pidx,
-                    kargs.kidx,
-                    kargs.tier,
-                    kargs.transferable,
-                    kargs.stem,
-                    undefined,
-                    undefined,
-                    kargs.icodes,
-                    undefined,
-                    undefined,
-                    kargs.ncodes,
-                    kargs.dcode,
-                    undefined,
-                    kargs.sxlt
-                );
-            case Algos.randy:
-                kargs = kargs as RandyKeyState;
-                return new RandyIdentifierManager(
-                    this.salter,
-                    undefined,
-                    undefined,
-                    undefined,
-                    new Prefixer({ qb64: aid['prefix'] }).transferable,
-                    undefined,
-                    undefined,
-                    [],
-                    undefined,
-                    kargs.prxs,
-                    kargs.nxts
-                );
-            case Algos.group:
-                kargs = kargs as GroupKeyState;
-                return new GroupIdentifierManager(
-                    this,
-                    kargs.mhab,
-                    undefined,
-                    undefined,
-                    kargs.keys,
-                    kargs.ndigs
-                );
-            case Algos.extern: {
-                kargs = kargs as ExternState;
-                const typ = kargs.extern_type;
-                if (typ in this.modules) {
-                    const mod = new this.modules[typ](kargs.pidx, kargs);
-                    return mod;
-                } else {
-                    throw new Error(`unsupported external module type ${typ}`);
-                }
+        if (Algos.salty in aid) {
+            return new SaltyIdentifierManager(
+                this.salter,
+                aid.salty.pidx,
+                aid.salty.kidx,
+                aid.salty.tier,
+                aid.salty.transferable,
+                aid.salty.stem,
+                undefined,
+                undefined,
+                aid.salty.icodes,
+                undefined,
+                undefined,
+                aid.salty.ncodes,
+                aid.salty.dcode,
+                undefined,
+                aid.salty.sxlt
+            );
+        } else if (Algos.randy in aid) {
+            return new RandyIdentifierManager(
+                this.salter,
+                undefined,
+                undefined,
+                undefined,
+                new Prefixer({ qb64: aid['prefix'] }).transferable,
+                undefined,
+                undefined,
+                [],
+                undefined,
+                aid.randy.prxs,
+                aid.randy.nxts
+            );
+        } else if (Algos.group in aid) {
+            return new GroupIdentifierManager(
+                this,
+                aid.group.mhab,
+                undefined,
+                undefined,
+                aid.group.keys,
+                aid.group.ndigs
+            );
+        } else if (Algos.extern in aid) {
+            const typ = aid.extern.extern_type;
+            if (typ in this.modules) {
+                const mod = new this.modules[typ](aid.extern.pidx, aid.extern);
+                return mod;
+            } else {
+                throw new Error(`unsupported external module type ${typ}`);
             }
-            default:
-                throw new Error('Algo not allowed yet');
+        } else {
+            throw new Error('No algo specified');
         }
     }
 }

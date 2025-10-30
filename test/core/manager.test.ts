@@ -26,7 +26,11 @@ import {
     Prefixer,
     RandyIdentifierManager,
 } from '../../src/index.ts';
-import { RandyKeyState, KeyState } from '../../src/keri/core/keyState.ts';
+import {
+    RandyKeyState,
+    KeyState,
+    HabState,
+} from '../../src/keri/core/keyState.ts';
 import { randomUUID } from 'node:crypto';
 
 describe('RandyCreator', () => {
@@ -167,6 +171,30 @@ const ser =
     'X1kxSPGYBWaIya3slgCOyOtlqU","toad":"0","wits":[],"cnfg":[]}-AABA' +
     'ApYcYd1cppVg7Inh2YCslWKhUwh59TrPpIoqWxN2A38NCbTljvmBPBjSGIFDBNOv' +
     'VjHpdZlty3Hgk6ilF8pVpAQ';
+
+const keystate: KeyState = {
+    s: '0',
+    d: 'a digest',
+    i: '',
+    p: '',
+    f: '',
+    dt: '',
+    et: '',
+    kt: '',
+    k: [],
+    nt: '',
+    n: [],
+    bt: '',
+    b: [],
+    c: [],
+    ee: {
+        s: '',
+        d: '',
+        br: [],
+        ba: [],
+    },
+    di: '',
+};
 
 describe('Manager', () => {
     it('should manage key pairs for identifiers', async () => {
@@ -722,7 +750,7 @@ describe('Manager', () => {
         const keeper1 = manager.get({
             prefix: prefixes.qb64,
             name: '',
-            state: {} as KeyState,
+            state: keystate,
             randy: keeper0.params() as RandyKeyState,
             transferable: false,
             windexes: [],
@@ -742,16 +770,19 @@ describe('Manager', () => {
         expect(() => manager.new(randomUUID() as Algos, 0, {})).toThrow(
             'Unknown algo'
         );
-        expect(() =>
-            manager.get({
-                prefix: '',
-                name: '',
-                state: {} as KeyState,
-                transferable: false,
-                windexes: [],
-                icp_dt: '2023-12-01T10:05:25.062609+00:00',
-            })
-        ).toThrow('No algo specified');
+
+        // Just use a partial for testing purpose
+        const partialHabState: Partial<HabState> = {
+            prefix: '',
+            name: '',
+            state: keystate,
+            transferable: false,
+            windexes: [],
+            icp_dt: '2023-12-01T10:05:25.062609+00:00',
+        };
+        expect(() => manager.get(partialHabState as HabState)).toThrow(
+            'No algo specified'
+        );
     });
 
     describe('External Module ', () => {
@@ -819,7 +850,7 @@ describe('Manager', () => {
             const keeper = manager.get({
                 name: randomUUID(),
                 prefix: '',
-                state: {} as unknown as KeyState,
+                state: keystate,
                 windexes: [],
                 extern: {
                     extern_type: 'mock',
@@ -846,7 +877,7 @@ describe('Manager', () => {
                 manager.get({
                     name: randomUUID(),
                     prefix: '',
-                    state: {} as unknown as KeyState,
+                    state: keystate,
                     windexes: [],
                     extern: {
                         extern_type: 'mock',

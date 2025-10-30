@@ -122,7 +122,7 @@ export async function createMockIdentifierState(
             di: serder.sad.di ?? '',
         } as KeyState,
         icp_dt: '2023-12-01T10:05:25.062609+00:00',
-    };
+    } as unknown as HabState;
 }
 
 export const mockConnect = {

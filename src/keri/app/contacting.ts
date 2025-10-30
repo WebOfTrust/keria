@@ -1,12 +1,8 @@
 import { SignifyClient } from './clienting.ts';
 import { Operation } from './coring.ts';
+import { components } from '../../types/keria-api-schema.ts';
 
-export interface Contact {
-    alias: string;
-    oobi: string;
-    id: string;
-    [key: string]: unknown;
-}
+export type Contact = components['schemas']['Contact'];
 
 export interface ContactInfo {
     [key: string]: unknown;
@@ -111,9 +107,7 @@ export class Contacts {
     }
 }
 
-export interface Challenge {
-    words: string[];
-}
+export type Challenge = components['schemas']['Challenge'];
 
 /**
  * Challenges

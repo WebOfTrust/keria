@@ -122,8 +122,22 @@ describe('multisig-join', () => {
 
         const members1 = await client1.identifiers().members(nameMultisig);
         const members2 = await client2.identifiers().members(nameMultisig);
-        const eid1 = Object.keys(members1.signing[0].ends.agent)[0];
-        const eid2 = Object.keys(members2.signing[1].ends.agent)[0];
+
+        const agentEnds1 = members1.signing[0].ends.agent;
+        if (!agentEnds1) {
+            throw new Error(
+                'members1.signing[0].ends.agent is null or undefined'
+            );
+        }
+        const eid1 = Object.keys(agentEnds1)[0];
+
+        const agentEnds2 = members2.signing[1].ends.agent;
+        if (!agentEnds2) {
+            throw new Error(
+                'members2.signing[1].ends.agent is null or undefined'
+            );
+        }
+        const eid2 = Object.keys(agentEnds2)[0];
 
         const [endRoleOperation1, endRoleOperation2] = await Promise.all([
             client1.identifiers().addEndRole(nameMultisig, 'agent', eid1),
@@ -352,7 +366,13 @@ describe('multisig-join', () => {
         assert.equal(multisigAid.state.n[2], aid3.state.n[0]);
 
         const members = await client3.identifiers().members(nameMultisig);
-        const eid = Object.keys(members.signing[2].ends.agent)[0];
+        const agentEnds = members.signing[2].ends.agent;
+        if (!agentEnds) {
+            throw new Error(
+                'members.signing[2].ends.agent is null or undefined'
+            );
+        }
+        const eid = Object.keys(agentEnds)[0];
         const endRoleOperation = await client3
             .identifiers()
             .addEndRole(nameMultisig, 'agent', eid);

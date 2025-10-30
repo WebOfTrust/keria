@@ -11,8 +11,8 @@ import {
     Identifier,
     IdentifierDeps,
     IdentifierManagerFactory,
-    Tier,
     randomPasscode,
+    Tier,
 } from '../../src/index.ts';
 import { createMockIdentifierState } from './test-utils.ts';
 

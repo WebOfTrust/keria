@@ -8,6 +8,7 @@ import { Serder } from '../core/serder.ts';
 import { parseRangeHeaders } from '../core/httping.ts';
 import { IdentifierManagerFactory } from '../core/keeping.ts';
 import { HabState } from '../core/keyState.ts';
+import { components } from '../../types/keria-api-schema.ts';
 
 /** Arguments required to create an identfier */
 export interface CreateIdentiferArgs {
@@ -72,6 +73,8 @@ export interface IdentifierDeps {
 export interface IdentifierInfo {
     name: string;
 }
+
+export type GroupMembers = components['schemas']['GroupMember'];
 
 /** Identifier */
 export class Identifier {
@@ -487,9 +490,9 @@ export class Identifier {
      * Get the members of a group identifier
      * @async
      * @param {string} name - Name or alias of the identifier
-     * @returns {Promise<any>} - A promise to the list of members
+     * @returns {Promise<GroupMembers>} - A promise to the list of members
      */
-    async members(name: string): Promise<any> {
+    async members(name: string): Promise<GroupMembers> {
         const res = await this.client.fetch(
             '/identifiers/' + name + '/members',
             'GET',

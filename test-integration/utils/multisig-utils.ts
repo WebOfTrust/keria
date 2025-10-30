@@ -98,7 +98,11 @@ export async function addEndRoleMultisig(
     const signings = members['signing'];
 
     for (const signing of signings) {
-        const eid = Object.keys(signing.ends.agent)[0];
+        const agentEnds = signing.ends.agent;
+        if (!agentEnds) {
+            throw new Error('signing.ends.agent is null or undefined');
+        }
+        const eid = Object.keys(agentEnds)[0];
         const endRoleResult = await client
             .identifiers()
             .addEndRole(multisigAID.name, 'agent', eid, timestamp);

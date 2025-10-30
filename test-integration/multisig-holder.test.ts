@@ -131,8 +131,18 @@ test('multisig', async function run() {
     const members = await client1.identifiers().members('holder');
     let ghab1 = await client1.identifiers().get('holder');
     const signing = members['signing'];
-    const eid1 = Object.keys(signing[0].ends.agent)[0];
-    const eid2 = Object.keys(signing[1].ends.agent)[0];
+
+    const agentEnds1 = signing[0].ends.agent;
+    if (!agentEnds1) {
+        throw new Error('signing[0].ends.agent is null or undefined');
+    }
+    const eid1 = Object.keys(agentEnds1)[0];
+
+    const agentEnds2 = signing[1].ends.agent;
+    if (!agentEnds2) {
+        throw new Error('signing[1].ends.agent is null or undefined');
+    }
+    const eid2 = Object.keys(agentEnds2)[0];
 
     console.log(`Starting multisig end role authorization for agent ${eid1}`);
 
