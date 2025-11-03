@@ -291,6 +291,7 @@ class Agency(doing.DoDoer):
             config[habName] = {}
 
         config[habName]["curls"] = config[habName].get("curls", [])
+        config[habName]["dt"] = config[habName].get("dt", timestamp)
         config["iurls"] = config.get("iurls", [])
         config["durls"] = config.get("durls", [])
         if self.curls is not None and isinstance(self.curls, list):
