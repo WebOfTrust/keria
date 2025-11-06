@@ -5,7 +5,7 @@ from apispec import yaml_utils
 from apispec.core import VALID_METHODS, APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 
-from keria.app import aiding
+from keria.app import aiding, agenting
 from ..core import longrunning
 from ..utils.openapi import applyAltConstraintsToOpenApiSchema
 from . import credentialing
@@ -290,6 +290,35 @@ class AgentSpecResource:
         self.spec.components.schema(
             "GroupMember",
             schema=marshmallow_dataclass.class_schema(aiding.GroupMember)(),
+        )
+
+        # Register the KeyEventRecord schema
+        self.spec.components.schema(
+            "KeyEventRecord",
+            schema=marshmallow_dataclass.class_schema(agenting.KeyEventRecord)(),
+        )
+        keyEventRecordSchema = self.spec.components.schemas["KeyEventRecord"]
+        keyEventRecordSchema["properties"]["ked"] = {
+            "oneOf": [
+                # Key events V1.0
+                {"$ref": "#/components/schemas/ICP_V_1"},
+                {"$ref": "#/components/schemas/ROT_V_1"},
+                {"$ref": "#/components/schemas/IXN_V_1"},
+                {"$ref": "#/components/schemas/DIP_V_1"},
+                {"$ref": "#/components/schemas/DRT_V_1"},
+                # Key events V2.0
+                {"$ref": "#/components/schemas/ICP_V_2"},
+                {"$ref": "#/components/schemas/ROT_V_2"},
+                {"$ref": "#/components/schemas/IXN_V_2"},
+                {"$ref": "#/components/schemas/DIP_V_2"},
+                {"$ref": "#/components/schemas/DRT_V_2"},
+            ]
+        }
+
+        # Register the AgentConfig schema
+        self.spec.components.schema(
+            "AgentConfig",
+            schema=marshmallow_dataclass.class_schema(agenting.AgentConfig)(),
         )
 
         self.addRoutes(app)
