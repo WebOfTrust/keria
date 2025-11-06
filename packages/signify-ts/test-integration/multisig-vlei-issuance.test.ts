@@ -31,6 +31,8 @@ import {
     grantMultisig,
     issueCredentialMultisig,
 } from './utils/multisig-utils.ts';
+import { retry } from './utils/retry.ts';
+import { re } from 'mathjs';
 
 const { vleiServerUrl, witnessIds } = resolveEnvironment();
 
@@ -513,8 +515,20 @@ test('multisig-vlei-issuance', async function run() {
         await waitAndMarkNotification(clientGAR1, '/multisig/vcp');
 
         [gedaRegistrybyGAR1, gedaRegistrybyGAR2] = await Promise.all([
-            clientGAR1.registries().list(aidGEDA.name),
-            clientGAR2.registries().list(aidGEDA.name),
+            retry(async () => {
+                const registries = await clientGAR1
+                    .registries()
+                    .list(aidGEDA.name);
+                assert(registries.length > 0, 'Registry not found yet');
+                return registries;
+            }),
+            retry(async () => {
+                const registries = await clientGAR2
+                    .registries()
+                    .list(aidGEDA.name);
+                assert(registries.length > 0, 'Registry not found yet');
+                return registries;
+            }),
         ]);
     }
     assert.equal(gedaRegistrybyGAR1[0].regk, gedaRegistrybyGAR2[0].regk);
@@ -853,9 +867,27 @@ test('multisig-vlei-issuance', async function run() {
 
         [qviRegistrybyQAR1, qviRegistrybyQAR2, qviRegistrybyQAR3] =
             await Promise.all([
-                clientQAR1.registries().list(aidQVI.name),
-                clientQAR2.registries().list(aidQVI.name),
-                clientQAR3.registries().list(aidQVI.name),
+                retry(async () => {
+                    const registries = await clientQAR1
+                        .registries()
+                        .list(aidQVI.name);
+                    assert(registries.length > 0, 'Registry not found yet');
+                    return registries;
+                }),
+                retry(async () => {
+                    const registries = await clientQAR2
+                        .registries()
+                        .list(aidQVI.name);
+                    assert(registries.length > 0, 'Registry not found yet');
+                    return registries;
+                }),
+                retry(async () => {
+                    const registries = await clientQAR3
+                        .registries()
+                        .list(aidQVI.name);
+                    assert(registries.length > 0, 'Registry not found yet');
+                    return registries;
+                }),
             ]);
     }
     assert.equal(qviRegistrybyQAR1[0].regk, qviRegistrybyQAR2[0].regk);
@@ -1103,9 +1135,27 @@ test('multisig-vlei-issuance', async function run() {
 
         [leRegistrybyLAR1, leRegistrybyLAR2, leRegistrybyLAR3] =
             await Promise.all([
-                clientLAR1.registries().list(aidLE.name),
-                clientLAR2.registries().list(aidLE.name),
-                clientLAR3.registries().list(aidLE.name),
+                retry(async () => {
+                    const registries = await clientLAR1
+                        .registries()
+                        .list(aidLE.name);
+                    assert(registries.length > 0, 'Registry not found yet');
+                    return registries;
+                }),
+                retry(async () => {
+                    const registries = await clientLAR2
+                        .registries()
+                        .list(aidLE.name);
+                    assert(registries.length > 0, 'Registry not found yet');
+                    return registries;
+                }),
+                retry(async () => {
+                    const registries = await clientLAR3
+                        .registries()
+                        .list(aidLE.name);
+                    assert(registries.length > 0, 'Registry not found yet');
+                    return registries;
+                }),
             ]);
     }
     assert.equal(leRegistrybyLAR1[0].regk, leRegistrybyLAR2[0].regk);

@@ -13,6 +13,7 @@ import {
     acceptMultisigIncept,
     startMultisigIncept,
 } from './utils/multisig-utils.ts';
+import { retry } from './utils/retry.ts';
 
 const { vleiServerUrl } = resolveEnvironment();
 const WITNESS_AIDS = [
@@ -460,9 +461,12 @@ async function createRegistry(
     const op = await result.op();
     await waitOperation(client, op);
 
-    const registries = await client.registries().list(name);
-    assert.equal(registries.length, 1);
-    assert.equal(registries[0].name, registryName);
+    const registries = await retry(async () => {
+        const result = await client.registries().list(name);
+        assert.equal(result.length, 1);
+        assert.equal(result[0].name, registryName);
+        return result;
+    });
 
     return registries[0];
 }

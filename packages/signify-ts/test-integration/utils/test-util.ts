@@ -472,9 +472,10 @@ export async function waitForCredential(
 
 export async function waitAndMarkNotification(
     client: SignifyClient,
-    route: string
+    route: string,
+    options: RetryOptions = {}
 ) {
-    const notes = await waitForNotifications(client, route);
+    const notes = await waitForNotifications(client, route, options);
 
     await Promise.all(
         notes.map(async (note) => {

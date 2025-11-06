@@ -1077,7 +1077,15 @@ test('multisig', async function run() {
 
     console.log('Member3 joined grant message, waiting for others to join...');
 
-    msgSaid = await waitAndMarkNotification(client4, '/exn/ipex/grant');
+    await Promise.all([
+        waitOperation(client1, op1),
+        waitOperation(client2, op2),
+        waitOperation(client3, op3),
+    ]);
+
+    msgSaid = await waitAndMarkNotification(client4, '/exn/ipex/grant', {
+        timeout: 30000,
+    });
     console.log('Holder received exchange message with the grant message');
     res = await client4.exchanges().get(msgSaid);
 
@@ -1092,16 +1100,13 @@ test('multisig', async function run() {
         .ipex()
         .submitAdmit('holder', admit, asigs, aend, [m['prefix']]);
 
-    await Promise.all([
-        waitOperation(client1, op1),
-        waitOperation(client2, op2),
-        waitOperation(client3, op3),
-        waitOperation(client4, op4),
-    ]);
+    await waitOperation(client4, op4);
 
     console.log('Holder creates and sends admit message');
 
-    msgSaid = await waitAndMarkNotification(client1, '/exn/ipex/admit');
+    msgSaid = await waitAndMarkNotification(client1, '/exn/ipex/admit', {
+        timeout: 30000,
+    });
     console.log('Member1 received exchange message with the admit response');
     const creds = await client4.credentials().list();
     console.log(`Holder holds ${creds.length} credential`);

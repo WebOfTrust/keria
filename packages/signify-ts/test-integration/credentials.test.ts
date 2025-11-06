@@ -15,7 +15,6 @@ import {
 import { retry } from './utils/retry.ts';
 import { randomUUID } from 'node:crypto';
 import { step } from './utils/test-step.ts';
-import { CredentialResult } from '../src/keri/app/credentialing.ts';
 const { vleiServerUrl } = resolveEnvironment();
 
 const QVI_SCHEMA_SAID = 'EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao';
@@ -112,7 +111,11 @@ test('single signature credentials', { timeout: 90000 }, async () => {
             .create({ name: issuerAid.name, registryName: registryName });
 
         await waitOperation(issuerClient, await regResult.op());
-        let registries = await issuerClient.registries().list(issuerAid.name);
+        let registries = await retry(async () => {
+            const result = await issuerClient.registries().list(issuerAid.name);
+            assert(result.length >= 1, 'Expected at least one registry');
+            return result;
+        });
         const registry: { name: string; regk: string } = registries[0];
         assert.equal(registries.length, 1);
         assert.equal(registry.name, registryName);
@@ -121,7 +124,11 @@ test('single signature credentials', { timeout: 90000 }, async () => {
             .registries()
             .rename(issuerAid.name, registryName, updatedRegistryName);
 
-        registries = await issuerClient.registries().list(issuerAid.name);
+        registries = await retry(async () => {
+            const result = await issuerClient.registries().list(issuerAid.name);
+            assert(result.length >= 1, 'Expected at least one registry');
+            return result;
+        });
         const updateRegistry: { name: string; regk: string } = registries[0];
         assert.equal(registries.length, 1);
         assert.equal(updateRegistry.name, updatedRegistryName);
@@ -499,11 +506,14 @@ test('single signature credentials', { timeout: 90000 }, async () => {
                 .create({ name: holderAid.name, registryName: registryName });
 
             await waitOperation(holderClient, await regResult.op());
-            const registries = await holderClient
-                .registries()
-                .list(holderAid.name);
-            assert(registries.length >= 1);
-            return registries[0];
+            return await retry(async () => {
+                const registries = await holderClient
+                    .registries()
+                    .list(holderAid.name);
+
+                assert(registries.length >= 1);
+                return registries[0];
+            });
         }
     );
 

@@ -487,7 +487,12 @@ async function getOrCreateRegistry(
             .registries()
             .create({ name: aid.name, registryName: registryName });
         await waitOperation(client, await regResult.op());
-        registries = await client.registries().list(aid.name);
+
+        registries = await retry(async () => {
+            const result = await client.registries().list(aid.name);
+            assert(result.length >= 1, 'Expected at least one registry');
+            return result;
+        });
     }
     return registries[0];
 }
