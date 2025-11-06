@@ -106,7 +106,7 @@ class IpexAdmitCollectionEnd:
         ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
 
         # make a copy and parse
-        agent.parser.parseOne(ims=bytearray(ims))
+        agent.hby.psr.parseOne(ims=bytearray(ims))
 
         # now get rid of the event so we can pass it as atc to send
         del ims[: serder.size]
@@ -160,7 +160,7 @@ class IpexAdmitCollectionEnd:
         ims.extend(atc.encode("utf-8"))  # add the pathed attachments
 
         # make a copy and parse
-        agent.parser.parseOne(ims=bytearray(ims))
+        agent.hby.psr.parseOne(ims=bytearray(ims))
 
         exn, pathed = exchanging.cloneMessage(agent.hby, serder.said)
         if not exn:
@@ -180,7 +180,7 @@ class IpexAdmitCollectionEnd:
 
         serder = serdering.SerderKERI(sad=admitked)
         ims = bytearray(serder.raw) + pathed["exn"]
-        agent.parser.parseOne(ims=ims)
+        agent.hby.psr.parseOne(ims=ims)
         agent.exchanges.append(
             dict(
                 said=serder.said,
@@ -271,7 +271,7 @@ class IpexGrantCollectionEnd:
         ims = ims + atc.encode("utf-8")
 
         # make a copy and parse
-        agent.parser.parseOne(ims=bytearray(ims))
+        agent.hby.psr.parseOne(ims=bytearray(ims))
 
         # now get rid of the event so we can pass it as atc to send
         del ims[: serder.size]
@@ -325,7 +325,7 @@ class IpexGrantCollectionEnd:
         ims.extend(atc.encode("utf-8"))  # add the pathed attachments
 
         # make a copy and parse
-        agent.parser.parseOne(ims=bytearray(ims))
+        agent.hby.psr.parseOne(ims=bytearray(ims))
 
         exn, pathed = exchanging.cloneMessage(agent.hby, serder.said)
         if not exn:
@@ -340,7 +340,7 @@ class IpexGrantCollectionEnd:
         grantRec = grant["a"]["i"]
         serder = serdering.SerderKERI(sad=grant)
         ims = bytearray(serder.raw) + pathed["exn"]
-        agent.parser.parseOne(ims=ims)
+        agent.hby.psr.parseOne(ims=ims)
         agent.exchanges.append(
             dict(said=serder.said, pre=hab.pre, rec=[grantRec], topic="credential")
         )
@@ -428,7 +428,7 @@ class IpexApplyCollectionEnd:
         ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
 
         # make a copy and parse
-        agent.parser.parseOne(ims=bytearray(ims))
+        agent.hby.psr.parseOne(ims=bytearray(ims))
 
         agent.exchanges.append(
             dict(said=serder.said, pre=hab.pre, rec=rec, topic="credential")
@@ -476,7 +476,7 @@ class IpexApplyCollectionEnd:
         ims.extend(atc.encode("utf-8"))  # add the pathed attachments
 
         # make a copy and parse
-        agent.parser.parseOne(ims=bytearray(ims))
+        agent.hby.psr.parseOne(ims=bytearray(ims))
         exn, pathed = exchanging.cloneMessage(agent.hby, serder.said)
         if not exn:
             raise falcon.HTTPBadRequest(
@@ -490,7 +490,7 @@ class IpexApplyCollectionEnd:
         applyRec = applyked["a"]["i"]
         serder = serdering.SerderKERI(sad=applyked)
         ims = bytearray(serder.raw) + pathed["exn"]
-        agent.parser.parseOne(ims=ims)
+        agent.hby.psr.parseOne(ims=ims)
         agent.exchanges.append(
             dict(said=serder.said, pre=hab.pre, rec=[applyRec], topic="credential")
         )
@@ -575,7 +575,7 @@ class IpexOfferCollectionEnd:
         ims = ims + atc.encode("utf-8")
 
         # make a copy and parse
-        agent.parser.parseOne(ims=bytearray(ims))
+        agent.hby.psr.parseOne(ims=bytearray(ims))
 
         agent.exchanges.append(
             dict(said=serder.said, pre=hab.pre, rec=rec, topic="credential")
@@ -623,7 +623,7 @@ class IpexOfferCollectionEnd:
         ims.extend(atc.encode("utf-8"))  # add the pathed attachments
 
         # make a copy and parse
-        agent.parser.parseOne(ims=bytearray(ims))
+        agent.hby.psr.parseOne(ims=bytearray(ims))
         exn, pathed = exchanging.cloneMessage(agent.hby, serder.said)
         if not exn:
             raise falcon.HTTPBadRequest(
@@ -643,7 +643,7 @@ class IpexOfferCollectionEnd:
         offerRec = offerked["a"]["i"]
         serder = serdering.SerderKERI(sad=offerked)
         ims = bytearray(serder.raw) + pathed["exn"]
-        agent.parser.parseOne(ims=ims)
+        agent.hby.psr.parseOne(ims=ims)
         agent.exchanges.append(
             dict(said=serder.said, pre=hab.pre, rec=[offerRec], topic="credential")
         )
@@ -727,7 +727,7 @@ class IpexAgreeCollectionEnd:
         ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
 
         # make a copy and parse
-        agent.parser.parseOne(ims=bytearray(ims))
+        agent.hby.psr.parseOne(ims=bytearray(ims))
 
         agent.exchanges.append(
             dict(said=serder.said, pre=hab.pre, rec=rec, topic="credential")
@@ -775,7 +775,7 @@ class IpexAgreeCollectionEnd:
         ims.extend(atc.encode("utf-8"))  # add the pathed attachments
 
         # make a copy and parse
-        agent.parser.parseOne(ims=bytearray(ims))
+        agent.hby.psr.parseOne(ims=bytearray(ims))
         exn, pathed = exchanging.cloneMessage(agent.hby, serder.said)
         if not exn:
             raise falcon.HTTPBadRequest(
@@ -795,7 +795,7 @@ class IpexAgreeCollectionEnd:
         agreeRec = agreeKed["a"]["i"]
         serder = serdering.SerderKERI(sad=agreeKed)
         ims = bytearray(serder.raw) + pathed["exn"]
-        agent.parser.parseOne(ims=ims)
+        agent.hby.psr.parseOne(ims=ims)
         agent.exchanges.append(
             dict(said=serder.said, pre=hab.pre, rec=[agreeRec], topic="credential")
         )
