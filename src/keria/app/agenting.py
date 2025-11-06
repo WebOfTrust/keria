@@ -11,7 +11,7 @@ from base64 import b64decode
 import json
 import datetime
 from dataclasses import asdict, dataclass, field
-from typing import List
+from typing import List, Union
 from urllib.parse import urlparse, urljoin
 from types import MappingProxyType
 from deprecation import deprecated
@@ -67,6 +67,18 @@ from ..core import authing, longrunning, httping
 from ..core.authing import Authenticater
 from ..core.keeping import RemoteManager
 from ..db import basing
+from .credentialing import (
+    ICP_V_1,
+    ICP_V_2,
+    ROT_V_1,
+    ROT_V_2,
+    DIP_V_1,
+    DIP_V_2,
+    DRT_V_1,
+    DRT_V_2,
+    IXN_V_1,
+    IXN_V_2,
+)
 
 logger = ogler.getLogger(log_name)
 
@@ -1653,6 +1665,17 @@ class BootEnd:
             req (Request): falcon.Request HTTP request object
             rep (Response): falcon.Response HTTP response object
 
+        responses:
+            202:
+                description: Agent inception successful, returns agent state
+                content:
+                    application/json:
+                        schema: ref: '#/components/schemas/KeyStateRecord'
+            400:
+                description: Bad request, missing required fields or invalid inception event
+            409:
+                description: Conflict, agent for controller already exists
+
         """
 
         self.authenticate(req)
@@ -1790,6 +1813,14 @@ class KeyStateCollectionEnd:
         responses:
            200:
               description: Key event log and key state of identifier
+              content:
+                application/json:
+                    schema:
+                        type: array
+                        items:
+                            $ref: '#/components/schemas/KeyStateRecord'
+           400:
+              description: Bad request, missing required fields
            404:
               description: Identifier not found in Key event database
 
@@ -1813,6 +1844,25 @@ class KeyStateCollectionEnd:
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(states).encode("utf-8")
+
+
+@dataclass
+class KeyEventRecord:
+    """Key Event Record for KEL"""
+
+    ked: Union[
+        "ICP_V_1",
+        "ROT_V_1",
+        "IXN_V_1",
+        "DIP_V_1",
+        "DRT_V_1",
+        "ICP_V_2",
+        "ROT_V_2",
+        "IXN_V_2",
+        "DIP_V_2",
+        "DRT_V_2",
+    ]
+    atc: str
 
 
 class KeyEventCollectionEnd:
@@ -1840,6 +1890,12 @@ class KeyEventCollectionEnd:
         responses:
            200:
               description: Key event log and key state of identifier
+              content:
+                application/json:
+                    schema:
+                        type: array
+                        items:
+                            $ref: '#/components/schemas/KeyEventRecord'
            404:
               description: Identifier not found in Key event database
 
@@ -1904,6 +1960,10 @@ class OOBICollectionEnd:
         responses:
            202:
               description: OOBI resolution to key state successful
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/Operation'
 
         """
         agent = req.context.agent
@@ -1973,8 +2033,7 @@ class OobiResourceEnd:
               content:
                   application/json:
                     schema:
-                        description: Key state information for current identifiers
-                        type: object
+                        $ref: '#/components/schemas/OOBI'
         """
         agent = req.context.agent
         hab = agent.hby.habByName(alias)
@@ -2087,6 +2146,10 @@ class QueryCollectionEnd:
         responses:
            200:
               description: Key event log and key state of identifier
+              content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Operation'
            404:
               description: Identifier not found in Key event database
 
@@ -2161,6 +2224,13 @@ class Submitter(doing.DoDoer):
         return super(Submitter, self).recur(tyme, deeds)
 
 
+@dataclass
+class AgentConfig:
+    """Agent configuration data class"""
+
+    iurls: list[str] = field(default_factory=list)
+
+
 class ConfigResourceEnd:
     @staticmethod
     def on_get(req, rep):
@@ -2178,6 +2248,10 @@ class ConfigResourceEnd:
         responses:
            200:
               description: Subset of configuration dict as JSON
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/AgentConfig'
 
         """
         agent = req.context.agent
