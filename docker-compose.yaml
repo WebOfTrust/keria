@@ -15,7 +15,7 @@ configs:
           "dt": "2022-01-20T12:57:59.823350+00:00",
           "wan": {
               "dt": "2022-01-20T12:57:59.823350+00:00",
-              "curls": ["http://localhost:5642/"]
+              "curls": ["http://127.0.0.1:5642/"]
           }
       }
   wil.json:
@@ -24,7 +24,7 @@ configs:
           "dt": "2022-01-20T12:57:59.823350+00:00",
           "wil": {
               "dt": "2022-01-20T12:57:59.823350+00:00",
-              "curls": ["http://localhost:5643/"]
+              "curls": ["http://127.0.0.1:5643/"]
           }
       }
   wes.json:
@@ -33,22 +33,8 @@ configs:
           "dt": "2022-01-20T12:57:59.823350+00:00",
           "wes": {
               "dt": "2022-01-20T12:57:59.823350+00:00",
-              "curls": ["http://localhost:5644/"]
+              "curls": ["http://127.0.0.1:5644/"]
           }
-      }
-  keria.json:
-    content: |
-      {
-          "dt": "2023-12-01T10:05:25.062609+00:00",
-          "keria": {
-              "dt": "2023-12-01T10:05:25.062609+00:00",
-              "curls": ["http://keria:3902/"]
-          },
-          "iurls": [
-              "http://localhost:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller",
-              "http://localhost:5643/oobi/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM/controller",
-              "http://localhost:5644/oobi/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX/controller"
-          ]
       }
 
 services:
@@ -56,9 +42,8 @@ services:
     build: ./
     environment:
       <<: *python-env
-    configs:
-      - source: keria.json
-        target: /keria/config/keri/cf/keria.json
+    volumes:
+      - ./scripts/keri/cf/keria.json:/keria/config/keri/cf/keria.json
     command: start --config-dir /keria/config --config-file keria
     network_mode: host
     healthcheck:
