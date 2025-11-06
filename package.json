@@ -1,0 +1,13 @@
+{
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm -w signify-ts run build",
+    "test": "npm -ws test",
+    "lint": "npm -ws run lint",
+    "format": "npm -ws run pretty",
+    "format:check": "npm -ws run pretty:check",
+    "test:integration": "npm -w signify-ts run test:integration"
+  }
+}
