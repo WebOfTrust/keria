@@ -379,16 +379,6 @@ ExnEmbeds = Union[
 class ExnMultisig:
     exn: Union["agenting.EXN_V_1", "agenting.EXN_V_2"]  # type: ignore
     paths: dict
-    e: Union[
-        MultisigInceptEmbeds,
-        MultisigRotateEmbeds,
-        MultisigInteractEmbeds,
-        MultisigRegistryInceptEmbeds,
-        MultisigIssueEmbeds,
-        MultisigRevokeEmbeds,
-        MultisigRpyEmbeds,
-        MultisigExnEmbeds,
-    ]
     groupName: Optional[str] = None
     memberName: Optional[str] = None
     sender: Optional[str] = None
