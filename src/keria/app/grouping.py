@@ -309,7 +309,6 @@ class MultisigRevokeEmbeds:
 @dataclass
 class MultisigRpyEmbeds:
     rpy: Union["aiding.RPY_V_1", "aiding.RPY_V_2"]  # type: ignore
-    anc: credentialing.AnchoringEvent  # type: ignore
 
 
 @dataclass

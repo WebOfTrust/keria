@@ -444,7 +444,7 @@ class AgentSpecResource:
         self.spec.components.schemas["MultisigRevokeEmbeds"]["properties"]["rev"] = {
             "$ref": "#/components/schemas/REV_V_1"
         }
-        self.spec.components.schemas["MultisigIssueEmbeds"]["properties"]["anc"] = (
+        self.spec.components.schemas["MultisigRevokeEmbeds"]["properties"]["anc"] = (
             ancEvent
         )
 
@@ -485,7 +485,6 @@ class AgentSpecResource:
         )
         exnMSchema = self.spec.components.schemas["ExnMultisig"]
         exnMSchema["properties"]["exn"] = {"$ref": "#/components/schemas/Exn"}
-        exnMSchema["properties"]["e"] = {"$ref": "#/components/schemas/ExnEmbeds"}
 
         self.addRoutes(app)
 
