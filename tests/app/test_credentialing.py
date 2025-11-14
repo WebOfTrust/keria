@@ -560,11 +560,20 @@ def test_credentialing_ends(helpers, seeder):
         res = client.simulate_get(
             "/credentials/EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy"
         )
+
+        # Non-existent credential should return 404 (not found)
         assert res.status_code == 404
         assert res.json == {
             "description": "credential for said EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy not found.",
             "title": "404 Not Found",
         }
+
+        # Same credential with application/json+cesr should also return 404 (not found)
+        headers = {"Accept": "application/json+cesr"}
+        res = client.simulate_get(
+            "/credentials/EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy", headers=headers
+        )
+        assert res.status_code == 404
 
         headers = {"Accept": "application/json+cesr"}
         res = client.simulate_get(f"/credentials/{saids[0]}", headers=headers)
@@ -614,11 +623,17 @@ def test_credentialing_ends(helpers, seeder):
         assert res.status_code == 204
 
         res = client.simulate_get(f"/credentials/{saids[0]}")
+        # Deleted credential should return 404 (not found)
         assert res.status_code == 404
         assert res.json == {
-            "description": "credential for said EIO9uC3K6MvyjFD-RB3RYW3dfL49kCyz3OPqv3gi1dek not found.",
+            "description": f"credential for said {saids[0]} not found.",
             "title": "404 Not Found",
         }
+
+        # Deleted credential with application/json+cesr should also return 404 (not found)
+        headers = {"Accept": "application/json+cesr"}
+        res = client.simulate_get(f"/credentials/{saids[0]}", headers=headers)
+        assert res.status_code == 404
 
         res = client.simulate_post("/credentials/query")
         assert res.status_code == 200
