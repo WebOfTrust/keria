@@ -23,16 +23,7 @@ from marshmallow import fields
 from marshmallow_dataclass import class_schema
 from ..core import longrunning, httping
 from ..utils.openapi import namedtupleToEnum, dataclassFromFielddom
-from .credentialing import (
-    ICP_V_1,
-    ICP_V_2,
-    ROT_V_1,
-    ROT_V_2,
-    DIP_V_1,
-    DIP_V_2,
-    DRT_V_1,
-    DRT_V_2,
-)
+from keri.core.serdering import Protocols, Vrsn_1_0, Vrsn_2_0, SerderKERI
 
 logger = ogler.getLogger()
 
@@ -85,6 +76,41 @@ def loadEnds(app, agency, authn):
     app.add_route("/identifiers/{name}/members", groupEnd)
 
     return aidEnd
+
+
+@dataclass
+class Seal:
+    s: str
+    d: str
+    i: Optional[str] = field(
+        default=None, metadata={"marshmallow_field": fields.String(allow_none=False)}
+    )
+
+
+ixnFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.ixn]
+IXN_V_1, IXNSchema_V_1 = dataclassFromFielddom("IXN_V_1", ixnFieldDomV1)
+ixnFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.ixn]
+IXN_V_2, IXNSchema_V_2 = dataclassFromFielddom("IXN_V_2", ixnFieldDomV2)
+
+icpFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.icp]
+ICP_V_1, ICPSchema_V_1 = dataclassFromFielddom("ICP_V_1", icpFieldDomV1)
+icpFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.icp]
+ICP_V_2, ICPSchema_V_2 = dataclassFromFielddom("ICP_V_2", icpFieldDomV2)
+
+rotFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.rot]
+ROT_V_1, ROTSchema_V_1 = dataclassFromFielddom("ROT_V_1", rotFieldDomV1)
+rotFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.rot]
+ROT_V_2, ROTSchema_V_2 = dataclassFromFielddom("ROT_V_2", rotFieldDomV2)
+
+dipFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.dip]
+DIP_V_1, DIPSchema_V_1 = dataclassFromFielddom("DIP_V_1", dipFieldDomV1)
+dipFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.dip]
+DIP_V_2, DIPSchema_V_2 = dataclassFromFielddom("DIP_V_2", dipFieldDomV2)
+
+drtFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.drt]
+DRT_V_1, DRTSchema_V_1 = dataclassFromFielddom("DRT_V_1", drtFieldDomV1)
+drtFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.drt]
+DRT_V_2, DRTSchema_V_2 = dataclassFromFielddom("DRT_V_2", drtFieldDomV2)
 
 
 @dataclass
