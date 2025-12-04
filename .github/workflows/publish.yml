@@ -1,0 +1,132 @@
+name: Publish
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  DOCKER_REGISTRY: ${{ vars.DOCKER_REGISTRY || 'docker.io' }}
+  DOCKER_IMAGE_NAME: ${{ vars.DOCKER_IMAGE_NAME || 'weboftrust/keria' }}
+  NPM_PACKAGE_NAME: ${{ vars.NPM_PACKAGE_NAME || 'signify-ts' }}
+  RELEASE_TAG: ${{ inputs.latest == true && 'latest' || 'dev' }}
+
+on:
+  push:
+    branches:
+      - "main"
+  workflow_dispatch:
+    inputs:
+      latest:
+        description: "Publish :latest tag"
+        type: boolean
+        required: false
+        default: false
+      dryrun:
+        description: "Dry run, don't push"
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  publish_docker:
+    name: Publish docker image
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout out the repo
+        uses: actions/checkout@v4
+
+      - name: Log in to container registry ${{ env.DOCKER_REGISTRY }}
+        uses: docker/login-action@v3
+        with:
+          # Uses github tokens for GHCR, otherwise configured repository secrets
+          # This way, forks can be configured to push their own images without
+          # having to modify the workflow.
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ env.DOCKER_REGISTRY == 'ghcr.io' && github.actor || secrets.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_REGISTRY == 'ghcr.io' && secrets.GITHUB_TOKEN || secrets.DOCKER_PASSWORD }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.9.5"
+
+      - name: Extract version
+        run: |
+          echo "VERSION=$(./version.sh)" >> $GITHUB_ENV
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            name=${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=raw,value=${{ env.VERSION }}
+            type=raw,value=latest,enable=${{ github.event_name == 'workflow_dispatch' && inputs.latest == true }}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'workflow_dispatch' || inputs.dryrun != true }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create summary
+        run: |
+          echo "## Docker Image Published 🐳" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" | while IFS= read -r tag; do
+            echo "docker pull $tag" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+  publish_npm:
+    name: Publish NPM
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Extract version
+        run: |
+          echo "VERSION=$(./version.sh)" >> $GITHUB_ENV
+
+      - name: Publish package
+        working-directory: ./packages/signify-ts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_PUBLISH_TAG: ${{ inputs.latest == true && 'latest' || 'dev' }}
+          NPM_PACKAGE_VERSION: ${{ env.VERSION }}
+          NPM_PACKAGE_NAME: ${{ env.NPM_PACKAGE_NAME }}
+          DRY_RUN: ${{ inputs.dryrun || '' }}
+        run: ./publish.sh
+
+      - name: Create summary
+        run: |
+          echo "## NPM Package Published 📦" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "npm install ${{ env.NPM_PACKAGE_NAME }}@${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY

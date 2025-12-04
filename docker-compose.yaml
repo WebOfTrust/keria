@@ -1,10 +1,77 @@
+x-healthcheck: &healthcheck
+  interval: 2s
+  timeout: 3s
+  retries: 5
+  start_period: 2s
+
+x-python-env: &python-env
+  PYTHONUNBUFFERED: 1
+  PYTHONIOENCODING: UTF-8
+
+configs:
+  wan.json:
+    content: |
+      {
+          "dt": "2022-01-20T12:57:59.823350+00:00",
+          "wan": {
+              "dt": "2022-01-20T12:57:59.823350+00:00",
+              "curls": ["http://127.0.0.1:5642/"]
+          }
+      }
+  wil.json:
+    content: |
+      {
+          "dt": "2022-01-20T12:57:59.823350+00:00",
+          "wil": {
+              "dt": "2022-01-20T12:57:59.823350+00:00",
+              "curls": ["http://127.0.0.1:5643/"]
+          }
+      }
+  wes.json:
+    content: |
+      {
+          "dt": "2022-01-20T12:57:59.823350+00:00",
+          "wes": {
+              "dt": "2022-01-20T12:57:59.823350+00:00",
+              "curls": ["http://127.0.0.1:5644/"]
+          }
+      }
+
 services:
   keria:
-    build:
-      context: .
-      dockerfile: ./images/keria.dockerfile
+    build: ./
+    environment:
+      <<: *python-env
+    volumes:
+      - ./scripts/keri/cf/keria.json:/keria/config/keri/cf/keria.json
+    command: start --config-dir /keria/config --config-file keria
+    network_mode: host
     healthcheck:
       test: curl http://localhost:3902/health
-      interval: 5s
-      timeout: 2s
-      retries: 10
+      <<: *healthcheck
+
+  vlei-server:
+    image: gleif/vlei:0.2.0
+    environment:
+      <<: *python-env
+    command: vLEI-server -s ./schema/acdc -c ./samples/acdc/ -o ./samples/oobis/
+    healthcheck:
+      test: curl -f http://localhost:7723/oobi/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao
+      <<: *healthcheck
+    network_mode: host
+
+  witness-demo:
+    image: weboftrust/keri-witness-demo:1.1.0
+    environment:
+      <<: *python-env
+    healthcheck:
+      test: curl -f http://localhost:5642/oobi
+      <<: *healthcheck
+    configs:
+      - source: wan.json
+        target: /keripy/scripts/keri/cf/main/wan.json
+      - source: wes.json
+        target: /keripy/scripts/keri/cf/main/wes.json
+      - source: wil.json
+        target: /keripy/scripts/keri/cf/main/wil.json
+    network_mode: host
