@@ -56,6 +56,8 @@ from keri.vdr.credentialing import Regery
 from keri.vdr.eventing import Tevery
 from keri.app import challenging
 
+from keria.utils.openapi import dataclassFromFielddom
+
 from . import aiding, notifying, indirecting, credentialing, ipexing, delegating
 from . import grouping as keriagrouping
 from .serving import GracefulShutdownDoer
@@ -1843,6 +1845,31 @@ class KeyStateCollectionEnd:
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(states).encode("utf-8")
+
+
+exnFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.exn]
+EXN_V_1, EXNSchema_V_1 = dataclassFromFielddom("EXN_V_1", exnFieldDomV1)
+exnFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_2_0
+][serdering.Ilks.exn]
+EXN_V_2, EXNSchema_V_2 = dataclassFromFielddom("EXN_V_2", exnFieldDomV2)
+
+issFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.iss]
+ISS_V_1, ISSSchema_V_1 = dataclassFromFielddom("ISS_V_1", issFieldDomV1)
+
+revFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.rev]
+REV_V_1, REVSchema_V_1 = dataclassFromFielddom("REV_V_1", revFieldDomV1)
+
+vcpFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.vcp]
+VCP_V_1, VCPSchema_V_1 = dataclassFromFielddom("VCP_V_1", vcpFieldDomV1)
 
 
 @dataclass

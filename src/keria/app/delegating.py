@@ -234,6 +234,18 @@ class DelegatorEnd:
             rep (Response): falcon.Response HTTP response object
             name (str): human readable name or prefix for Hab to rename
 
+        responses:
+            200:
+                description: Delegation approved and interaction event created.
+                content:
+                  application/json:
+                    schema:
+                        $ref: '#/components/schemas/Operation'
+            400:
+                description: Bad request. This could be due to missing or invalid parameters.
+            404:
+                description: Not found. The specified identifier does not exist.
+
         """
         if not name:
             raise falcon.HTTPBadRequest(description="name is required")

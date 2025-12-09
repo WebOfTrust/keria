@@ -6,6 +6,8 @@ keria.app.exchanging module
 """
 
 import json
+from typing import Union
+from dataclasses import dataclass
 
 import falcon
 from keri import core
@@ -13,6 +15,7 @@ from keri.core import coring, eventing, serdering
 from keri.peer import exchanging
 from keri.help import ogler
 from keria.core import httping
+from keria.app import agenting
 
 logger = ogler.getLogger()
 
@@ -77,6 +80,11 @@ class ExchangeCollectionEnd:
         responses:
             202:
                 description: Successfully posted the exchange message.
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            $ref: '#/components/schemas/Exn'
             400:
                 description: Bad request. This could be due to missing or invalid parameters.
             404:
@@ -146,6 +154,20 @@ class ExchangeCollectionEnd:
         rep.data = json.dumps(serder.ked).encode("utf-8")
 
 
+@dataclass
+class ExchangeResource:
+    """Data class for exchange message resource"""
+
+    exn: Union["agenting.EXN_V_1", "agenting.EXN_V_2"]  # type: ignore
+    pathed: dict
+
+    def to_dict(self):
+        return {
+            "exn": self.exn,
+            "pathed": {k: v.decode("utf-8") for k, v in self.pathed.items()},
+        }
+
+
 class ExchangeQueryCollectionEnd:
     @staticmethod
     def on_post(req, rep):
@@ -181,6 +203,12 @@ class ExchangeQueryCollectionEnd:
         responses:
             200:
               description: Successfully retrieved the exchange messages.
+              content:
+                application/json:
+                  schema:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ExchangeResource'
             400:
               description: Bad request. This could be due to missing or invalid parameters.
         """
@@ -258,6 +286,11 @@ class ExchangeResourceEnd:
         responses:
             200:
               description: Successfully retrieved the exchange message.
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    $ref: '#/components/schemas/ExchangeResource'
             404:
               description: The requested exchange message was not found.
         """
