@@ -24,10 +24,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.12.8
-      - name: Config libsodium${{ runner.os == 'macOS' && ' on macOS' || '' }}
+      - name: Config libsodium
         if: runner.os == 'macOS'
         run: |
-          brew install libsodium
           echo "SODIUM_INSTALL=system" >> $GITHUB_ENV
           echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
       - name: Install uv
