@@ -143,7 +143,7 @@ class ExchangeCollectionEnd:
         ims.extend(atc.encode("utf-8"))  # add the pathed attachments
 
         # make a copy and parse
-        agent.hby.psr.parseOne(ims=bytearray(ims))
+        agent.hby.psr.parseOne(ims=bytearray(ims), exc=agent.exc)
 
         msg = dict(said=serder.said, pre=hab.pre, rec=rec, topic=topic)
 
