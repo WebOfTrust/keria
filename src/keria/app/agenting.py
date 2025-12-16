@@ -1128,32 +1128,41 @@ class ExchangeSender(doing.DoDoer):
             serder, pathed = exchanging.cloneMessage(self.hby, said)
 
             pre = msg["pre"]
-            rec = msg["rec"]
             topic = msg["topic"]
             hab = self.hby.habs[pre]
-            logger.debug("[%s | %s]: Current Message Body= %s", hab.name, hab.pre, msg)
+
+            if serder is None:
+                return super(ExchangeSender, self).recur(tyme, deeds)
+
+            recp = serder.ked["rp"] or serder.ked["a"]["i"] or None
+
+            if not recp:
+                return super(ExchangeSender, self).recur(tyme, deeds)
+
             if self.exc.lead(hab, said=said):
                 atc = exchanging.serializeMessage(self.hby, said)
                 del atc[: serder.size]
-                for recp in rec:
-                    logger.debug(
-                        "[%s | %s]: Sending on topic %s to recipient %s from %s",
-                        hab.name,
-                        hab.pre,
-                        topic,
-                        recp,
-                        pre,
-                    )
-                    postman = forwarding.StreamPoster(
-                        hby=self.hby, hab=self.agentHab, recp=recp, topic=topic
-                    )
-                    try:
-                        postman.send(serder=serder, attachment=atc)
-                    except kering.ValidationError:
-                        logger.info(f"unable to send to recipient={recp}")
-                    else:
-                        doer = doing.DoDoer(doers=postman.deliver())
-                        self.extend([doer])
+
+                logger.debug(
+                    "[%s | %s]: Sending on topic %s to recipient %s from %s",
+                    hab.name,
+                    hab.pre,
+                    topic,
+                    recp,
+                    pre,
+                )
+
+                postman = forwarding.StreamPoster(
+                    hby=self.hby, hab=self.agentHab, recp=recp, topic=topic
+                )
+                try:
+                    postman.send(serder=serder, attachment=atc)
+                except kering.ValidationError as exc:
+                    logger.error(exc)
+                    logger.info(f"unable to send to recipient={recp}")
+                else:
+                    doer = doing.DoDoer(doers=postman.deliver())
+                    self.extend([doer])
 
         return super(ExchangeSender, self).recur(tyme, deeds)
 
@@ -1284,33 +1293,35 @@ class GrantDoer(doing.Doer):
         said = msg["said"]
         if not self.exc.complete(said=said):
             self.grants.append(msg)
-            return
+            return False
 
         serder, pathed = exchanging.cloneMessage(self.hby, said)
 
+        if not serder:
+            return False
+
         pre = msg["pre"]
-        rec = msg["rec"]
+        recp = serder.ked.get("rp") or serder.ked.get("a", {}).get("i")
         hab = self.hby.habs[pre]
         if self.exc.lead(hab, said=said):
-            for recp in rec:
-                postman = forwarding.StreamPoster(
-                    hby=self.hby, hab=self.agentHab, recp=recp, topic="credential"
-                )
-                try:
-                    agent_evts = self.gatherAgentKEL(pre, recp, postman)
-                    credSaid = serder.ked["e"]["acdc"]["d"]
-                    cred_artifacts = self.getCredArtifacts(recp, credSaid)
-                    artifacts = agent_evts + cred_artifacts
-                    # Queue the artifacts for later sending by postman.deliver()
-                    for serder, atc in artifacts:
-                        postman.send(serder=serder, attachment=atc)
-                except kering.ValidationError:
-                    logger.info(f"unable to send to recipient={recp}")
-                except KeyError:
-                    logger.info(f"invalid grant message={serder.ked}")
-                else:
-                    doer = doing.DoDoer(doers=postman.deliver())
-                    self.parent.extend([doer])
+            postman = forwarding.StreamPoster(
+                hby=self.hby, hab=self.agentHab, recp=recp, topic="credential"
+            )
+            try:
+                agent_evts = self.gatherAgentKEL(pre, recp, postman)
+                credSaid = serder.ked["e"]["acdc"]["d"]
+                cred_artifacts = self.getCredArtifacts(recp, credSaid)
+                artifacts = agent_evts + cred_artifacts
+                # Queue the artifacts for later sending by postman.deliver()
+                for serder, atc in artifacts:
+                    postman.send(serder=serder, attachment=atc)
+            except kering.ValidationError:
+                logger.info(f"unable to send to recipient={recp}")
+            except KeyError:
+                logger.info(f"invalid grant message={serder.ked}")
+            else:
+                doer = doing.DoDoer(doers=postman.deliver())
+                self.parent.extend([doer])
         return True
 
     def recur(self, tock=0.0, **opts):
