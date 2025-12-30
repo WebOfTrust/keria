@@ -486,6 +486,25 @@ class AgentSpecResource:
         exnMSchema = self.spec.components.schemas["ExnMultisig"]
         exnMSchema["properties"]["exn"] = {"$ref": "#/components/schemas/Exn"}
 
+        # Patch KeyStateRecord
+        keyStateRecordSchema = self.spec.components.schemas["KeyStateRecord"]
+        keyStateRecordSchema["properties"]["kt"] = {
+            "oneOf": [
+                {"type": "string"},
+                {"type": "array", "items": {"type": "string"}},
+            ]
+        }
+        keyStateRecordSchema["properties"]["nt"] = {
+            "oneOf": [
+                {"type": "string"},
+                {"type": "array", "items": {"type": "string"}},
+            ]
+        }
+        if "kt" not in keyStateRecordSchema["required"]:
+            keyStateRecordSchema["required"].append("kt")
+        if "nt" not in keyStateRecordSchema["required"]:
+            keyStateRecordSchema["required"].append("nt")
+
         self.addRoutes(app)
 
     def addRoutes(self, app):
