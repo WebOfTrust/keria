@@ -13,6 +13,7 @@ log_name = "keria"  # name of this project that shows up in log messages
 log_format_str = f"%(asctime)s [{log_name}] %(levelname)-8s %(module)s.%(funcName)s-%(lineno)s %(message)s"
 
 ogler = ogling.initOgler(prefix=log_name, syslogged=False)
+keriLogger = ogler.getLogger()
 ogler.level = logging.INFO
 
 formatter = TruncatedFormatter(log_format_str)
@@ -28,4 +29,5 @@ ogler.reopen(name=log_name, temp=True, clear=True)
 def set_log_level(loglevel, logger):
     """Set the log level for the logger."""
     ogler.level = logging.getLevelName(loglevel.upper())
+    keriLogger.setLevel(ogler.level)
     logger.setLevel(ogler.level)
