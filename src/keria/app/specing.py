@@ -220,6 +220,22 @@ class AgentSpecResource:
         }
 
         # Register HabState as Identifier
+        self.spec.components.schema(
+            "SaltyState", schema=marshmallow_dataclass.class_schema(aiding.SaltyState)()
+        )
+        self.spec.components.schema(
+            "RandyKeyState",
+            schema=marshmallow_dataclass.class_schema(aiding.RandyKeyState)(),
+        )
+        self.spec.components.schema(
+            "GroupKeyState",
+            schema=marshmallow_dataclass.class_schema(aiding.GroupKeyState)(),
+        )
+        self.spec.components.schema(
+            "ExternState",
+            schema=marshmallow_dataclass.class_schema(aiding.ExternState)(),
+        )
+
         statesList = [
             {
                 "required": ["salty"],

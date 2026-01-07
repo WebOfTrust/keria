@@ -494,11 +494,6 @@ class HabStateBase:
     name: str
     prefix: str
     icp_dt: str
-    salty: Optional[SaltyState] = None
-    randy: Optional[RandyKeyState] = None
-    group: Optional[GroupKeyState] = None
-    extern: Optional[ExternState] = None
-    # One of salty, randy, group, or extern must be present
     # Patch to ensure only one of these is set in specing
 
     def __post_init__(self):
