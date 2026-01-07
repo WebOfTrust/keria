@@ -488,28 +488,16 @@ class GroupKeyState:
 
 
 @dataclass
-class HabState:
-    """Data class for identifier resource result"""
+class HabStateBase:
+    """Base data class for identifier state (minimal)"""
 
     name: str
     prefix: str
     icp_dt: str
-    state: KeyStateRecord = field(
-        default_factory=KeyStateRecord,
-        metadata={
-            "marshmallow_field": fields.Nested(
-                class_schema(KeyStateRecord), required=False
-            )
-        },
-    )
-    transferable: bool = field(
-        default=False,
-        metadata={"marshmallow_field": fields.Boolean(required=False)},
-    )
-    windexes: list[str] = field(
-        default_factory=list,
-        metadata={"marshmallow_field": fields.List(fields.String(), required=False)},
-    )
+    salty: Optional[SaltyState] = None
+    randy: Optional[RandyKeyState] = None
+    group: Optional[GroupKeyState] = None
+    extern: Optional[ExternState] = None
     # One of salty, randy, group, or extern must be present
     # Patch to ensure only one of these is set in specing
 
@@ -519,6 +507,28 @@ class HabState:
             raise ValueError(
                 "Exactly one of salty, randy, group, or extern must be present."
             )
+
+
+@dataclass
+class HabState(HabStateBase):
+    """Data class for identifier resource result (full state)"""
+
+    state: KeyStateRecord = field(
+        default_factory=KeyStateRecord,
+        metadata={
+            "marshmallow_field": fields.Nested(
+                class_schema(KeyStateRecord), required=True
+            )
+        },
+    )
+    transferable: bool = field(
+        default=False,
+        metadata={"marshmallow_field": fields.Boolean(required=True)},
+    )
+    windexes: list[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+    )
 
 
 class IdentifierCollectionEnd:
@@ -558,7 +568,7 @@ class IdentifierCollectionEnd:
                     schema:
                       type: array
                       items:
-                        $ref: '#/components/schemas/Identifier'
+                        $ref: '#/components/schemas/IdentifierBase'
             206:
                 description: Successfully retrieved identifiers within the specified range.
         """

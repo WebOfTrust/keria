@@ -219,27 +219,8 @@ class AgentSpecResource:
             ]
         }
 
-        # Identifiers
-        self.spec.components.schema(
-            "SaltyState", schema=marshmallow_dataclass.class_schema(aiding.SaltyState)()
-        )
-        self.spec.components.schema(
-            "RandyKeyState",
-            schema=marshmallow_dataclass.class_schema(aiding.RandyKeyState)(),
-        )
-        self.spec.components.schema(
-            "GroupKeyState",
-            schema=marshmallow_dataclass.class_schema(aiding.GroupKeyState)(),
-        )
-        self.spec.components.schema(
-            "ExternState",
-            schema=marshmallow_dataclass.class_schema(aiding.ExternState)(),
-        )
-        self.spec.components.schema(
-            "Identifier", schema=marshmallow_dataclass.class_schema(aiding.HabState)()
-        )
-        identifierSchema = self.spec.components.schemas["Identifier"]
-        identifierSchema["oneOf"] = [
+        # Register HabState as Identifier
+        statesList = [
             {
                 "required": ["salty"],
                 "properties": {"salty": {"$ref": "#/components/schemas/SaltyState"}},
@@ -257,6 +238,20 @@ class AgentSpecResource:
                 "properties": {"extern": {"$ref": "#/components/schemas/ExternState"}},
             },
         ]
+
+        self.spec.components.schema(
+            "IdentifierBase",
+            schema=marshmallow_dataclass.class_schema(aiding.HabStateBase)(),
+        )
+        identifierSchemaBase = self.spec.components.schemas["IdentifierBase"]
+        identifierSchemaBase["oneOf"] = statesList
+
+        self.spec.components.schema(
+            "Identifier", schema=marshmallow_dataclass.class_schema(aiding.HabState)()
+        )
+        identifierSchema = self.spec.components.schemas["Identifier"]
+        identifierSchema["oneOf"] = statesList
+
         self.spec.components.schemas["GroupKeyState"]["properties"]["mhab"] = {
             "$ref": "#/components/schemas/Identifier"
         }
