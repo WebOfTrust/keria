@@ -494,9 +494,22 @@ class HabState:
     name: str
     prefix: str
     icp_dt: str
-    state: KeyStateRecord
-    transferable: Optional[bool] = None
-    windexes: Optional[List[str]] = None
+    state: KeyStateRecord = field(
+        default_factory=KeyStateRecord,
+        metadata={
+            "marshmallow_field": fields.Nested(
+                class_schema(KeyStateRecord), required=False
+            )
+        },
+    )
+    transferable: bool = field(
+        default=False,
+        metadata={"marshmallow_field": fields.Boolean(required=False)},
+    )
+    windexes: list[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=False)},
+    )
     # One of salty, randy, group, or extern must be present
     # Patch to ensure only one of these is set in specing
 
