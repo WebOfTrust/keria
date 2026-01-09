@@ -221,6 +221,9 @@ class AgentSpecResource:
 
         # Register HabState as Identifier
         self.spec.components.schema(
+            "Identifier", schema=marshmallow_dataclass.class_schema(aiding.HabState)()
+        )
+        self.spec.components.schema(
             "SaltyState", schema=marshmallow_dataclass.class_schema(aiding.SaltyState)()
         )
         self.spec.components.schema(
@@ -262,9 +265,6 @@ class AgentSpecResource:
         identifierSchemaBase = self.spec.components.schemas["IdentifierBase"]
         identifierSchemaBase["oneOf"] = statesList
 
-        self.spec.components.schema(
-            "Identifier", schema=marshmallow_dataclass.class_schema(aiding.HabState)()
-        )
         identifierSchema = self.spec.components.schemas["Identifier"]
         identifierSchema["oneOf"] = statesList
 
