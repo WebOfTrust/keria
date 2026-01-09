@@ -563,7 +563,7 @@ class IdentifierCollectionEnd:
                     schema:
                       type: array
                       items:
-                        $ref: '#/components/schemas/IdentifierBase'
+                        $ref: '#/components/schemas/HabStateBase'
             206:
                 description: Successfully retrieved identifiers within the specified range.
         """
@@ -871,7 +871,7 @@ class IdentifierResourceEnd:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/Identifier'
+                            $ref: '#/components/schemas/HabState'
             400:
                 description: Bad request. This could be due to a missing or invalid name parameter.
             404:
@@ -933,7 +933,7 @@ class IdentifierResourceEnd:
               content:
                 application/json:
                   schema:
-                    $ref: '#/components/schemas/Identifier'
+                    $ref: '#/components/schemas/HabState'
             400:
               description: Bad request. This could be due to a missing or invalid name parameter.
             404:
