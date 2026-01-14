@@ -494,6 +494,7 @@ class HabStateBase:
     name: str
     prefix: str
     icp_dt: str
+    # One of salty, randy, group, or extern must be present
     # Patch to ensure only one of these is set in specing
 
     def __post_init__(self):
