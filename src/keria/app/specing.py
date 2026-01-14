@@ -219,7 +219,10 @@ class AgentSpecResource:
             ]
         }
 
-        # Identifiers
+        # Register HabState
+        self.spec.components.schema(
+            "HabState", schema=marshmallow_dataclass.class_schema(aiding.HabState)()
+        )
         self.spec.components.schema(
             "SaltyState", schema=marshmallow_dataclass.class_schema(aiding.SaltyState)()
         )
@@ -235,11 +238,8 @@ class AgentSpecResource:
             "ExternState",
             schema=marshmallow_dataclass.class_schema(aiding.ExternState)(),
         )
-        self.spec.components.schema(
-            "Identifier", schema=marshmallow_dataclass.class_schema(aiding.HabState)()
-        )
-        identifierSchema = self.spec.components.schemas["Identifier"]
-        identifierSchema["oneOf"] = [
+
+        statesList = [
             {
                 "required": ["salty"],
                 "properties": {"salty": {"$ref": "#/components/schemas/SaltyState"}},
@@ -257,8 +257,18 @@ class AgentSpecResource:
                 "properties": {"extern": {"$ref": "#/components/schemas/ExternState"}},
             },
         ]
+
+        self.spec.components.schema(
+            "HabStateBase",
+            schema=marshmallow_dataclass.class_schema(aiding.HabStateBase)(),
+        )
+        habStateSchemaBase = self.spec.components.schemas["HabStateBase"]
+        habStateSchemaBase["oneOf"] = statesList
+        habStateSchema = self.spec.components.schemas["HabState"]
+        habStateSchema["oneOf"] = statesList
+
         self.spec.components.schemas["GroupKeyState"]["properties"]["mhab"] = {
-            "$ref": "#/components/schemas/Identifier"
+            "$ref": "#/components/schemas/HabState"
         }
         self.spec.components.schemas["Tier"] = enumSchemaFromNamedtuple(
             coring.Tiers, description="Tier of key material"
