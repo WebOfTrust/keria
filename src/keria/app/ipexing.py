@@ -9,10 +9,8 @@ services and endpoint for IPEX message managements
 import falcon
 from keri import core
 from keri.app import habbing
-from keri.core import eventing, serdering
 from keri.vdr import credentialing
-from keri.peer import exchanging
-
+from keri.core import eventing, serdering
 from keria.core import httping, longrunning
 
 
@@ -70,18 +68,12 @@ class IpexAdmitCollectionEnd:
 
         ked = httping.getRequiredParam(body, "exn")
         sigs = httping.getRequiredParam(body, "sigs")
-        atc = httping.getRequiredParam(body, "atc")
-        rec = httping.getRequiredParam(body, "rec")
 
         route = ked["r"]
 
         match route:
             case "/ipex/admit":
-                op = IpexAdmitCollectionEnd.sendAdmit(agent, hab, ked, sigs, rec)
-            case "/multisig/exn":
-                op = IpexAdmitCollectionEnd.sendMultisigExn(
-                    agent, hab, ked, sigs, atc, rec
-                )
+                op = IpexAdmitCollectionEnd.sendAdmit(agent, hab, ked, sigs)
             case _:
                 raise falcon.HTTPBadRequest(
                     description=f"invalid message route {route}"
@@ -91,12 +83,12 @@ class IpexAdmitCollectionEnd:
         rep.data = op.to_json().encode("utf-8")
 
     @staticmethod
-    def sendAdmit(agent, hab, ked, sigs, rec):
-        for recp in rec:  # Have to verify we already know all the recipients.
-            if recp not in agent.hby.kevers:
-                raise falcon.HTTPBadRequest(
-                    description=f"attempt to send to unknown AID={recp}"
-                )
+    def sendAdmit(agent, hab, ked, sigs):
+        recp = ked.get("rp") or ked.get("a", {}).get("i")
+        if recp not in agent.hby.kevers:
+            raise falcon.HTTPBadRequest(
+                description=f"attempt to send to unknown AID={recp}"
+            )
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
@@ -116,85 +108,8 @@ class IpexAdmitCollectionEnd:
         # now get rid of the event so we can pass it as atc to send
         del ims[: serder.size]
 
-        agent.exchanges.append(
-            dict(said=serder.said, pre=hab.pre, rec=rec, topic="credential")
-        )
+        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, topic="credential"))
         agent.admits.append(dict(said=ked["d"], pre=hab.pre))
-
-        return agent.monitor.submit(
-            serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said)
-        )
-
-    @staticmethod
-    def sendMultisigExn(agent, hab, ked, sigs, atc, rec):
-        if not isinstance(hab, habbing.SignifyGroupHab):
-            raise falcon.HTTPBadRequest(
-                description=f"attempt to send multisig message with non-group AID={hab.pre}"
-            )
-
-        for recp in rec:  # Have to verify we already know all the recipients.
-            if recp not in agent.hby.kevers:
-                raise falcon.HTTPBadRequest(
-                    description=f"attempt to send to unknown AID={recp}"
-                )
-
-        embeds = ked["e"]
-        admitked = embeds["exn"]
-        if admitked["r"] != "/ipex/admit":
-            raise falcon.HTTPBadRequest(
-                description=f"invalid route for embedded ipex admit {admitked['r']}"
-            )
-
-        # Have to add the atc to the end... this will be Pathed signatures for embeds
-        if not atc:
-            raise falcon.HTTPBadRequest(
-                description="attachment missing for multi-sig admit, unable to process request."
-            )
-
-        # use that data to create th Serder and Sigers for the exn
-        serder = serdering.SerderKERI(sad=ked)
-        sigers = [core.Siger(qb64=sig) for sig in sigs]
-
-        # Now create the stream to send, need the signer seal
-        kever = hab.mhab.kever
-        seal = eventing.SealEvent(
-            i=hab.mhab.pre, s="{:x}".format(kever.lastEst.s), d=kever.lastEst.d
-        )
-
-        ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
-        ims.extend(atc.encode("utf-8"))  # add the pathed attachments
-
-        # make a copy and parse
-        agent.parser.parseOne(ims=bytearray(ims))
-
-        exn, pathed = exchanging.cloneMessage(agent.hby, serder.said)
-        if not exn:
-            raise falcon.HTTPBadRequest(
-                description=f"invalid exn request message {serder.said}"
-            )
-
-        grant, _ = exchanging.cloneMessage(agent.hby, admitked["p"])
-        if grant is None:
-            raise falcon.HTTPBadRequest(
-                description=f"attempt to admit an invalid grant {admitked['p']}"
-            )
-
-        agent.exchanges.append(
-            dict(said=serder.said, pre=hab.pre, rec=rec, topic="credential")
-        )
-
-        serder = serdering.SerderKERI(sad=admitked)
-        ims = bytearray(serder.raw) + pathed["exn"]
-        agent.parser.parseOne(ims=ims)
-        agent.exchanges.append(
-            dict(
-                said=serder.said,
-                pre=hab.pre,
-                rec=[admitked["a"]["i"]],
-                topic="credential",
-            )
-        )
-        agent.admits.append(dict(said=admitked["d"], pre=hab.pre))
 
         return agent.monitor.submit(
             serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said)
@@ -242,17 +157,12 @@ class IpexGrantCollectionEnd:
         ked = httping.getRequiredParam(body, "exn")
         sigs = httping.getRequiredParam(body, "sigs")
         atc = httping.getRequiredParam(body, "atc")
-        rec = httping.getRequiredParam(body, "rec")
 
         route = ked["r"]
 
         match route:
             case "/ipex/grant":
-                op = IpexGrantCollectionEnd.sendGrant(agent, hab, ked, sigs, atc, rec)
-            case "/multisig/exn":
-                op = IpexGrantCollectionEnd.sendMultisigExn(
-                    agent, hab, ked, sigs, atc, rec
-                )
+                op = IpexGrantCollectionEnd.sendGrant(agent, hab, ked, sigs, atc)
             case _:
                 raise falcon.HTTPBadRequest(description=f"invalid route {route}")
 
@@ -260,12 +170,12 @@ class IpexGrantCollectionEnd:
         rep.data = op.to_json().encode("utf-8")
 
     @staticmethod
-    def sendGrant(agent, hab, ked, sigs, atc, rec):
-        for recp in rec:  # Have to verify we already know all the recipients.
-            if recp not in agent.hby.kevers:
-                raise falcon.HTTPBadRequest(
-                    description=f"attempt to send to unknown AID={recp}"
-                )
+    def sendGrant(agent, hab, ked, sigs, atc):
+        recp = ked.get("rp") or ked.get("a", {}).get("i") or None
+        if recp not in agent.hby.kevers:
+            raise falcon.HTTPBadRequest(
+                description=f"attempt to send to unknown AID={recp}"
+            )
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
@@ -286,75 +196,8 @@ class IpexGrantCollectionEnd:
         # now get rid of the event so we can pass it as atc to send
         del ims[: serder.size]
 
-        agent.exchanges.append(
-            dict(said=serder.said, pre=hab.pre, rec=rec, topic="credential")
-        )
-        agent.grants.append(dict(said=ked["d"], pre=hab.pre, rec=rec))
-
-        return agent.monitor.submit(
-            serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said)
-        )
-
-    @staticmethod
-    def sendMultisigExn(agent, hab, ked, sigs, atc, rec):
-        if not isinstance(hab, habbing.SignifyGroupHab):
-            raise falcon.HTTPBadRequest(
-                description=f"attempt to send multisig message with non-group AID={hab.pre}"
-            )
-
-        for recp in rec:  # Have to verify we already know all the recipients.
-            if recp not in agent.hby.kevers:
-                raise falcon.HTTPBadRequest(
-                    description=f"attempt to send to unknown AID={recp}"
-                )
-
-        embeds = ked["e"]
-        grant = embeds["exn"]
-        if grant["r"] != "/ipex/grant":
-            raise falcon.HTTPBadRequest(
-                description=f"invalid route for embedded ipex grant {ked['r']}"
-            )
-
-        if not atc:
-            raise falcon.HTTPBadRequest(
-                description="attachment missing for multi-sig grant, unable to process request."
-            )
-
-        # use that data to create th Serder and Sigers for the exn
-        serder = serdering.SerderKERI(sad=ked)
-        sigers = [core.Siger(qb64=sig) for sig in sigs]
-
-        # Now create the stream to send, need the signer seal
-        kever = hab.mhab.kever
-        seal = eventing.SealEvent(
-            i=hab.mhab.pre, s="{:x}".format(kever.lastEst.s), d=kever.lastEst.d
-        )
-
-        ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
-
-        ims.extend(atc.encode("utf-8"))  # add the pathed attachments
-
-        # make a copy and parse
-        agent.parser.parseOne(ims=bytearray(ims))
-
-        exn, pathed = exchanging.cloneMessage(agent.hby, serder.said)
-        if not exn:
-            raise falcon.HTTPBadRequest(
-                description=f"invalid exn request message {serder.said}"
-            )
-
-        agent.exchanges.append(
-            dict(said=serder.said, pre=hab.pre, rec=rec, topic="credential")
-        )
-
-        grantRec = grant["a"]["i"]
-        serder = serdering.SerderKERI(sad=grant)
-        ims = bytearray(serder.raw) + pathed["exn"]
-        agent.parser.parseOne(ims=ims)
-        agent.exchanges.append(
-            dict(said=serder.said, pre=hab.pre, rec=[grantRec], topic="credential")
-        )
-        agent.grants.append(dict(said=grant["d"], pre=hab.pre, rec=[grantRec]))
+        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, topic="credential"))
+        agent.grants.append(dict(said=ked["d"], pre=hab.pre))
 
         return agent.monitor.submit(
             serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said)
@@ -402,18 +245,12 @@ class IpexApplyCollectionEnd:
 
         ked = httping.getRequiredParam(body, "exn")
         sigs = httping.getRequiredParam(body, "sigs")
-        rec = httping.getRequiredParam(body, "rec")
 
         route = ked["r"]
 
         match route:
             case "/ipex/apply":
-                op = IpexApplyCollectionEnd.sendApply(agent, hab, ked, sigs, rec)
-            case "/multisig/exn":
-                atc = httping.getRequiredParam(body, "atc")
-                op = IpexApplyCollectionEnd.sendMultisigExn(
-                    agent, hab, ked, sigs, atc, rec
-                )
+                op = IpexApplyCollectionEnd.sendApply(agent, hab, ked, sigs)
             case _:
                 raise falcon.HTTPBadRequest(
                     description=f"invalid message route {route}"
@@ -423,12 +260,12 @@ class IpexApplyCollectionEnd:
         rep.data = op.to_json().encode("utf-8")
 
     @staticmethod
-    def sendApply(agent, hab, ked, sigs, rec):
-        for recp in rec:  # Have to verify we already know all the recipients.
-            if recp not in agent.hby.kevers:
-                raise falcon.HTTPBadRequest(
-                    description=f"attempt to send to unknown AID={recp}"
-                )
+    def sendApply(agent, hab, ked, sigs):
+        recp = ked.get("rp") or ked.get("a", {}).get("i") or None
+        if recp not in agent.hby.kevers:
+            raise falcon.HTTPBadRequest(
+                description=f"attempt to send to unknown AID={recp}"
+            )
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
@@ -445,71 +282,7 @@ class IpexApplyCollectionEnd:
         # make a copy and parse
         agent.parser.parseOne(ims=bytearray(ims))
 
-        agent.exchanges.append(
-            dict(said=serder.said, pre=hab.pre, rec=rec, topic="credential")
-        )
-        return agent.monitor.submit(
-            serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said)
-        )
-
-    @staticmethod
-    def sendMultisigExn(agent, hab, ked, sigs, atc, rec):
-        if not isinstance(hab, habbing.SignifyGroupHab):
-            raise falcon.HTTPBadRequest(
-                description=f"attempt to send multisig message with non-group AID={hab.pre}"
-            )
-
-        for recp in rec:  # Have to verify we already know all the recipients.
-            if recp not in agent.hby.kevers:
-                raise falcon.HTTPBadRequest(
-                    description=f"attempt to send to unknown AID={recp}"
-                )
-
-        embeds = ked["e"]
-        applyked = embeds["exn"]
-        if applyked["r"] != "/ipex/apply":
-            raise falcon.HTTPBadRequest(
-                description=f"invalid route for embedded ipex apply {ked['r']}"
-            )
-
-        if not atc:
-            raise falcon.HTTPBadRequest(
-                description="attachment missing for multi-sig apply, unable to process request."
-            )
-
-        # use that data to create th Serder and Sigers for the exn
-        serder = serdering.SerderKERI(sad=ked)
-        sigers = [core.Siger(qb64=sig) for sig in sigs]
-
-        # Now create the stream to send, need the signer seal
-        kever = hab.mhab.kever
-        seal = eventing.SealEvent(
-            i=hab.mhab.pre, s="{:x}".format(kever.lastEst.s), d=kever.lastEst.d
-        )
-
-        ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
-        ims.extend(atc.encode("utf-8"))  # add the pathed attachments
-
-        # make a copy and parse
-        agent.parser.parseOne(ims=bytearray(ims))
-        exn, pathed = exchanging.cloneMessage(agent.hby, serder.said)
-        if not exn:
-            raise falcon.HTTPBadRequest(
-                description=f"invalid exn request message {serder.said}"
-            )
-
-        agent.exchanges.append(
-            dict(said=serder.said, pre=hab.pre, rec=rec, topic="credential")
-        )
-
-        applyRec = applyked["a"]["i"]
-        serder = serdering.SerderKERI(sad=applyked)
-        ims = bytearray(serder.raw) + pathed["exn"]
-        agent.parser.parseOne(ims=ims)
-        agent.exchanges.append(
-            dict(said=serder.said, pre=hab.pre, rec=[applyRec], topic="credential")
-        )
-
+        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, topic="credential"))
         return agent.monitor.submit(
             serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said)
         )
@@ -556,17 +329,12 @@ class IpexOfferCollectionEnd:
         ked = httping.getRequiredParam(body, "exn")
         sigs = httping.getRequiredParam(body, "sigs")
         atc = httping.getRequiredParam(body, "atc")
-        rec = httping.getRequiredParam(body, "rec")
 
         route = ked["r"]
 
         match route:
             case "/ipex/offer":
-                op = IpexOfferCollectionEnd.sendOffer(agent, hab, ked, sigs, atc, rec)
-            case "/multisig/exn":
-                op = IpexOfferCollectionEnd.sendMultisigExn(
-                    agent, hab, ked, sigs, atc, rec
-                )
+                op = IpexOfferCollectionEnd.sendOffer(agent, hab, ked, sigs, atc)
             case _:
                 raise falcon.HTTPBadRequest(description=f"invalid route {route}")
 
@@ -574,12 +342,12 @@ class IpexOfferCollectionEnd:
         rep.data = op.to_json().encode("utf-8")
 
     @staticmethod
-    def sendOffer(agent, hab, ked, sigs, atc, rec):
-        for recp in rec:  # Have to verify we already know all the recipients.
-            if recp not in agent.hby.kevers:
-                raise falcon.HTTPBadRequest(
-                    description=f"attempt to send to unknown AID={recp}"
-                )
+    def sendOffer(agent, hab, ked, sigs, atc):
+        recp = ked.get("rp") or ked.get("a", {}).get("i")
+        if recp not in agent.hby.kevers:
+            raise falcon.HTTPBadRequest(
+                description=f"attempt to send to unknown AID={recp}"
+            )
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
@@ -597,77 +365,7 @@ class IpexOfferCollectionEnd:
         # make a copy and parse
         agent.parser.parseOne(ims=bytearray(ims))
 
-        agent.exchanges.append(
-            dict(said=serder.said, pre=hab.pre, rec=rec, topic="credential")
-        )
-        return agent.monitor.submit(
-            serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said)
-        )
-
-    @staticmethod
-    def sendMultisigExn(agent, hab, ked, sigs, atc, rec):
-        if not isinstance(hab, habbing.SignifyGroupHab):
-            raise falcon.HTTPBadRequest(
-                description=f"attempt to send multisig message with non-group AID={hab.pre}"
-            )
-
-        for recp in rec:  # Have to verify we already know all the recipients.
-            if recp not in agent.hby.kevers:
-                raise falcon.HTTPBadRequest(
-                    description=f"attempt to send to unknown AID={recp}"
-                )
-
-        embeds = ked["e"]
-        offerked = embeds["exn"]
-        if offerked["r"] != "/ipex/offer":
-            raise falcon.HTTPBadRequest(
-                description=f"invalid route for embedded ipex offer {ked['r']}"
-            )
-
-        if not atc:
-            raise falcon.HTTPBadRequest(
-                description="attachment missing for multi-sig offer, unable to process request."
-            )
-
-        # use that data to create th Serder and Sigers for the exn
-        serder = serdering.SerderKERI(sad=ked)
-        sigers = [core.Siger(qb64=sig) for sig in sigs]
-
-        # Now create the stream to send, need the signer seal
-        kever = hab.mhab.kever
-        seal = eventing.SealEvent(
-            i=hab.mhab.pre, s="{:x}".format(kever.lastEst.s), d=kever.lastEst.d
-        )
-
-        ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
-        ims.extend(atc.encode("utf-8"))  # add the pathed attachments
-
-        # make a copy and parse
-        agent.parser.parseOne(ims=bytearray(ims))
-        exn, pathed = exchanging.cloneMessage(agent.hby, serder.said)
-        if not exn:
-            raise falcon.HTTPBadRequest(
-                description=f"invalid exn request message {serder.said}"
-            )
-
-        apply, _ = exchanging.cloneMessage(agent.hby, offerked["p"])
-        if apply is None:
-            raise falcon.HTTPBadRequest(
-                description=f"attempt to offer linked to an invalid apply {offerked['p']}"
-            )
-
-        agent.exchanges.append(
-            dict(said=serder.said, pre=hab.pre, rec=rec, topic="credential")
-        )
-
-        offerRec = offerked["a"]["i"]
-        serder = serdering.SerderKERI(sad=offerked)
-        ims = bytearray(serder.raw) + pathed["exn"]
-        agent.parser.parseOne(ims=ims)
-        agent.exchanges.append(
-            dict(said=serder.said, pre=hab.pre, rec=[offerRec], topic="credential")
-        )
-
+        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, topic="credential"))
         return agent.monitor.submit(
             serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said)
         )
@@ -713,18 +411,12 @@ class IpexAgreeCollectionEnd:
 
         ked = httping.getRequiredParam(body, "exn")
         sigs = httping.getRequiredParam(body, "sigs")
-        rec = httping.getRequiredParam(body, "rec")
 
         route = ked["r"]
 
         match route:
             case "/ipex/agree":
-                op = IpexAgreeCollectionEnd.sendAgree(agent, hab, ked, sigs, rec)
-            case "/multisig/exn":
-                atc = httping.getRequiredParam(body, "atc")
-                op = IpexAgreeCollectionEnd.sendMultisigExn(
-                    agent, hab, ked, sigs, atc, rec
-                )
+                op = IpexAgreeCollectionEnd.sendAgree(agent, hab, ked, sigs)
             case _:
                 raise falcon.HTTPBadRequest(description=f"invalid route {route}")
 
@@ -732,12 +424,12 @@ class IpexAgreeCollectionEnd:
         rep.data = op.to_json().encode("utf-8")
 
     @staticmethod
-    def sendAgree(agent, hab, ked, sigs, rec):
-        for recp in rec:  # Have to verify we already know all the recipients.
-            if recp not in agent.hby.kevers:
-                raise falcon.HTTPBadRequest(
-                    description=f"attempt to send to unknown AID={recp}"
-                )
+    def sendAgree(agent, hab, ked, sigs):
+        recp = ked.get("rp") or ked.get("a", {}).get("i") or None
+        if recp not in agent.hby.kevers:
+            raise falcon.HTTPBadRequest(
+                description=f"attempt to send to unknown AID={recp}"
+            )
 
         # use that data to create th Serder and Sigers for the exn
         serder = serdering.SerderKERI(sad=ked)
@@ -754,77 +446,7 @@ class IpexAgreeCollectionEnd:
         # make a copy and parse
         agent.parser.parseOne(ims=bytearray(ims))
 
-        agent.exchanges.append(
-            dict(said=serder.said, pre=hab.pre, rec=rec, topic="credential")
-        )
-        return agent.monitor.submit(
-            serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said)
-        )
-
-    @staticmethod
-    def sendMultisigExn(agent, hab, ked, sigs, atc, rec):
-        if not isinstance(hab, habbing.SignifyGroupHab):
-            raise falcon.HTTPBadRequest(
-                description=f"attempt to send multisig message with non-group AID={hab.pre}"
-            )
-
-        for recp in rec:  # Have to verify we already know all the recipients.
-            if recp not in agent.hby.kevers:
-                raise falcon.HTTPBadRequest(
-                    description=f"attempt to send to unknown AID={recp}"
-                )
-
-        embeds = ked["e"]
-        agreeKed = embeds["exn"]
-        if agreeKed["r"] != "/ipex/agree":
-            raise falcon.HTTPBadRequest(
-                description=f"invalid route for embedded ipex agree {ked['r']}"
-            )
-
-        if not atc:
-            raise falcon.HTTPBadRequest(
-                description="attachment missing for multi-sig agree, unable to process request."
-            )
-
-        # use that data to create th Serder and Sigers for the exn
-        serder = serdering.SerderKERI(sad=ked)
-        sigers = [core.Siger(qb64=sig) for sig in sigs]
-
-        # Now create the stream to send, need the signer seal
-        kever = hab.mhab.kever
-        seal = eventing.SealEvent(
-            i=hab.mhab.pre, s="{:x}".format(kever.lastEst.s), d=kever.lastEst.d
-        )
-
-        ims = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
-        ims.extend(atc.encode("utf-8"))  # add the pathed attachments
-
-        # make a copy and parse
-        agent.parser.parseOne(ims=bytearray(ims))
-        exn, pathed = exchanging.cloneMessage(agent.hby, serder.said)
-        if not exn:
-            raise falcon.HTTPBadRequest(
-                description=f"invalid exn request message {serder.said}"
-            )
-
-        apply, _ = exchanging.cloneMessage(agent.hby, agreeKed["p"])
-        if apply is None:
-            raise falcon.HTTPBadRequest(
-                description=f"attempt to agree linked to an invalid offer {agreeKed['p']}"
-            )
-
-        agent.exchanges.append(
-            dict(said=serder.said, pre=hab.pre, rec=rec, topic="credential")
-        )
-
-        agreeRec = agreeKed["a"]["i"]
-        serder = serdering.SerderKERI(sad=agreeKed)
-        ims = bytearray(serder.raw) + pathed["exn"]
-        agent.parser.parseOne(ims=ims)
-        agent.exchanges.append(
-            dict(said=serder.said, pre=hab.pre, rec=[agreeRec], topic="credential")
-        )
-
+        agent.exchanges.append(dict(said=serder.said, pre=hab.pre, topic="credential"))
         return agent.monitor.submit(
             serder.said, longrunning.OpTypes.exchange, metadata=dict(said=serder.said)
         )
