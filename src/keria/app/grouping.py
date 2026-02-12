@@ -6,7 +6,8 @@ keria.app.grouping module
 """
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from marshmallow import fields
 
 import falcon
 from typing import Optional, Union
@@ -378,9 +379,15 @@ ExnEmbeds = Union[
 class ExnMultisig:
     exn: Union["agenting.EXN_V_1", "agenting.EXN_V_2"]  # type: ignore
     paths: dict
-    groupName: Optional[str] = None
-    memberName: Optional[str] = None
-    sender: Optional[str] = None
+    groupName: Optional[str] = field(
+        default=None, metadata={"marshmallow_field": fields.String(allow_none=False)}
+    )
+    memberName: Optional[str] = field(
+        default=None, metadata={"marshmallow_field": fields.String(allow_none=False)}
+    )
+    sender: Optional[str] = field(
+        default=None, metadata={"marshmallow_field": fields.String(allow_none=False)}
+    )
 
 
 class MultisigRequestResourceEnd:
