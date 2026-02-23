@@ -388,6 +388,19 @@ class AgentResourceEnd:
                         cipher = core.Cipher(qb64=prx)
                         agent.mgr.rb.nxts.put(keys=digers[idx].qb64b, val=cipher)
 
+            elif "extern_type" in val:
+                # extern AIDs keep minimal metadata in KERIA DB (parity with salty/randy).
+                # This enables alias-based lookup/rotation flows to treat extern AIDs as managed identifiers.
+                if (ep := agent.mgr.rb.eprms.get(pre)) is None:
+                    raise ValueError(f"Attempt to update extern for nonexistent pre={pre}.")
+                
+                ep.extern_type = val.get("extern_type", ep.extern_type)
+                if "pidx" in val:
+                    ep.pidx = val["pidx"]
+                    
+                if not agent.mgr.rb.eprms.pin(pre, val=ep):
+                    raise ValueError(f"Unable to update extern prms for pre={pre}.")
+        
         agent.mgr.delete_sxlt()
 
         rep.status = falcon.HTTP_204
@@ -1148,6 +1161,18 @@ class IdentifierResourceEnd:
 
             return op
 
+        elif Algos.extern in body:
+            hab.rotate(serder=serder, sigers=sigers)
+            extern = body[Algos.extern]
+            keeper = agent.mgr.get(Algos.extern)
+
+            try:
+                keeper.rotate(pre=serder.pre, **extern)
+            except ValueError as e:
+                agent.hby.deleteHab(name=name)
+                raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
+            
+            
         if hab.kever.delpre:
             agent.anchors.append(dict(alias=name, pre=hab.pre, sn=serder.sn))
             op = agent.monitor.submit(
