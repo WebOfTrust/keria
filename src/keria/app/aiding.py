@@ -513,17 +513,17 @@ class HabState(HabStateBase):
         default_factory=KeyStateRecord,
         metadata={
             "marshmallow_field": fields.Nested(
-                class_schema(KeyStateRecord), required=True
+                class_schema(KeyStateRecord), required=False
             )
         },
     )
     transferable: bool = field(
         default=False,
-        metadata={"marshmallow_field": fields.Boolean(required=True)},
+        metadata={"marshmallow_field": fields.Boolean(required=False)},
     )
     windexes: list[str] = field(
         default_factory=list,
-        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
+        metadata={"marshmallow_field": fields.List(fields.String(), required=False)},
     )
 
 
