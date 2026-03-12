@@ -521,7 +521,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/f1/c6/c552cd481fac99102
 
 [[package]]
 name = "keria"
-version = "0.2.0"
+version = "0.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "apispec" },
