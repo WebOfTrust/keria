@@ -359,7 +359,7 @@ class RegistryCollectionEnd:
               content:
                   application/json:
                     schema:
-                        $ref: '#/components/schemas/Operation'
+                      $ref: '#/components/schemas/RegistryOperation'
            404:
               description: The requested registry is not a valid reference to an identifier.
            400:
@@ -715,7 +715,7 @@ class CredentialVerificationCollectionEnd:
                   application/json:
                     schema:
                         description: long running operation of credential processing
-                        $ref: '#/components/schemas/Operation'
+                        $ref: '#/components/schemas/CredentialOperation'
            404:
               description: Malformed ACDC or iss event
         """
@@ -906,7 +906,7 @@ class CredentialCollectionEnd:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/Credential'
+                            $ref: '#/components/schemas/CredentialOperation'
             400:
                 description: Bad request. This could be due to missing or invalid data.
 
@@ -1206,7 +1206,11 @@ class CredentialResourceDeleteEnd:
                 content:
                   application/json+cesr:
                     schema:
-                        $ref: '#/components/schemas/Operation'
+                      oneOf:
+                        - $ref: '#/components/schemas/GroupOperation'
+                        - $ref: '#/components/schemas/DelegationOperation'
+                        - $ref: '#/components/schemas/WitnessOperation'
+                        - $ref: '#/components/schemas/DoneOperation'
             400:
                 description: Bad request. This could be due to invalid revocation event or other invalid parameters.
             404:

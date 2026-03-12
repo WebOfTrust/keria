@@ -50,8 +50,7 @@ class IpexAdmitCollectionEnd:
               content:
                 application/json:
                     schema:
-                        type: object
-                        $ref: '#/components/schemas/Operation'
+                        $ref: '#/components/schemas/ExchangeOperation'
 
         """
         agent = req.context.agent
@@ -223,7 +222,7 @@ class IpexGrantCollectionEnd:
                 application/json:
                     schema:
                         type: object
-                        $ref: '#/components/schemas/Operation'
+                        $ref: '#/components/schemas/ExchangeOperation'
 
         """
         agent = req.context.agent
@@ -383,7 +382,7 @@ class IpexApplyCollectionEnd:
                     application/json:
                         schema:
                             type: object
-                            $ref: '#/components/schemas/Operation'
+                            $ref: '#/components/schemas/ExchangeOperation'
 
         """
         agent = req.context.agent
@@ -537,7 +536,7 @@ class IpexOfferCollectionEnd:
                   application/json:
                       schema:
                           type: object
-                          $ref: '#/components/schemas/Operation'
+                          $ref: '#/components/schemas/ExchangeOperation'
 
         """
         agent = req.context.agent
@@ -695,7 +694,7 @@ class IpexAgreeCollectionEnd:
                 application/json:
                     schema:
                         type: object
-                        $ref: '#/components/schemas/Operation'
+                        $ref: '#/components/schemas/ExchangeOperation'
 
         """
         agent = req.context.agent

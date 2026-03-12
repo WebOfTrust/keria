@@ -5,7 +5,6 @@ from keri import kering, help
 from keri.app import forwarding, agenting, habbing
 from keri.core import coring, serdering
 from keri.db import dbing
-
 from keria.core import httping, longrunning
 
 DELEGATION_ROUTE = "/identifiers/{name}/delegation"
@@ -240,7 +239,7 @@ class DelegatorEnd:
                 content:
                   application/json:
                     schema:
-                        $ref: '#/components/schemas/Operation'
+                      - $ref: '#/components/schemas/DelegatorOperation'
             400:
                 description: Bad request. This could be due to missing or invalid parameters.
             404:

@@ -1847,15 +1847,6 @@ class KeyStateCollectionEnd:
         rep.data = json.dumps(states).encode("utf-8")
 
 
-exnFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
-    serdering.Vrsn_1_0
-][serdering.Ilks.exn]
-EXN_V_1, EXNSchema_V_1 = dataclassFromFielddom("EXN_V_1", exnFieldDomV1)
-exnFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
-    serdering.Vrsn_2_0
-][serdering.Ilks.exn]
-EXN_V_2, EXNSchema_V_2 = dataclassFromFielddom("EXN_V_2", exnFieldDomV2)
-
 issFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
     serdering.Vrsn_1_0
 ][serdering.Ilks.iss]
@@ -1989,7 +1980,7 @@ class OOBICollectionEnd:
               content:
                 application/json:
                   schema:
-                    $ref: '#/components/schemas/Operation'
+                    $ref: '#/components/schemas/OOBIOperation'
 
         """
         agent = req.context.agent
@@ -2175,7 +2166,7 @@ class QueryCollectionEnd:
               content:
                 application/json:
                     schema:
-                        $ref: '#/components/schemas/Operation'
+                        $ref: '#/components/schemas/QueryOperation'
            404:
               description: Identifier not found in Key event database
 
