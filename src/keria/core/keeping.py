@@ -42,7 +42,17 @@ class SaltyPrm:
     def __iter__(self):
         return iter(asdict(self))
 
+@dataclass()
+class ExternPrm:
+    """
+    Extern prefix's parameters for referencing external key management
+    """
+    pidx: int = 0
+    extern_type: str = ""
 
+    def __iter__(self):
+        return iter(asdict(self))
+    
 class RemoteKeeper(dbing.LMDBer):
     """
     RemoteKeeper stores data for Salty or Randy Encrypted edge key generation.
@@ -95,6 +105,7 @@ class RemoteKeeper(dbing.LMDBer):
         self.nxts = None
         self.prxs = None
         self.gbls = None
+        self.eprms = None
         if perm is None:
             perm = self.Perm  # defaults to restricted permissions for non temp
 
@@ -136,6 +147,11 @@ class RemoteKeeper(dbing.LMDBer):
             subkey="pubs.",
             schema=PubSet,
         )  # public key set at pre.ridx
+        self.eprms = koming.Komer(
+            db=self,
+            subkey="eprms.",
+            schema=ExternPrm,
+        )  # New Extern Parameter
         return self.opened
 
 
@@ -444,5 +460,36 @@ class ExternKeeper:
     def __init__(self, rb: RemoteKeeper):
         self.rb = rb
 
-    def incept(self, **kwargs):
-        pass
+    def incept(self, pre, pidx=0, extern_type="", **kwargs):
+        # Ignore unused kwargs
+        pp = Prefix(pidx=pidx, algo=Algos.extern)
+        if not self.rb.pres.put(pre, val=pp):
+            raise ValueError("Already incepted pre={}.".format(pre))
+
+        ep = ExternPrm(pidx=pidx, extern_type=extern_type)
+        if not self.rb.eprms.put(pre, val=ep):
+             raise ValueError("Already incepted prm for pre={}.".format(pre))
+
+    def rotate(self, pre, pidx=None, extern_type=None, **kwargs):
+        if (pp := self.rb.pres.get(pre)) is None or pp.algo != Algos.extern:
+            raise ValueError("Attempt to rotate nonexistent or invalid pre={}.".format(pre))
+        
+        if (ep := self.rb.eprms.get(pre)) is None:
+             ep = ExternPrm()
+
+        if pidx is not None:
+            ep.pidx = pidx
+        if extern_type is not None:
+            ep.extern_type = extern_type
+
+        if not self.rb.eprms.pin(pre, val=ep):
+            raise ValueError("Unable to rotate extern prms for pre={}.".format(pre))
+
+    def params(self, pre):
+        if (pp := self.rb.pres.get(pre)) is None or pp.algo != Algos.extern:
+            raise ValueError("Attempt to load nonexistent or invalid pre={}.".format(pre))
+        # Default extern params
+        if (ep := self.rb.eprms.get(pre)) is None:
+             return dict(extern=dict(extern_type="", pidx=pp.pidx))
+        
+        return dict(extern=asdict(ep))
