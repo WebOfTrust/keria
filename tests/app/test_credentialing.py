@@ -7,6 +7,7 @@ Testing credentialing endpoint in the Mark II Agent
 """
 
 import json
+from types import SimpleNamespace
 
 import falcon
 from falcon import testing
@@ -862,3 +863,108 @@ def test_revoke_credential(helpers, seeder):
         assert res.status_code == 200
         assert res.json["s"] == "1"
         assert res.json["et"] == "rev"
+
+def test_replay_multisig_embeds_restores_local_after_remote_follower_approval(
+    helpers, monkeypatch
+):
+    """A stored remote `/multisig/vcp` must replay the leader's `anc` stream.
+
+    This test is intentionally narrow. It does not try to create a full
+    multisig registry. It proves only the missing follower behavior:
+
+    1. a remote `/multisig/vcp` proposal already exists in mux storage,
+    2. the follower later approves the same proposal through the credentialing
+       path,
+    3. `replay_multisig_embeds(...)` must parse the stored remote `anc` event
+       stream (`ixn` raw bytes plus `paths["anc"]`) before local approval
+       continues.
+
+    That local-after-remote ordering is the case `Multiplexor.add(...)` does
+    not repair by itself.
+    """
+
+    class FakeSignifyGroupHab:
+        pass
+
+    monkeypatch.setattr(credentialing, "SignifyGroupHab", FakeSignifyGroupHab)
+
+    with helpers.openKeria() as (agency, agent, app, client):
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+
+        # Build a realistic registry proposal payload using a real AID and a
+        # real anchoring interaction event. This keeps the test concrete while
+        # avoiding a full live multisig stack.
+        salt = b"0123456789abcdef"
+        op = helpers.createAid(client, "test", salt)
+        aid = op["response"]
+        pre = aid["i"]
+
+        nonce = Salter().qb64
+        regser = eventing.incept(
+            pre,
+            baks=[],
+            toad="0",
+            nonce=nonce,
+            cnfg=[TraitCodex.NoBackers],
+            code=coring.MtrDex.Blake3_256,
+        )
+        anchor = dict(i=regser.ked["i"], s=regser.ked["s"], d=regser.said)
+        ixn, _ = helpers.interact(
+            pre=pre, bran=salt, pidx=0, ridx=0, dig=aid["d"], sn="1", data=[anchor]
+        )
+
+        # This is the same approval payload shape the follower later submits to
+        # `POST /identifiers/{name}/registries`: a VCP plus the anchoring event
+        # carried under the EXN protocol label `anc`.
+        follower_approval_payload = dict(vcp=regser.ked, anc=ixn.ked)
+
+        # `replay_multisig_embeds(...)` derives the embedded-section SAID from
+        # that approval payload, then asks mux for stored EXNs for the same
+        # logical proposal.
+        embed_ked = dict(follower_approval_payload)
+        embed_ked["d"] = ""
+        _, embed_ked = coring.Saider.saidify(sad=embed_ked, label=coring.Saids.d)
+        proposal_esaid = embed_ked["d"]
+
+        parsed_message_streams = []
+
+        class RecordingParser:
+            def parseOne(self, ims):
+                parsed_message_streams.append(bytes(ims))
+
+        class StoredRemoteProposalMux:
+            def get(self, esaid):
+                assert esaid == proposal_esaid
+                return [
+                    dict(
+                        exn={"r": "/multisig/vcp", "i": "remote-member-pre"},
+                        paths={"anc": "FAKE-REMOTE-ANC-ATC"},
+                    )
+                ]
+
+        # Simulate the follower-side KERIA view:
+        # - mux already has a stored remote `/multisig/vcp`
+        # - the parser will record exactly what the helper replays
+        fake_agent = SimpleNamespace(
+            mux=StoredRemoteProposalMux(),
+            hby=SimpleNamespace(psr=RecordingParser()),
+        )
+        hab = FakeSignifyGroupHab()
+        hab.mhab = SimpleNamespace(pre="local-member-pre")
+
+        replays = credentialing.replay_multisig_embeds(
+            fake_agent,
+            hab,
+            route="/multisig/vcp",
+            embeds=follower_approval_payload,
+            labels=("anc",),
+        )
+
+        # The replayed byte stream must be the leader's anchoring event stream:
+        # the `ixn` raw bytes followed by the stored remote attachment group.
+        expected_remote_anc_stream = bytearray(serdering.SerderKERI(sad=ixn.ked).raw)
+        expected_remote_anc_stream.extend(b"FAKE-REMOTE-ANC-ATC")
+
+        assert replays == 1
+        assert parsed_message_streams == [bytes(expected_remote_anc_stream)]

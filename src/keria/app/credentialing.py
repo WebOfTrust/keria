@@ -41,6 +41,63 @@ from .aiding import (
 logger = help.ogler.getLogger()
 
 
+def replay_multisig_embeds(agent, hab, *, route, embeds, labels):
+    """Replay previously stored non-local multisig embedded events before a
+    Signify follower's local approval of multisig group messages such as
+    `/multisig/vcp` (registry inception) and `/multisig/iss`
+    (credential issuance).
+
+    Signify clients approve `/multisig/vcp` and `/multisig/iss` by later
+    submitting the embedded events directly to the credentialing endpoints.
+
+    KLI join flows explicitly parse the initiator's signed anchoring event from
+    the stored multisig EXN before parsing the follower's approval of that same
+    event. Original KERIA follower approval did not do this for
+    local-after-remote ordering, so the follower could approve second without
+    first ingesting the remote participant's signed embedded event attachments.
+
+    This helper reconstructs the embedded-section SAID from the submitted
+    approval payload, finds matching stored non-local EXNs, and replays the
+    requested embedded events plus pathed attachments through the parser in the
+    same order KLI uses.
+
+    Terminology note:
+    The ``labels`` argument is expressed in EXN embed-label terms, not concrete
+    event-type terms. For example, the multisig protocol uses the embed label
+    ``anc`` for the anchoring KEL event even when the actual event body is an
+    interaction event (``ixn``).
+    """
+    if not isinstance(hab, SignifyGroupHab):
+        return 0
+
+    embed_ked = {label: embeds[label] for label in embeds}
+    embed_ked["d"] = ""
+    _, embed_ked = coring.Saider.saidify(sad=embed_ked, label=coring.Saids.d)
+
+    replays = 0
+    # Replay stored non-local embedded events and their pathed attachments
+    # before local follower approval. This restores the KLI join ordering for
+    # local-after-remote Signify approval flows.
+    for msg in agent.mux.get(esaid=embed_ked["d"]):
+        exn = msg["exn"]
+        if exn["r"] != route or exn["i"] == hab.mhab.pre:
+            continue
+
+        paths = msg["paths"]
+        for label in labels:
+            if label not in paths:
+                continue
+
+            sadder = coring.Sadder(ked=embeds[label])
+            ims = bytearray(sadder.raw)
+            ims.extend(paths[label].encode("utf-8"))
+            agent.hby.psr.parseOne(ims=ims)
+
+        replays += 1
+
+    return replays
+
+
 def loadEnds(app, identifierResource):
     schemaColEnd = SchemaCollectionEnd()
     app.add_route("/schema", schemaColEnd)
@@ -392,6 +449,17 @@ class RegistryCollectionEnd:
             )
 
         registry = agent.rgy.makeSignifyRegistry(name=rname, prefix=hab.pre, regser=vcp)
+
+        # The `/multisig/vcp` EXN uses the embed label `anc` for the anchoring
+        # KEL event. In this endpoint that concrete event is the submitted `ixn`.
+        protocol_embeds = dict(vcp=vcp.ked, anc=ixn.ked)
+        replay_multisig_embeds(
+            agent,
+            hab,
+            route="/multisig/vcp",
+            embeds=protocol_embeds,
+            labels=("anc",),
+        )
 
         if hab.kever.estOnly:
             op = self.identifierResource.rotate(agent, name, body)
@@ -1392,6 +1460,10 @@ class Registrar:
             )
 
         else:
+            # assume SignifyGroupHab - multisig incept, so start the counselor to wait on multisig incept completion
+            self.counselor.start(
+                ghab=hab, prefixer=prefixer, seqner=seqner, saider=saider
+            )
             logger.info(
                 "[%s | %s]: Waiting for TEL registry vcp event mulisig anchoring event",
                 hab.name,
