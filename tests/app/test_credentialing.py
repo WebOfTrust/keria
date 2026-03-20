@@ -313,120 +313,124 @@ def test_issue_credential(helpers, seeder):
         seeder.seedSchema(agent.hby.db)
         seeder.seedSchema(agent1.hby.db)
 
-        # create the server that will receive the credential issuance messages
-        serverDoer = helpers.server(agency)
-
         tock = 0.03125
         limit = 1.0
         doist = doing.Doist(limit=limit, tock=tock, real=True)
-        deeds = doist.enter(doers=[agent, serverDoer])
+        agent_deeds = doist.enter(doers=[agent])
+        verify_deeds = None
+        try:
+            isalt = b"0123456789abcdef"
+            registry, issuer = helpers.createRegistry(
+                client, agent, isalt, doist, agent_deeds
+            )
 
-        isalt = b"0123456789abcdef"
-        registry, issuer = helpers.createRegistry(client, agent, isalt, doist, deeds)
+            iaid = issuer["prefix"]
+            idig = issuer["state"]["d"]
 
-        iaid = issuer["prefix"]
-        idig = issuer["state"]["d"]
+            rsalt = b"abcdef0123456789"
+            op = helpers.createAid(client, "recipient", rsalt)
+            aid = op["response"]
+            recp = aid["i"]
+            assert recp == "EMgdjM1qALk3jlh4P2YyLRSTcjSOjLXD3e_uYpxbdbg6"
 
-        rsalt = b"abcdef0123456789"
-        op = helpers.createAid(client, "recipient", rsalt)
-        aid = op["response"]
-        recp = aid["i"]
-        assert recp == "EMgdjM1qALk3jlh4P2YyLRSTcjSOjLXD3e_uYpxbdbg6"
+            helpers.createEndRole(client, agent, recp, "recipient", rsalt)
 
-        helpers.createEndRole(client, agent, recp, "recipient", rsalt)
+            dt = "2021-01-01T00:00:00.000000+00:00"
+            schema = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
+            data = dict(LEI="254900DA0GOGCFVWB618", dt=dt)
+            creder = proving.credential(
+                issuer=iaid,
+                schema=schema,
+                recipient=recp,
+                data=data,
+                source={},
+                status=registry["regk"],
+            )
 
-        dt = "2021-01-01T00:00:00.000000+00:00"
-        schema = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
-        data = dict(LEI="254900DA0GOGCFVWB618", dt=dt)
-        creder = proving.credential(
-            issuer=iaid,
-            schema=schema,
-            recipient=recp,
-            data=data,
-            source={},
-            status=registry["regk"],
-        )
+            csigers = helpers.sign(bran=isalt, pidx=0, ridx=0, ser=creder.raw)
 
-        csigers = helpers.sign(bran=isalt, pidx=0, ridx=0, ser=creder.raw)
+            # Test no backers... backers would use backerIssue
+            regser = eventing.issue(vcdig=creder.said, regk=registry["regk"], dt=dt)
 
-        # Test no backers... backers would use backerIssue
-        regser = eventing.issue(vcdig=creder.said, regk=registry["regk"], dt=dt)
+            anchor = dict(i=regser.ked["i"], s=regser.ked["s"], d=regser.said)
+            serder, sigers = helpers.interact(
+                pre=iaid, bran=isalt, pidx=0, ridx=0, dig=idig, sn="2", data=[anchor]
+            )
 
-        anchor = dict(i=regser.ked["i"], s=regser.ked["s"], d=regser.said)
-        serder, sigers = helpers.interact(
-            pre=iaid, bran=isalt, pidx=0, ridx=0, dig=idig, sn="2", data=[anchor]
-        )
+            pather = coring.Pather(path=[])
 
-        pather = coring.Pather(path=[])
+            body = dict(
+                iss=regser.ked,
+                ixn=serder.ked,
+                sigs=sigers,
+                acdc=creder.sad,
+                csigs=csigers,
+                path=pather.qb64,
+            )
 
-        body = dict(
-            iss=regser.ked,
-            ixn=serder.ked,
-            sigs=sigers,
-            acdc=creder.sad,
-            csigs=csigers,
-            path=pather.qb64,
-        )
+            result = client.simulate_post(
+                path="/identifiers/badname/credentials",
+                body=json.dumps(body).encode("utf-8"),
+            )
+            assert result.status_code == 404
+            assert result.json == {
+                "description": "badname is not a valid reference to an identifier",
+                "title": "404 Not Found",
+            }
 
-        result = client.simulate_post(
-            path="/identifiers/badname/credentials",
-            body=json.dumps(body).encode("utf-8"),
-        )
-        assert result.status_code == 404
-        assert result.json == {
-            "description": "badname is not a valid reference to an identifier",
-            "title": "404 Not Found",
-        }
+            result = client.simulate_post(
+                path="/identifiers/issuer/credentials",
+                body=json.dumps(body).encode("utf-8"),
+            )
+            op = result.json
 
-        result = client.simulate_post(
-            path="/identifiers/issuer/credentials",
-            body=json.dumps(body).encode("utf-8"),
-        )
-        op = result.json
+            assert "ced" in op["metadata"]
+            assert op["metadata"]["ced"] == creder.sad
 
-        assert "ced" in op["metadata"]
-        assert op["metadata"]["ced"] == creder.sad
+            while not agent.credentialer.complete(creder.said):
+                doist.recur(deeds=agent_deeds)
 
-        while not agent.credentialer.complete(creder.said):
-            doist.recur(deeds=deeds)
+            assert agent.credentialer.complete(creder.said) is True
 
-        assert agent.credentialer.complete(creder.said) is True
+            body["acdc"]["a"]["LEI"] = "ACDC10JSON000197_"
+            result = client.simulate_post(
+                path="/identifiers/issuer/credentials",
+                body=json.dumps(body).encode("utf-8"),
+            )
+            assert result.status_code == 400
 
-        body["acdc"]["a"]["LEI"] = "ACDC10JSON000197_"
-        result = client.simulate_post(
-            path="/identifiers/issuer/credentials",
-            body=json.dumps(body).encode("utf-8"),
-        )
-        assert result.status_code == 400
+            # Try to load into another agent after TEL query without IPEX
+            agent1.parser.parse(ims=agent.hby.habByName("issuer").replay())
+            assert iaid in agent1.hby.kevers
 
-        # Try to load into another agent after TEL query without IPEX
-        agent1.parser.parse(ims=agent.hby.habByName("issuer").replay())
-        assert iaid in agent1.hby.kevers
+            agent1.parser.parse(ims=agent.rgy.reger.cloneTvtAt(registry["regk"]))
+            assert registry["regk"] in agent1.rgy.tevers
 
-        agent1.parser.parse(ims=agent.rgy.reger.cloneTvtAt(registry["regk"]))
-        assert registry["regk"] in agent1.rgy.tevers
+            agent1.parser.parse(ims=agent.rgy.reger.cloneTvtAt(creder.said))
+            assert agent1.rgy.tevers[registry["regk"]].vcSn(creder.said) is not None
 
-        agent1.parser.parse(ims=agent.rgy.reger.cloneTvtAt(creder.said))
-        assert agent1.rgy.tevers[registry["regk"]].vcSn(creder.said) is not None
+            credVerifyEnd = credentialing.CredentialVerificationCollectionEnd()
+            app1.add_route("/credentials/verify", credVerifyEnd)
 
-        credVerifyEnd = credentialing.CredentialVerificationCollectionEnd()
-        app1.add_route("/credentials/verify", credVerifyEnd)
+            body = dict(acdc=creder.sad, iss=regser.ked)  # still has changed LEI
+            result = client1.simulate_post(
+                path="/credentials/verify", body=json.dumps(body).encode("utf-8")
+            )
+            assert result.status_code == 400
 
-        body = dict(acdc=creder.sad, iss=regser.ked)  # still has changed LEI
-        result = client1.simulate_post(
-            path="/credentials/verify", body=json.dumps(body).encode("utf-8")
-        )
-        assert result.status_code == 400
+            body["acdc"]["a"]["LEI"] = "254900DA0GOGCFVWB618"  # change back
+            result = client1.simulate_post(
+                path="/credentials/verify", body=json.dumps(body).encode("utf-8")
+            )
+            assert result.status_code == 202
 
-        body["acdc"]["a"]["LEI"] = "254900DA0GOGCFVWB618"  # change back
-        result = client1.simulate_post(
-            path="/credentials/verify", body=json.dumps(body).encode("utf-8")
-        )
-        assert result.status_code == 202
-
-        deeds = doist.enter(doers=[agent1])
-        while not agent1.rgy.reger.creds.get(keys=(creder.said,)):
-            doist.recur(deeds=deeds)
+            verify_deeds = doist.enter(doers=[agent1])
+            while not agent1.rgy.reger.creds.get(keys=(creder.said,)):
+                doist.recur(deeds=verify_deeds)
+        finally:
+            if verify_deeds is not None:
+                doist.exit(deeds=verify_deeds)
+            doist.exit(deeds=agent_deeds)
 
 
 def test_credentialing_ends(helpers, seeder):
@@ -687,200 +691,403 @@ def test_revoke_credential(helpers, seeder):
 
         seeder.seedSchema(agent.hby.db)
 
-        # create the server that will receive the credential issuance messages
-        serverDoer = helpers.server(agency)
-
         tock = 0.03125
         limit = 1.0
         doist = doing.Doist(limit=limit, tock=tock, real=True)
-        deeds = doist.enter(doers=[agent, serverDoer])
+        agent_deeds = doist.enter(doers=[agent])
+        try:
+            isalt = b"0123456789abcdef"
+            registry, issuer = helpers.createRegistry(
+                client, agent, isalt, doist, agent_deeds
+            )
 
-        isalt = b"0123456789abcdef"
-        registry, issuer = helpers.createRegistry(client, agent, isalt, doist, deeds)
+            iaid = issuer["prefix"]
+            idig = issuer["state"]["d"]
 
-        iaid = issuer["prefix"]
-        idig = issuer["state"]["d"]
+            rsalt = b"abcdef0123456789"
+            op = helpers.createAid(client, "recipient", rsalt)
+            aid = op["response"]
+            recp = aid["i"]
+            assert recp == "EMgdjM1qALk3jlh4P2YyLRSTcjSOjLXD3e_uYpxbdbg6"
 
-        rsalt = b"abcdef0123456789"
-        op = helpers.createAid(client, "recipient", rsalt)
-        aid = op["response"]
-        recp = aid["i"]
-        assert recp == "EMgdjM1qALk3jlh4P2YyLRSTcjSOjLXD3e_uYpxbdbg6"
+            helpers.createEndRole(client, agent, recp, "recipient", rsalt)
 
-        helpers.createEndRole(client, agent, recp, "recipient", rsalt)
+            dt = "2021-01-01T00:00:00.000000+00:00"
+            schema = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
+            data = dict(LEI="254900DA0GOGCFVWB618", dt=dt)
+            creder = proving.credential(
+                issuer=iaid,
+                schema=schema,
+                recipient=recp,
+                data=data,
+                source={},
+                status=registry["regk"],
+            )
 
-        dt = "2021-01-01T00:00:00.000000+00:00"
-        schema = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
-        data = dict(LEI="254900DA0GOGCFVWB618", dt=dt)
-        creder = proving.credential(
-            issuer=iaid,
-            schema=schema,
-            recipient=recp,
-            data=data,
-            source={},
-            status=registry["regk"],
-        )
+            csigers = helpers.sign(bran=isalt, pidx=0, ridx=0, ser=creder.raw)
 
-        csigers = helpers.sign(bran=isalt, pidx=0, ridx=0, ser=creder.raw)
+            # Test no backers... backers would use backerIssue
+            regser = eventing.issue(vcdig=creder.said, regk=registry["regk"], dt=dt)
 
-        # Test no backers... backers would use backerIssue
-        regser = eventing.issue(vcdig=creder.said, regk=registry["regk"], dt=dt)
+            anchor = dict(i=regser.ked["i"], s=regser.ked["s"], d=regser.said)
+            serder, sigers = helpers.interact(
+                pre=iaid, bran=isalt, pidx=0, ridx=0, dig=idig, sn="2", data=[anchor]
+            )
 
-        anchor = dict(i=regser.ked["i"], s=regser.ked["s"], d=regser.said)
-        serder, sigers = helpers.interact(
-            pre=iaid, bran=isalt, pidx=0, ridx=0, dig=idig, sn="2", data=[anchor]
-        )
+            pather = coring.Pather(path=[])
 
-        pather = coring.Pather(path=[])
+            body = dict(
+                iss=regser.ked,
+                ixn=serder.ked,
+                sigs=sigers,
+                acdc=creder.sad,
+                csigs=csigers,
+                path=pather.qb64,
+            )
 
-        body = dict(
-            iss=regser.ked,
-            ixn=serder.ked,
-            sigs=sigers,
-            acdc=creder.sad,
-            csigs=csigers,
-            path=pather.qb64,
-        )
+            result = client.simulate_post(
+                path="/identifiers/badname/credentials",
+                body=json.dumps(body).encode("utf-8"),
+            )
+            assert result.status_code == 404
+            assert result.json == {
+                "description": "badname is not a valid reference to an identifier",
+                "title": "404 Not Found",
+            }
 
-        result = client.simulate_post(
-            path="/identifiers/badname/credentials",
-            body=json.dumps(body).encode("utf-8"),
-        )
-        assert result.status_code == 404
-        assert result.json == {
-            "description": "badname is not a valid reference to an identifier",
-            "title": "404 Not Found",
-        }
+            result = client.simulate_post(
+                path="/identifiers/issuer/credentials",
+                body=json.dumps(body).encode("utf-8"),
+            )
+            op = result.json
 
-        result = client.simulate_post(
-            path="/identifiers/issuer/credentials",
-            body=json.dumps(body).encode("utf-8"),
-        )
-        op = result.json
+            assert "ced" in op["metadata"]
+            assert op["metadata"]["ced"] == creder.sad
 
-        assert "ced" in op["metadata"]
-        assert op["metadata"]["ced"] == creder.sad
+            while not agent.credentialer.complete(creder.said):
+                doist.recur(deeds=agent_deeds)
 
-        while not agent.credentialer.complete(creder.said):
-            doist.recur(deeds=deeds)
+            assert agent.credentialer.complete(creder.said) is True
 
-        assert agent.credentialer.complete(creder.said) is True
+            res = client.simulate_post("/credentials/query")
+            assert res.status_code == 200
+            assert len(res.json) == 1
+            assert res.json[0]["sad"]["d"] == creder.said
+            assert res.json[0]["status"]["s"] == "0"
 
-        res = client.simulate_post("/credentials/query")
-        assert res.status_code == 200
-        assert len(res.json) == 1
-        assert res.json[0]["sad"]["d"] == creder.said
-        assert res.json[0]["status"]["s"] == "0"
+            res = client.simulate_post("/credentials/query")
+            assert res.status_code == 200
+            assert len(res.json) == 1
+            assert res.json[0]["sad"]["d"] == creder.said
+            assert res.json[0]["status"]["s"] == "0"
 
-        res = client.simulate_post("/credentials/query")
-        assert res.status_code == 200
-        assert len(res.json) == 1
-        assert res.json[0]["sad"]["d"] == creder.said
-        assert res.json[0]["status"]["s"] == "0"
+            regser = eventing.revoke(
+                vcdig=creder.said, regk=registry["regk"], dig=regser.said, dt=dt
+            )
+            anchor = dict(i=regser.ked["i"], s=regser.ked["s"], d=regser.said)
+            serder, sigers = helpers.interact(
+                pre=iaid,
+                bran=isalt,
+                pidx=0,
+                ridx=0,
+                dig=serder.said,
+                sn="3",
+                data=[anchor],
+            )
 
-        regser = eventing.revoke(
-            vcdig=creder.said, regk=registry["regk"], dig=regser.said, dt=dt
-        )
-        anchor = dict(i=regser.ked["i"], s=regser.ked["s"], d=regser.said)
-        serder, sigers = helpers.interact(
-            pre=iaid, bran=isalt, pidx=0, ridx=0, dig=serder.said, sn="3", data=[anchor]
-        )
+            body = dict(rev=regser.ked, ixn=serder.ked, sigs=sigers)
+            res = client.simulate_delete(
+                path=f"/identifiers/badname/credentials/{creder.said}",
+                body=json.dumps(body).encode("utf-8"),
+            )
+            assert res.status_code == 404
+            assert res.json == {
+                "description": "badname is not a valid reference to an identifier",
+                "title": "404 Not Found",
+            }
 
-        body = dict(rev=regser.ked, ixn=serder.ked, sigs=sigers)
-        res = client.simulate_delete(
-            path=f"/identifiers/badname/credentials/{creder.said}",
-            body=json.dumps(body).encode("utf-8"),
-        )
-        assert res.status_code == 404
-        assert res.json == {
-            "description": "badname is not a valid reference to an identifier",
-            "title": "404 Not Found",
-        }
+            res = client.simulate_delete(
+                path=f"/identifiers/issuer/credentials/{regser.said}",
+                body=json.dumps(body).encode("utf-8"),
+            )
+            assert res.status_code == 404
+            assert res.json == {
+                "description": f"credential for said {regser.said} not found.",
+                "title": "404 Not Found",
+            }
 
-        res = client.simulate_delete(
-            path=f"/identifiers/issuer/credentials/{regser.said}",
-            body=json.dumps(body).encode("utf-8"),
-        )
-        assert res.status_code == 404
-        assert res.json == {
-            "description": f"credential for said {regser.said} not found.",
-            "title": "404 Not Found",
-        }
+            badrev = regser.ked.copy()
+            badrev["ri"] = "EIVtei3pGKGUw8H2Ri0h1uOevtSA6QGAq5wifbtHIaNI"
+            _, sad = coring.Saider.saidify(badrev)
 
-        badrev = regser.ked.copy()
-        badrev["ri"] = "EIVtei3pGKGUw8H2Ri0h1uOevtSA6QGAq5wifbtHIaNI"
-        _, sad = coring.Saider.saidify(badrev)
+            badbody = dict(rev=sad, ixn=serder.ked, sigs=sigers)
+            res = client.simulate_delete(
+                path=f"/identifiers/issuer/credentials/{creder.said}",
+                body=json.dumps(badbody).encode("utf-8"),
+            )
+            assert res.status_code == 404
+            assert res.json == {
+                "description": "revocation against invalid registry SAID "
+                "EIVtei3pGKGUw8H2Ri0h1uOevtSA6QGAq5wifbtHIaNI",
+                "title": "404 Not Found",
+            }
 
-        badbody = dict(rev=sad, ixn=serder.ked, sigs=sigers)
-        res = client.simulate_delete(
-            path=f"/identifiers/issuer/credentials/{creder.said}",
-            body=json.dumps(badbody).encode("utf-8"),
-        )
-        assert res.status_code == 404
-        assert res.json == {
-            "description": "revocation against invalid registry SAID "
-            "EIVtei3pGKGUw8H2Ri0h1uOevtSA6QGAq5wifbtHIaNI",
-            "title": "404 Not Found",
-        }
+            badrev = regser.ked.copy()
+            badrev["i"] = "EMgdjM1qALk3jlh4P2YyLRSTcjSOjLXD3e_uYpxbdbg6"
+            _, sad = coring.Saider.saidify(badrev)
 
-        badrev = regser.ked.copy()
-        badrev["i"] = "EMgdjM1qALk3jlh4P2YyLRSTcjSOjLXD3e_uYpxbdbg6"
-        _, sad = coring.Saider.saidify(badrev)
+            badbody = dict(rev=sad, ixn=serder.ked, sigs=sigers)
+            res = client.simulate_delete(
+                path=f"/identifiers/issuer/credentials/{creder.said}",
+                body=json.dumps(badbody).encode("utf-8"),
+            )
+            assert res.status_code == 400
+            assert res.json == {
+                "description": "invalid revocation event.",
+                "title": "400 Bad Request",
+            }
 
-        badbody = dict(rev=sad, ixn=serder.ked, sigs=sigers)
-        res = client.simulate_delete(
-            path=f"/identifiers/issuer/credentials/{creder.said}",
-            body=json.dumps(badbody).encode("utf-8"),
-        )
-        assert res.status_code == 400
-        assert res.json == {
-            "description": "invalid revocation event.",
-            "title": "400 Bad Request",
-        }
+            res = client.simulate_delete(
+                path=f"/identifiers/issuer/credentials/{creder.said}",
+                body=json.dumps(body).encode("utf-8"),
+            )
+            assert res.status_code == 200
 
-        res = client.simulate_delete(
-            path=f"/identifiers/issuer/credentials/{creder.said}",
-            body=json.dumps(body).encode("utf-8"),
-        )
-        assert res.status_code == 200
+            while not agent.registrar.complete(creder.said, sn=1):
+                doist.recur(deeds=agent_deeds)
 
-        while not agent.registrar.complete(creder.said, sn=1):
-            doist.recur(deeds=deeds)
+            res = client.simulate_post("/credentials/query")
+            assert res.status_code == 200
+            assert len(res.json) == 1
+            assert res.json[0]["sad"]["d"] == creder.said
+            assert res.json[0]["status"]["s"] == "1"
 
-        res = client.simulate_post("/credentials/query")
-        assert res.status_code == 200
-        assert len(res.json) == 1
-        assert res.json[0]["sad"]["d"] == creder.said
-        assert res.json[0]["status"]["s"] == "1"
-
-        res = client.simulate_post("/credentials/query")
-        assert res.status_code == 200
-        assert len(res.json) == 1
-        assert res.json[0]["sad"]["d"] == creder.said
-        assert res.json[0]["status"]["s"] == "1"
+            res = client.simulate_post("/credentials/query")
+            assert res.status_code == 200
+            assert len(res.json) == 1
+            assert res.json[0]["sad"]["d"] == creder.said
+            assert res.json[0]["status"]["s"] == "1"
+        finally:
+            doist.exit(deeds=agent_deeds)
 
         res = client.simulate_get(f"/registries/{registry['regk']}/{creder.said}")
         assert res.status_code == 200
         assert res.json["s"] == "1"
         assert res.json["et"] == "rev"
 
-def test_replay_multisig_embeds_restores_local_after_remote_follower_approval(
+
+def test_issue_credential_replays_multisig_embeds_before_local_approval(
+    helpers, seeder, monkeypatch
+):
+    """Follower B must replay A's stored `/multisig/iss` embeds before approval.
+
+    This is an endpoint-order test for the follower approval path in
+    `CredentialCollectionEnd.on_post(...)`.
+
+    Identity mapping:
+
+    - participant B is the local `issuer` habitat created by
+      `helpers.createRegistry(...)`.
+    - participant A is represented by the mocked `replay_multisig_embeds(...)`
+      invocation, which stands in for the already-stored remote EXN.
+    - `creder`, `iserder`, and `anc` are B's local approval payload for the
+      same issuance proposal.
+
+    We assert only the ordering guarantee that matters for this bug:
+    KERIA must replay A's stored `anc` and `acdc` streams before B's local
+    interaction approval is processed.
+    """
+    with helpers.openKeria() as (agency, agent, app, client):
+        idResEnd = aiding.IdentifierResourceEnd()
+        app.add_route("/identifiers/{name}", idResEnd)
+        registryEnd = credentialing.RegistryCollectionEnd(idResEnd)
+        app.add_route("/identifiers/{name}/registries", registryEnd)
+        credEnd = credentialing.CredentialCollectionEnd(idResEnd)
+        app.add_route("/identifiers/{name}/credentials", credEnd)
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+
+        seeder.seedSchema(agent.hby.db)
+
+        doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+        agent_deeds = doist.enter(doers=[agent])
+        try:
+            isalt = b"0123456789abcdef"
+            registry, follower_b_issuer = helpers.createRegistry(
+                client, agent, isalt, doist, agent_deeds
+            )
+
+            dt = "2021-01-01T00:00:00.000000+00:00"
+            creder = proving.credential(
+                issuer=follower_b_issuer["prefix"],
+                schema="EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs",
+                recipient=follower_b_issuer["prefix"],
+                data=dict(LEI="254900DA0GOGCFVWB618", dt=dt),
+                source={},
+                status=registry["regk"],
+            )
+            iserder = eventing.issue(vcdig=creder.said, regk=registry["regk"], dt=dt)
+            anchor = dict(i=iserder.ked["i"], s=iserder.ked["s"], d=iserder.said)
+            anc, _ = helpers.interact(
+                pre=follower_b_issuer["prefix"],
+                bran=isalt,
+                pidx=0,
+                ridx=0,
+                dig=follower_b_issuer["state"]["d"],
+                sn="2",
+                data=[anchor],
+            )
+
+            class FakeOp:
+                def to_json(self):
+                    return json.dumps(dict(name="mock-op"))
+
+            calls = []
+
+            # Participant A's fake replay
+            def fake_replay(*args, **kwargs):
+                calls.append(("replay", kwargs["route"], kwargs["labels"]))
+
+            def fake_interact(*args, **kwargs):
+                calls.append("interact")
+                return FakeOp()
+
+            monkeypatch.setattr(credentialing, "replay_multisig_embeds", fake_replay)
+            monkeypatch.setattr(idResEnd, "interact", fake_interact)
+            monkeypatch.setattr(
+                agent.credentialer, "validate", lambda *args, **kwargs: None
+            )
+            monkeypatch.setattr(
+                agent.registrar,
+                "issue",
+                lambda regk, iser, anc_serder: calls.append("registrar.issue"),
+            )
+            monkeypatch.setattr(
+                agent.credentialer,
+                "issue",
+                lambda *args, **kwargs: calls.append("credentialer.issue"),
+            )
+            monkeypatch.setattr(
+                agent.monitor,
+                "submit",
+                lambda *args, **kwargs: FakeOp(),
+            )
+
+            body = dict(acdc=creder.sad, iss=iserder.ked, ixn=anc.ked)
+            res = client.simulate_post(
+                path="/identifiers/issuer/credentials",
+                body=json.dumps(body).encode("utf-8"),
+            )
+
+            assert res.status_code == 200
+            assert calls[:2] == [
+                ("replay", "/multisig/iss", ("anc", "acdc")),
+                "interact",
+            ]
+        finally:
+            doist.exit(deeds=agent_deeds)
+
+
+def test_revoke_credential_replays_multisig_embeds_before_local_approval(
     helpers, monkeypatch
 ):
-    """A stored remote `/multisig/vcp` must replay the leader's `anc` stream.
+    """Follower B must replay A's stored `/multisig/rev` `anc` before approval.
 
-    This test is intentionally narrow. It does not try to create a full
-    multisig registry. It proves only the missing follower behavior:
+    Identity mapping mirrors the issuance test above:
 
-    1. a remote `/multisig/vcp` proposal already exists in mux storage,
-    2. the follower later approves the same proposal through the credentialing
-       path,
-    3. `replay_multisig_embeds(...)` must parse the stored remote `anc` event
-       stream (`ixn` raw bytes plus `paths["anc"]`) before local approval
-       continues.
+    - participant B is the local `issuer` habitat handled by this KERIA agent.
+    - participant A is represented by the mocked replay helper invocation.
+    - `rserder` and `anc` are B's local revocation approval payload.
 
-    That local-after-remote ordering is the case `Multiplexor.add(...)` does
-    not repair by itself.
+    The asserted behavior is that KERIA replays A's stored anchoring event
+    stream before it processes B's local interaction approval.
+    """
+    with helpers.openKeria() as (agency, agent, app, client):
+        idResEnd = aiding.IdentifierResourceEnd()
+        app.add_route("/identifiers/{name}", idResEnd)
+        registryEnd = credentialing.RegistryCollectionEnd(idResEnd)
+        app.add_route("/identifiers/{name}/registries", registryEnd)
+        credResDelEnd = credentialing.CredentialResourceDeleteEnd(idResEnd)
+        app.add_route("/identifiers/{name}/credentials/{said}", credResDelEnd)
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+
+        doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+        agent_deeds = doist.enter(doers=[agent])
+        try:
+            isalt = b"0123456789abcdef"
+            registry, follower_b_issuer = helpers.createRegistry(
+                client, agent, isalt, doist, agent_deeds
+            )
+
+            dt = "2021-01-01T00:00:00.000000+00:00"
+            creder = proving.credential(
+                issuer=follower_b_issuer["prefix"],
+                schema="EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs",
+                recipient=follower_b_issuer["prefix"],
+                data=dict(LEI="254900DA0GOGCFVWB618", dt=dt),
+                source={},
+                status=registry["regk"],
+            )
+            iserder = eventing.issue(vcdig=creder.said, regk=registry["regk"], dt=dt)
+            rserder = eventing.revoke(
+                vcdig=creder.said, regk=registry["regk"], dig=iserder.said, dt=dt
+            )
+            anchor = dict(i=rserder.ked["i"], s=rserder.ked["s"], d=rserder.said)
+            anc, _ = helpers.interact(
+                pre=follower_b_issuer["prefix"],
+                bran=isalt,
+                pidx=0,
+                ridx=0,
+                dig=follower_b_issuer["state"]["d"],
+                sn="2",
+                data=[anchor],
+            )
+
+            class FakeOp:
+                def to_json(self):
+                    return json.dumps(dict(name="mock-op"))
+
+            calls = []
+
+            # Participant A modeled as a fake replay
+            def fake_replay(*args, **kwargs):
+                calls.append(("replay", kwargs["route"], kwargs["labels"]))
+
+            def fake_interact(*args, **kwargs):
+                calls.append("interact")
+                return FakeOp()
+
+            monkeypatch.setattr(credentialing, "replay_multisig_embeds", fake_replay)
+            monkeypatch.setattr(idResEnd, "interact", fake_interact)
+            monkeypatch.setattr(
+                agent.rgy.reger, "cloneCreds", lambda *args, **kwargs: []
+            )
+            monkeypatch.setattr(
+                agent.registrar,
+                "revoke",
+                lambda regk, rser, anc_ked: calls.append("registrar.revoke"),
+            )
+
+            body = dict(rev=rserder.ked, ixn=anc.ked)
+            res = client.simulate_delete(
+                path=f"/identifiers/issuer/credentials/{creder.said}",
+                body=json.dumps(body).encode("utf-8"),
+            )
+
+            assert res.status_code == 200
+            assert calls[:2] == [("replay", "/multisig/rev", ("anc",)), "interact"]
+        finally:
+            doist.exit(deeds=agent_deeds)
+
+
+def test_keria_registrar_issue_starts_counselor_for_multisig_hab(monkeypatch):
+    """Registrar.issue must start counselor tracking for multisig issuance.
+
+    This is the post-replay side of the same mental model. Once the follower
+    approval path has assembled the shared anchoring event for the group, the
+    registrar still must start counselor tracking for the group's anchoring
+    event. Otherwise the TEL issuance event can remain stuck in multisig escrow.
     """
 
     class FakeSignifyGroupHab:
@@ -888,83 +1095,60 @@ def test_replay_multisig_embeds_restores_local_after_remote_follower_approval(
 
     monkeypatch.setattr(credentialing, "SignifyGroupHab", FakeSignifyGroupHab)
 
-    with helpers.openKeria() as (agency, agent, app, client):
-        end = aiding.IdentifierCollectionEnd()
-        app.add_route("/identifiers", end)
+    regser = eventing.incept(
+        "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY",
+        baks=[],
+        toad="0",
+        nonce=Salter().qb64,
+        cnfg=[TraitCodex.NoBackers],
+        code=coring.MtrDex.Blake3_256,
+    )
+    iserder = eventing.issue(
+        vcdig=regser.said, regk=regser.pre, dt="2021-01-01T00:00:00.000000+00:00"
+    )
+    anc = SimpleNamespace(sn=3, said=iserder.said)
 
-        # Build a realistic registry proposal payload using a real AID and a
-        # real anchoring interaction event. This keeps the test concrete while
-        # avoiding a full live multisig stack.
-        salt = b"0123456789abcdef"
-        op = helpers.createAid(client, "test", salt)
-        aid = op["response"]
-        pre = aid["i"]
+    counselor_calls = []
+    tmse_entries = []
 
-        nonce = Salter().qb64
-        regser = eventing.incept(
-            pre,
-            baks=[],
-            toad="0",
-            nonce=nonce,
-            cnfg=[TraitCodex.NoBackers],
-            code=coring.MtrDex.Blake3_256,
-        )
-        anchor = dict(i=regser.ked["i"], s=regser.ked["s"], d=regser.said)
-        ixn, _ = helpers.interact(
-            pre=pre, bran=salt, pidx=0, ridx=0, dig=aid["d"], sn="1", data=[anchor]
-        )
+    hab = FakeSignifyGroupHab()
+    hab.name = "issuer-group"
+    hab.pre = "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
 
-        # This is the same approval payload shape the follower later submits to
-        # `POST /identifiers/{name}/registries`: a VCP plus the anchoring event
-        # carried under the EXN protocol label `anc`.
-        follower_approval_payload = dict(vcp=regser.ked, anc=ixn.ked)
+    registry = SimpleNamespace(
+        hab=hab,
+        processEvent=lambda serder: None,
+    )
+    registrar = credentialing.Registrar(
+        agentHab=None,
+        hby=None,
+        rgy=SimpleNamespace(
+            regs={regser.pre: registry},
+            reger=SimpleNamespace(
+                tmse=SimpleNamespace(
+                    add=lambda keys, val: tmse_entries.append((keys, val))
+                )
+            ),
+        ),
+        counselor=SimpleNamespace(
+            start=lambda **kwargs: counselor_calls.append(kwargs)
+        ),
+        witDoer=None,
+        witPub=None,
+        verifier=None,
+    )
 
-        # `replay_multisig_embeds(...)` derives the embedded-section SAID from
-        # that approval payload, then asks mux for stored EXNs for the same
-        # logical proposal.
-        embed_ked = dict(follower_approval_payload)
-        embed_ked["d"] = ""
-        _, embed_ked = coring.Saider.saidify(sad=embed_ked, label=coring.Saids.d)
-        proposal_esaid = embed_ked["d"]
+    vcid, sn = registrar.issue(regser.pre, iserder, anc)
 
-        parsed_message_streams = []
-
-        class RecordingParser:
-            def parseOne(self, ims):
-                parsed_message_streams.append(bytes(ims))
-
-        class StoredRemoteProposalMux:
-            def get(self, esaid):
-                assert esaid == proposal_esaid
-                return [
-                    dict(
-                        exn={"r": "/multisig/vcp", "i": "remote-member-pre"},
-                        paths={"anc": "FAKE-REMOTE-ANC-ATC"},
-                    )
-                ]
-
-        # Simulate the follower-side KERIA view:
-        # - mux already has a stored remote `/multisig/vcp`
-        # - the parser will record exactly what the helper replays
-        fake_agent = SimpleNamespace(
-            mux=StoredRemoteProposalMux(),
-            hby=SimpleNamespace(psr=RecordingParser()),
-        )
-        hab = FakeSignifyGroupHab()
-        hab.mhab = SimpleNamespace(pre="local-member-pre")
-
-        replays = credentialing.replay_multisig_embeds(
-            fake_agent,
-            hab,
-            route="/multisig/vcp",
-            embeds=follower_approval_payload,
-            labels=("anc",),
-        )
-
-        # The replayed byte stream must be the leader's anchoring event stream:
-        # the `ixn` raw bytes followed by the stored remote attachment group.
-        expected_remote_anc_stream = bytearray(serdering.SerderKERI(sad=ixn.ked).raw)
-        expected_remote_anc_stream.extend(b"FAKE-REMOTE-ANC-ATC")
-
-        assert replays == 1
-        assert parsed_message_streams == [bytes(expected_remote_anc_stream)]
+    assert (vcid, sn) == (iserder.ked["i"], coring.Seqner(snh=iserder.ked["s"]).sn)
+    assert len(counselor_calls) == 1
+    assert counselor_calls[0]["ghab"] is hab
+    assert counselor_calls[0]["prefixer"].qb64 == hab.pre
+    assert counselor_calls[0]["seqner"].sn == anc.sn
+    assert counselor_calls[0]["saider"].qb64 == anc.said
+    assert len(tmse_entries) == 1
+    assert tmse_entries[0][0] == (
+        iserder.ked["i"],
+        coring.Seqner(snh=iserder.ked["s"]).qb64,
+        iserder.said,
+    )

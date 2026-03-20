@@ -23,6 +23,7 @@ from marshmallow import fields
 from marshmallow_dataclass import class_schema
 
 from ..core import longrunning, httping
+from .multisig import replay_multisig_embeds
 from ..utils.openapi import namedtupleToEnum, dataclassFromFielddom
 from keri.core.serdering import Protocols, Vrsn_1_0, Vrsn_2_0, SerderKERI
 
@@ -1658,6 +1659,13 @@ class EndRoleCollectionEnd:
             coring.Seqner(sn=hab.kever.sn),
             coring.Saider(qb64=hab.kever.serder.said),
             rsigers,
+        )
+        replay_multisig_embeds(
+            agent,
+            hab,
+            route="/multisig/rpy",
+            embeds=dict(rpy=rserder.ked),
+            labels=("rpy",),
         )
         try:
             agent.hby.rvy.processReply(rserder, tsgs=[tsg])

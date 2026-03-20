@@ -21,6 +21,7 @@ from keri.vdr import viring
 from ..utils.openapi import dataclassFromFielddom
 from keri.core.serdering import Protocols, Vrsn_1_0, Vrsn_2_0, SerderKERI
 from ..core import httping, longrunning
+from .multisig import replay_multisig_embeds
 from marshmallow import fields, Schema as MarshmallowSchema
 from typing import List, Dict, Any, Optional, Tuple, Literal, Union
 from .aiding import (
@@ -39,63 +40,6 @@ from .aiding import (
 
 
 logger = help.ogler.getLogger()
-
-
-def replay_multisig_embeds(agent, hab, *, route, embeds, labels):
-    """Replay previously stored non-local multisig embedded events before a
-    Signify follower's local approval of multisig group messages such as
-    `/multisig/vcp` (registry inception) and `/multisig/iss`
-    (credential issuance).
-
-    Signify clients approve `/multisig/vcp` and `/multisig/iss` by later
-    submitting the embedded events directly to the credentialing endpoints.
-
-    KLI join flows explicitly parse the initiator's signed anchoring event from
-    the stored multisig EXN before parsing the follower's approval of that same
-    event. Original KERIA follower approval did not do this for
-    local-after-remote ordering, so the follower could approve second without
-    first ingesting the remote participant's signed embedded event attachments.
-
-    This helper reconstructs the embedded-section SAID from the submitted
-    approval payload, finds matching stored non-local EXNs, and replays the
-    requested embedded events plus pathed attachments through the parser in the
-    same order KLI uses.
-
-    Terminology note:
-    The ``labels`` argument is expressed in EXN embed-label terms, not concrete
-    event-type terms. For example, the multisig protocol uses the embed label
-    ``anc`` for the anchoring KEL event even when the actual event body is an
-    interaction event (``ixn``).
-    """
-    if not isinstance(hab, SignifyGroupHab):
-        return 0
-
-    embed_ked = {label: embeds[label] for label in embeds}
-    embed_ked["d"] = ""
-    _, embed_ked = coring.Saider.saidify(sad=embed_ked, label=coring.Saids.d)
-
-    replays = 0
-    # Replay stored non-local embedded events and their pathed attachments
-    # before local follower approval. This restores the KLI join ordering for
-    # local-after-remote Signify approval flows.
-    for msg in agent.mux.get(esaid=embed_ked["d"]):
-        exn = msg["exn"]
-        if exn["r"] != route or exn["i"] == hab.mhab.pre:
-            continue
-
-        paths = msg["paths"]
-        for label in labels:
-            if label not in paths:
-                continue
-
-            sadder = coring.Sadder(ked=embeds[label])
-            ims = bytearray(sadder.raw)
-            ims.extend(paths[label].encode("utf-8"))
-            agent.hby.psr.parseOne(ims=ims)
-
-        replays += 1
-
-    return replays
 
 
 def loadEnds(app, identifierResource):
@@ -1019,6 +963,14 @@ class CredentialCollectionEnd:
                 description=f"issue against invalid registry SAID {regk}"
             )
 
+        replay_multisig_embeds(
+            agent,
+            hab,
+            route="/multisig/iss",
+            embeds=dict(acdc=creder.sad, iss=iserder.ked, anc=anc.ked),
+            labels=("anc", "acdc"),
+        )
+
         if hab.kever.estOnly:
             op = self.identifierResource.rotate(agent, name, body)
         else:
@@ -1314,14 +1266,25 @@ class CredentialResourceDeleteEnd:
             )
 
         if hab.kever.estOnly:
+            anc = serdering.SerderKERI(sad=httping.getRequiredParam(body, "rot"))
+        else:
+            anc = serdering.SerderKERI(sad=httping.getRequiredParam(body, "ixn"))
+
+        replay_multisig_embeds(
+            agent,
+            hab,
+            route="/multisig/rev",
+            embeds=dict(rev=rserder.ked, anc=anc.ked),
+            labels=("anc",),
+        )
+
+        if hab.kever.estOnly:
             op = self.identifierResource.rotate(agent, name, body)
-            anc = httping.getRequiredParam(body, "rot")
         else:
             op = self.identifierResource.interact(agent, name, body)
-            anc = httping.getRequiredParam(body, "ixn")
 
         try:
-            agent.registrar.revoke(regk, rserder, anc)
+            agent.registrar.revoke(regk, rserder, anc.ked)
         except Exception:
             raise falcon.HTTPBadRequest(description="invalid revocation event.")
 
@@ -1515,6 +1478,9 @@ class Registrar:
             seqner = coring.Seqner(sn=sn)
             saider = coring.Saider(qb64=said)
 
+            self.counselor.start(
+                prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab
+            )
             logger.info(
                 "[%s | %s]: Waiting for TEL iss event mulisig anchoring event %s",
                 hab.name,

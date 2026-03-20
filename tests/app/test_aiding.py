@@ -152,6 +152,61 @@ def test_endrole_ends(helpers):
         }
 
 
+def test_endrole_replays_multisig_embeds_before_local_reply_processing(
+    helpers, monkeypatch
+):
+    """Follower B must replay A's stored `/multisig/rpy` before endorsing.
+
+    This is an endpoint-order test, not a full multisig integration test.
+
+    Identity mapping:
+
+    - participant A is represented by the mocked `replay_multisig_embeds(...)`
+      call, which stands in for the already-stored remote `/multisig/rpy`.
+    - participant B is the local `user1` habitat handled by this KERIA agent.
+    - `rpy` is B's local approval payload for the same end-role authorization.
+
+    The important assertion is ordering: KERIA must replay A's stored reply
+    stream before B processes B's own local reply.
+    """
+    with helpers.openKeria() as (agency, agent, app, client):
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+        idResEnd = aiding.IdentifierResourceEnd()
+        app.add_route("/identifiers/{name}", idResEnd)
+        endRolesEnd = aiding.EndRoleCollectionEnd()
+        app.add_route("/identifiers/{name}/endroles", endRolesEnd)
+
+        # Participant B's local AID and the reply payload B later submits to
+        # KERIA when B approves the multisig end-role proposal.
+        salt = b"0123456789abcdef"
+        op = helpers.createAid(client, "user1", salt)
+        aid = op["response"]
+        rpy = helpers.endrole(aid["i"], agent.agentHab.pre)
+        sigs = helpers.sign(salt, 0, 0, rpy.raw)
+
+        calls = []
+
+        # This stands in for participant A's earlier `/multisig/rpy` arrival.
+        # We only care that the follower approval path invokes replay first.
+        def fake_replay(*args, **kwargs):
+            calls.append(("replay", kwargs["route"], kwargs["labels"]))
+
+        def fake_process_reply(*args, **kwargs):
+            calls.append("processReply")
+
+        monkeypatch.setattr(aiding, "replay_multisig_embeds", fake_replay)
+        monkeypatch.setattr(agent.hby.rvy, "processReply", fake_process_reply)
+
+        res = client.simulate_post(
+            path="/identifiers/user1/endroles",
+            body=json.dumps(dict(rpy=rpy.ked, sigs=sigs)).encode("utf-8"),
+        )
+
+        assert res.status_code == 202
+        assert calls[:2] == [("replay", "/multisig/rpy", ("rpy",)), "processReply"]
+
+
 def test_locscheme_ends(helpers, mockHelpingNowUTC):
     with helpers.openKeria() as (agency, agent, app, client):
         locSchemesEnd = aiding.LocSchemeCollectionEnd()
