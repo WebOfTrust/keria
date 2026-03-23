@@ -1,4 +1,10 @@
+import datetime
+from types import SimpleNamespace
+
 from keri.help import helping
+from keri.core import coring
+from keri.db import dbing
+from keri.vdr import eventing
 
 import pytest
 from keria.app import aiding
@@ -469,11 +475,301 @@ def test_error(helpers):
             "title": "long running operation 'exchange.EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao' not found"
         }
 
-        res = client.simulate_get(
-            path="/operations/query.EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao"
+
+def test_regsync_status(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        pre = agent.agentHab.pre
+        regk = "ERegsyncRegistry0000000000000000000000000000000000000"
+        agent.registrar.rgy.reger._tevers = {}
+        base = dict(
+            pre=pre,
+            source="ESource000000000000000000000000000000000000000",
+            request="ERequest00000000000000000000000000000000000000",
+            targets=[],
+            error=None,
         )
-        assert res.status_code == 404
-        assert res.json == {
-            "title": "long running operation "
-            "'query.EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao' not found"
+
+        pending_catalog = agent.monitor.status(
+            longrunning.Op(
+                type=longrunning.OpTypes.regsync,
+                oid=pre,
+                start=helping.nowIso8601(),
+                metadata={
+                    **base,
+                    "phase": "catalog",
+                    "phase_start": helping.nowIso8601(),
+                },
+            )
+        )
+        assert pending_catalog.name == f"regsync.{pre}"
+        assert pending_catalog.done is False
+
+        timed_out_catalog = agent.monitor.status(
+            longrunning.Op(
+                type=longrunning.OpTypes.regsync,
+                oid=pre,
+                start=helping.nowIso8601(),
+                metadata={
+                    **base,
+                    "phase": "catalog",
+                    "phase_start": helping.toIso8601(
+                        helping.nowUTC() - datetime.timedelta(seconds=11)
+                    ),
+                },
+            )
+        )
+        assert timed_out_catalog.done is True
+        assert timed_out_catalog.error.code == 504
+
+        agent.rgy.regs[regk] = SimpleNamespace(name="registry", regk=regk)
+        agent.rgy.tevers[regk] = SimpleNamespace(sn=0)
+        pending_replay = agent.monitor.status(
+            longrunning.Op(
+                type=longrunning.OpTypes.regsync,
+                oid=pre,
+                start=helping.nowIso8601(),
+                metadata={
+                    **base,
+                    "phase": "replay",
+                    "phase_start": helping.nowIso8601(),
+                    "targets": [dict(name="registry", regk=regk, sn=1)],
+                },
+            )
+        )
+        assert pending_replay.done is False
+
+        agent.rgy.tevers[regk] = SimpleNamespace(sn=1)
+        completed_replay = agent.monitor.status(
+            longrunning.Op(
+                type=longrunning.OpTypes.regsync,
+                oid=pre,
+                start=helping.nowIso8601(),
+                metadata={
+                    **base,
+                    "phase": "replay",
+                    "phase_start": helping.nowIso8601(),
+                    "targets": [dict(name="registry", regk=regk, sn=1)],
+                },
+            )
+        )
+        assert completed_replay.done is True
+        assert completed_replay.response == {
+            "pre": pre,
+            "source": base["source"],
+            "synced": [dict(name="registry", regk=regk, sn=1)],
         }
+
+        failed = agent.monitor.status(
+            longrunning.Op(
+                type=longrunning.OpTypes.regsync,
+                oid=pre,
+                start=helping.nowIso8601(),
+                metadata={
+                    **base,
+                    "phase": "catalog",
+                    "phase_start": helping.nowIso8601(),
+                    "error": dict(code=424, message="bad response", details={"regk": regk}),
+                },
+            )
+        )
+        assert failed.done is True
+        assert failed.error.code == 424
+        assert failed.error.details == {"regk": regk}
+
+
+def test_regsync_backfills_registry_anchor(helpers, monkeypatch):
+    with helpers.openKeria() as (agency, agent, app, client):
+        pre = agent.agentHab.pre
+        regk = "ERegsyncAnchor00000000000000000000000000000000000000"
+        regd = "ERegsyncAnchorSaid0000000000000000000000000000000000"
+        seal = dict(i=regk, s="0", d=regd)
+        source_serder = agent.agentHab.kever.serder
+
+        agent.registrar.rgy.reger._tevers = {}
+        agent.rgy.regs[regk] = SimpleNamespace(name="registry", regk=regk)
+        agent.rgy.tevers[regk] = SimpleNamespace(sn=0)
+
+        monkeypatch.setattr(
+            agent.hby.db,
+            "fetchLastSealingEventByEventSeal",
+            lambda pre, seal: source_serder,
+        )
+
+        op = agent.monitor.status(
+            longrunning.Op(
+                type=longrunning.OpTypes.regsync,
+                oid=pre,
+                start=helping.nowIso8601(),
+                metadata=dict(
+                    pre=pre,
+                    source="ESource000000000000000000000000000000000000000",
+                    phase="replay",
+                    phase_start=helping.nowIso8601(),
+                    request="ERequest00000000000000000000000000000000000000",
+                    targets=[dict(name="registry", regk=regk, regd=regd, anc=seal, sn=0)],
+                    error=None,
+                ),
+            )
+        )
+
+        assert op.done is True
+        assert (
+            agent.rgy.reger.getAnc(dbing.dgKey(regk, regd))
+            == coring.Seqner(sn=source_serder.sn).qb64b
+            + coring.Saider(qb64=source_serder.said).qb64b
+        )
+
+
+def test_credsync_backfills_tel_anchor(helpers, monkeypatch):
+    with helpers.openKeria() as (agency, agent, app, client):
+        gid = agent.agentHab.pre
+        source_serder = agent.agentHab.kever.serder
+        rserder = eventing.revoke(
+            vcdig=source_serder.said,
+            regk=source_serder.said,
+            dig=source_serder.said,
+            dt="2023-09-27T16:27:14.376928+00:00",
+        )
+        seal = dict(i=rserder.pre, s=rserder.snh, d=rserder.said)
+
+        monkeypatch.setattr(
+            agent.hby.db,
+            "fetchLastSealingEventByEventSeal",
+            lambda pre, seal: source_serder,
+        )
+
+        assert (
+            longrunning.ensure_tel_anchor(
+                hby=agent.hby,
+                reger=agent.rgy.reger,
+                gid=gid,
+                pre=rserder.pre,
+                said=rserder.said,
+                anchor=seal,
+            )
+            is True
+        )
+        assert (
+            agent.rgy.reger.getAnc(dbing.dgKey(rserder.pre, rserder.said))
+            == coring.Seqner(sn=source_serder.sn).qb64b
+            + coring.Saider(qb64=source_serder.said).qb64b
+        )
+
+
+def test_credsync_status(helpers, monkeypatch):
+    with helpers.openKeria() as (agency, agent, app, client):
+        pre = agent.agentHab.pre
+        regk = "ECredsyncRegistry00000000000000000000000000000000000"
+        said = "ECredsyncCredential0000000000000000000000000000000"
+        base = dict(
+            pre=pre,
+            source="ESource000000000000000000000000000000000000000",
+            phase="replay",
+            phase_start=helping.nowIso8601(),
+            request="ERequest00000000000000000000000000000000000000",
+            saids=[said],
+            synced=[],
+            error=None,
+        )
+
+        original_saved = agent.registrar.rgy.reger.saved
+        original_clone_cred = agent.registrar.rgy.reger.cloneCred
+        original_tevers = agent.registrar.rgy.reger._tevers
+        try:
+            agent.registrar.rgy.reger._tevers = {}
+            agent.registrar.rgy.reger.saved = SimpleNamespace(get=lambda keys: None)
+            pending = agent.monitor.status(
+                longrunning.Op(
+                    type=longrunning.OpTypes.credsync,
+                    oid=pre,
+                    start=helping.nowIso8601(),
+                    metadata=base,
+                )
+            )
+            assert pending.name == f"credsync.{pre}"
+            assert pending.done is False
+
+            agent.registrar.rgy.reger.saved = SimpleNamespace(
+                get=lambda keys: said if keys == (said,) else None
+            )
+            agent.registrar.rgy.reger.cloneCred = lambda said: (
+                SimpleNamespace(regi=regk, sad={"ri": regk}),
+                None,
+                None,
+                None,
+            )
+            agent.rgy.regs[regk] = SimpleNamespace(name="registry", regk=regk)
+            ready = False
+            escrow_calls = []
+
+            monkeypatch.setattr(
+                agent.registrar.rgy,
+                "processEscrows",
+                lambda: escrow_calls.append("rgy"),
+            )
+            monkeypatch.setattr(
+                agent.credentialer.verifier,
+                "processEscrows",
+                lambda: escrow_calls.append("verifier"),
+            )
+            monkeypatch.setattr(
+                agent.registrar,
+                "processEscrows",
+                lambda: escrow_calls.append("registrar"),
+            )
+            monkeypatch.setattr(
+                agent.credentialer,
+                "processEscrows",
+                lambda: escrow_calls.append("credentialer"),
+            )
+            agent.registrar.rgy.reger._tevers[regk] = SimpleNamespace(
+                vcState=lambda vci: SimpleNamespace(sn=0, et="iss") if ready else None
+            )
+
+            pending_tel = agent.monitor.status(
+                longrunning.Op(
+                    type=longrunning.OpTypes.credsync,
+                    oid=pre,
+                    start=helping.nowIso8601(),
+                    metadata=base,
+                )
+            )
+            assert pending_tel.done is False
+            assert escrow_calls == ["rgy", "verifier", "registrar", "credentialer"]
+
+            ready = True
+            escrow_calls.clear()
+            completed = agent.monitor.status(
+                longrunning.Op(
+                    type=longrunning.OpTypes.credsync,
+                    oid=pre,
+                    start=helping.nowIso8601(),
+                    metadata={**base, "synced": [said]},
+                )
+            )
+            assert completed.done is True
+            assert escrow_calls == ["rgy", "verifier", "registrar", "credentialer"]
+            assert completed.response == {
+                "pre": pre,
+                "source": base["source"],
+                "synced": [said],
+            }
+
+            failed = agent.monitor.status(
+                longrunning.Op(
+                    type=longrunning.OpTypes.credsync,
+                    oid=pre,
+                    start=helping.nowIso8601(),
+                    metadata={
+                        **base,
+                        "error": dict(code=424, message="bad response", details={"said": said}),
+                    },
+                )
+            )
+            assert failed.done is True
+            assert failed.error.code == 424
+            assert failed.error.details == {"said": said}
+        finally:
+            agent.registrar.rgy.reger.saved = original_saved
+            agent.registrar.rgy.reger.cloneCred = original_clone_cred
+            agent.registrar.rgy.reger._tevers = original_tevers

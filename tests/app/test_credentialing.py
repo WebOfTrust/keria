@@ -15,6 +15,7 @@ from hio.base import doing
 from keri.app import habbing
 from keri.core import scheming, coring, parsing, serdering
 from keri.core.eventing import SealEvent
+from keri.db import dbing
 from keri.core.signing import Salter
 from keri.kering import TraitCodex
 from keri.vc import proving
@@ -39,6 +40,10 @@ def test_load_ends(helpers):
         assert isinstance(end, credentialing.SchemaResourceEnd)
         (end, *_) = app._router.find("/identifiers/NAME/registries")
         assert isinstance(end, credentialing.RegistryCollectionEnd)
+        (end, *_) = app._router.find("/identifiers/NAME/registries/sync")
+        assert isinstance(end, credentialing.RegistrySyncCollectionEnd)
+        (end, *_) = app._router.find("/identifiers/NAME/credentials/sync")
+        assert isinstance(end, credentialing.CredentialSyncCollectionEnd)
 
 
 def test_schema_ends(helpers):
@@ -290,6 +295,90 @@ def test_registry_end(helpers, seeder):
         result = client.simulate_delete(path="/operations/bad_name")
         assert result.status == falcon.HTTP_404
         assert result.json == {"title": "long running operation 'bad_name' not found"}
+
+
+def test_registry_sync_end(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        sync_end = credentialing.RegistrySyncCollectionEnd()
+        app.add_route("/identifiers/{name}/registries/sync", sync_end)
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+
+        salt = b"0123456789abcdef"
+        helpers.createAid(client, "test", salt)
+
+        result = client.simulate_post(
+            path="/identifiers/bad/registries/sync",
+            body=b"{}",
+        )
+        assert result.status == falcon.HTTP_404
+        assert result.json == {
+            "description": "bad is not a valid reference to an identifier",
+            "title": "404 Not Found",
+        }
+
+        result = client.simulate_post(
+            path="/identifiers/test/registries/sync",
+            body=b"{}",
+        )
+        assert result.status == falcon.HTTP_409
+        assert result.json == {
+            "description": "hab for alias or prefix test is not a multisig",
+            "title": "409 Conflict",
+        }
+
+
+def test_credential_sync_end(helpers, monkeypatch):
+    with helpers.openKeria() as (agency, agent, app, client):
+        sync_end = credentialing.CredentialSyncCollectionEnd()
+        app.add_route("/identifiers/{name}/credentials/sync", sync_end)
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+
+        salt = b"0123456789abcdef"
+        helpers.createAid(client, "test", salt)
+
+        result = client.simulate_post(
+            path="/identifiers/bad/credentials/sync",
+            body=b'{"saids":["Ecred123"]}',
+        )
+        assert result.status == falcon.HTTP_404
+        assert result.json == {
+            "description": "bad is not a valid reference to an identifier",
+            "title": "404 Not Found",
+        }
+
+        result = client.simulate_post(
+            path="/identifiers/test/credentials/sync",
+            body=b'{"saids":["Ecred123"]}',
+        )
+        assert result.status == falcon.HTTP_409
+        assert result.json == {
+            "description": "hab for alias or prefix test is not a multisig",
+            "title": "409 Conflict",
+        }
+
+        fake_group = SimpleNamespace(
+            pre="EGroup0000000000000000000000000000000000000000",
+            mhab=SimpleNamespace(pre="Emember0000000000000000000000000000000000000"),
+        )
+        monkeypatch.setattr(
+            credentialing, "_resolve_group_identifier", lambda agent, name: fake_group
+        )
+        monkeypatch.setattr(
+            credentialing,
+            "_select_regsync_source",
+            lambda agent, hab, source=None: "Esource0000000000000000000000000000000000000",
+        )
+        result = client.simulate_post(
+            path="/identifiers/test/credentials/sync",
+            body=b'{"saids":[]}',
+        )
+        assert result.status == falcon.HTTP_400
+        assert result.json == {
+            "description": "'saids' is required and must be a non-empty list",
+            "title": "400 Bad Request",
+        }
 
 
 def test_issue_credential(helpers, seeder):
@@ -810,10 +899,13 @@ def test_revoke_credential(helpers, seeder):
                 path=f"/identifiers/issuer/credentials/{regser.said}",
                 body=json.dumps(body).encode("utf-8"),
             )
-            assert res.status_code == 404
+            assert res.status_code == 409
             assert res.json == {
-                "description": f"credential for said {regser.said} not found.",
-                "title": "404 Not Found",
+                "description": (
+                    f"credential history for said {regser.said} is not available locally; "
+                    f"run credentials().sync('issuer', saids=['{regser.said}']) first"
+                ),
+                "title": "409 Conflict",
             }
 
             badrev = regser.ked.copy()
@@ -1063,6 +1155,7 @@ def test_revoke_credential_replays_multisig_embeds_before_local_approval(
             monkeypatch.setattr(
                 agent.rgy.reger, "cloneCreds", lambda *args, **kwargs: []
             )
+            monkeypatch.setattr(agent.rgy.tevers[registry["regk"]], "vcSn", lambda said: 0)
             monkeypatch.setattr(
                 agent.registrar,
                 "revoke",
@@ -1079,6 +1172,323 @@ def test_revoke_credential_replays_multisig_embeds_before_local_approval(
             assert calls[:2] == [("replay", "/multisig/rev", ("anc",)), "interact"]
         finally:
             doist.exit(deeds=agent_deeds)
+
+
+def test_revoke_credential_sync_conflict_has_no_local_side_effects(
+    helpers, monkeypatch
+):
+    """The sync-first revoke conflict must fail before any local TEL mutation.
+
+    This is the negative twin of the replay-order test above. When the local
+    late joiner does not yet have usable credential history, KERIA should
+    return the explicit `409 credentials().sync(...) first` conflict before it
+    replays peer embeds, before it approves the local interaction, and before
+    it writes any revocation TEL material locally.
+    """
+    with helpers.openKeria() as (agency, agent, app, client):
+        idResEnd = aiding.IdentifierResourceEnd()
+        app.add_route("/identifiers/{name}", idResEnd)
+        registryEnd = credentialing.RegistryCollectionEnd(idResEnd)
+        app.add_route("/identifiers/{name}/registries", registryEnd)
+        credResDelEnd = credentialing.CredentialResourceDeleteEnd(idResEnd)
+        app.add_route("/identifiers/{name}/credentials/{said}", credResDelEnd)
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+
+        doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+        agent_deeds = doist.enter(doers=[agent])
+        try:
+            isalt = b"0123456789abcdef"
+            registry, follower_b_issuer = helpers.createRegistry(
+                client, agent, isalt, doist, agent_deeds
+            )
+
+            dt = "2021-01-01T00:00:00.000000+00:00"
+            creder = proving.credential(
+                issuer=follower_b_issuer["prefix"],
+                schema="EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs",
+                recipient=follower_b_issuer["prefix"],
+                data=dict(LEI="254900DA0GOGCFVWB618", dt=dt),
+                source={},
+                status=registry["regk"],
+            )
+            iserder = eventing.issue(vcdig=creder.said, regk=registry["regk"], dt=dt)
+            rserder = eventing.revoke(
+                vcdig=creder.said, regk=registry["regk"], dig=iserder.said, dt=dt
+            )
+            anchor = dict(i=rserder.ked["i"], s=rserder.ked["s"], d=rserder.said)
+            anc, _ = helpers.interact(
+                pre=follower_b_issuer["prefix"],
+                bran=isalt,
+                pidx=0,
+                ridx=0,
+                dig=follower_b_issuer["state"]["d"],
+                sn="2",
+                data=[anchor],
+            )
+
+            calls = []
+            before_tel = list(agent.rgy.reger.clonePreIter(pre=creder.said))
+            revoke_anchor_key = dbing.dgKey(registry["regk"], rserder.said)
+            assert agent.rgy.reger.getAnc(revoke_anchor_key) is None
+
+            def fake_replay(*args, **kwargs):
+                calls.append(("replay", kwargs["route"], kwargs["labels"]))
+
+            def fake_interact(*args, **kwargs):
+                calls.append("interact")
+                raise AssertionError("local interact should not run before sync-first 409")
+
+            def fake_revoke(*args, **kwargs):
+                calls.append("registrar.revoke")
+                raise AssertionError("registrar.revoke should not run before sync-first 409")
+
+            monkeypatch.setattr(credentialing, "replay_multisig_embeds", fake_replay)
+            monkeypatch.setattr(idResEnd, "interact", fake_interact)
+            monkeypatch.setattr(agent.registrar, "revoke", fake_revoke)
+            monkeypatch.setattr(
+                agent.rgy.reger, "cloneCreds", lambda *args, **kwargs: [creder]
+            )
+            monkeypatch.setattr(agent.rgy.tevers[registry["regk"]], "vcSn", lambda said: None)
+
+            body = dict(rev=rserder.ked, ixn=anc.ked)
+            res = client.simulate_delete(
+                path=f"/identifiers/issuer/credentials/{creder.said}",
+                body=json.dumps(body).encode("utf-8"),
+            )
+
+            assert res.status_code == 409
+            assert res.json == {
+                "description": (
+                    f"credential history for said {creder.said} is incomplete locally; "
+                    f"run credentials().sync('issuer', saids=['{creder.said}']) first"
+                ),
+                "title": "409 Conflict",
+            }
+            assert calls == []
+            assert agent.rgy.tevers[registry["regk"]].vcSn(creder.said) is None
+            assert list(agent.rgy.reger.clonePreIter(pre=creder.said)) == before_tel
+            assert agent.rgy.reger.getAnc(revoke_anchor_key) is None
+        finally:
+            doist.exit(deeds=agent_deeds)
+
+
+def test_query_group_anchor_for_tel_message_backfills_local_tel_anchor(
+    helpers, monkeypatch
+):
+    with helpers.openKeria() as (agency, agent, app, client):
+        source_serder = agent.agentHab.kever.serder
+        rserder = eventing.revoke(
+            vcdig=source_serder.said,
+            regk=source_serder.said,
+            dig=source_serder.said,
+            dt="2023-09-27T16:27:14.376928+00:00",
+        )
+        queried = []
+        group_hab = SimpleNamespace(kever=SimpleNamespace(wits=["BWitnessAid"]))
+
+        monkeypatch.setattr(
+            agent.hby.db,
+            "fetchLastSealingEventByEventSeal",
+            lambda pre, seal: source_serder,
+        )
+        monkeypatch.setattr(
+            agent.witq,
+            "query",
+            lambda **kwargs: queried.append(kwargs),
+        )
+
+        credentialing._query_group_anchor_for_tel_message(
+            agent,
+            gid=agent.agentHab.pre,
+            group_hab=group_hab,
+            message=rserder.raw,
+        )
+
+        assert queried == []
+        assert (
+            agent.rgy.reger.getAnc(dbing.dgKey(rserder.pre, rserder.said))
+            == coring.Seqner(sn=source_serder.sn).qb64b
+            + coring.Saider(qb64=source_serder.said).qb64b
+        )
+
+
+def test_query_group_anchor_for_tel_message_queries_when_anchor_event_missing(
+    helpers, monkeypatch
+):
+    with helpers.openKeria() as (agency, agent, app, client):
+        source_serder = agent.agentHab.kever.serder
+        rserder = eventing.revoke(
+            vcdig=source_serder.said,
+            regk=source_serder.said,
+            dig=source_serder.said,
+            dt="2023-09-27T16:27:14.376928+00:00",
+        )
+        queried = []
+        group_hab = SimpleNamespace(kever=SimpleNamespace(wits=["BWitnessAid"]))
+
+        monkeypatch.setattr(
+            agent.hby.db,
+            "fetchLastSealingEventByEventSeal",
+            lambda pre, seal: None,
+        )
+        monkeypatch.setattr(
+            agent.witq,
+            "query",
+            lambda **kwargs: queried.append(kwargs),
+        )
+
+        credentialing._query_group_anchor_for_tel_message(
+            agent,
+            gid=agent.agentHab.pre,
+            group_hab=group_hab,
+            message=rserder.raw,
+        )
+
+        assert agent.rgy.reger.getAnc(dbing.dgKey(rserder.pre, rserder.said)) is None
+        assert queried == [
+            {
+                "hab": agent.agentHab,
+                "pre": agent.agentHab.pre,
+                "anchor": dict(i=rserder.pre, s=rserder.snh, d=rserder.said),
+                "wits": ["BWitnessAid"],
+            }
+        ]
+
+
+def test_credential_sync_schemas_exports_cached_schema(helpers, monkeypatch):
+    with helpers.openKeria() as (agency, agent, app, client):
+        schemer = scheming.Schemer(
+            sed={
+                "$id": "",
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {"LEI": {"type": "string"}},
+            },
+            typ=scheming.JSONSchema(),
+            code=coring.MtrDex.Blake3_256,
+        )
+        agent.hby.db.schema.pin(schemer.said, schemer)
+        creder = SimpleNamespace(schema=schemer.said, edge=None)
+
+        monkeypatch.setattr(
+            agent.rgy.reger,
+            "cloneCred",
+            lambda said: (creder, None, None, None),
+        )
+
+        assert credentialing._credential_sync_schemas(agent.hby, agent.rgy, "ECredential") == [
+            schemer.sed
+        ]
+
+
+def test_cache_embedded_schemas_adds_schema_to_resolver(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        schemer = scheming.Schemer(
+            sed={
+                "$id": "",
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {"LEI": {"type": "string"}},
+            },
+            typ=scheming.JSONSchema(),
+            code=coring.MtrDex.Blake3_256,
+        )
+        exn, _ = credentialing._credential_sync_response_exn(
+            hab=agent.agentHab,
+            gid=agent.agentHab.pre,
+            said="ECredentialSaid",
+            dig="ERequestSaid",
+            schemas=[schemer.sed],
+        )
+
+        assert agent.verifier.resolver.resolve(schemer.said) is None
+
+        cached = credentialing._cache_embedded_schemas(agent, exn, [])
+
+        assert cached == [schemer.sed]
+        assert agent.verifier.resolver.resolve(schemer.said) == schemer.raw
+
+
+def test_registry_sync_request_handler_ignores_locally_originated_request(monkeypatch):
+    class FakeGroupHab:
+        def __init__(self):
+            self.pre = "EHFakeGroup"
+            self.mhab = SimpleNamespace(pre="ELocalMember")
+            self.db = SimpleNamespace(
+                signingMembers=lambda pre: ["ELocalMember", "ERemoteMember"]
+            )
+
+    group_hab = FakeGroupHab()
+    parsed = []
+    agent = SimpleNamespace(
+        hby=SimpleNamespace(habByPre=lambda pre: group_hab, psr=SimpleNamespace(parseOne=lambda **kwa: parsed.append(kwa))),
+        agentHab=SimpleNamespace(pre="ELocalAgent"),
+        rgy=SimpleNamespace(regs={}),
+        exchanges=[],
+        exc=object(),
+    )
+    handler = credentialing.RegistrySyncRequestHandler(agent=agent)
+    serder = SimpleNamespace(
+        said="ERegistrySyncRequest",
+        ked={"a": {"gid": group_hab.pre, "mid": group_hab.mhab.pre}, "i": agent.agentHab.pre},
+    )
+
+    monkeypatch.setattr(credentialing, "SignifyGroupHab", FakeGroupHab)
+    monkeypatch.setattr(
+        credentialing,
+        "_agent_authorized_for_member",
+        lambda agent, member, eid: True,
+    )
+
+    handler.handle(serder)
+
+    assert parsed == []
+    assert agent.exchanges == []
+
+
+def test_credential_sync_request_handler_ignores_locally_originated_request(monkeypatch):
+    class FakeGroupHab:
+        def __init__(self):
+            self.pre = "EHFakeGroup"
+            self.mhab = SimpleNamespace(pre="ELocalMember")
+            self.db = SimpleNamespace(
+                signingMembers=lambda pre: ["ELocalMember", "ERemoteMember"]
+            )
+
+    group_hab = FakeGroupHab()
+    parsed = []
+    agent = SimpleNamespace(
+        hby=SimpleNamespace(habByPre=lambda pre: group_hab, psr=SimpleNamespace(parseOne=lambda **kwa: parsed.append(kwa))),
+        agentHab=SimpleNamespace(pre="ELocalAgent"),
+        rgy=SimpleNamespace(reger=SimpleNamespace(cloneCred=lambda said: (_ for _ in ()).throw(AssertionError("should not clone local credential history")))),
+        exchanges=[],
+        exc=object(),
+    )
+    handler = credentialing.CredentialSyncRequestHandler(agent=agent)
+    serder = SimpleNamespace(
+        said="ECredentialSyncRequest",
+        ked={
+            "a": {
+                "gid": group_hab.pre,
+                "mid": group_hab.mhab.pre,
+                "saids": ["ECredentialSaid"],
+            },
+            "i": agent.agentHab.pre,
+        },
+    )
+
+    monkeypatch.setattr(credentialing, "SignifyGroupHab", FakeGroupHab)
+    monkeypatch.setattr(
+        credentialing,
+        "_agent_authorized_for_member",
+        lambda agent, member, eid: True,
+    )
+
+    handler.handle(serder)
+
+    assert parsed == []
+    assert agent.exchanges == []
 
 
 def test_keria_registrar_issue_starts_counselor_for_multisig_hab(monkeypatch):

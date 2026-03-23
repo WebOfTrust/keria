@@ -11,7 +11,7 @@ from marshmallow import fields
 
 import falcon
 from typing import Optional, Union
-from keri import core
+from keri import core, kering
 from keri.app import habbing
 from keri.core import coring, eventing, serdering
 from keri.help import ogler
@@ -258,6 +258,16 @@ class MultisigJoinCollectionEnd:
             hab.make(serder=serder, sigers=sigers)
         except ValueError:
             logger.info("Already incepted group, continuing...")
+        except kering.ValidationError as ex:
+            agent.hby.deleteHab(name=name)
+            sn = serder.ked.get("s", str(serder.sn))
+            raise falcon.HTTPConflict(
+                description=(
+                    f"multisig join for group {gid} is missing prior group events "
+                    f"needed to process rotation sn={sn}; query key state/logs for "
+                    f"{gid} through sn={sn} and retry join"
+                )
+            ) from ex
 
         agent.inceptGroup(pre=gid, mpre=mhab.pre, verfers=verfers, digers=digers)
         agent.groups.append(

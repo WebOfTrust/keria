@@ -628,6 +628,8 @@ class Agent(doing.DoDoer):
             exchanges (Deck): exchange messages.
             grants (Deck): IPEX grant messages.
             admits (Deck): IPEX admit messages.
+            regsyncResps (Deck): registry sync response messages awaiting local application.
+            credsyncResps (Deck): credential sync response messages awaiting local application.
             submits (Deck): KEL messages to be resubmitted to witnesses to obtain receipts of.
         """
         self.agency = agency
@@ -658,6 +660,8 @@ class Agent(doing.DoDoer):
         self.exchanges = decking.Deck()
         self.grants = decking.Deck()
         self.admits = decking.Deck()
+        self.regsyncResps = decking.Deck()
+        self.credsyncResps = decking.Deck()
         self.submits = decking.Deck()
 
         receiptor = agenting.Receiptor(hby=hby)
@@ -724,6 +728,7 @@ class Agent(doing.DoDoer):
         handlers = [challengeHandler]
         self.exc = exchanging.Exchanger(hby=hby, handlers=handlers)
         grouping.loadHandlers(exc=self.exc, mux=self.mux)
+        credentialing.loadHandlers(agent=self, exc=self.exc)
         protocoling.loadHandlers(hby=self.hby, exc=self.exc, notifier=self.notifier)
         self.submitter = Submitter(
             hby=hby, submits=self.submits, witRec=self.witSubmitDoer
@@ -820,6 +825,16 @@ class Agent(doing.DoDoer):
                     exc=self.exc,
                     admits=self.admits,
                     tock=self.tocks.get("admitter", 0.0),
+                ),
+                credentialing.RegistrySyncApplyDoer(
+                    agent=self,
+                    responses=self.regsyncResps,
+                    tock=self.tocks.get("regsync", 0.0),
+                ),
+                credentialing.CredentialSyncApplyDoer(
+                    agent=self,
+                    responses=self.credsyncResps,
+                    tock=self.tocks.get("credsync", 0.0),
                 ),
                 GroupRequester(
                     hby=hby,

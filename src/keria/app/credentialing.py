@@ -10,13 +10,16 @@ import json
 from dataclasses import asdict, dataclass, field
 
 import falcon
+from hio.base import doing
 from keri import kering, help
-from keri.app import signing
+from keri.app import signing, grouping as keri_grouping
 from keri.app.habbing import SignifyGroupHab
 from keri.core import coring, scheming, serdering
 from keri.db import dbing
 from keri.db.dbing import dgKey
-from keri.vdr import viring
+from keri.help import helping
+from keri.peer import exchanging
+from keri.vdr import viring, credentialing as vdr_credentialing
 
 from ..utils.openapi import dataclassFromFielddom
 from keri.core.serdering import Protocols, Vrsn_1_0, Vrsn_2_0, SerderKERI
@@ -50,12 +53,16 @@ def loadEnds(app, identifierResource):
 
     registryEnd = RegistryCollectionEnd(identifierResource)
     app.add_route("/identifiers/{name}/registries", registryEnd)
+    registrySyncEnd = RegistrySyncCollectionEnd()
+    app.add_route("/identifiers/{name}/registries/sync", registrySyncEnd)
 
     registryResEnd = RegistryResourceEnd()
     app.add_route("/identifiers/{name}/registries/{registryName}", registryResEnd)
 
     credentialCollectionEnd = CredentialCollectionEnd(identifierResource)
     app.add_route("/identifiers/{name}/credentials", credentialCollectionEnd)
+    credentialSyncEnd = CredentialSyncCollectionEnd()
+    app.add_route("/identifiers/{name}/credentials/sync", credentialSyncEnd)
 
     credentialRegistryResEnd = CredentialRegistryResourceEnd()
     app.add_route("/registries/{ri}/{vci}", credentialRegistryResEnd)
@@ -70,6 +77,466 @@ def loadEnds(app, identifierResource):
 
     credentialVerificationEnd = CredentialVerificationCollectionEnd()
     app.add_route("/credentials/verify", credentialVerificationEnd)
+
+
+def loadHandlers(agent, exc):
+    """Register machine-handled EXN routes for late-join sync workflows."""
+    exc.addHandler(RegistrySyncRequestHandler(agent=agent))
+    exc.addHandler(RegistrySyncResponseHandler(agent=agent))
+    exc.addHandler(CredentialSyncRequestHandler(agent=agent))
+    exc.addHandler(CredentialSyncResponseHandler(agent=agent))
+
+
+def _resolve_identifier(agent, name):
+    return agent.hby.habs[name] if name in agent.hby.habs else agent.hby.habByName(name)
+
+
+def _resolve_group_identifier(agent, name):
+    hab = _resolve_identifier(agent, name)
+    if hab is None:
+        raise falcon.HTTPNotFound(
+            description=f"{name} is not a valid reference to an identifier"
+        )
+    if not isinstance(hab, SignifyGroupHab):
+        raise falcon.HTTPConflict(
+            description=f"hab for alias or prefix {name} is not a multisig"
+        )
+    return hab
+
+
+def _has_endpoint(agent, aid):
+    ends = agent.agentHab.endsFor(aid)
+    for role_ends in ends.values():
+        for locs in role_ends.values():
+            if locs:
+                return True
+    return False
+
+
+def _agent_authorized_for_member(agent, member, eid):
+    return eid in agent.agentHab.endsFor(member).get("agent", {})
+
+
+def _eligible_regsync_sources(agent, hab):
+    members = hab.db.signingMembers(pre=hab.pre) or []
+    eligible = [
+        member
+        for member in sorted(members)
+        if member != hab.mhab.pre and member in agent.hby.kevers and _has_endpoint(agent, member)
+    ]
+    return eligible
+
+
+def _select_regsync_source(agent, hab, source=None):
+    eligible = _eligible_regsync_sources(agent, hab)
+    if source is None:
+        if not eligible:
+            raise falcon.HTTPConflict(
+                description=f"no eligible registry sync sources found for {hab.pre}"
+            )
+        return eligible[0]
+
+    try:
+        coring.Prefixer(qb64=source)
+    except kering.ValidationError as ex:
+        raise falcon.HTTPBadRequest(description=str(ex)) from ex
+
+    if source not in eligible:
+        raise falcon.HTTPConflict(
+            description=f"{source} is not an eligible registry sync source for {hab.pre}"
+        )
+
+    return source
+
+
+def _sync_op_name(optype, pre):
+    return f"{optype}.{pre}"
+
+
+def _regsync_op_name(pre):
+    return _sync_op_name(longrunning.OpTypes.regsync, pre)
+
+
+def _credsync_op_name(pre):
+    return _sync_op_name(longrunning.OpTypes.credsync, pre)
+
+
+def _update_sync_error(agent, name, code, message, details=None):
+    op = agent.monitor.opr.ops.get(keys=(name,))
+    if op is None:
+        return
+
+    metadata = dict(op.metadata)
+    metadata["error"] = dict(code=code, message=message, details=details)
+    agent.monitor.update(name, metadata=metadata)
+
+
+def _update_regsync_error(agent, name, code, message, details=None):
+    _update_sync_error(agent, name, code, message, details=details)
+
+
+def _update_credsync_error(agent, name, code, message, details=None):
+    _update_sync_error(agent, name, code, message, details=details)
+
+
+def _find_sync_by_request(agent, request_said, optype):
+    for _, op in agent.monitor.opr.ops.getItemIter():
+        if op.type != optype:
+            continue
+        if op.metadata.get("request") != request_said:
+            continue
+        return _sync_op_name(op.type, op.oid), op
+
+    return None, None
+
+
+def _find_regsync_by_request(agent, request_said):
+    return _find_sync_by_request(agent, request_said, longrunning.OpTypes.regsync)
+
+
+def _find_credsync_by_request(agent, request_said):
+    return _find_sync_by_request(agent, request_said, longrunning.OpTypes.credsync)
+
+
+def _current_credential_regk(creder):
+    if getattr(creder, "regi", None) is not None:
+        return creder.regi
+
+    sad = creder.sad if hasattr(creder, "sad") else creder
+    if sad.get("ri") is not None:
+        return sad["ri"]
+    if sad.get("rd") is not None:
+        return sad["rd"]
+
+    return None
+
+
+def _materialize_signify_registry(agent, name, prefix, regk):
+    hab = agent.hby.habs[prefix]
+    if hab is None:
+        raise kering.ConfigurationError(
+            f"Unknown prefix {prefix} for creating Registry {name}"
+        )
+
+    registry = vdr_credentialing.SignifyRegistry(
+        hab=hab,
+        name=name,
+        reger=agent.rgy.reger,
+        tvy=agent.rgy.tvy,
+        psr=agent.rgy.psr,
+        cues=agent.rgy.cues,
+        regk=regk,
+    )
+    registry.inited = True
+
+    agent.rgy.reger.regs.put(
+        keys=name,
+        val=viring.RegistryRecord(registryKey=regk, prefix=prefix),
+    )
+    agent.rgy.reger.registries.add(regk)
+    agent.rgy.regs[regk] = registry
+
+    return registry
+
+
+def _validate_sync_saids(body):
+    saids = body.get("saids")
+    if not isinstance(saids, list) or len(saids) == 0:
+        raise falcon.HTTPBadRequest(
+            description="'saids' is required and must be a non-empty list"
+        )
+
+    deduped = []
+    seen = set()
+    for said in saids:
+        if not isinstance(said, str):
+            raise falcon.HTTPBadRequest(
+                description="'saids' entries must be qb64 credential SAIDs"
+            )
+        try:
+            coring.Saider(qb64=said)
+        except kering.ValidationError as ex:
+            raise falcon.HTTPBadRequest(description=str(ex)) from ex
+
+        if said in seen:
+            continue
+
+        seen.add(said)
+        deduped.append(said)
+
+    return deduped
+
+
+def _registry_sync_request_exn(hab, gid, mid=None):
+    helper = getattr(keri_grouping, "multisigRegistrySyncRequestExn", None)
+    if helper is not None and mid is None:
+        return helper(hab=hab, gid=gid)
+
+    payload = dict(gid=gid)
+    if mid is not None:
+        payload["mid"] = mid
+
+    exn, end = exchanging.exchange(
+        route="/multisig/registry/sync",
+        payload=payload,
+        sender=hab.pre,
+    )
+    evt = hab.endorse(serder=exn, last=False, pipelined=False)
+    atc = bytearray(evt[exn.size:])
+    atc.extend(end)
+    return exn, atc
+
+
+def _credential_sync_request_exn(hab, gid, saids, mid=None):
+    helper = getattr(keri_grouping, "multisigCredentialSyncRequestExn", None)
+    if helper is not None:
+        try:
+            return helper(hab=hab, gid=gid, saids=saids, mid=mid)
+        except TypeError:
+            pass
+
+    payload = dict(gid=gid, saids=saids)
+    if mid is not None:
+        payload["mid"] = mid
+
+    exn, end = exchanging.exchange(
+        route="/multisig/credential/sync",
+        payload=payload,
+        sender=hab.pre,
+    )
+    evt = hab.endorse(serder=exn, last=False, pipelined=False)
+    atc = bytearray(evt[exn.size:])
+    atc.extend(end)
+    return exn, atc
+
+
+def _registry_sync_response_exn(hab, gid, registries, dig, history=None, messages=None):
+    helper = getattr(keri_grouping, "multisigRegistrySyncResponseExn", None)
+    if helper is not None and history is None and messages is None:
+        try:
+            return helper(
+                hab=hab,
+                gid=gid,
+                registries=registries,
+                dig=dig,
+            )
+        except TypeError:
+            return helper(hab=hab, gid=gid, registries=registries, dig=dig)
+
+    if messages is not None:
+        embeds = _message_embeds(messages, prefix="vcpmsg")
+    else:
+        embeds = dict(history=history) if history is not None else None
+
+    exn, end = exchanging.exchange(
+        route="/multisig/registry/sync/response",
+        payload=dict(gid=gid, registries=registries),
+        sender=hab.pre,
+        dig=dig,
+        embeds=embeds,
+    )
+    evt = hab.endorse(serder=exn, last=False, pipelined=False)
+    atc = bytearray(evt[exn.size:])
+    atc.extend(end)
+    return exn, atc
+
+
+def _credential_sync_response_exn(
+    hab,
+    gid,
+    said,
+    dig,
+    credential=None,
+    error=None,
+    messages=None,
+    schemas=None,
+):
+    helper = getattr(keri_grouping, "multisigCredentialSyncResponseExn", None)
+    if helper is not None and error is None and messages is None:
+        try:
+            return helper(hab=hab, gid=gid, said=said, credential=credential, dig=dig)
+        except TypeError:
+            pass
+
+    payload = dict(gid=gid, said=said)
+    if error is not None:
+        payload["error"] = error
+    if schemas is not None:
+        payload["schemas"] = schemas
+
+    if messages is not None:
+        embeds = _message_embeds(messages, prefix="credmsg")
+    else:
+        embeds = dict(cred=credential) if credential is not None else None
+    exn, end = exchanging.exchange(
+        route="/multisig/credential/sync/response",
+        payload=payload,
+        sender=hab.pre,
+        dig=dig,
+        embeds=embeds,
+    )
+    evt = hab.endorse(serder=exn, last=False, pipelined=False)
+    atc = bytearray(evt[exn.size:])
+    atc.extend(end)
+    return exn, atc
+
+
+def _embedded_stream_from_attachments(serder, attachments, label):
+    embeds = serder.ked.get("e", {})
+    if label not in embeds:
+        return None
+
+    if attachments:
+        for pather, atc in attachments:
+            if not pather.path or pather.path[0] != label:
+                continue
+
+            ked = pather.resolve(embeds)
+            sadder = coring.Sadder(ked=ked)
+            ims = bytearray(sadder.raw)
+            ims.extend(atc)
+            return ims
+
+    return bytearray(coring.Sadder(ked=embeds[label]).raw)
+
+
+def _embedded_messages_from_attachments(serder, attachments, prefix):
+    embeds = serder.ked.get("e", {})
+    labels = sorted(
+        label for label in embeds.keys() if label != "d" and label.startswith(prefix)
+    )
+
+    if not labels:
+        return []
+
+    attachment_map = {}
+    for pather, atc in attachments:
+        if not pather.path:
+            continue
+
+        attachment_map[pather.path[0]] = atc
+
+    messages = []
+    for label in labels:
+        ims = bytearray(coring.Sadder(ked=embeds[label]).raw)
+        if label in attachment_map:
+            ims.extend(attachment_map[label])
+        messages.append(ims)
+
+    return messages
+
+
+def _credential_chain_saids(creder):
+    chains = creder.edge or dict()
+    saids = []
+    for key, source in chains.items():
+        if key == "d":
+            continue
+
+        if not isinstance(source, dict):
+            continue
+
+        saids.append(source["n"])
+
+    return saids
+
+
+def _message_embeds(messages, prefix):
+    return {
+        f"{prefix}{idx:04d}": bytes(message)
+        for idx, message in enumerate(messages)
+    }
+
+
+def _credential_sync_messages(hby, rgy, said, seen=None):
+    seen = set() if seen is None else seen
+    if said in seen:
+        return []
+
+    seen.add(said)
+    messages = []
+    creder, prefixer, seqner, saider = rgy.reger.cloneCred(said=said)
+    for chain_said in _credential_chain_saids(creder):
+        messages.extend(_credential_sync_messages(hby, rgy, chain_said, seen=seen))
+
+    for msg in hby.db.clonePreIter(pre=creder.issuer):
+        messages.append(bytes(msg))
+
+    if "i" in creder.attrib:
+        subj = creder.attrib["i"]
+        for msg in hby.db.clonePreIter(pre=subj):
+            messages.append(bytes(msg))
+
+    if creder.regi is not None:
+        for msg in rgy.reger.clonePreIter(pre=creder.regi):
+            messages.append(bytes(msg))
+
+        for msg in rgy.reger.clonePreIter(pre=creder.said):
+            messages.append(bytes(msg))
+
+    messages.append(bytes(signing.serialize(creder, prefixer, seqner, saider)))
+    return messages
+
+
+def _credential_sync_schemas(hby, rgy, said, seen=None):
+    seen = set() if seen is None else seen
+    if said in seen:
+        return []
+
+    seen.add(said)
+    schemas = []
+    creder, _, _, _ = rgy.reger.cloneCred(said=said)
+    for chain_said in _credential_chain_saids(creder):
+        schemas.extend(_credential_sync_schemas(hby, rgy, chain_said, seen=seen))
+
+    if (schemer := hby.db.schema.get(creder.schema)) is not None:
+        schemas.append(dict(schemer.sed))
+
+    return schemas
+
+
+def _registry_anchor(regk, regd, sn="0"):
+    return dict(i=regk, s=sn, d=regd)
+
+
+def _query_group_anchor_for_tel_message(agent, gid, group_hab, message):
+    """Backfill or query the group KEL event that seals a synced TEL message."""
+
+    try:
+        serder = SerderKERI(raw=bytes(message))
+    except Exception:
+        return
+
+    if serder.ked.get("t") not in {"vcp", "vrt", "iss", "bis", "rev", "brv"}:
+        return
+
+    seal = dict(i=serder.pre, s=serder.snh, d=serder.said)
+    if longrunning.ensure_tel_anchor(
+        hby=agent.hby,
+        reger=agent.rgy.reger,
+        gid=gid,
+        pre=serder.pre,
+        said=serder.said,
+        anchor=seal,
+    ):
+        return
+
+    agent.witq.query(
+        hab=agent.agentHab,
+        pre=gid,
+        anchor=seal,
+        wits=group_hab.kever.wits or None,
+    )
+
+
+def _cache_embedded_schemas(agent, serder, attachments):
+    payload = serder.ked.get("a", {})
+    schemas = payload.get("schemas", [])
+    for sed in schemas:
+        schemer = scheming.Schemer(sed=sed)
+        agent.verifier.resolver.add(schemer.said, schemer.raw)
+
+    return schemas
 
 
 class EmptyDictSchema(MarshmallowSchema):
@@ -430,6 +897,735 @@ class RegistryCollectionEnd:
 
         rep.status = falcon.HTTP_202
         rep.data = op.to_json().encode("utf-8")
+
+
+class RegistrySyncCollectionEnd:
+    """Collection endpoint for explicit multisig registry catch-up."""
+
+    @staticmethod
+    def on_post(req, rep, name):
+        agent = req.context.agent
+        body = req.get_media() or {}
+        if not isinstance(body, dict):
+            raise falcon.HTTPBadRequest(description="body must be a JSON object")
+
+        hab = _resolve_group_identifier(agent, name)
+        source = _select_regsync_source(agent, hab, source=body.get("source"))
+
+        opname = _regsync_op_name(hab.pre)
+        if (existing := agent.monitor.opr.ops.get(keys=(opname,))) is not None:
+            if not agent.monitor.status(existing).done:
+                raise falcon.HTTPConflict(
+                    description=f"registry sync already pending for {hab.pre}"
+                )
+
+        exn, atc = _registry_sync_request_exn(
+            hab=agent.agentHab,
+            gid=hab.pre,
+            mid=hab.mhab.pre,
+        )
+        agent.hby.psr.parseOne(
+            ims=bytearray(exn.raw) + bytearray(atc),
+            exc=agent.exc,
+        )
+
+        metadata = dict(
+            pre=hab.pre,
+            source=source,
+            phase="catalog",
+            phase_start=helping.nowIso8601(),
+            request=exn.said,
+            targets=[],
+            error=None,
+        )
+        op = agent.monitor.submit(hab.pre, longrunning.OpTypes.regsync, metadata=metadata)
+        agent.exchanges.append(
+            dict(said=exn.said, pre=agent.agentHab.pre, rec=[source], topic="multisig")
+        )
+
+        rep.status = falcon.HTTP_202
+        rep.data = op.to_json().encode("utf-8")
+
+
+class CredentialSyncCollectionEnd:
+    """Collection endpoint for explicit multisig credential-history catch-up."""
+
+    @staticmethod
+    def on_post(req, rep, name):
+        agent = req.context.agent
+        body = req.get_media() or {}
+        if not isinstance(body, dict):
+            raise falcon.HTTPBadRequest(description="body must be a JSON object")
+
+        hab = _resolve_group_identifier(agent, name)
+        saids = _validate_sync_saids(body)
+        source = _select_regsync_source(agent, hab, source=body.get("source"))
+
+        if not any(registry.hab.pre == hab.pre for registry in agent.rgy.regs.values()):
+            raise falcon.HTTPConflict(
+                description=f"credential sync for {hab.pre} requires registry sync first"
+            )
+
+        opname = _credsync_op_name(hab.pre)
+        if (existing := agent.monitor.opr.ops.get(keys=(opname,))) is not None:
+            if not agent.monitor.status(existing).done:
+                raise falcon.HTTPConflict(
+                    description=f"credential sync already pending for {hab.pre}"
+                )
+
+        exn, atc = _credential_sync_request_exn(
+            hab=agent.agentHab,
+            gid=hab.pre,
+            saids=saids,
+            mid=hab.mhab.pre,
+        )
+        agent.hby.psr.parseOne(
+            ims=bytearray(exn.raw) + bytearray(atc),
+            exc=agent.exc,
+        )
+
+        metadata = dict(
+            pre=hab.pre,
+            source=source,
+            phase="replay",
+            phase_start=helping.nowIso8601(),
+            request=exn.said,
+            saids=saids,
+            synced=[],
+            error=None,
+        )
+        op = agent.monitor.submit(hab.pre, longrunning.OpTypes.credsync, metadata=metadata)
+        agent.exchanges.append(
+            dict(said=exn.said, pre=agent.agentHab.pre, rec=[source], topic="multisig")
+        )
+
+        rep.status = falcon.HTTP_202
+        rep.data = op.to_json().encode("utf-8")
+
+
+class RegistrySyncRequestHandler:
+    """Machine-handled multisig registry sync request."""
+
+    resource = "/multisig/registry/sync"
+
+    def __init__(self, agent):
+        self.agent = agent
+
+    def handle(self, serder, attachments=None):
+        payload = serder.ked.get("a", {})
+        gid = payload.get("gid")
+        sender = serder.ked.get("i")
+        requester = payload.get("mid")
+        if gid is None or sender is None:
+            logger.error("invalid registry sync request payload on %s", serder.said)
+            return
+
+        hab = self.agent.hby.habByPre(gid)
+        if hab is None or not isinstance(hab, SignifyGroupHab):
+            logger.info("ignoring registry sync request for unknown group %s", gid)
+            return
+
+        members = hab.db.signingMembers(pre=gid) or []
+        if requester is not None:
+            if requester not in members:
+                logger.warning(
+                    "ignoring registry sync request %s for non-member requester %s on %s",
+                    serder.said,
+                    requester,
+                    gid,
+                )
+                return
+            if not _agent_authorized_for_member(self.agent, requester, sender):
+                logger.warning(
+                    "ignoring registry sync request %s from unauthorized agent %s for %s",
+                    serder.said,
+                    sender,
+                    requester,
+                )
+                return
+            if requester == hab.mhab.pre and sender == self.agent.agentHab.pre:
+                logger.info(
+                    "ignoring locally originated registry sync request %s for %s",
+                    serder.said,
+                    gid,
+                )
+                return
+        elif not any(_agent_authorized_for_member(self.agent, member, sender) for member in members):
+            logger.warning(
+                "ignoring registry sync request %s from non-member agent %s for %s",
+                serder.said,
+                sender,
+                gid,
+            )
+            return
+
+        registries = []
+        messages = []
+        local_regs = sorted(
+            self.agent.rgy.regs.values(),
+            key=lambda registry: (registry.name, registry.regk),
+        )
+        for registry in local_regs:
+            if registry.hab.pre != gid or registry.regk not in self.agent.rgy.tevers:
+                continue
+            vcp = SerderKERI(raw=self.agent.rgy.reger.cloneTvtAt(pre=registry.regk, sn=0))
+            vcp_message = None
+            for msg in self.agent.rgy.reger.clonePreIter(pre=registry.regk, fn=0):
+                vcp_message = bytes(msg)
+                break
+
+            if vcp_message is None:
+                logger.warning(
+                    "skipping registry %s during sync for %s because no VCP replay message was available",
+                    registry.regk,
+                    gid,
+                )
+                continue
+
+            registries.append(
+                dict(
+                    name=registry.name,
+                    regk=registry.regk,
+                    vcp=vcp.ked,
+                    anc=_registry_anchor(registry.regk, vcp.said, sn=vcp.snh),
+                    sn=registry.tever.sn,
+                )
+            )
+            messages.append(vcp_message)
+
+        exn, atc = _registry_sync_response_exn(
+            hab=self.agent.agentHab,
+            gid=gid,
+            registries=registries,
+            dig=serder.said,
+            messages=messages,
+        )
+        self.agent.hby.psr.parseOne(
+            ims=bytearray(exn.raw) + bytearray(atc),
+            exc=self.agent.exc,
+        )
+        self.agent.exchanges.append(
+            dict(
+                said=exn.said,
+                pre=self.agent.agentHab.pre,
+                rec=[requester if requester is not None else sender],
+                topic="multisig",
+            )
+        )
+
+
+class RegistrySyncResponseHandler:
+    """Machine-handled multisig registry sync response."""
+
+    resource = "/multisig/registry/sync/response"
+
+    def __init__(self, agent):
+        self.agent = agent
+
+    def handle(self, serder, attachments=None):
+        self.agent.regsyncResps.append(
+            dict(serder=serder, attachments=attachments or [])
+        )
+
+
+class RegistrySyncApplyDoer(doing.Doer):
+    """Apply sync responses by hydrating local registry records then replaying TEL."""
+
+    def __init__(self, agent, responses, tock=0.0):
+        self.agent = agent
+        self.responses = responses
+        self.tock = tock
+        super(RegistrySyncApplyDoer, self).__init__(tock=tock)
+
+    def recur(self, tyme=None, tock=0.0, **opts):
+        if not self.responses:
+            return False
+
+        msg = self.responses.popleft()
+        serder = msg["serder"]
+        attachments = msg.get("attachments") or []
+        request_said = serder.ked.get("p")
+        if not request_said:
+            logger.warning("ignoring registry sync response %s without p", serder.said)
+            return False
+
+        opname, op = _find_regsync_by_request(self.agent, request_said)
+        if op is None:
+            logger.info(
+                "ignoring stale registry sync response %s for request %s",
+                serder.said,
+                request_said,
+            )
+            return False
+
+        metadata = dict(op.metadata)
+        source = metadata["source"]
+        gid = metadata["pre"]
+        payload = serder.ked.get("a", {})
+        sender = serder.ked.get("i")
+        if sender is None or not _agent_authorized_for_member(self.agent, source, sender):
+            _update_regsync_error(
+                self.agent,
+                opname,
+                424,
+                f"registry sync response source mismatch, expected agent for {source} got {sender}",
+            )
+            return False
+
+        if payload.get("gid") != gid:
+            _update_regsync_error(
+                self.agent,
+                opname,
+                424,
+                f"registry sync response group mismatch, expected {gid} got {payload.get('gid')}",
+            )
+            return False
+
+        if metadata["phase"] != "catalog":
+            logger.info(
+                "ignoring registry sync response %s for completed phase %s",
+                serder.said,
+                metadata["phase"],
+            )
+            return False
+
+        entries = payload.get("registries")
+        if not isinstance(entries, list):
+            _update_regsync_error(
+                self.agent,
+                opname,
+                424,
+                "registry sync response registries payload must be a list",
+            )
+            return False
+
+        vcp_messages = _embedded_messages_from_attachments(serder, attachments, "vcpmsg")
+        if vcp_messages and len(vcp_messages) != len(entries):
+            _update_regsync_error(
+                self.agent,
+                opname,
+                424,
+                "registry sync response VCP message count does not match registry entries",
+                details=dict(entries=len(entries), messages=len(vcp_messages)),
+            )
+            return False
+
+        parsed = []
+        for idx, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                _update_regsync_error(
+                    self.agent,
+                    opname,
+                    424,
+                    "registry sync response contains a non-object registry entry",
+                    details=dict(entry=entry),
+                )
+                return False
+
+            try:
+                name = entry["name"]
+                regk = entry["regk"]
+                vcp = SerderKERI(sad=entry["vcp"])
+                anc = entry["anc"]
+                sn = int(entry["sn"])
+                coring.Prefixer(qb64=regk)
+            except (KeyError, TypeError, ValueError, kering.ValidationError) as ex:
+                _update_regsync_error(
+                    self.agent,
+                    opname,
+                    424,
+                    f"invalid registry sync response entry: {ex}",
+                    details=dict(entry=entry),
+                )
+                return False
+
+            existing_by_name = self.agent.rgy.registryByName(name)
+            if existing_by_name is not None and existing_by_name.regk != regk:
+                _update_regsync_error(
+                    self.agent,
+                    opname,
+                    409,
+                    f"registry name {name} already maps to {existing_by_name.regk}",
+                    details=dict(name=name, regk=regk, existing=existing_by_name.regk),
+                )
+                return False
+
+            if vcp.ked["t"] != "vcp" or vcp.pre != regk:
+                _update_regsync_error(
+                    self.agent,
+                    opname,
+                    424,
+                    f"invalid registry inception event for {regk}",
+                    details=dict(entry=entry),
+                )
+                return False
+
+            if tuple(anc) != ("i", "s", "d"):
+                _update_regsync_error(
+                    self.agent,
+                    opname,
+                    424,
+                    f"invalid registry sync anchor for {regk}",
+                    details=dict(entry=entry),
+                )
+                return False
+
+            parsed.append(
+                (name, regk, vcp, anc, sn, vcp_messages[idx] if vcp_messages else None)
+            )
+
+        group_hab = self.agent.hby.habByPre(gid)
+        if group_hab is None or not isinstance(group_hab, SignifyGroupHab):
+            _update_regsync_error(
+                self.agent,
+                opname,
+                424,
+                f"registry sync target group {gid} is no longer available locally",
+            )
+            return False
+
+        targets = []
+        # Late joiners may know the current multisig state but still lack the
+        # historical group event that anchored a preexisting registry VCP.
+        # Replay the group's KEL first so subsequent TEL replay can unescrow
+        # anchored registry events instead of stalling in ANC escrow.
+        self.agent.witq.query(
+            hab=self.agent.agentHab,
+            pre=gid,
+            wits=group_hab.kever.wits or None,
+        )
+        for name, regk, vcp, anc, sn, vcp_message in parsed:
+            if vcp_message is not None:
+                try:
+                    self.agent.parser.parseOne(
+                        ims=bytearray(vcp_message),
+                        tvy=self.agent.rgy.tvy,
+                        local=False,
+                    )
+                except Exception as ex:
+                    _update_regsync_error(
+                        self.agent,
+                        opname,
+                        424,
+                        f"registry sync import failed for {regk}: {ex}",
+                    )
+                    return False
+
+            if not longrunning.ensure_registry_anchor(
+                hby=self.agent.hby,
+                reger=self.agent.rgy.reger,
+                gid=gid,
+                regk=regk,
+                regd=vcp.said,
+                anchor=anc,
+            ):
+                self.agent.witq.query(
+                    hab=self.agent.agentHab,
+                    pre=gid,
+                    anchor=anc,
+                    wits=group_hab.kever.wits or None,
+                )
+
+            registry = self.agent.rgy.regs.get(regk)
+            if registry is None:
+                registry = _materialize_signify_registry(
+                    self.agent,
+                    name=name,
+                    prefix=gid,
+                    regk=regk,
+                )
+
+            if sn > 0:
+                self.agent.witq.telquery(
+                    hab=self.agent.agentHab,
+                    pre=gid,
+                    ri=regk,
+                    wits=group_hab.kever.wits or None,
+                )
+
+            targets.append(
+                dict(name=registry.name, regk=regk, regd=vcp.said, anc=anc, sn=sn)
+            )
+
+        metadata.update(
+            phase="replay",
+            phase_start=helping.nowIso8601(),
+            targets=targets,
+            error=None,
+        )
+        self.agent.monitor.update(opname, metadata=metadata)
+        return False
+
+
+class CredentialSyncRequestHandler:
+    """Machine-handled multisig credential-history sync request."""
+
+    resource = "/multisig/credential/sync"
+
+    def __init__(self, agent):
+        self.agent = agent
+
+    def handle(self, serder, attachments=None):
+        payload = serder.ked.get("a", {})
+        gid = payload.get("gid")
+        sender = serder.ked.get("i")
+        requester = payload.get("mid")
+        saids = payload.get("saids")
+        if gid is None or sender is None or requester is None or not isinstance(saids, list):
+            logger.error("invalid credential sync request payload on %s", serder.said)
+            return
+
+        hab = self.agent.hby.habByPre(gid)
+        if hab is None or not isinstance(hab, SignifyGroupHab):
+            logger.info("ignoring credential sync request for unknown group %s", gid)
+            return
+
+        members = hab.db.signingMembers(pre=gid) or []
+        if requester not in members:
+            logger.warning(
+                "ignoring credential sync request %s for non-member requester %s on %s",
+                serder.said,
+                requester,
+                gid,
+            )
+            return
+
+        if not _agent_authorized_for_member(self.agent, requester, sender):
+            logger.warning(
+                "ignoring credential sync request %s from unauthorized agent %s for %s",
+                serder.said,
+                sender,
+                requester,
+            )
+            return
+
+        if requester == hab.mhab.pre and sender == self.agent.agentHab.pre:
+            logger.info(
+                "ignoring locally originated credential sync request %s for %s",
+                serder.said,
+                gid,
+            )
+            return
+
+        for said in saids:
+            error = None
+            messages = None
+            schemas = None
+            try:
+                creder, _, _, _ = self.agent.rgy.reger.cloneCred(said=said)
+                regk = _current_credential_regk(creder)
+                registry = self.agent.rgy.regs.get(regk) if regk is not None else None
+                if registry is None or registry.hab.pre != gid:
+                    error = dict(
+                        code=424,
+                        message=(
+                            f"credential {said} is not issued from a registry controlled by {gid}"
+                        ),
+                    )
+                else:
+                    messages = _credential_sync_messages(
+                        self.agent.hby, self.agent.rgy, said
+                    )
+                    schemas = _credential_sync_schemas(
+                        self.agent.hby, self.agent.rgy, said
+                    )
+            except kering.MissingEntryError:
+                error = dict(
+                    code=424,
+                    message=f"credential {said} is not available on source {gid}",
+                )
+
+            exn, atc = _credential_sync_response_exn(
+                hab=self.agent.agentHab,
+                gid=gid,
+                said=said,
+                messages=messages,
+                schemas=schemas,
+                error=error,
+                dig=serder.said,
+            )
+            self.agent.hby.psr.parseOne(
+                ims=bytearray(exn.raw) + bytearray(atc),
+                exc=self.agent.exc,
+            )
+            self.agent.exchanges.append(
+                dict(
+                    said=exn.said,
+                    pre=self.agent.agentHab.pre,
+                    rec=[requester],
+                    topic="multisig",
+                )
+            )
+
+
+class CredentialSyncResponseHandler:
+    """Machine-handled multisig credential-history sync response."""
+
+    resource = "/multisig/credential/sync/response"
+
+    def __init__(self, agent):
+        self.agent = agent
+
+    def handle(self, serder, attachments=None):
+        self.agent.credsyncResps.append(
+            dict(serder=serder, attachments=attachments or [])
+        )
+
+
+class CredentialSyncApplyDoer(doing.Doer):
+    """Apply credential sync responses by parsing imported CESR bundles locally."""
+
+    def __init__(self, agent, responses, tock=0.0):
+        self.agent = agent
+        self.responses = responses
+        self.tock = tock
+        super(CredentialSyncApplyDoer, self).__init__(tock=tock)
+
+    def recur(self, tyme=None, tock=0.0, **opts):
+        if not self.responses:
+            return False
+
+        msg = self.responses.popleft()
+        serder = msg["serder"]
+        attachments = msg.get("attachments") or []
+        request_said = serder.ked.get("p")
+        if not request_said:
+            logger.warning("ignoring credential sync response %s without p", serder.said)
+            return False
+
+        opname, op = _find_credsync_by_request(self.agent, request_said)
+        if op is None:
+            logger.info(
+                "ignoring stale credential sync response %s for request %s",
+                serder.said,
+                request_said,
+            )
+            return False
+
+        metadata = dict(op.metadata)
+        if metadata.get("error") is not None:
+            logger.info(
+                "ignoring credential sync response %s for errored op %s",
+                serder.said,
+                opname,
+            )
+            return False
+
+        source = metadata["source"]
+        gid = metadata["pre"]
+        payload = serder.ked.get("a", {})
+        sender = serder.ked.get("i")
+        if sender is None or not _agent_authorized_for_member(self.agent, source, sender):
+            logger.info(
+                "ignoring credential sync response %s from unexpected sender %s for source %s",
+                serder.said,
+                sender,
+                source,
+            )
+            return False
+
+        if payload.get("gid") != gid:
+            logger.info(
+                "ignoring credential sync response %s with group mismatch %s for %s",
+                serder.said,
+                payload.get("gid"),
+                gid,
+            )
+            return False
+
+        said = payload.get("said")
+        if said not in metadata["saids"]:
+            logger.info(
+                "ignoring credential sync response %s for unexpected credential %s",
+                serder.said,
+                said,
+            )
+            return False
+
+        if isinstance(payload.get("error"), dict):
+            err = payload["error"]
+            _update_credsync_error(
+                self.agent,
+                opname,
+                err.get("code", 424),
+                err.get("message", f"credential sync failed for {said}"),
+                details=err.get("details"),
+            )
+            return False
+
+        if said in metadata["synced"]:
+            logger.info(
+                "ignoring duplicate credential sync response %s for %s",
+                serder.said,
+                said,
+            )
+            return False
+
+        messages = _embedded_messages_from_attachments(serder, attachments, "credmsg")
+        bundle = _embedded_stream_from_attachments(serder, attachments, "cred")
+
+        if not messages and bundle is None:
+            _update_credsync_error(
+                self.agent,
+                opname,
+                424,
+                f"credential sync response for {said} missing credential bundle",
+            )
+            return False
+
+        group_hab = self.agent.hby.habByPre(gid)
+        if group_hab is None or not isinstance(group_hab, SignifyGroupHab):
+            _update_credsync_error(
+                self.agent,
+                opname,
+                424,
+                f"credential sync target group {gid} is no longer available locally",
+            )
+            return False
+
+        try:
+            _cache_embedded_schemas(self.agent, serder, attachments)
+
+            if bundle is not None:
+                self.agent.parser.parse(
+                    ims=bytearray(bundle),
+                    tvy=self.agent.rgy.tvy,
+                    local=False,
+                )
+
+            for message in messages:
+                _query_group_anchor_for_tel_message(
+                    self.agent,
+                    gid=gid,
+                    group_hab=group_hab,
+                    message=message,
+                )
+                self.agent.parser.parseOne(
+                    ims=bytearray(message),
+                    tvy=self.agent.rgy.tvy,
+                    local=False,
+                )
+
+            # Late-join sync imports can otherwise rely on ambient doer timing to
+            # drain TEL, verifier, registrar, and dissemination escrows. Process
+            # once here so imported credential state becomes usable immediately
+            # when the local KEL/TEL data is sufficient.
+            longrunning.stabilize_credsync_state(
+                registrar=self.agent.registrar,
+                credentialer=self.agent.credentialer,
+            )
+        except Exception as ex:
+            _update_credsync_error(
+                self.agent,
+                opname,
+                424,
+                f"credential sync import failed for {said}: {ex}",
+            )
+            return False
+
+        metadata["synced"] = [*metadata["synced"], said]
+        self.agent.monitor.update(opname, metadata=metadata)
+        return False
 
 
 class RegistryResourceEnd:
@@ -1056,19 +2252,8 @@ class CredentialResourceEnd:
     def outputCred(hby, rgy, said):
         out = bytearray()
         creder, prefixer, seqner, saider = rgy.reger.cloneCred(said=said)
-        chains = creder.edge or dict()
-        saids = []
-        for key, source in chains.items():
-            if key == "d":
-                continue
-
-            if not isinstance(source, dict):
-                continue
-
-            saids.append(source["n"])
-
-        for said in saids:
-            out.extend(CredentialResourceEnd.outputCred(hby, rgy, said))
+        for chain_said in _credential_chain_saids(creder):
+            out.extend(CredentialResourceEnd.outputCred(hby, rgy, chain_said))
 
         issr = creder.issuer
         for msg in hby.db.clonePreIter(pre=issr):
@@ -1260,9 +2445,20 @@ class CredentialResourceDeleteEnd:
 
         try:
             agent.rgy.reger.cloneCreds([coring.Saider(qb64=said)], db=agent.hby.db)
-        except Exception:
-            raise falcon.HTTPNotFound(
-                description=f"credential for said {said} not found."
+        except Exception as ex:
+            raise falcon.HTTPConflict(
+                description=(
+                    f"credential history for said {said} is not available locally; "
+                    f"run credentials().sync({name!r}, saids=[{said!r}]) first"
+                )
+            ) from ex
+
+        if agent.rgy.tevers[regk].vcSn(said) is None:
+            raise falcon.HTTPConflict(
+                description=(
+                    f"credential history for said {said} is incomplete locally; "
+                    f"run credentials().sync({name!r}, saids=[{said!r}]) first"
+                )
             )
 
         if hab.kever.estOnly:

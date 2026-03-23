@@ -26,7 +26,7 @@ from keria.app import delegating
 Typeage = namedtuple(
     "Tierage",
     "oobi witness delegation group query registry credential endrole "  # type: ignore[name-match]
-    "locscheme challenge exchange submit done",
+    "locscheme challenge exchange submit regsync credsync done",
 )
 
 OpTypes = Typeage(
@@ -42,8 +42,146 @@ OpTypes = Typeage(
     challenge="challenge",
     exchange="exchange",
     submit="submit",
+    regsync="regsync",
+    credsync="credsync",
     done="done",
 )
+
+
+def ensure_registry_anchor(hby, reger, gid, regk, regd, anchor):
+    """Ensure the local registry VCP has the source-seal couple it needs.
+
+    Late joiners may learn the group KEL event that seals a registry inception
+    before any TEL replay path writes the local `reger.ancs` couple for the VCP.
+    When that happens, credential-history replay can stall waiting for the
+    registry inception anchor even though the sealing group event is already in
+    the local KEL. Reuse the known group-event seal to materialize the registry
+    anchor couple eagerly.
+    """
+
+    if regd is None or anchor is None:
+        return False
+
+    dgkey = dbing.dgKey(regk, regd)
+    if reger.getAnc(dgkey) is not None:
+        return True
+
+    serder = hby.db.fetchLastSealingEventByEventSeal(pre=gid, seal=anchor)
+    if serder is None:
+        return False
+
+    seqner = coring.Seqner(sn=serder.sn)
+    saider = coring.Saider(qb64=serder.said)
+    reger.putAnc(dgkey, seqner.qb64b + saider.qb64b)
+    return True
+
+
+def ensure_tel_anchor(hby, reger, gid, pre, said, anchor):
+    """Ensure the local TEL event has the source-seal couple it needs.
+
+    Late joiners may have already learned the group KEL event that seals a
+    synced credential TEL event while still missing the local `reger.ancs`
+    couple for that TEL event. When that happens, replay can stall in
+    anchorless escrow even though the sealing group event is already present
+    locally.
+    """
+
+    if pre is None or said is None or anchor is None:
+        return False
+
+    dgkey = dbing.dgKey(pre, said)
+    if reger.getAnc(dgkey) is not None:
+        return True
+
+    serder = hby.db.fetchLastSealingEventByEventSeal(pre=gid, seal=anchor)
+    if serder is None:
+        return False
+
+    seqner = coring.Seqner(sn=serder.sn)
+    saider = coring.Saider(qb64=serder.said)
+    reger.putAnc(dgkey, seqner.qb64b + saider.qb64b)
+    return True
+
+
+def stabilize_credsync_state(registrar=None, credentialer=None):
+    """Drive the local escrows needed for imported credential history to settle.
+
+    Late-join credential sync can import the raw CESR material before the local
+    TEL, verifier, registrar, and credential dissemination escrows have all had
+    a chance to observe the newly available state. Running one explicit
+    stabilization pass keeps `/operations/credsync.*` from timing out on state
+    that is already locally derivable.
+    """
+
+    rgy = registrar.rgy if registrar is not None else None
+    if rgy is not None:
+        rgy.processEscrows()
+
+    verifier = None
+    if credentialer is not None:
+        verifier = getattr(credentialer, "verifier", None)
+    if verifier is None and registrar is not None:
+        verifier = getattr(registrar, "verifier", None)
+    if verifier is not None:
+        verifier.processEscrows()
+
+    if registrar is not None:
+        registrar.processEscrows()
+
+    if credentialer is not None:
+        credentialer.processEscrows()
+
+
+def credsync_statuses(rgy, saids):
+    """Summarize per-credential readiness for late-join history replay."""
+
+    statuses = []
+    for said in saids:
+        status = dict(said=said)
+
+        if rgy.reger.saved.get(keys=(said,)) is None:
+            status["state"] = "missing_saved"
+            statuses.append(status)
+            continue
+
+        try:
+            creder, _, _, _ = rgy.reger.cloneCred(said=said)
+        except kering.MissingEntryError:
+            status["state"] = "missing_clone"
+            statuses.append(status)
+            continue
+
+        regk = creder.regi if getattr(creder, "regi", None) is not None else creder.sad.get("ri")
+        if regk is None:
+            status["state"] = "missing_registry_reference"
+            statuses.append(status)
+            continue
+
+        status["regk"] = regk
+        if regk not in rgy.regs or regk not in rgy.tevers:
+            status["state"] = "missing_registry_state"
+            statuses.append(status)
+            continue
+
+        try:
+            vcstate = rgy.tevers[regk].vcState(said)
+        except Exception as ex:
+            status["state"] = "vc_state_error"
+            status["error"] = str(ex)
+            statuses.append(status)
+            continue
+
+        if vcstate is None:
+            status["state"] = "missing_vc_state"
+            statuses.append(status)
+            continue
+
+        status["state"] = "ready"
+        status["sn"] = getattr(vcstate, "sn", getattr(vcstate, "s", None))
+        status["et"] = getattr(vcstate, "et", getattr(vcstate, "eilk", None))
+        statuses.append(status)
+
+    return statuses
 
 
 @dataclass_json
@@ -194,6 +332,15 @@ class Monitor:
 
         # Return Operation with full status check in case its already finished.
         return self.get(name)
+
+    def update(self, name, metadata):
+        """Update metadata for an existing long running operation."""
+        if (op := self.opr.ops.get(keys=(name,))) is None:
+            raise kering.ValidationError(f"long running operation '{name}' not found")
+
+        updated = Op(oid=op.oid, type=op.type, start=op.start, metadata=metadata)
+        self.opr.ops.pin(keys=(name,), val=updated)
+        return updated
 
     def get(self, name):
         if (op := self.opr.ops.get(keys=(name,))) is None:
@@ -564,6 +711,187 @@ class Monitor:
                     )
                 else:
                     done = False
+
+        elif op.type in (OpTypes.regsync,):
+            required = ("pre", "source", "phase", "phase_start", "request", "targets")
+            missing = [field for field in required if field not in op.metadata]
+            if missing:
+                raise kering.ValidationError(
+                    f"invalid long running {op.type} operation, metadata missing required fields {tuple(missing)}"
+                )
+
+            if "error" in op.metadata and op.metadata["error"] is not None:
+                err = op.metadata["error"]
+                done = True
+                error = OperationStatus(
+                    code=err["code"],
+                    message=err["message"],
+                    details=err.get("details"),
+                )
+            else:
+                phase = op.metadata["phase"]
+                phase_start = helping.fromIso8601(op.metadata["phase_start"])
+                dtnow = helping.nowUTC()
+
+                if phase == "catalog":
+                    if (dtnow - phase_start) > datetime.timedelta(seconds=10):
+                        done = True
+                        error = OperationStatus(
+                            code=504,
+                            message=(
+                                f"long running {op.type} for {op.oid} timed out waiting "
+                                f"for registry catalog response from {op.metadata['source']}"
+                            ),
+                            details=dict(phase=phase, source=op.metadata["source"]),
+                        )
+                    else:
+                        done = False
+
+                elif phase == "replay":
+                    rgy = self.registrar.rgy if self.registrar is not None else None
+                    if rgy is None:
+                        raise kering.ValidationError(
+                            f"invalid long running {op.type} operation, registrar not configured"
+                        )
+
+                    pending = False
+                    for target in op.metadata["targets"]:
+                        regk = target["regk"]
+                        regd = target.get("regd")
+                        target_sn = int(target["sn"])
+                        if regk not in rgy.regs or regk not in rgy.tevers:
+                            pending = True
+                            break
+
+                        if rgy.tevers[regk].sn < target_sn:
+                            pending = True
+                            break
+
+                        anchor = target.get("anc")
+                        if anchor is not None and regd is not None:
+                            if not ensure_registry_anchor(
+                                hby=self.hby,
+                                reger=rgy.reger,
+                                gid=op.metadata["pre"],
+                                regk=regk,
+                                regd=regd,
+                                anchor=anchor,
+                            ):
+                                pending = True
+                                break
+
+                        if regd is not None and rgy.reger.getAnc(dbing.dgKey(regk, regd)) is None:
+                            pending = True
+                            break
+
+                    if pending:
+                        if (dtnow - phase_start) > datetime.timedelta(seconds=30):
+                            done = True
+                            error = OperationStatus(
+                                code=504,
+                                message=(
+                                    f"long running {op.type} for {op.oid} timed out waiting "
+                                    f"for registry TEL replay"
+                                ),
+                                details=dict(
+                                    phase=phase,
+                                    source=op.metadata["source"],
+                                    targets=op.metadata["targets"],
+                                ),
+                            )
+                        else:
+                            done = False
+                    else:
+                        done = True
+                        response = dict(
+                            pre=op.metadata["pre"],
+                            source=op.metadata["source"],
+                            synced=[
+                                dict(
+                                    name=target["name"],
+                                    regk=target["regk"],
+                                    sn=target["sn"],
+                                )
+                                for target in op.metadata["targets"]
+                            ],
+                        )
+                else:
+                    raise kering.ValidationError(
+                        f"invalid long running {op.type} operation, unknown phase '{phase}'"
+                    )
+
+        elif op.type in (OpTypes.credsync,):
+            required = (
+                "pre",
+                "source",
+                "phase",
+                "phase_start",
+                "request",
+                "saids",
+                "synced",
+            )
+            missing = [field for field in required if field not in op.metadata]
+            if missing:
+                raise kering.ValidationError(
+                    f"invalid long running {op.type} operation, metadata missing required fields {tuple(missing)}"
+                )
+
+            if "error" in op.metadata and op.metadata["error"] is not None:
+                err = op.metadata["error"]
+                done = True
+                error = OperationStatus(
+                    code=err["code"],
+                    message=err["message"],
+                    details=err.get("details"),
+                )
+            else:
+                phase = op.metadata["phase"]
+                if phase != "replay":
+                    raise kering.ValidationError(
+                        f"invalid long running {op.type} operation, unknown phase '{phase}'"
+                    )
+
+                if self.registrar is None:
+                    raise kering.ValidationError(
+                        f"invalid long running {op.type} operation, registrar not configured"
+                    )
+
+                phase_start = helping.fromIso8601(op.metadata["phase_start"])
+                dtnow = helping.nowUTC()
+                rgy = self.registrar.rgy
+                stabilize_credsync_state(
+                    registrar=self.registrar,
+                    credentialer=self.credentialer,
+                )
+                statuses = credsync_statuses(rgy=rgy, saids=op.metadata["saids"])
+                pending = any(status["state"] != "ready" for status in statuses)
+
+                if pending:
+                    if (dtnow - phase_start) > datetime.timedelta(seconds=30):
+                        done = True
+                        error = OperationStatus(
+                            code=504,
+                            message=(
+                                f"long running {op.type} for {op.oid} timed out waiting "
+                                f"for credential history replay"
+                            ),
+                            details=dict(
+                                phase=phase,
+                                source=op.metadata["source"],
+                                saids=op.metadata["saids"],
+                                synced=op.metadata["synced"],
+                                statuses=statuses,
+                            ),
+                        )
+                    else:
+                        done = False
+                else:
+                    done = True
+                    response = dict(
+                        pre=op.metadata["pre"],
+                        source=op.metadata["source"],
+                        synced=op.metadata["saids"],
+                    )
 
         elif op.type in (OpTypes.done,):
             done = True
