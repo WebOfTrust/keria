@@ -64,6 +64,51 @@ Changes in this draft cover the delta from `0.2.0-rc2` (`6ad36d5e171c599b078624c
 - Updated the Docker build to run from the `uv`-managed environment and added a Docker validation step to CI.
 - Adjusted CI/runtime dependencies to pin `uv`, downgrade `lmdb` for Docker compatibility, and move GitHub Actions macOS testing to `macos-15`.
 
-## 0.2.0-rc2 and older releases
+## 0.3.0 - 2025-05-28
 
-Review git commit history for changelog notes.
+- Improved runtime logging with clearer formatting plus habitat name and prefix context in log messages.
+- Simplified graceful shutdown behavior and related runtime lifecycle handling.
+- Upgraded KERI to `1.2.6` and finalized the `0.3.0` version bump.
+
+## 0.2.0-rc4 - 2025-05-28
+
+- Fixed first-time IPEX grant/present flows by sending the agent and controller KELs needed by recipients to validate the credential chain.
+- Fixed credential deletion cleanup so KERIA-specific search indexes are removed with the credential record.
+- Removed the explicit setuptools dependency.
+
+## 0.2.0-rc2 and Older Releases
+
+### 0.2.0-rc2 - 2025-01-24
+
+- Added an API for creating new location schemes.
+- Fixed basic boot passwords to allow colon characters.
+- Fixed delegated multisig rotation by always routing Signify group messages through the agent proxy.
+- Upgraded KERI to `1.2.4`.
+
+### 0.2.0-rc1 - 2025-01-13
+
+- Added graceful shutdown handling for agents and the KERIA process, including `SIGTERM` support and the new serving/shutdown path.
+- Returned `400` for invalid end-role signatures while preserving the multisig-required `UnverifiedReplyError` behavior.
+- Refreshed release docs, Docker, CI, and `keria.json` documentation for the `0.2.0` release candidates.
+
+### 0.2.0 / 0.2.0-dev6 - 2024-12-12
+
+- Added experimental basic-auth protection for the boot endpoint.
+- Added environment-variable-based server configuration.
+- Exposed inception timestamps in identifier/hab info.
+- Added credential deletion support and explicit `404` behavior after deletion.
+- Added multi-arch Docker publishing support.
+
+### 0.2.0-dev5 through 0.2.0-dev0 - 2024
+
+- Expanded multisig and delegation support with delegation approval, delegated rotation fixes, multisig join/rotation fixes, submit/witness-receipt improvements, and better SignifyTS compatibility.
+- Expanded IPEX and credential flows with apply/offer/agree endpoints, multisig IPEX support, direct credential verification from `(acdc, iss)`, registry read endpoints, and better recipient routing.
+- Improved API usability with prefix-based identifier/addressing support, agent-config retrieval, `409` on already-booted agents, idle-agent release, and clearer long-running operation IDs and status handling.
+- Added more REST and OpenAPI documentation, plus broader test coverage around delegation, multisig, witness receipts, revocation, and credential workflows.
+- Kept pace with KERI/KERIpy, Falcon, Docker, and CI changes as the stack moved through the `1.2.x` transition.
+
+### 0.1.3 and Earlier - 2024
+
+- Established the early credential-registry lifecycle, including registry rename/join support, duplicate-name protection, and fixes for partially committed registry visibility.
+- Added the first IPEX apply/offer/agree support and tightened early long-running-operation handling.
+- Continued aligning with upstream KERI/KERIpy and Python runtime changes while filling in foundational tests and release automation.
