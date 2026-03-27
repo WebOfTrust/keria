@@ -214,10 +214,6 @@ class AgentSpecResource:
             "Registry",
             schema=marshmallow_dataclass.class_schema(credentialing.Registry)(),
         )
-        registrySchema = self.spec.components.schemas["Registry"]
-        registrySchema["properties"]["state"] = {
-            "$ref": "#/components/schemas/CredentialState"
-        }
 
         self.spec.components.schema(
             "AgentResourceResult",

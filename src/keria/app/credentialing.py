@@ -133,7 +133,7 @@ class Schema:
 
 @dataclass
 class CredentialStateBase:
-    vn: Tuple[int, int]
+    vn: List[int]
     i: str
     s: str
     d: str
@@ -207,11 +207,25 @@ class ClonedCredential:
 
 
 @dataclass
+class RegistryState:
+    vn: List[int]
+    i: str
+    s: str
+    d: str
+    ii: str
+    dt: str
+    et: Literal["vcp", "vrt"]
+    bt: str
+    b: List[str]
+    c: List[str]
+
+
+@dataclass
 class Registry:
     name: str
     regk: str
     pre: str
-    state: Union[CredentialStateIssOrRev, CredentialStateBisOrBrv]
+    state: RegistryState
 
 
 class RegistryCollectionEnd:
