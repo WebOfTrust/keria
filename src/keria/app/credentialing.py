@@ -203,7 +203,7 @@ class ClonedCredential:
     status: Union[CredentialStateIssOrRev, CredentialStateBisOrBrv]
     anchor: Anchor
     anc: AnchoringEvent  # type: ignore
-    ancatc: str
+    ancatc: List[str]
 
 
 @dataclass
@@ -832,6 +832,7 @@ class CredentialQueryCollectionEnd:
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
+        print(f"rep.data is {json.dumps(creds).encode("utf-8")}")
         rep.data = json.dumps(creds).encode("utf-8")
 
 
