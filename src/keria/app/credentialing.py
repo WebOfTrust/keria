@@ -832,7 +832,6 @@ class CredentialQueryCollectionEnd:
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
-        print(f"rep.data is {json.dumps(creds).encode("utf-8")}")
         rep.data = json.dumps(creds).encode("utf-8")
 
 
