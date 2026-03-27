@@ -237,10 +237,12 @@ def createCustomNestedField(
                     )
         elif customType.__origin__ is dict:
             return createOptionalField(
-                key, customType, mm_fields.Dict,
+                key,
+                customType,
+                mm_fields.Dict,
                 (),
                 {"keys": mm_fields.String(), "values": mm_fields.Raw()},
-                isOptional
+                isOptional,
             )
 
         # For other generic types, fall back to Raw field
@@ -394,10 +396,13 @@ def applyAltConstraintsToOpenApiSchema(
         variant = {
             "type": "object",
             "properties": {
-                k: v for k, v in properties.items()
+                k: v
+                for k, v in properties.items()
                 if k == keepField or k not in altConstraints
             },
-            "additionalProperties": openApiSchemaDict.get("additionalProperties", False),
+            "additionalProperties": openApiSchemaDict.get(
+                "additionalProperties", False
+            ),
         }
         variantRequired = baseRequired + ([keepField] if keepField in required else [])
         if variantRequired:

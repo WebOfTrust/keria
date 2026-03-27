@@ -94,7 +94,7 @@ acdcCustomTypes = {
     "a": ACDCAttributes,
     "A": Union[str, List[Any]],
     "e": Dict[str, Any],
-    "r": Dict[str, Any]
+    "r": Dict[str, Any],
 }
 acdcFieldDomV1 = SerderKERI.Fields[Protocols.acdc][Vrsn_1_0][None]
 ACDC_V_1, ACDCSchema_V_1 = dataclassFromFielddom(
