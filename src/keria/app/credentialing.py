@@ -22,7 +22,7 @@ from ..utils.openapi import dataclassFromFielddom
 from keri.core.serdering import Protocols, Vrsn_1_0, Vrsn_2_0, SerderKERI
 from ..core import httping, longrunning
 from marshmallow import fields, Schema as MarshmallowSchema
-from typing import List, Dict, Any, Optional, Tuple, Literal, Union
+from typing import List, Dict, Any, Optional, Literal, Union
 from .aiding import (
     Seal,
     ICP_V_1,
