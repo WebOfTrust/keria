@@ -2109,15 +2109,15 @@ class WellKnown:
 
 @dataclass
 class MemberEnds:
-    agent: Optional[Dict[str, str]] = None
-    controller: Optional[Dict[str, str]] = None
-    witness: Optional[Dict[str, str]] = None
-    registrar: Optional[Dict[str, str]] = None
-    watcher: Optional[Dict[str, str]] = None
-    judge: Optional[Dict[str, str]] = None
-    juror: Optional[Dict[str, str]] = None
-    peer: Optional[Dict[str, str]] = None
-    mailbox: Optional[Dict[str, str]] = None
+    agent: Optional[Dict[str, Dict[str, str]]] = None
+    controller: Optional[Dict[str, Dict[str, str]]] = None
+    witness: Optional[Dict[str, Dict[str, str]]] = None
+    registrar: Optional[Dict[str, Dict[str, str]]] = None
+    watcher: Optional[Dict[str, Dict[str, str]]] = None
+    judge: Optional[Dict[str, Dict[str, str]]] = None
+    juror: Optional[Dict[str, Dict[str, str]]] = None
+    peer: Optional[Dict[str, Dict[str, str]]] = None
+    mailbox: Optional[Dict[str, Dict[str, str]]] = None
 
 
 @dataclass

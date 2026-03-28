@@ -175,14 +175,36 @@ class AgentSpecResource:
                 {"$ref": "#/components/schemas/DRT_V_2"},
             ]
         }
-        credentialSchema["properties"]["anc"] = ancEvent
+        self.spec.components.schemas["KeyEvent"] = ancEvent
+        credentialSchema["properties"]["anc"] = {
+            "$ref": "#/components/schemas/KeyEvent"
+        }
 
         # CredentialState
         self.spec.components.schemas["CredentialState"] = {
             "oneOf": [
                 {"$ref": "#/components/schemas/CredentialStateIssOrRev"},
                 {"$ref": "#/components/schemas/CredentialStateBisOrBrv"},
-            ]
+            ],
+            "properties": {
+                "et": {
+                    "type": "string",
+                    "enum": ["iss", "rev", "bis", "brv"],
+                },
+                "ra": {
+                    "type": "object",
+                    "description": "Empty for iss/rev, RaFields for bis/brv",
+                },
+            },
+            "discriminator": {
+                "propertyName": "et",
+                "mapping": {
+                    "iss": "#/components/schemas/CredentialStateIssOrRev",
+                    "rev": "#/components/schemas/CredentialStateIssOrRev",
+                    "bis": "#/components/schemas/CredentialStateBisOrBrv",
+                    "brv": "#/components/schemas/CredentialStateBisOrBrv",
+                },
+            },
         }
 
         credentialSchema["properties"]["status"] = {
@@ -194,10 +216,6 @@ class AgentSpecResource:
             "Registry",
             schema=marshmallow_dataclass.class_schema(credentialing.Registry)(),
         )
-        registrySchema = self.spec.components.schemas["Registry"]
-        registrySchema["properties"]["state"] = {
-            "$ref": "#/components/schemas/CredentialState"
-        }
 
         self.spec.components.schema(
             "AgentResourceResult",
@@ -314,7 +332,9 @@ class AgentSpecResource:
             schema=marshmallow_dataclass.class_schema(agenting.KeyEventRecord)(),
         )
         keyEventRecordSchema = self.spec.components.schemas["KeyEventRecord"]
-        keyEventRecordSchema["properties"]["ked"] = ancEvent
+        keyEventRecordSchema["properties"]["ked"] = {
+            "$ref": "#/components/schemas/KeyEvent"
+        }
 
         # Register the AgentConfig schema
         self.spec.components.schema(
