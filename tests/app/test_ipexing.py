@@ -367,10 +367,8 @@ def test_ipex_grant(helpers, mockHelpingNowIso8601, seeder):
         assert res.status_code == 200
         assert res.json == {
             "done": False,
-            "error": None,
             "metadata": {"said": "ELkQART3yXFd8C6ImzGyqlDrgVUDtCfh1Goqr1PCbi9r"},
             "name": "exchange.ELkQART3yXFd8C6ImzGyqlDrgVUDtCfh1Goqr1PCbi9r",
-            "response": None,
         }
         assert len(agent.exchanges) == 1
         assert len(agent.grants) == 1
@@ -1766,10 +1764,8 @@ def test_ipex_apply(helpers, mockHelpingNowIso8601):
         res = client.simulate_post(path="/identifiers/test/ipex/apply", body=data)
         assert res.json == {
             "done": False,
-            "error": None,
             "metadata": {"said": "EPAThHL_ExMdhQoLTxsMWdsDo-aunDFZPkK_UKlCVe2d"},
             "name": "exchange.EPAThHL_ExMdhQoLTxsMWdsDo-aunDFZPkK_UKlCVe2d",
-            "response": None,
         }
 
         assert res.status_code == 200
@@ -1905,10 +1901,8 @@ def test_ipex_offer(helpers, mockHelpingNowIso8601):
         res = client.simulate_post(path="/identifiers/test/ipex/offer", body=data)
         assert res.json == {
             "done": False,
-            "error": None,
             "metadata": {"said": "ECa9XU2648ryO8PXKEcWkS7V-hvpj86Nh3rjGv93g6jT"},
             "name": "exchange.ECa9XU2648ryO8PXKEcWkS7V-hvpj86Nh3rjGv93g6jT",
-            "response": None,
         }
 
         assert res.status_code == 200
@@ -1967,10 +1961,8 @@ def test_ipex_offer(helpers, mockHelpingNowIso8601):
         res = client.simulate_post(path="/identifiers/test/ipex/offer", body=data)
         assert res.json == {
             "done": False,
-            "error": None,
             "metadata": {"said": "EM79tlKrG142-jcaglGnIXKRfLW_DKOK5pnTwN60yz5U"},
             "name": "exchange.EM79tlKrG142-jcaglGnIXKRfLW_DKOK5pnTwN60yz5U",
-            "response": None,
         }
 
         assert res.status_code == 200
@@ -2085,10 +2077,8 @@ def test_ipex_agree(helpers, mockHelpingNowIso8601):
         res = client.simulate_post(path="/identifiers/test/ipex/agree", body=data)
         assert res.json == {
             "done": False,
-            "error": None,
             "metadata": {"said": "ENMBCgTGXxiMuTMcfGWp4uqnsiso1Jm3tAAn1x7ZPRox"},
             "name": "exchange.ENMBCgTGXxiMuTMcfGWp4uqnsiso1Jm3tAAn1x7ZPRox",
-            "response": None,
         }
 
         assert res.status_code == 200
