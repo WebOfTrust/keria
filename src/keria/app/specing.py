@@ -175,7 +175,8 @@ class AgentSpecResource:
                 {"$ref": "#/components/schemas/DRT_V_2"},
             ]
         }
-        credentialSchema["properties"]["anc"] = ancEvent
+        self.spec.components.schemas["KeyEvent"] = ancEvent
+        credentialSchema["properties"]["anc"] = {"$ref": "#/components/schemas/KeyEvent"}
 
         # CredentialState
         self.spec.components.schemas["CredentialState"] = {
@@ -329,7 +330,7 @@ class AgentSpecResource:
             schema=marshmallow_dataclass.class_schema(agenting.KeyEventRecord)(),
         )
         keyEventRecordSchema = self.spec.components.schemas["KeyEventRecord"]
-        keyEventRecordSchema["properties"]["ked"] = ancEvent
+        keyEventRecordSchema["properties"]["ked"] = {"$ref": "#/components/schemas/KeyEvent"}
 
         # Register the AgentConfig schema
         self.spec.components.schema(
