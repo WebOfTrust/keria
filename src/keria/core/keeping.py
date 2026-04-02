@@ -7,7 +7,7 @@ keria.core.keeping module
 
 from dataclasses import dataclass, asdict, field
 
-from keri.app.keeping import PreSit, Algos, PubLot, PubSet
+from keri.app.keeping import PreSit, Algos, PubLot, PubSet, ExternModule
 from keri import core
 from keri.core import coring
 from keri.core.coring import Tiers, MtrDex
@@ -173,8 +173,10 @@ class RemoteManager:
                 return RandyManager(rb=self.rb)
             case Algos.group:
                 return GroupManager(rb=self.rb, rm=self)
-            case _:
+            case Algos.extern:
                 return ExternKeeper(rb=self.rb)
+            case _:
+                raise ValueError(f"Unsupported algorithm: {algo}")
 
     @property
     def sxlt(self):
@@ -440,9 +442,21 @@ class GroupManager:
         return prms
 
 
-class ExternKeeper:
+class ExternKeeper(ExternModule):
+
     def __init__(self, rb: RemoteKeeper):
         self.rb = rb
 
-    def incept(self, **kwargs):
-        pass
+    def incept(self, pre, verfers=None, digers=None, **kwargs):
+        pp = Prefix(pidx=0, algo=Algos.extern)
+        if not self.rb.pres.put(pre, val=pp):
+            raise ValueError(f"Already incepted pre={pre}.")
+
+    def rotate(self, pre, verfers=None, digers=None, **kwargs):
+        if (pp := self.rb.pres.get(pre)) is None or pp.algo != Algos.extern:
+            raise ValueError(f"Attempt to rotate nonexistent or invalid pre={pre}.")
+
+    def params(self, pre):
+        if (pp := self.rb.pres.get(pre)) is None or pp.algo != Algos.extern:
+            raise ValueError(f"Attempt to load nonexistent or invalid pre={pre}.")
+        return dict(extern=dict())
