@@ -459,7 +459,8 @@ class ExternManager(ExternModule):
     def params(self, pre):
         if (pp := self.rb.pres.get(pre)) is None or pp.algo != Algos.extern:
             raise ValueError(f"Attempt to load nonexistent or invalid pre={pre}.")
-        return dict(extern=dict())
+        prms = dict(extern=asdict(pp))
+        return prms
 
 
 def __getattr__(name):
