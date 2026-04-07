@@ -174,7 +174,7 @@ class RemoteManager:
             case Algos.group:
                 return GroupManager(rb=self.rb, rm=self)
             case Algos.extern:
-                return ExternKeeper(rb=self.rb)
+                return ExternManager(rb=self.rb)
             case _:
                 raise ValueError(f"Unsupported algorithm: {algo}")
 
@@ -442,7 +442,7 @@ class GroupManager:
         return prms
 
 
-class ExternKeeper(ExternModule):
+class ExternManager(ExternModule):
 
     def __init__(self, rb: RemoteKeeper):
         self.rb = rb
@@ -460,3 +460,16 @@ class ExternKeeper(ExternModule):
         if (pp := self.rb.pres.get(pre)) is None or pp.algo != Algos.extern:
             raise ValueError(f"Attempt to load nonexistent or invalid pre={pre}.")
         return dict(extern=dict())
+
+
+def __getattr__(name):
+    if name == "ExternKeeper":
+        import warnings
+        warnings.warn(
+            "ExternKeeper has been renamed to ExternManager. "
+            "ExternKeeper will be removed in a future release.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return ExternManager
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
