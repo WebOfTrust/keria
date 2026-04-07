@@ -494,7 +494,7 @@ wheels = [
 [[package]]
 name = "keri"
 version = "1.2.12"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://gitlab.vroblok.io/m00sey/keripy.git?rev=enc%2Fmove-extern#c7848bbfea28b4ec55f450b5aa46f9e639137266" }
 dependencies = [
     { name = "apispec" },
     { name = "blake3" },
@@ -517,7 +517,6 @@ dependencies = [
     { name = "qrcode" },
     { name = "semver" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f1/c6/c552cd481fac99102e0fd753b9df302fbe6acc7c766164e0c73464218724/keri-1.2.12.tar.gz", hash = "sha256:06c86aee587b81f1975b21e61a33b2402edf2ede47c0d7e693f66faad28ecae6", size = 479456, upload-time = "2026-03-04T22:44:13.633Z" }
 
 [[package]]
 name = "keria"
@@ -555,7 +554,7 @@ requires-dist = [
     { name = "falcon", specifier = "==4.0.2" },
     { name = "hio", specifier = "==0.6.14" },
     { name = "http-sfv", specifier = "==0.9.9" },
-    { name = "keri", specifier = "==1.2.12" },
+    { name = "keri", git = "https://gitlab.vroblok.io/m00sey/keripy.git?rev=enc%2Fmove-extern" },
     { name = "marshmallow-dataclass", specifier = "==8.7.1" },
     { name = "mnemonic", specifier = "==0.21" },
     { name = "multicommand", specifier = ">=1.0.0" },

@@ -443,7 +443,6 @@ class GroupManager:
 
 
 class ExternManager(ExternModule):
-
     def __init__(self, rb: RemoteKeeper):
         self.rb = rb
 
@@ -466,6 +465,7 @@ class ExternManager(ExternModule):
 def __getattr__(name):
     if name == "ExternKeeper":
         import warnings
+
         warnings.warn(
             "ExternKeeper has been renamed to ExternManager. "
             "ExternKeeper will be removed in a future release.",
