@@ -34,6 +34,7 @@ parser.add_argument(
     "--force", action="store_true", required=False, default=False, help="Perform update"
 )
 
+
 def handler(args):
     kwa = dict(args=args)
     return directing.runController([doing.doify(fix, **kwa)], expire=0.0)
