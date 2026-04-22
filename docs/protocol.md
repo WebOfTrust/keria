@@ -86,6 +86,80 @@ Once these steps are complete the Signify Client can begin using the rest of the
 Document the steps for retrieving state from the Admin interface and updating.
 
 
+## Delegated Identifier Request Notifications
+
+Delegated identifiers use two distinct protocol steps:
+
+1. The delegatee creates a delegated inception (`dip`) or delegated rotation
+   (`drt`) event that names the delegator in its `di` field.
+2. The delegator manually approves that event by anchoring the delegate event
+   seal in a delegator interaction event. In Signify this is exposed as
+   `delegations().approve(...)`, which posts to
+   `/identifiers/{name}/delegation`.
+
+The delegator approval event is the authoritative approval. A notification is
+only a review and discovery surface for wallets and other agents.
+
+### Request EXN
+
+When a delegated event has enough witness receipts to be sent to the
+delegator, KERIA also sends a peer-to-peer EXN on route
+`/delegate/request`. The EXN payload contains the delegator AID:
+
+```json
+{
+  "delpre": "delegator qb64 AID"
+}
+```
+
+The EXN embeds the delegated event as `e.evt`. On receipt, KERIA converts the
+verified EXN into a notification with these attributes:
+
+```json
+{
+  "src": "verified EXN sender AID",
+  "r": "/delegate/request",
+  "delpre": "local delegator qb64 AID",
+  "ked": "embedded delegated event",
+  "aids": ["optional multisig participant AIDs"]
+}
+```
+
+Wallets can derive the seal to review and approve from the embedded event:
+
+```json
+{
+  "i": "delegate event prefix",
+  "s": "delegate event sequence number",
+  "d": "delegate event SAID"
+}
+```
+
+For delegated inception, `s` is `"0"` and `d` is usually the delegate prefix.
+For delegated rotation, `s` is the rotation sequence number and `d` is the
+rotation event SAID. Wallets should derive the seal from the event instead of
+hard-coding the inception case.
+
+### Sender Verification Precondition
+
+The `/delegate/request` EXN is signed by the sender habitat selected by KERIA's
+delegation `Anchorer`. For a Signify managed single-sig AID, that sender is
+normally the delegatee agent/proxy AID, because Signify habitats do not sign
+inside KERIA. For a group delegated AID, the sender is the local member habitat.
+
+The delegator must already know the EXN sender's KEL before its exchanger can
+validate the request and create a notification. In practice this means the
+delegator should have resolved a delegate-side OOBI before the delegate starts
+delegated inception or rotation. If the sender is unknown, the inbound EXN will
+not produce a `/delegate/request` notification, even though the raw delegated
+event may still be sent separately.
+
+This precondition does not mean the delegator must know the new delegated AID
+before the request. The new AID is the subject of the request. The delegator
+only needs to know the stable delegate-side identity that signs and forwards
+the request.
+
+
 ## Key Generate Methods
 The KERIA service supports the following key generation methods where the Signify Client generates the keys and only ever sends encrypted key material (if any) to the server.
 1. Salty Keys - HDK key chain generated from a salt per aid that is encrypted and stored server.
