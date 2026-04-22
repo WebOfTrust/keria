@@ -15,7 +15,7 @@ from keri import kering
 from keri.app import habbing
 from keri.core import coring, eventing, parsing
 
-from keria.app import aiding, delegating
+from keria.app import aiding, delegating, notifying
 from keria.core import longrunning
 from keria.end import ending
 from keria.app import agenting
@@ -61,6 +61,107 @@ def test_sealer():
             anchorer.complete(prefixer=prefixer, seqner=seqner, saider=saider)
 
         assert anchorer.complete(prefixer=prefixer, seqner=seqner) is True
+
+
+def test_delegate_request_notification(helpers):
+    torname = "delegator"
+    teename = "delegatee"
+
+    with (
+        habbing.openHby(name="p1", temp=True) as hby,
+        helpers.openKeria() as (toragency, toragent, torapp, torclient),
+    ):
+        anchorer = delegating.Anchorer(hby=hby)
+
+        ending.loadEnds(app=torapp, agency=toragency)
+        notifying.loadEnds(app=torapp)
+        torapp.add_route("/identifiers", aiding.IdentifierCollectionEnd())
+
+        op = helpers.createAid(torclient, torname, b"0123456789abcdef")
+        aid = op["response"]
+        torpre = aid["i"]
+
+        fakeproxy = hby.makeHab("proxy")
+        teehab = hby.makeHab(teename, delpre=torpre)
+
+        # The delegate-side Anchorer refuses to process delegation until the
+        # delegate knows the delegator's KEL.Resolve the delegator agent OOBI
+        # into the external delegate HBY so it can process the delegation request
+        toroobi = torclient.simulate_get(
+            path=f"/oobi/{torpre}/agent/{toragent.agentHab.pre}"
+        )
+        assert toroobi.status_code == 200
+        assert toroobi.headers["Content-Type"] == "application/json+cesr"
+        teehab.psr.parse(ims=toroobi.content)
+
+        # The /delegate/request EXN is signed by the proxy sender in this
+        # single-sig flow.  The receiving KERIA agent must know that sender's
+        # KEL or its Exchanger will escrow/reject the EXN before the handler can
+        # create a notification.
+        for msg in fakeproxy.db.clonePreIter(pre=fakeproxy.pre):
+            parsing.Parser().parse(ims=bytearray(msg), kvy=toragent.kvy, local=True)
+
+        anchorer.delegation(pre=teehab.pre, proxy=fakeproxy)
+        # Drive only the escrow branch that emits the outbound messages.  Do
+        # not run the Poster's deliver loop here; keeping the queued messages
+        # lets this test assert both the request EXN and the raw delegated event.
+        anchorer.processPartialWitnessEscrow()
+
+        evts = list(anchorer.postman.evts)
+        assert len(evts) == 2
+
+        # First message is the UX-facing KERIpy-compatible request EXN.  This
+        # is the new behavior KERIA was missing.
+        request = evts[0]
+        assert request["src"] == fakeproxy.pre
+        assert request["dest"] == torpre
+        assert request["topic"] == "delegate"
+        assert request["hab"] == fakeproxy
+        exn = request["serder"]
+        assert exn.ked["r"] == "/delegate/request"
+        assert exn.ked["i"] == fakeproxy.pre
+        assert exn.ked["a"]["delpre"] == torpre
+        assert exn.ked["a"]["aids"] == []
+
+        # Second message is still the raw delegated inception event, preserving
+        # the existing delegation protocol path used by the delegator.
+        delegated = evts[1]
+        assert delegated["src"] == fakeproxy.pre
+        assert delegated["dest"] == torpre
+        assert delegated["topic"] == "delegate"
+        assert delegated["hab"] == fakeproxy
+        assert delegated["serder"].ked["t"] == coring.Ilks.dip
+        assert delegated["serder"].ked["i"] == teehab.pre
+
+        ims = bytearray(exn.raw) + bytearray(request["attachment"])
+        # Parse through the real KERIA agent parser so the registered
+        # DelegateRequestHandler, not a direct helper call, creates the
+        # notification.
+        toragent.parser.parseOne(ims=ims)
+        assert toragent.exc.complete(said=exn.said) is True
+
+        res = torclient.simulate_get(path="/notifications")
+        assert res.status_code == 200
+        notes = res.json
+        notifications = [
+            note
+            for note in notes
+            if note["a"].get("r") == delegating.DelegateRequestHandler.resource
+        ]
+        assert len(notifications) == 1
+
+        attrs = notifications[0]["a"]
+        assert attrs["src"] == fakeproxy.pre
+        assert attrs["r"] == delegating.DelegateRequestHandler.resource
+        assert attrs["delpre"] == torpre
+        assert attrs["aids"] == []
+
+        ked = attrs["ked"]
+        assert ked["t"] == coring.Ilks.dip
+        assert ked["i"] == teehab.pre
+        assert ked["s"] == "0"
+        assert ked["d"] == teehab.pre
+        assert ked["di"] == torpre
 
 
 def test_delegator_end(helpers):
