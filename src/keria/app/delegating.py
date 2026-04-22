@@ -1,3 +1,20 @@
+"""Delegated identifier request and approval support.
+
+Delegation has two separate protocol surfaces that are easy to conflate:
+
+* The delegatee sends a ``/delegate/request`` EXN to the delegator so user
+  agents can surface a reviewable request. This EXN embeds the delegated
+  inception or rotation event and is only a notification/discovery surface.
+* The delegator approves manually by anchoring the delegate event seal in a
+  delegator interaction event via ``/identifiers/{name}/delegation``.
+
+The request EXN is signed by the sender habitat selected by ``Anchorer``. For
+Signify agents that is usually the delegatee's agent/proxy AID, not the new
+delegated AID itself. Therefore the delegator must already know enough of that
+sender's KEL, normally by resolving a delegate-side OOBI, before its exchanger
+can validate the EXN and convert it into a notification.
+"""
+
 import falcon
 
 from hio.base import doing
@@ -5,6 +22,7 @@ from keri import kering, help
 from keri.app import forwarding, agenting, habbing
 from keri.core import coring, serdering
 from keri.db import dbing
+from keri.peer import exchanging
 from keria.core import httping, longrunning
 
 DELEGATION_ROUTE = "/identifiers/{name}/delegation"
@@ -190,8 +208,10 @@ class Anchorer(doing.DoDoer):
                     pre,
                     serder.pre,
                 )
+                smids = []
                 if isinstance(hab, habbing.GroupHab):
                     phab = hab.mhab
+                    smids = hab.smids
                 elif self.proxy is not None:
                     phab = self.proxy
                 elif hab.kever.sn > 0:
@@ -204,6 +224,20 @@ class Anchorer(doing.DoDoer):
                 evt = hab.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
 
                 srdr = serdering.SerderKERI(raw=evt)
+                # Send the UX-facing request EXN before the raw delegated event.
+                # The EXN sender is phab, so the delegator must already know
+                # phab's KEL or the exchanger will reject the request as coming
+                # from an unknown sender.
+                exn, atc = delegateRequestExn(
+                    phab, delpre=delpre, evt=bytes(evt), aids=smids
+                )
+                self.postman.send(
+                    hab=phab,
+                    dest=delpre,
+                    topic="delegate",
+                    serder=exn,
+                    attachment=atc,
+                )
                 del evt[: srdr.size]
                 self.postman.send(
                     hab=phab, dest=delpre, topic="delegate", serder=srdr, attachment=evt
@@ -211,6 +245,93 @@ class Anchorer(doing.DoDoer):
 
                 self.hby.db.dpwe.rem(keys=(pre, said))
                 self.hby.db.dune.pin(keys=(srdr.pre, srdr.said), val=srdr)
+
+
+def loadHandlers(hby, exc, notifier):
+    """Load peer-to-peer delegation request handlers.
+
+    KERIA agents need this handler so an inbound ``/delegate/request`` EXN
+    becomes a normal KERIA notification. Without it the raw delegated event can
+    still be processed eventually, but delegator-facing wallet UX has no
+    actionable request to show.
+    """
+
+    delreq = DelegateRequestHandler(hby=hby, notifier=notifier)
+    exc.addHandler(delreq)
+
+
+class DelegateRequestHandler:
+    """Convert inbound delegation request EXNs into KERIA notifications.
+
+    The notification attributes intentionally mirror KERIpy's delegation
+    handler: ``src`` is the verified EXN sender, ``delpre`` is the local
+    delegator AID, and ``ked`` is the embedded delegated event. The handler does
+    not approve delegation. Approval remains an explicit delegator interaction
+    event created later by ``DelegatorEnd``.
+    """
+
+    resource = "/delegate/request"
+
+    def __init__(self, hby, notifier):
+        self.hby = hby
+        self.notifier = notifier
+
+    def handle(self, serder, attachments=None):
+        src = serder.pre
+        pay = serder.ked["a"]
+        embeds = serder.ked["e"]
+
+        delpre = pay["delpre"]
+        if delpre not in self.hby.habs:
+            logger.error("invalid delegate request message, no local delpre: %s", pay)
+            return
+
+        data = dict(
+            src=src,
+            r=self.resource,
+            delpre=delpre,
+            ked=embeds["evt"],
+        )
+        if "aids" in pay:
+            data["aids"] = pay["aids"]
+
+        self.notifier.add(attrs=data)
+
+
+def delegateRequestExn(hab, delpre, evt, aids=None):
+    """Create the peer-to-peer delegation request EXN.
+
+    Parameters:
+        hab (Hab): signing sender habitat for the request EXN. In Signify this
+            is commonly the delegatee's agent/proxy habitat.
+        delpre (str): qb64 delegator AID that should receive and review the
+            request.
+        evt (bytes): serialized delegated inception or rotation event with
+            attachments still present after the embedded event.
+        aids (list | None): optional multisig participant AIDs.
+
+    Returns:
+        tuple: ``(exn, atc)`` where ``exn`` is the request exchange message and
+        ``atc`` is the endorsed attachment stream for forwarding.
+    """
+
+    data = dict(delpre=delpre)
+    embeds = dict(evt=evt)
+
+    if aids is not None:
+        data["aids"] = aids
+
+    exn, _ = exchanging.exchange(
+        route=DelegateRequestHandler.resource,
+        modifiers=dict(),
+        payload=data,
+        sender=hab.pre,
+        embeds=embeds,
+    )
+    ims = hab.endorse(serder=exn, last=False, pipelined=False)
+    del ims[: exn.size]
+
+    return exn, ims
 
 
 class DelegatorEnd:
