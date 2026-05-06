@@ -58,7 +58,15 @@ from keri.app import challenging
 
 from keria.utils.openapi import dataclassFromFielddom
 
-from . import aiding, notifying, indirecting, credentialing, ipexing, delegating
+from . import (
+    aiding,
+    notifying,
+    indirecting,
+    credentialing,
+    ipexing,
+    delegating,
+    streaming,
+)
 from . import grouping as keriagrouping
 from .serving import GracefulShutdownDoer
 from .. import log_name, ogler, set_log_level
@@ -629,6 +637,7 @@ class Agent(doing.DoDoer):
             grants (Deck): IPEX grant messages.
             admits (Deck): IPEX admit messages.
             submits (Deck): KEL messages to be resubmitted to witnesses to obtain receipts of.
+            signalCues (Deck): Generic signed SSE signal cues for connected edge clients.
         """
         self.agency = agency
         self.caid = caid
@@ -659,6 +668,8 @@ class Agent(doing.DoDoer):
         self.grants = decking.Deck()
         self.admits = decking.Deck()
         self.submits = decking.Deck()
+        self.signalCues = decking.Deck()
+        self.sseBroadcaster = streaming.SseBroadcaster()
 
         receiptor = agenting.Receiptor(hby=hby)
         self.witq = agenting.WitnessInquisitor(hby=self.hby)
@@ -706,6 +717,12 @@ class Agent(doing.DoDoer):
             registrar=self.registrar,
             verifier=self.verifier,
             notifier=self.notifier,
+        )
+        self.sseBroadcasterDoer = streaming.SseBroadcasterDoer(
+            agent=self,
+            cues=self.signalCues,
+            broadcaster=self.sseBroadcaster,
+            tock=self.tocks.get("sseBroadcaster", 0.0),
         )
 
         self.seeker = basing.Seeker(
@@ -839,6 +856,7 @@ class Agent(doing.DoDoer):
                     queries=self.queries,
                     tock=self.tocks.get("exchangecue", 0.0),
                 ),
+                self.sseBroadcasterDoer,
                 self.submitter,
             ]
         )
@@ -962,6 +980,7 @@ def createAdminServerDoer(config: KERIAServerConfig, agency: Agency):
 
     keriaexchanging.loadEnds(app=adminApp)
     ipexing.loadEnds(app=adminApp)
+    streaming.loadEnds(app=adminApp)
 
     adminServer = createHttpServer(
         config.adminPort, adminApp, config.keyPath, config.certPath, config.caFilePath
