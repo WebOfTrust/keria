@@ -3,7 +3,7 @@
 main package
 """
 
-__version__ = "0.4.0"  # also change in setup.py
+__version__ = "0.4.1"  # also change in setup.py
 
 import logging
 from hio.help import ogling
