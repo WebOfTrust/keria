@@ -1197,32 +1197,71 @@ def test_identifier_collection_end(helpers):
             "description": "unknown delegator EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHUNKNx",
         }
 
-    # Test extern keys for HSM integration, only initial tests, work still needed
-    with helpers.openKeria() as (agency, agent, app, client):
-        end = aiding.IdentifierCollectionEnd()
-        resend = aiding.IdentifierResourceEnd()
-        app.add_route("/identifiers", end)
-        app.add_route("/identifiers/{name}", resend)
+    # Test extern keys for HSM integration, complete implementation test
+        with helpers.openKeria() as (agency, agent, app, client):
+            end = aiding.IdentifierCollectionEnd()
+            resend = aiding.IdentifierResourceEnd()
+            app.add_route("/identifiers", end)
+            app.add_route("/identifiers/{name}", resend)
+            app.add_route("/identifiers/{name}/events", resend)
 
-        client = testing.TestClient(app)
+            client = testing.TestClient(app)
 
-        # Test with randy
-        serder, signers = helpers.inceptExtern(count=1)
-        sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
+            salt = b"0123456789abcdef"
+            
+            # Test Inception
+            serder, signers = helpers.incept(salt, "signify:aid", pidx=0)
+            sigers = [signer.sign(ser=serder.raw, index=0).qb64 for signer in signers]
 
-        body = {
-            "name": "randy1",
-            "icp": serder.ked,
-            "sigs": sigers,
-            "extern": {
-                "stem": "test-fake-stem",
-                "transferable": True,
-            },
-        }
-        res = client.simulate_post(path="/identifiers", body=json.dumps(body))
-        assert res.status_code == 202
+            body = {
+                "name": "extern1",
+                "icp": serder.ked,
+                "sigs": sigers,
+                "extern": {
+                    "extern_type": "aws_kms",
+                    "pidx": 0
+                },
+            }
+            res = client.simulate_post(path="/identifiers", body=json.dumps(body))
+            assert res.status_code == 202
 
+            # Verify params
+            res = client.simulate_get(path="/identifiers")
+            assert res.status_code == 200
+            
+            res = client.simulate_get(path="/identifiers/extern1")
+            assert res.status_code == 200
+            aid_info = res.json
+            assert aid_info["prefix"] == serder.pre
+            assert aid_info[Algos.extern]["extern_type"] == "aws_kms"
+            assert aid_info[Algos.extern]["pidx"] == 0
 
+            # Test rotation
+            bodyrot = helpers.createRotate(
+                aid_info, salt, signers, pidx=0, ridx=1, kidx=1, wits=[], toad=0
+            )
+            
+            # Remove temporary salty params and replace with extern params
+            if "salty" in bodyrot:
+                del bodyrot["salty"]
+                
+            bodyrot["extern"] = {
+                "extern_type": "ledger",
+                "pidx": 1
+            }
+
+            res = client.simulate_post(
+                path="/identifiers/extern1/events", body=json.dumps(bodyrot)
+            )
+            assert res.status_code == 200
+
+            # Verify updated params after rotation
+            res = client.simulate_get(path="/identifiers/extern1")
+            assert res.status_code == 200
+            aid_info = res.json
+            assert aid_info[Algos.extern]["extern_type"] == "ledger"
+            assert aid_info[Algos.extern]["pidx"] == 1
+            
 def test_challenge_ends(helpers):
     with helpers.openKeria() as (agency, agent, app, client):
         end = aiding.IdentifierCollectionEnd()
