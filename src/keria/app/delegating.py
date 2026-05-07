@@ -19,7 +19,7 @@ import falcon
 
 from hio.base import doing
 from keri import kering, help
-from keri.app import forwarding, agenting, habbing
+from keri.app import forwarding, agenting, habbing, delegating
 from keri.core import coring, serdering
 from keri.db import dbing
 from keri.peer import exchanging
@@ -256,46 +256,8 @@ def loadHandlers(hby, exc, notifier):
     actionable request to show.
     """
 
-    delreq = DelegateRequestHandler(hby=hby, notifier=notifier)
+    delreq = delegating.DelegateRequestHandler(hby=hby, notifier=notifier)
     exc.addHandler(delreq)
-
-
-class DelegateRequestHandler:
-    """Convert inbound delegation request EXNs into KERIA notifications.
-
-    The notification attributes intentionally mirror KERIpy's delegation
-    handler: ``src`` is the verified EXN sender, ``delpre`` is the local
-    delegator AID, and ``ked`` is the embedded delegated event. The handler does
-    not approve delegation. Approval remains an explicit delegator interaction
-    event created later by ``DelegatorEnd``.
-    """
-
-    resource = "/delegate/request"
-
-    def __init__(self, hby, notifier):
-        self.hby = hby
-        self.notifier = notifier
-
-    def handle(self, serder, attachments=None):
-        src = serder.pre
-        pay = serder.ked["a"]
-        embeds = serder.ked["e"]
-
-        delpre = pay["delpre"]
-        if delpre not in self.hby.habs:
-            logger.error("invalid delegate request message, no local delpre: %s", pay)
-            return
-
-        data = dict(
-            src=src,
-            r=self.resource,
-            delpre=delpre,
-            ked=embeds["evt"],
-        )
-        if "aids" in pay:
-            data["aids"] = pay["aids"]
-
-        self.notifier.add(attrs=data)
 
 
 def delegateRequestExn(hab, delpre, evt, aids=None):
@@ -322,7 +284,7 @@ def delegateRequestExn(hab, delpre, evt, aids=None):
         data["aids"] = aids
 
     exn, _ = exchanging.exchange(
-        route=DelegateRequestHandler.resource,
+        route=delegating.DelegateRequestHandler.resource,  # /delegate/resource
         modifiers=dict(),
         payload=data,
         sender=hab.pre,
@@ -417,11 +379,10 @@ def approveDelegation(hab, anc) -> str:
             dgkey = dbing.dgKey(
                 coring.Saider(qb64=teepre).qb64b, coring.Saider(qb64=teesaid).qb64b
             )
-            # the dip event should have been received from the delegatee via a postman call
-            # and will be sitting in the delegator escrows (hence the hab.db.delegables above)
-            # adding the authorize event seal will allow the dip to be processed
-            # and added to the delegator kever
+            # The dip event should have been received from the delegatee via an HTTP call and be in
+            # the delegator escrows (hence the hab.db.delegables above).
+            # Adding the authorize event seal allows the dip to be processed and added to the
+            # delegator kever
             hab.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
 
     return teepre
-    # raise falcon.HTTPBadRequest(title=f"No delegables found for delegator {hab.pre} to approve delegatee {teepre}")

@@ -13,6 +13,7 @@ import pytest
 from hio.base import doing
 from keri import kering
 from keri.app import habbing
+from keri.app.delegating import DelegateRequestHandler
 from keri.core import coring, eventing, parsing
 
 from keria.app import aiding, delegating, notifying
@@ -146,13 +147,13 @@ def test_delegate_request_notification(helpers):
         notifications = [
             note
             for note in notes
-            if note["a"].get("r") == delegating.DelegateRequestHandler.resource
+            if note["a"].get("r") == DelegateRequestHandler.resource
         ]
         assert len(notifications) == 1
 
         attrs = notifications[0]["a"]
         assert attrs["src"] == fakeproxy.pre
-        assert attrs["r"] == delegating.DelegateRequestHandler.resource
+        assert attrs["r"] == DelegateRequestHandler.resource
         assert attrs["delpre"] == torpre
         assert attrs["aids"] == []
 

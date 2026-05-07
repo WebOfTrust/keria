@@ -20,7 +20,7 @@ from keri.core import eventing, coring, serdering
 from keri.db import dbing, koming
 from keri.help import helping
 
-from keria.app import delegating
+from keria.app.delegating import approveDelegation
 
 # long running operation types
 Typeage = namedtuple(
@@ -367,7 +367,7 @@ class Monitor:
                     response = op.metadata[reqtee]
                 else:
                     hab = self.hby.habByPre(kever.prefixer.qb64)
-                    delegating.approveDelegation(hab, anc)
+                    approveDelegation(hab, anc)
                     done = False
             else:
                 raise falcon.HTTPBadRequest(
