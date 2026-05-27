@@ -22,7 +22,7 @@ from ..utils.openapi import dataclassFromFielddom
 from keri.core.serdering import Protocols, Vrsn_1_0, Vrsn_2_0, SerderKERI
 from ..core import httping, longrunning
 from marshmallow import fields, Schema as MarshmallowSchema
-from typing import List, Dict, Any, Optional, Tuple, Literal, Union
+from typing import List, Dict, Any, Optional, Literal, Union
 from .aiding import (
     Seal,
     ICP_V_1,
@@ -93,6 +93,8 @@ class ACDCAttributes:
 acdcCustomTypes = {
     "a": ACDCAttributes,
     "A": Union[str, List[Any]],
+    "e": Dict[str, Any],
+    "r": Dict[str, Any],
 }
 acdcFieldDomV1 = SerderKERI.Fields[Protocols.acdc][Vrsn_1_0][None]
 ACDC_V_1, ACDCSchema_V_1 = dataclassFromFielddom(
@@ -131,7 +133,7 @@ class Schema:
 
 @dataclass
 class CredentialStateBase:
-    vn: Tuple[int, int]
+    vn: List[int]
     i: str
     s: str
     d: str
@@ -201,7 +203,21 @@ class ClonedCredential:
     status: Union[CredentialStateIssOrRev, CredentialStateBisOrBrv]
     anchor: Anchor
     anc: AnchoringEvent  # type: ignore
-    ancatc: str
+    ancatc: List[str]
+
+
+@dataclass
+class RegistryState:
+    vn: List[int]
+    i: str
+    s: str
+    d: str
+    ii: str
+    dt: str
+    et: Literal["vcp", "vrt"]
+    bt: str
+    b: List[str]
+    c: List[str]
 
 
 @dataclass
@@ -209,7 +225,7 @@ class Registry:
     name: str
     regk: str
     pre: str
-    state: Union[CredentialStateIssOrRev, CredentialStateBisOrBrv]
+    state: RegistryState
 
 
 class RegistryCollectionEnd:

@@ -235,6 +235,15 @@ def createCustomNestedField(
                     return createOptionalField(
                         key, customType, mm_fields.List, (nestedField,), {}, isOptional
                     )
+        elif customType.__origin__ is dict:
+            return createOptionalField(
+                key,
+                customType,
+                mm_fields.Dict,
+                (),
+                {"keys": mm_fields.String(), "values": mm_fields.Raw()},
+                isOptional,
+            )
 
         # For other generic types, fall back to Raw field
         return createOptionalField(key, customType, mm_fields.Raw, (), {}, isOptional)
@@ -291,12 +300,11 @@ def createRegularField(
 def processField(
     key: str,
     value: Any,
-    fieldDom: serdering.FieldDom,
+    isOptional: bool,
     customTypes: Dict[str, type],
     name: str = "",
 ) -> tuple[tuple, Optional[mm_fields.Field]]:
     """Process a single field from the FieldDom."""
-    isOptional = key in fieldDom.opts
 
     # Check if there's a custom type specified
     if key in customTypes:
@@ -328,8 +336,7 @@ def dataclassFromFielddom(
     if customTypes is None:
         customTypes = {}
 
-    requiredFields = []
-    optionalFields = []
+    allFields = []
     customFields = {}
 
     # Store alt constraints for use by schema generation
@@ -337,24 +344,18 @@ def dataclassFromFielddom(
 
     # Process all fields from alls (all possible fields)
     for key, value in fieldDom.alls.items():
+        isOptional = key in fieldDom.opts
         fieldDef, marshmallowField = processField(
-            key, value, fieldDom, customTypes, name
+            key, value, isOptional, customTypes, name
         )
 
         if marshmallowField:
             customFields[key] = marshmallowField
 
-        # Check if field is optional (in opts)
-        isOptional = key in fieldDom.opts
-        if isOptional:
-            optionalFields.append(fieldDef)
-        else:
-            requiredFields.append(fieldDef)
+        allFields.append(fieldDef)
 
-    allFields = requiredFields + optionalFields
-    generatedCls = make_dataclass(name, allFields)
+    generatedCls = make_dataclass(name, allFields, kw_only=True)
     schema = class_schema(generatedCls)()
-
     # Override the automatically generated fields with our custom ones
     # marshmallow_dataclass automatically creates fields with allow_none=True for Optional[T]
     # We need to override them to have allow_none=False for openapi-typescript compatibility
@@ -385,62 +386,29 @@ def applyAltConstraintsToOpenApiSchema(
 
     properties = openApiSchemaDict.get("properties", {})
     required = openApiSchemaDict.get("required", [])
+    baseRequired = [f for f in required if f not in altConstraints]
 
-    # Find alternate field pairs that exist in properties
-    altGroups = {}
-    processedAlts = set()
-
-    for field1, field2 in altConstraints.items():
-        if field1 in processedAlts or field2 in processedAlts:
-            continue
-        if field1 in properties and field2 in properties:
-            groupKey = f"{field1}_{field2}"
-            altGroups[groupKey] = [field1, field2]
-            processedAlts.add(field1)
-            processedAlts.add(field2)
-
-    if not altGroups:
-        return
-
-    # Create oneOf schemas for alternate field combinations
     oneOfSchemas = []
-
-    for _, altFields in altGroups.items():
-        field1, field2 = altFields
-
-        # Base properties (all except alternates)
-        baseProps = {k: v for k, v in properties.items() if k not in altFields}
-        baseRequired = [f for f in required if f not in altFields]
-
-        # Schema with field1 only
-        schemaWithField1 = {
+    # Note: For now, this only works with 1 pair of alts - if more ever come, we need to start computing permutations.
+    for keepField in altConstraints:
+        if keepField not in properties:
+            continue
+        variant = {
             "type": "object",
-            "properties": {**baseProps, field1: properties[field1]},
+            "properties": {
+                k: v
+                for k, v in properties.items()
+                if k == keepField or k not in altConstraints
+            },
             "additionalProperties": openApiSchemaDict.get(
                 "additionalProperties", False
             ),
         }
-        if field1 in required or baseRequired:
-            schemaWithField1["required"] = baseRequired + (
-                [field1] if field1 in required else []
-            )
-        oneOfSchemas.append(schemaWithField1)
+        variantRequired = baseRequired + ([keepField] if keepField in required else [])
+        if variantRequired:
+            variant["required"] = variantRequired
+        oneOfSchemas.append(variant)
 
-        # Schema with field2 only
-        schemaWithField2 = {
-            "type": "object",
-            "properties": {**baseProps, field2: properties[field2]},
-            "additionalProperties": openApiSchemaDict.get(
-                "additionalProperties", False
-            ),
-        }
-        if field2 in required or baseRequired:
-            schemaWithField2["required"] = baseRequired + (
-                [field2] if field2 in required else []
-            )
-        oneOfSchemas.append(schemaWithField2)
-
-    # Replace the schema with oneOf constraint
     if oneOfSchemas:
         openApiSchemaDict.clear()
         openApiSchemaDict["oneOf"] = oneOfSchemas
