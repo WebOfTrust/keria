@@ -56,6 +56,9 @@ def loadEnds(app, agency, authn):
     locSchemesEnd = LocSchemeCollectionEnd()
     app.add_route("/identifiers/{name}/locschemes", locSchemesEnd)
 
+    locSchemeResEnd = LocSchemeResourceEnd()
+    app.add_route("/locschemes/{eid}", locSchemeResEnd)
+
     rpyEscrowEnd = RpyEscrowCollectionEnd()
     app.add_route("/escrows/rpy", rpyEscrowEnd)
 
@@ -1779,6 +1782,49 @@ class LocSchemeCollectionEnd:
         rep.content_type = "application/json"
         rep.status = falcon.HTTP_202
         rep.data = op.to_json().encode("utf-8")
+
+
+class LocSchemeResourceEnd:
+    @staticmethod
+    def on_get(req, rep, eid):
+        """GET endpoint for loc schemes by endpoint identifier
+
+        Args:
+            req (Request): Falcon HTTP request object
+            rep (Response): Falcon HTTP response object
+            eid (str): endpoint identifier prefix (qb64)
+
+        ---
+        summary: Retrieve location schemes for an endpoint identifier.
+        description: This endpoint retrieves all location schemes (service endpoint URLs) for a given endpoint identifier (EID).
+        tags:
+        - Loc Scheme
+        parameters:
+        - in: path
+          name: eid
+          schema:
+            type: string
+          required: true
+          description: The endpoint identifier prefix (qb64).
+        responses:
+            200:
+                description: Successfully retrieved the location schemes.
+            404:
+                description: Not found. The EID is not known.
+        """
+        agent = req.context.agent
+
+        if eid not in agent.hby.kevers:
+            raise falcon.errors.HTTPNotFound(
+                description=f"{eid} is not a known identifier"
+            )
+
+        urls = agent.agentHab.fetchUrls(eid=eid)
+        schemes = [dict(scheme=scheme, url=url) for scheme, url in urls.lasts()]
+
+        rep.content_type = "application/json"
+        rep.status = falcon.HTTP_200
+        rep.data = json.dumps(schemes).encode("utf-8")
 
 
 rpyFieldDomV1 = serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][

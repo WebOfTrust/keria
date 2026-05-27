@@ -218,6 +218,65 @@ def test_locscheme_ends(helpers, mockHelpingNowUTC):
         assert loc.url == "https://testurl.com"
 
 
+def test_locscheme_resource_end(helpers, mockHelpingNowUTC):
+    with helpers.openKeria() as (agency, agent, app, client):
+        locSchemesEnd = aiding.LocSchemeCollectionEnd()
+        app.add_route("/identifiers/{name}/locschemes", locSchemesEnd)
+        locSchemeResEnd = aiding.LocSchemeResourceEnd()
+        app.add_route("/locschemes/{eid}", locSchemeResEnd)
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+
+        salt = b"0123456789abcdef"
+        op = helpers.createAid(client, "user1", salt)
+        aid = op["response"]
+        recp = aid["i"]
+        assert recp == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+
+        # GET with unknown EID returns 404
+        res = client.simulate_get(
+            path="/locschemes/ENkjt7khEI5edCMw5qBM7mKYOx2bGHFmSNOfMaLFjMBJ"
+        )
+        assert res.status_code == 404
+        assert res.json["title"] == "404 Not Found"
+
+        # GET with no loc schemes returns empty list
+        res = client.simulate_get(path=f"/locschemes/{recp}")
+        assert res.status_code == 200
+        assert res.json == []
+
+        # Add an http loc scheme via the collection endpoint
+        rpy = helpers.locscheme(recp, "http://example.com")
+        sigs = helpers.sign(salt, 0, 0, rpy.raw)
+        body = dict(rpy=rpy.ked, sigs=sigs)
+        res = client.simulate_post(path="/identifiers/user1/locschemes", json=body)
+        assert res.status_code == 202
+
+        # GET returns the http scheme
+        res = client.simulate_get(path=f"/locschemes/{recp}")
+        assert res.status_code == 200
+        schemes = res.json
+        assert len(schemes) == 1
+        assert schemes[0]["scheme"] == "http"
+        assert schemes[0]["url"] == "http://example.com"
+
+        # Add an https loc scheme
+        rpy = helpers.locscheme(recp, "https://example.com", "https")
+        sigs = helpers.sign(salt, 0, 0, rpy.raw)
+        body = dict(rpy=rpy.ked, sigs=sigs)
+        res = client.simulate_post(path="/identifiers/user1/locschemes", json=body)
+        assert res.status_code == 202
+
+        # GET returns both schemes
+        res = client.simulate_get(path=f"/locschemes/{recp}")
+        assert res.status_code == 200
+        schemes = res.json
+        assert len(schemes) == 2
+        scheme_map = {s["scheme"]: s["url"] for s in schemes}
+        assert scheme_map["http"] == "http://example.com"
+        assert scheme_map["https"] == "https://example.com"
+
+
 def test_agent_resource(helpers, mockHelpingNowUTC):
     with helpers.openKeria() as (agency, agent, app, client):
         agentEnd = aiding.AgentResourceEnd(agency=agency, authn=None)

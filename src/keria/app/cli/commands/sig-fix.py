@@ -9,6 +9,7 @@ import argparse
 
 from hio.base import doing
 from keri import help, kering
+from keri.app import directing
 from keri.app import habbing
 from keri.app.cli.common import existing
 from keri.core import serdering, coring
@@ -36,7 +37,7 @@ parser.add_argument(
 
 def handler(args):
     kwa = dict(args=args)
-    return [doing.doify(fix, **kwa)]
+    return directing.runController([doing.doify(fix, **kwa)], expire=0.0)
 
 
 def fix(tymth, tock=0.0, **opts):
@@ -67,7 +68,7 @@ def fix(tymth, tock=0.0, **opts):
         except kering.DatabaseError:
             return -1
 
-        for pre, fn, dig in db.getFelItemAllPreIter(key=b""):
+        for pre, fn, dig in db.getFelItemAllPreIter():
             dgkey = dbing.dgKey(pre, dig)
             if not (raw := db.getEvt(key=dgkey)):
                 raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
@@ -85,6 +86,9 @@ def fix(tymth, tock=0.0, **opts):
 
             for diger in ndigers:
                 prefix_by_next_key_digest[diger.qb64] = val
+        # Needed for muslc envs with lmdb so they don't throw:
+        # `mdb_txn_renew: MDB_BAD_RSLOT: Invalid reuse of reader locktable slot`
+        db.close(clear=db.temp)
 
     # pretty
     pre_name_cache = dict()
