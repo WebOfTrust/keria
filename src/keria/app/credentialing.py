@@ -575,6 +575,10 @@ class RegistryResourceEnd:
         if "name" not in body:
             raise falcon.HTTPBadRequest(description="'name' is required in body")
 
+        # Drain any just-imported CESR before aliasing an imported registry as local.
+        if agent.parser.ims:
+            agent.parser.parse()
+
         name = body["name"]
         if agent.rgy.registryByName(name) is not None:
             raise falcon.HTTPBadRequest(
