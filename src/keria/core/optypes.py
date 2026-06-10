@@ -334,60 +334,6 @@ GroupOperation = Union[
 
 
 @dataclass
-class DelegatorOperationMetadata:
-    pre: str
-    teepre: str
-    anchor: credentialing.Anchor = field(
-        default_factory=credentialing.Anchor,
-        metadata={
-            "marshmallow_field": fields.Nested(
-                class_schema(credentialing.Anchor), required=False
-            )
-        },
-    )
-    depends: Union["GroupOperation", "WitnessOperation", "DoneOperation"] = None  # type: ignore
-
-
-@dataclass
-class BaseDelegatorOperation:
-    metadata: DelegatorOperationMetadata = field(
-        default_factory=DelegatorOperationMetadata,
-        metadata={
-            "marshmallow_field": fields.Nested(
-                class_schema(DelegatorOperationMetadata), required=False
-            )
-        },
-    )
-
-
-@dataclass
-class PendingDelegatorOperation(BaseDelegatorOperation, PendingOperation):
-    pass
-
-
-@dataclass(kw_only=True)
-class CompletedDelegatorOperation(BaseDelegatorOperation, CompletedOperation):
-    response: str
-
-
-@dataclass(kw_only=True)
-class FailedDelegatorOperation(BaseDelegatorOperation, FailedOperation):
-    error: OperationStatus = field(
-        default=None,
-        metadata={
-            "marshmallow_field": fields.Nested(
-                class_schema(OperationStatus), required=True
-            )
-        },
-    )
-
-
-DelegatorOperation = Union[
-    PendingDelegatorOperation, CompletedDelegatorOperation, FailedDelegatorOperation
-]
-
-
-@dataclass
 class SubmitOperationMetadata:
     pre: str
     sn: int
@@ -436,6 +382,68 @@ class FailedSubmitOperation(BaseSubmitOperation, FailedOperation):
 
 SubmitOperation = Union[
     PendingSubmitOperation, CompletedSubmitOperation, FailedSubmitOperation
+]
+
+KelOperation = Union[
+    "GroupOperation",
+    "WitnessOperation",
+    "DoneOperation",
+    "DelegationOperation",
+    "SubmitOperation",
+]
+
+
+@dataclass
+class DelegatorOperationMetadata:
+    pre: str
+    teepre: str
+    anchor: credentialing.Anchor = field(
+        default_factory=credentialing.Anchor,
+        metadata={
+            "marshmallow_field": fields.Nested(
+                class_schema(credentialing.Anchor), required=False
+            )
+        },
+    )
+    depends: KelOperation = None  # type: ignore
+
+
+@dataclass
+class BaseDelegatorOperation:
+    metadata: DelegatorOperationMetadata = field(
+        default_factory=DelegatorOperationMetadata,
+        metadata={
+            "marshmallow_field": fields.Nested(
+                class_schema(DelegatorOperationMetadata), required=False
+            )
+        },
+    )
+
+
+@dataclass
+class PendingDelegatorOperation(BaseDelegatorOperation, PendingOperation):
+    pass
+
+
+@dataclass(kw_only=True)
+class CompletedDelegatorOperation(BaseDelegatorOperation, CompletedOperation):
+    response: str
+
+
+@dataclass(kw_only=True)
+class FailedDelegatorOperation(BaseDelegatorOperation, FailedOperation):
+    error: OperationStatus = field(
+        default=None,
+        metadata={
+            "marshmallow_field": fields.Nested(
+                class_schema(OperationStatus), required=True
+            )
+        },
+    )
+
+
+DelegatorOperation = Union[
+    PendingDelegatorOperation, CompletedDelegatorOperation, FailedDelegatorOperation
 ]
 
 
@@ -597,9 +605,7 @@ ChallengeOperation = Union[
 @dataclass
 class RegistryOperationMetadata:
     pre: str
-    depends: Union[
-        "GroupOperation", "WitnessOperation", "DoneOperation", "DelegationOperation"
-    ]
+    depends: KelOperation = None  # type: ignore
     anchor: Anchor = field(
         default_factory=Anchor,
         metadata={
@@ -667,7 +673,7 @@ RegistryOperation = Union[
 @dataclass
 class CredentialOperationMetadata:
     ced: Union[ACDC_V_1, ACDC_V_2]  # type: ignore
-    depends: Union[ROT_V_1, ROT_V_2, DRT_V_1, DRT_V_2, IXN_V_1, IXN_V_2] = None  # type: ignore
+    depends: KelOperation = None  # type: ignore
 
 
 @dataclass
