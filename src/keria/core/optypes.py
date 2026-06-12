@@ -333,63 +333,11 @@ GroupOperation = Union[
 ]
 
 
-@dataclass
-class SubmitOperationMetadata:
-    pre: str
-    sn: int
-
-
-@dataclass
-class BaseSubmitOperation:
-    metadata: SubmitOperationMetadata = field(
-        default_factory=SubmitOperationMetadata,
-        metadata={
-            "marshmallow_field": fields.Nested(
-                class_schema(SubmitOperationMetadata), required=False
-            )
-        },
-    )
-
-
-@dataclass
-class PendingSubmitOperation(BaseSubmitOperation, PendingOperation):
-    pass
-
-
-@dataclass(kw_only=True)
-class CompletedSubmitOperation(BaseSubmitOperation, CompletedOperation):
-    response: KeyStateRecord = field(
-        default=None,
-        metadata={
-            "marshmallow_field": fields.Nested(
-                class_schema(KeyStateRecord), required=True
-            )
-        },
-    )
-
-
-@dataclass(kw_only=True)
-class FailedSubmitOperation(BaseSubmitOperation, FailedOperation):
-    error: OperationStatus = field(
-        default=None,
-        metadata={
-            "marshmallow_field": fields.Nested(
-                class_schema(OperationStatus), required=True
-            )
-        },
-    )
-
-
-SubmitOperation = Union[
-    PendingSubmitOperation, CompletedSubmitOperation, FailedSubmitOperation
-]
-
 KelOperation = Union[
     "GroupOperation",
     "WitnessOperation",
     "DoneOperation",
     "DelegationOperation",
-    "SubmitOperation",
 ]
 
 
@@ -444,6 +392,58 @@ class FailedDelegatorOperation(BaseDelegatorOperation, FailedOperation):
 
 DelegatorOperation = Union[
     PendingDelegatorOperation, CompletedDelegatorOperation, FailedDelegatorOperation
+]
+
+
+@dataclass
+class SubmitOperationMetadata:
+    pre: str
+    sn: int
+
+
+@dataclass
+class BaseSubmitOperation:
+    metadata: SubmitOperationMetadata = field(
+        default_factory=SubmitOperationMetadata,
+        metadata={
+            "marshmallow_field": fields.Nested(
+                class_schema(SubmitOperationMetadata), required=False
+            )
+        },
+    )
+
+
+@dataclass
+class PendingSubmitOperation(BaseSubmitOperation, PendingOperation):
+    pass
+
+
+@dataclass(kw_only=True)
+class CompletedSubmitOperation(BaseSubmitOperation, CompletedOperation):
+    response: KeyStateRecord = field(
+        default=None,
+        metadata={
+            "marshmallow_field": fields.Nested(
+                class_schema(KeyStateRecord), required=True
+            )
+        },
+    )
+
+
+@dataclass(kw_only=True)
+class FailedSubmitOperation(BaseSubmitOperation, FailedOperation):
+    error: OperationStatus = field(
+        default=None,
+        metadata={
+            "marshmallow_field": fields.Nested(
+                class_schema(OperationStatus), required=True
+            )
+        },
+    )
+
+
+SubmitOperation = Union[
+    PendingSubmitOperation, CompletedSubmitOperation, FailedSubmitOperation
 ]
 
 

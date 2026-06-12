@@ -990,7 +990,6 @@ class AgentSpecResource:
                 {"$ref": "#/components/schemas/WitnessOperation"},
                 {"$ref": "#/components/schemas/DoneOperation"},
                 {"$ref": "#/components/schemas/DelegationOperation"},
-                {"$ref": "#/components/schemas/SubmitOperation"},
             ]
         }
         self.spec.components.schemas["RegistryOperationMetadata"]["properties"][
