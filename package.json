@@ -8,6 +8,6 @@
     "lint": "npm -ws run lint",
     "format": "npm -ws run format",
     "format:check": "npm -ws run format:check",
-    "test:integration": "npm -w signify-ts run test:integration"
+    "test:integration": "WITNESS_DEMO_HOSTNAME=witness-demo VLEI_SERVER_HOSTNAME=vlei-server npm -w signify-ts run test:integration"
   }
 }

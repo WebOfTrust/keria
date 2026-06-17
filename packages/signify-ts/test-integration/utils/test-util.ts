@@ -464,7 +464,6 @@ export async function waitAndMarkNotification(
     options: RetryOptions = {}
 ) {
     const notes = await waitForNotifications(client, route, options);
-
     await Promise.all(
         notes.map(async (note) => {
             await markNotification(client, note);
@@ -484,6 +483,7 @@ export async function waitForNotifications(
             .notifications()
             .list();
 
+        console.log('response.notes', response.notes);
         const notes = response.notes.filter(
             (note) => note.a.r === route && note.r === false
         );

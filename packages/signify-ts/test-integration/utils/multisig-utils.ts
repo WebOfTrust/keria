@@ -248,7 +248,10 @@ export async function createRegistryMultisig(
     nonce: string,
     isInitiator: boolean = false
 ) {
-    if (!isInitiator) await waitAndMarkNotification(client, '/multisig/vcp');
+    if (!isInitiator)
+        await waitAndMarkNotification(client, '/multisig/vcp', {
+            timeout: 30000,
+        });
 
     const vcpResult = await client.registries().create({
         name: multisigAID.name,
@@ -569,6 +572,22 @@ export async function acceptRotation(
     }
 
     return await result.op();
+}
+
+/**
+ * Bug-faithful co-signer accept: re-issues via credentials().issue(group, exn.e.acdc)
+ * instead of using embedded iss/anc from the multisig message (wallet acceptMultisigIssuance).
+ */
+export async function acceptMultisigIssuanceBugFaithful(
+    client: SignifyClient,
+    groupName: string
+): Promise<Operation> {
+    const msgSaid = await waitAndMarkNotification(client, '/multisig/iss');
+    const res = await client.groups().getRequest(msgSaid);
+    const exn = res[0].exn;
+    const iss = await client.credentials().issue(groupName, exn.e.acdc);
+    await multisigIssue(client, groupName, iss);
+    return iss.op;
 }
 
 export async function multisigIssue(
