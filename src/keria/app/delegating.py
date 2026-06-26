@@ -22,7 +22,6 @@ from keri import kering, help
 from keri.app import forwarding, agenting, habbing, delegating
 from keri.core import coring, serdering
 from keri.db import dbing
-from keri.peer import exchanging
 from keria.core import httping, longrunning
 
 DELEGATION_ROUTE = "/identifiers/{name}/delegation"
@@ -228,7 +227,7 @@ class Anchorer(doing.DoDoer):
                 # The EXN sender is phab, so the delegator must already know
                 # phab's KEL or the exchanger will reject the request as coming
                 # from an unknown sender.
-                exn, atc = delegateRequestExn(
+                exn, atc = delegating.delegateRequestExn(
                     phab, delpre=delpre, evt=bytes(evt), aids=smids
                 )
                 self.postman.send(
@@ -245,55 +244,6 @@ class Anchorer(doing.DoDoer):
 
                 self.hby.db.dpwe.rem(keys=(pre, said))
                 self.hby.db.dune.pin(keys=(srdr.pre, srdr.said), val=srdr)
-
-
-def loadHandlers(hby, exc, notifier):
-    """Load peer-to-peer delegation request handlers.
-
-    KERIA agents need this handler so an inbound ``/delegate/request`` EXN
-    becomes a normal KERIA notification. Without it the raw delegated event can
-    still be processed eventually, but delegator-facing wallet UX has no
-    actionable request to show.
-    """
-
-    delreq = delegating.DelegateRequestHandler(hby=hby, notifier=notifier)
-    exc.addHandler(delreq)
-
-
-def delegateRequestExn(hab, delpre, evt, aids=None):
-    """Create the peer-to-peer delegation request EXN.
-
-    Parameters:
-        hab (Hab): signing sender habitat for the request EXN. In Signify this
-            is commonly the delegatee's agent/proxy habitat.
-        delpre (str): qb64 delegator AID that should receive and review the
-            request.
-        evt (bytes): serialized delegated inception or rotation event with
-            attachments still present after the embedded event.
-        aids (list | None): optional multisig participant AIDs.
-
-    Returns:
-        tuple: ``(exn, atc)`` where ``exn`` is the request exchange message and
-        ``atc`` is the endorsed attachment stream for forwarding.
-    """
-
-    data = dict(delpre=delpre)
-    embeds = dict(evt=evt)
-
-    if aids is not None:
-        data["aids"] = aids
-
-    exn, _ = exchanging.exchange(
-        route=delegating.DelegateRequestHandler.resource,  # /delegate/resource
-        modifiers=dict(),
-        payload=data,
-        sender=hab.pre,
-        embeds=embeds,
-    )
-    ims = hab.endorse(serder=exn, last=False, pipelined=False)
-    del ims[: exn.size]
-
-    return exn, ims
 
 
 class DelegatorEnd:
