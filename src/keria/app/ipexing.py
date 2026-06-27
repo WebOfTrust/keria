@@ -12,8 +12,41 @@ from keri.app import habbing
 from keri.core import eventing, serdering
 from keri.vdr import credentialing
 from keri.peer import exchanging
+from keri.vc import protocoling
 
 from keria.core import httping, longrunning
+
+
+IPEX_ROUTES = (
+    "/ipex/apply",
+    "/ipex/offer",
+    "/ipex/agree",
+    "/ipex/grant",
+    "/ipex/admit",
+    "/ipex/spurn",
+)
+
+
+class IpexNotificationHandler(protocoling.IpexHandler):
+    """IPEX handler that suppresses notifications for locally originated EXNs."""
+
+    def handle(self, serder, attachments=None):
+        # Checking if the message sender AID (serder.pre) is local and, if so, skip making a
+        # notification. This prevents a redundant notification appearing for an IPEX operation
+        # initiator.
+        if serder.pre in self.hby.habs:
+            return
+
+        # Call superclass handler to create notification when sender is not a local AID.
+        super().handle(serder=serder, attachments=attachments)
+
+
+def loadHandlers(hby, exc, notifier):
+    """Load IPEX handlers with KERIA notification semantics."""
+    for route in IPEX_ROUTES:
+        exc.addHandler(
+            IpexNotificationHandler(resource=route, hby=hby, notifier=notifier)
+        )
 
 
 def loadEnds(app):
