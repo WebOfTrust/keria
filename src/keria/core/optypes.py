@@ -605,7 +605,7 @@ ChallengeOperation = Union[
 @dataclass
 class RegistryOperationMetadata:
     pre: str
-    depends: KelOperation = None  # type: ignore
+    depends: KelOperation  # type: ignore
     anchor: Anchor = field(
         default_factory=Anchor,
         metadata={
