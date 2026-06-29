@@ -66,21 +66,38 @@ class BaseOperation:
 @dataclass_json
 @dataclass
 class PendingOperation(BaseOperation):
-    done: Literal[False] = False
+    done: Literal[False] = field(
+        default=False,
+        metadata={
+            "marshmallow_field": fields.Boolean(
+                required=True, metadata={"const": False}
+            )
+        },
+    )
 
 
 @dataclass_json
 @dataclass
 class CompletedOperation(BaseOperation):
     response: dict
-    done: Literal[True] = True
+    done: Literal[True] = field(
+        default=True,
+        metadata={
+            "marshmallow_field": fields.Boolean(required=True, metadata={"const": True})
+        },
+    )
 
 
 @dataclass_json
 @dataclass
 class FailedOperation(BaseOperation):
     error: OperationStatus
-    done: Literal[True] = True
+    done: Literal[True] = field(
+        default=True,
+        metadata={
+            "marshmallow_field": fields.Boolean(required=True, metadata={"const": True})
+        },
+    )
 
 
 Operation = Union[PendingOperation, CompletedOperation, FailedOperation]
