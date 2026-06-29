@@ -11,7 +11,7 @@ from ..core import optypes
 from ..utils.openapi import applyAltConstraintsToOpenApiSchema
 from . import credentialing
 from keri.core import coring
-from ..utils.openapi import enumSchemaFromNamedtuple
+from ..utils.openapi import enumSchemaFromNamedtuple, constFromMetadata
 
 """
 KERIA
@@ -31,12 +31,15 @@ class AgentSpecResource:
     """
 
     def __init__(self, app, title, version="1.0.1", openapi_version="3.1.0"):
+        marshmallowPlugin = MarshmallowPlugin()
         self.spec = APISpec(
             title=title,
             version=version,
             openapi_version=openapi_version,
-            plugins=[MarshmallowPlugin()],
+            plugins=[marshmallowPlugin],
         )
+
+        marshmallowPlugin.converter.add_attribute_function(constFromMetadata)
 
         # Register marshmallow schemas (pass class)
         self.spec.components.schema("ACDC_V_1", schema=credentialing.ACDCSchema_V_1)

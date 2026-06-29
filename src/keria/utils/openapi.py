@@ -434,3 +434,15 @@ def namedtupleToEnum(nt_instance, enum_name="AutoEnum"):
 
     # Dynamically create a subclass of str & Enum
     return Enum(enum_name, members, type=str)
+
+
+def constFromMetadata(self, field, **kwargs):
+    """Emit JSON-Schema ``const`` from ``metadata={"const": <value>}`` on any field.
+
+    apispec's metadata passthrough drops ``const`` because its allowlist predates
+    OpenAPI 3.1, so a fixed value (e.g. operation ``done``) would otherwise render as
+    an unconstrained type. ``self`` is the converter apispec binds this to.
+    """
+    if "const" in field.metadata:
+        return {"const": field.metadata["const"]}
+    return {}
