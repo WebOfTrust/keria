@@ -290,13 +290,11 @@ def test_join(helpers, monkeypatch):
         assert res.status_code == 202
         assert res.json == {
             "done": False,
-            "error": None,
             "metadata": {
                 "pre": "EDWg3-rB5FTpcckaYdBcexGmbLIO6AvAwjaJTBlXUn_I",
                 "sn": 3,
             },
             "name": "group.EPKCBT0rSgFKTDRjynYzOTsYWo7fDNElTxFbRZZW9f6R",
-            "response": None,
         }
 
         res = client.simulate_post("/identifiers/mms/multisig/join", json=body)

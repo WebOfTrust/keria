@@ -6,6 +6,8 @@ keria.app.exchanging module
 """
 
 import json
+from typing import Union
+from dataclasses import dataclass
 
 import falcon
 from keri import core
@@ -13,6 +15,7 @@ from keri.core import coring, eventing, serdering
 from keri.peer import exchanging
 from keri.help import ogler
 from keria.core import httping
+from keria.utils.openapi import dataclassFromFielddom
 
 logger = ogler.getLogger()
 
@@ -26,6 +29,17 @@ def loadEnds(app):
 
     exnResEnd = ExchangeResourceEnd()
     app.add_route("/exchanges/{said}", exnResEnd)
+
+
+exnFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.exn]
+EXN_V_1, EXNSchema_V_1 = dataclassFromFielddom("EXN_V_1", exnFieldDomV1)
+
+exnFieldDomV2 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_2_0
+][serdering.Ilks.exn]
+EXN_V_2, EXNSchema_V_2 = dataclassFromFielddom("EXN_V_2", exnFieldDomV2)
 
 
 class ExchangeCollectionEnd:
@@ -77,6 +91,11 @@ class ExchangeCollectionEnd:
         responses:
             202:
                 description: Successfully posted the exchange message.
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            $ref: '#/components/schemas/Exn'
             400:
                 description: Bad request. This could be due to missing or invalid parameters.
             404:
@@ -135,7 +154,7 @@ class ExchangeCollectionEnd:
         ims.extend(atc.encode("utf-8"))  # add the pathed attachments
 
         # make a copy and parse
-        agent.hby.psr.parseOne(ims=bytearray(ims))
+        agent.hby.psr.parseOne(ims=bytearray(ims), exc=agent.exc)
 
         msg = dict(said=serder.said, pre=hab.pre, rec=rec, topic=topic)
 
@@ -144,6 +163,20 @@ class ExchangeCollectionEnd:
 
         rep.status = falcon.HTTP_202
         rep.data = json.dumps(serder.ked).encode("utf-8")
+
+
+@dataclass
+class ExchangeResource:
+    """Data class for exchange message resource"""
+
+    exn: Union["EXN_V_1", "EXN_V_2"]  # type: ignore
+    pathed: dict
+
+    def to_dict(self):
+        return {
+            "exn": self.exn,
+            "pathed": {k: v.decode("utf-8") for k, v in self.pathed.items()},
+        }
 
 
 class ExchangeQueryCollectionEnd:
@@ -181,6 +214,12 @@ class ExchangeQueryCollectionEnd:
         responses:
             200:
               description: Successfully retrieved the exchange messages.
+              content:
+                application/json:
+                  schema:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ExchangeResource'
             400:
               description: Bad request. This could be due to missing or invalid parameters.
         """
@@ -258,6 +297,11 @@ class ExchangeResourceEnd:
         responses:
             200:
               description: Successfully retrieved the exchange message.
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    $ref: '#/components/schemas/ExchangeResource'
             404:
               description: The requested exchange message was not found.
         """

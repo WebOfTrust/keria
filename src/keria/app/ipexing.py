@@ -47,6 +47,10 @@ class IpexAdmitCollectionEnd:
         responses:
            200:
               description: long running operation of IPEX admit
+              content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ExchangeOperation'
 
         """
         agent = req.context.agent
@@ -214,6 +218,11 @@ class IpexGrantCollectionEnd:
         responses:
            200:
               description: long running operation of IPEX grant
+              content:
+                application/json:
+                    schema:
+                        type: object
+                        $ref: '#/components/schemas/ExchangeOperation'
 
         """
         agent = req.context.agent
@@ -367,8 +376,13 @@ class IpexApplyCollectionEnd:
         tags:
            - Credentials
         responses:
-           200:
-              description: long running operation of IPEX apply
+            200:
+                description: long running operation of IPEX apply
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            $ref: '#/components/schemas/ExchangeOperation'
 
         """
         agent = req.context.agent
@@ -518,6 +532,11 @@ class IpexOfferCollectionEnd:
         responses:
            200:
               description: long running operation of IPEX offer
+              content:
+                  application/json:
+                      schema:
+                          type: object
+                          $ref: '#/components/schemas/ExchangeOperation'
 
         """
         agent = req.context.agent
@@ -671,6 +690,11 @@ class IpexAgreeCollectionEnd:
         responses:
            200:
               description: long running operation of IPEX agree
+              content:
+                application/json:
+                    schema:
+                        type: object
+                        $ref: '#/components/schemas/ExchangeOperation'
 
         """
         agent = req.context.agent

@@ -21,18 +21,10 @@ from mnemonic import mnemonic
 from keri.db import basing
 from marshmallow import fields
 from marshmallow_dataclass import class_schema
+
 from ..core import longrunning, httping
 from ..utils.openapi import namedtupleToEnum, dataclassFromFielddom
-from .credentialing import (
-    ICP_V_1,
-    ICP_V_2,
-    ROT_V_1,
-    ROT_V_2,
-    DIP_V_1,
-    DIP_V_2,
-    DRT_V_1,
-    DRT_V_2,
-)
+from keri.core.serdering import Protocols, Vrsn_1_0, Vrsn_2_0, SerderKERI
 
 logger = ogler.getLogger()
 
@@ -64,6 +56,9 @@ def loadEnds(app, agency, authn):
     locSchemesEnd = LocSchemeCollectionEnd()
     app.add_route("/identifiers/{name}/locschemes", locSchemesEnd)
 
+    locSchemeResEnd = LocSchemeResourceEnd()
+    app.add_route("/locschemes/{eid}", locSchemeResEnd)
+
     rpyEscrowEnd = RpyEscrowCollectionEnd()
     app.add_route("/escrows/rpy", rpyEscrowEnd)
 
@@ -85,6 +80,41 @@ def loadEnds(app, agency, authn):
     app.add_route("/identifiers/{name}/members", groupEnd)
 
     return aidEnd
+
+
+@dataclass
+class Seal:
+    s: str
+    d: str
+    i: Optional[str] = field(
+        default=None, metadata={"marshmallow_field": fields.String(allow_none=False)}
+    )
+
+
+ixnFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.ixn]
+IXN_V_1, IXNSchema_V_1 = dataclassFromFielddom("IXN_V_1", ixnFieldDomV1)
+ixnFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.ixn]
+IXN_V_2, IXNSchema_V_2 = dataclassFromFielddom("IXN_V_2", ixnFieldDomV2)
+
+icpFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.icp]
+ICP_V_1, ICPSchema_V_1 = dataclassFromFielddom("ICP_V_1", icpFieldDomV1)
+icpFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.icp]
+ICP_V_2, ICPSchema_V_2 = dataclassFromFielddom("ICP_V_2", icpFieldDomV2)
+
+rotFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.rot]
+ROT_V_1, ROTSchema_V_1 = dataclassFromFielddom("ROT_V_1", rotFieldDomV1)
+rotFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.rot]
+ROT_V_2, ROTSchema_V_2 = dataclassFromFielddom("ROT_V_2", rotFieldDomV2)
+
+dipFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.dip]
+DIP_V_1, DIPSchema_V_1 = dataclassFromFielddom("DIP_V_1", dipFieldDomV1)
+dipFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.dip]
+DIP_V_2, DIPSchema_V_2 = dataclassFromFielddom("DIP_V_2", dipFieldDomV2)
+
+drtFieldDomV1 = SerderKERI.Fields[Protocols.keri][Vrsn_1_0][coring.Ilks.drt]
+DRT_V_1, DRTSchema_V_1 = dataclassFromFielddom("DRT_V_1", drtFieldDomV1)
+drtFieldDomV2 = SerderKERI.Fields[Protocols.keri][Vrsn_2_0][coring.Ilks.drt]
+DRT_V_2, DRTSchema_V_2 = dataclassFromFielddom("DRT_V_2", drtFieldDomV2)
 
 
 @dataclass
@@ -113,6 +143,8 @@ class KeyStateRecord(basing.KeyStateRecord):
             )
         },
     )
+    kt: Union[str, list[str]]
+    nt: Union[str, list[str]]
 
 
 @dataclass
@@ -460,15 +492,12 @@ class GroupKeyState:
 
 
 @dataclass
-class HabState:
-    """Data class for identifier resource result"""
+class HabStateBase:
+    """Base data class for identifier state (minimal)"""
 
     name: str
     prefix: str
     icp_dt: str
-    state: KeyStateRecord
-    transferable: Optional[bool] = None
-    windexes: Optional[List[str]] = None
     # One of salty, randy, group, or extern must be present
     # Patch to ensure only one of these is set in specing
 
@@ -478,6 +507,28 @@ class HabState:
             raise ValueError(
                 "Exactly one of salty, randy, group, or extern must be present."
             )
+
+
+@dataclass
+class HabState(HabStateBase):
+    """Data class for identifier resource result (full state)"""
+
+    state: KeyStateRecord = field(
+        default_factory=KeyStateRecord,
+        metadata={
+            "marshmallow_field": fields.Nested(
+                class_schema(KeyStateRecord), required=False
+            )
+        },
+    )
+    transferable: bool = field(
+        default=False,
+        metadata={"marshmallow_field": fields.Boolean(required=False)},
+    )
+    windexes: list[str] = field(
+        default_factory=list,
+        metadata={"marshmallow_field": fields.List(fields.String(), required=False)},
+    )
 
 
 class IdentifierCollectionEnd:
@@ -517,7 +568,7 @@ class IdentifierCollectionEnd:
                     schema:
                       type: array
                       items:
-                        $ref: '#/components/schemas/Identifier'
+                        $ref: '#/components/schemas/HabStateBase'
             206:
                 description: Successfully retrieved identifiers within the specified range.
         """
@@ -606,7 +657,11 @@ class IdentifierCollectionEnd:
                 content:
                   application/json:
                     schema:
-                        $ref: '#/components/schemas/Operation'
+                      oneOf:
+                        - $ref: '#/components/schemas/GroupOperation'
+                        - $ref: '#/components/schemas/WitnessOperation'
+                        - $ref: '#/components/schemas/DelegationOperation'
+                        - $ref: '#/components/schemas/DoneOperation'
             400:
                 description: Bad request. This could be due to missing or invalid parameters.
         """
@@ -825,7 +880,7 @@ class IdentifierResourceEnd:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/Identifier'
+                            $ref: '#/components/schemas/HabState'
             400:
                 description: Bad request. This could be due to a missing or invalid name parameter.
             404:
@@ -887,7 +942,7 @@ class IdentifierResourceEnd:
               content:
                 application/json:
                   schema:
-                    $ref: '#/components/schemas/Identifier'
+                    $ref: '#/components/schemas/HabState'
             400:
               description: Bad request. This could be due to a missing or invalid name parameter.
             404:
@@ -979,7 +1034,12 @@ class IdentifierResourceEnd:
               content:
                 application/json:
                   schema:
-                    $ref: '#/components/schemas/Operation'
+                      oneOf:
+                        - $ref: '#/components/schemas/GroupOperation'
+                        - $ref: '#/components/schemas/WitnessOperation'
+                        - $ref: '#/components/schemas/DelegationOperation'
+                        - $ref: '#/components/schemas/DoneOperation'
+                        - $ref: '#/components/schemas/SubmitOperation'
             400:
               description: Bad request. This could be due to missing or invalid parameters.
         """
@@ -1559,7 +1619,7 @@ class EndRoleCollectionEnd:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/Operation'
+                            $ref: '#/components/schemas/EndRoleOperation'
             400:
                 description: Bad request. This could be due to missing or invalid parameters.
             404:
@@ -1668,7 +1728,7 @@ class LocSchemeCollectionEnd:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/Operation'
+                            $ref: '#/components/schemas/LocSchemeOperation'
             400:
                 description: Bad request. This could be due to missing or invalid parameters.
             404:
@@ -1722,6 +1782,49 @@ class LocSchemeCollectionEnd:
         rep.content_type = "application/json"
         rep.status = falcon.HTTP_202
         rep.data = op.to_json().encode("utf-8")
+
+
+class LocSchemeResourceEnd:
+    @staticmethod
+    def on_get(req, rep, eid):
+        """GET endpoint for loc schemes by endpoint identifier
+
+        Args:
+            req (Request): Falcon HTTP request object
+            rep (Response): Falcon HTTP response object
+            eid (str): endpoint identifier prefix (qb64)
+
+        ---
+        summary: Retrieve location schemes for an endpoint identifier.
+        description: This endpoint retrieves all location schemes (service endpoint URLs) for a given endpoint identifier (EID).
+        tags:
+        - Loc Scheme
+        parameters:
+        - in: path
+          name: eid
+          schema:
+            type: string
+          required: true
+          description: The endpoint identifier prefix (qb64).
+        responses:
+            200:
+                description: Successfully retrieved the location schemes.
+            404:
+                description: Not found. The EID is not known.
+        """
+        agent = req.context.agent
+
+        if eid not in agent.hby.kevers:
+            raise falcon.errors.HTTPNotFound(
+                description=f"{eid} is not a known identifier"
+            )
+
+        urls = agent.agentHab.fetchUrls(eid=eid)
+        schemes = [dict(scheme=scheme, url=url) for scheme, url in urls.lasts()]
+
+        rep.content_type = "application/json"
+        rep.status = falcon.HTTP_200
+        rep.data = json.dumps(schemes).encode("utf-8")
 
 
 rpyFieldDomV1 = serdering.SerderKERI.Fields[kering.Protocols.keri][kering.Vrsn_1_0][
@@ -1964,7 +2067,7 @@ class ChallengeVerifyResourceEnd:
               content:
                 application/json:
                   schema:
-                    $ref: '#/components/schemas/Operation'
+                    $ref: '#/components/schemas/ChallengeOperation'
         """
         agent = req.context.agent
 
@@ -2052,15 +2155,15 @@ class WellKnown:
 
 @dataclass
 class MemberEnds:
-    agent: Optional[Dict[str, str]] = None
-    controller: Optional[Dict[str, str]] = None
-    witness: Optional[Dict[str, str]] = None
-    registrar: Optional[Dict[str, str]] = None
-    watcher: Optional[Dict[str, str]] = None
-    judge: Optional[Dict[str, str]] = None
-    juror: Optional[Dict[str, str]] = None
-    peer: Optional[Dict[str, str]] = None
-    mailbox: Optional[Dict[str, str]] = None
+    agent: Optional[Dict[str, Dict[str, str]]] = None
+    controller: Optional[Dict[str, Dict[str, str]]] = None
+    witness: Optional[Dict[str, Dict[str, str]]] = None
+    registrar: Optional[Dict[str, Dict[str, str]]] = None
+    watcher: Optional[Dict[str, Dict[str, str]]] = None
+    judge: Optional[Dict[str, Dict[str, str]]] = None
+    juror: Optional[Dict[str, Dict[str, str]]] = None
+    peer: Optional[Dict[str, Dict[str, str]]] = None
+    mailbox: Optional[Dict[str, Dict[str, str]]] = None
 
 
 @dataclass
