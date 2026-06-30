@@ -46,7 +46,6 @@ from keri.core import coring, parsing, eventing, routing, serdering
 from keri.core.coring import Ilks
 from keri.core.signing import Salter
 from keri.db.basing import OobiRecord
-from keri.vc import protocoling
 
 from keria.end import ending
 from keri.help import helping, nowIso8601
@@ -725,7 +724,7 @@ class Agent(doing.DoDoer):
         handlers = [challengeHandler]
         self.exc = exchanging.Exchanger(hby=hby, handlers=handlers)
         grouping.loadHandlers(exc=self.exc, mux=self.mux)
-        protocoling.loadHandlers(hby=self.hby, exc=self.exc, notifier=self.notifier)
+        ipexing.loadHandlers(hby=self.hby, exc=self.exc, notifier=self.notifier)
         self.submitter = Submitter(
             hby=hby, submits=self.submits, witRec=self.witSubmitDoer
         )
