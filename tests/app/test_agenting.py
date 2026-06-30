@@ -409,7 +409,8 @@ def test_agency_with_urls_from_arguments():
         assert agent.pre == "EK-DLhw2jJ__SNNaSmSwfkA0gHtsAMAFnx21xOKncX23"
 
         assert agent.hby.cf is not None
-        assert agent.hby.cf.get()[f"agent-{caid}"]["curls"] == curls
+        assert agent.hby.cf.get()[f"agent-{caid}"].get("curls") == curls
+        assert agent.hby.cf.get()[f"agent-{caid}"].get("dt") is not None
         assert agent.hby.cf.get()["iurls"] == iurls
         assert agent.hby.cf.get()["durls"] == durls
 
