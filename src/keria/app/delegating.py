@@ -5,7 +5,6 @@ from keri import kering, help
 from keri.app import forwarding, agenting, habbing
 from keri.core import coring, serdering
 from keri.db import dbing
-
 from keria.core import httping, longrunning
 
 DELEGATION_ROUTE = "/identifiers/{name}/delegation"
@@ -233,6 +232,18 @@ class DelegatorEnd:
             req (Request): falcon.Request HTTP request object
             rep (Response): falcon.Response HTTP response object
             name (str): human readable name or prefix for Hab to rename
+
+        responses:
+            200:
+                description: Delegation approved and interaction event created.
+                content:
+                  application/json:
+                    schema:
+                      - $ref: '#/components/schemas/DelegatorOperation'
+            400:
+                description: Bad request. This could be due to missing or invalid parameters.
+            404:
+                description: Not found. The specified identifier does not exist.
 
         """
         if not name:

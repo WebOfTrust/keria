@@ -56,6 +56,8 @@ from keri.vdr.credentialing import Regery
 from keri.vdr.eventing import Tevery
 from keri.app import challenging
 
+from keria.utils.openapi import dataclassFromFielddom
+
 from . import aiding, notifying, indirecting, credentialing, ipexing, delegating
 from . import grouping as keriagrouping
 from .serving import GracefulShutdownDoer
@@ -1856,6 +1858,22 @@ class KeyStateCollectionEnd:
         rep.data = json.dumps(states).encode("utf-8")
 
 
+issFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.iss]
+ISS_V_1, ISSSchema_V_1 = dataclassFromFielddom("ISS_V_1", issFieldDomV1)
+
+revFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.rev]
+REV_V_1, REVSchema_V_1 = dataclassFromFielddom("REV_V_1", revFieldDomV1)
+
+vcpFieldDomV1 = serdering.SerderKERI.Fields[serdering.Protocols.keri][
+    serdering.Vrsn_1_0
+][serdering.Ilks.vcp]
+VCP_V_1, VCPSchema_V_1 = dataclassFromFielddom("VCP_V_1", vcpFieldDomV1)
+
+
 @dataclass
 class KeyEventRecord:
     """Key Event Record for KEL"""
@@ -1973,7 +1991,7 @@ class OOBICollectionEnd:
               content:
                 application/json:
                   schema:
-                    $ref: '#/components/schemas/Operation'
+                    $ref: '#/components/schemas/OOBIOperation'
 
         """
         agent = req.context.agent
@@ -2159,7 +2177,7 @@ class QueryCollectionEnd:
               content:
                 application/json:
                     schema:
-                        $ref: '#/components/schemas/Operation'
+                        $ref: '#/components/schemas/QueryOperation'
            404:
               description: Identifier not found in Key event database
 
