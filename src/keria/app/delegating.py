@@ -1,8 +1,25 @@
+"""Delegated identifier request and approval support.
+
+Delegation has two separate protocol surfaces that are easy to conflate:
+
+* The delegatee sends a ``/delegate/request`` EXN to the delegator so user
+  agents can surface a reviewable request. This EXN embeds the delegated
+  inception or rotation event and is only a notification/discovery surface.
+* The delegator approves manually by anchoring the delegate event seal in a
+  delegator interaction event via ``/identifiers/{name}/delegation``.
+
+The request EXN is signed by the sender habitat selected by ``Anchorer``. For
+Signify agents that is usually the delegatee's agent/proxy AID, not the new
+delegated AID itself. Therefore the delegator must already know enough of that
+sender's KEL, normally by resolving a delegate-side OOBI, before its exchanger
+can validate the EXN and convert it into a notification.
+"""
+
 import falcon
 
 from hio.base import doing
 from keri import kering, help
-from keri.app import forwarding, agenting, habbing
+from keri.app import forwarding, agenting, habbing, delegating
 from keri.core import coring, serdering
 from keri.db import dbing
 from keria.core import httping, longrunning
@@ -190,8 +207,10 @@ class Anchorer(doing.DoDoer):
                     pre,
                     serder.pre,
                 )
+                smids = []
                 if isinstance(hab, habbing.GroupHab):
                     phab = hab.mhab
+                    smids = hab.smids
                 elif self.proxy is not None:
                     phab = self.proxy
                 elif hab.kever.sn > 0:
@@ -204,6 +223,20 @@ class Anchorer(doing.DoDoer):
                 evt = hab.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
 
                 srdr = serdering.SerderKERI(raw=evt)
+                # Send the UX-facing request EXN before the raw delegated event.
+                # The EXN sender is phab, so the delegator must already know
+                # phab's KEL or the exchanger will reject the request as coming
+                # from an unknown sender.
+                exn, atc = delegating.delegateRequestExn(
+                    phab, delpre=delpre, evt=bytes(evt), aids=smids
+                )
+                self.postman.send(
+                    hab=phab,
+                    dest=delpre,
+                    topic="delegate",
+                    serder=exn,
+                    attachment=atc,
+                )
                 del evt[: srdr.size]
                 self.postman.send(
                     hab=phab, dest=delpre, topic="delegate", serder=srdr, attachment=evt
@@ -296,11 +329,10 @@ def approveDelegation(hab, anc) -> str:
             dgkey = dbing.dgKey(
                 coring.Saider(qb64=teepre).qb64b, coring.Saider(qb64=teesaid).qb64b
             )
-            # the dip event should have been received from the delegatee via a postman call
-            # and will be sitting in the delegator escrows (hence the hab.db.delegables above)
-            # adding the authorize event seal will allow the dip to be processed
-            # and added to the delegator kever
+            # The dip event should have been received from the delegatee via an HTTP call and be in
+            # the delegator escrows (hence the hab.db.delegables above).
+            # Adding the authorize event seal allows the dip to be processed and added to the
+            # delegator kever
             hab.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
 
     return teepre
-    # raise falcon.HTTPBadRequest(title=f"No delegables found for delegator {hab.pre} to approve delegatee {teepre}")

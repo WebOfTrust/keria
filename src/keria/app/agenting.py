@@ -40,6 +40,7 @@ from keri.app import (
     connecting,
     grouping,
 )
+from keri.app import delegating as kdelegating
 from keri.app.grouping import Counselor
 from keri.app.keeping import Algos
 from keri.core import coring, parsing, eventing, routing, serdering
@@ -725,6 +726,7 @@ class Agent(doing.DoDoer):
         handlers = [challengeHandler]
         self.exc = exchanging.Exchanger(hby=hby, handlers=handlers)
         grouping.loadHandlers(exc=self.exc, mux=self.mux)
+        kdelegating.loadHandlers(hby=self.hby, exc=self.exc, notifier=self.notifier)
         protocoling.loadHandlers(hby=self.hby, exc=self.exc, notifier=self.notifier)
         self.submitter = Submitter(
             hby=hby, submits=self.submits, witRec=self.witSubmitDoer
