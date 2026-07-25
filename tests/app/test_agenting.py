@@ -13,6 +13,7 @@ import shutil
 import signal
 import time
 from base64 import b64encode
+from unittest import mock
 
 import falcon
 import hio
@@ -24,11 +25,11 @@ from hio.core import http
 from hio.help import decking
 from keri import core
 from keri import kering
-from keri.app import habbing, configing, indirecting, oobiing, querying
+from keri.app import habbing, configing, indirecting, querying
 from keri.app.agenting import Receiptor, WitnessReceiptor
 from keri.core import serdering
 from keri.core.coring import MtrDex
-from keri.db import basing, dbing
+from keri.db import dbing
 from keri.help import nowIso8601
 from keri.vdr import credentialing
 
@@ -180,8 +181,7 @@ def test_load_ends(helpers):
         assert isinstance(end, longrunning.OperationResourceEnd)
         (end, *_) = app._router.find("/oobis")
         assert isinstance(end, agenting.OOBICollectionEnd)
-        (end, *_) = app._router.find("/oobis/ALIAS")
-        assert isinstance(end, agenting.OobiResourceEnd)
+        assert app._router.find("/oobis/ALIAS") is None
         (end, *_) = app._router.find("/states")
         assert isinstance(end, agenting.KeyStateCollectionEnd)
         (end, *_) = app._router.find("/events")
@@ -660,235 +660,39 @@ def test_keystate_ends(helpers):
         }
 
 
-def test_oobi_ends(seeder, helpers):
-    with (
-        helpers.openKeria() as (agency, agent, app, client),
-        helpers.openKeria(salter=core.Salter(raw=b"0123456789abcM01")) as (
-            _,
-            _,
-            otherApp,
-            otherClient,
-        ),
-        habbing.openHby(
-            name="wes", salt=core.Salter(raw=b"wess-the-witness").qb64
-        ) as wesHby,
-    ):
-        wesHab = wesHby.makeHab(name="wes", transferable=False)
-
-        result = client.simulate_get(path="/oobi/pal?role=witness")
-        assert result.status == falcon.HTTP_404  # Missing OOBI endpoints for witness
-
-        # Add witness endpoints
-        url = "http://127.0.0.1:9999"
-        agent.hby.db.locs.put(
-            keys=(wesHab.pre, kering.Schemes.http), val=basing.LocationRecord(url=url)
+def test_oobi_collection_end(helpers):
+    with helpers.openKeria() as (_, agent, app, client):
+        app.add_route("/oobis", agenting.OOBICollectionEnd())
+        operation = mock.Mock()
+        operation.to_json.return_value = json.dumps(
+            {"name": "oobi.test", "done": False}
         )
+        agent.oobier.resolve = mock.Mock(return_value=operation)
 
-        # Register the identifier endpoint so we can create an AID for the test
-        end = aiding.IdentifierCollectionEnd()
-        app.add_route("/identifiers", end)
-        otherApp.add_route("/identifiers", aiding.IdentifierCollectionEnd())
-        salt = b"0123456789abcdef"
-        helpers.createAid(client, "pal", salt, wits=[wesHab.pre], toad="1")
-        palPre = "EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0"
+        body = {"url": "http://example.com/oobi/EAID/controller", "oobialias": "aid"}
+        result = client.simulate_post(path="/oobis", json=body)
 
-        oobiery = oobiing.Oobiery(hby=agent.hby)
-
-        oobiColEnd = agenting.OOBICollectionEnd()
-        app.add_route("/oobi", oobiColEnd)
-        oobiResEnd = agenting.OobiResourceEnd()
-        app.add_route("/oobi/{alias}", oobiResEnd)
-
-        result = client.simulate_get(path="/oobi/test?role=witness")
-        assert result.status == falcon.HTTP_400  # Bad alias, does not exist
-
-        result = client.simulate_get(path="/oobi/pal?role=watcher")
-        assert result.status == falcon.HTTP_404  # Bad role, watcher not supported yet
-
-        result = client.simulate_get(path="/oobi/pal?role=witness")
-        assert result.status == falcon.HTTP_200
-
-        result = client.simulate_get(path="/oobi/pal?role=controller")
-        assert result.status == falcon.HTTP_404  # Missing OOBI controller endpoints
-
-        # Add controller endpoints
-        url = "http://127.0.0.1:9999"
-        agent.hby.db.locs.put(
-            keys=(palPre, kering.Schemes.http), val=basing.LocationRecord(url=url)
-        )
-        result = client.simulate_get(path="/oobi/pal?role=controller")
-        assert result.status == falcon.HTTP_200  # Missing OOBI controller endpoints
-        assert result.json == {
-            "oobis": [
-                "http://127.0.0.1:9999/oobi/EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0/controller"
-            ],
-            "role": "controller",
-        }
-
-        # Seed with witness endpoints
-        seeder.seedWitEnds(
-            agent.hby.db,
-            witHabs=[wesHab],
-            protocols=[kering.Schemes.http, kering.Schemes.tcp],
-        )
-
-        result = client.simulate_get(path="/oobi/pal?role=witness")
-        assert result.status == falcon.HTTP_200
-        assert result.json == {
-            "oobis": [
-                "http://127.0.0.1:5644/oobi/EEkruFP-J0InOD9cYbNLlBxQtkLAbmJPNecSnBzJixP0/witness/BN8t3n1lxcV0SWGJIIF"
-                "46fpSUqA7Mqre5KJNN3nbx3mr"
-            ],
-            "role": "witness",
-        }
-
-        # Post without a URL or RPY
-        data = dict()
-        b = json.dumps(data).encode("utf-8")
-        result = client.simulate_post(path="/oobi", body=b)
-        assert result.status == falcon.HTTP_400
-
-        # Post an RPY
-        data = dict(rpy={})
-        b = json.dumps(data).encode("utf-8")
-        result = client.simulate_post(path="/oobi", body=b)
-        assert result.status == falcon.HTTP_501
-
-        # initiated from keria.json config file (iurls), so remove
-        oobiery.hby.db.oobis.rem(
-            keys=(
-                "http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller&tag=witness",
-            )
-        )
-
-        data = dict(
-            url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/"
-        )
-        b = json.dumps(data).encode("utf-8")
-        result = client.simulate_post(path="/oobi", body=b)
         assert result.status == falcon.HTTP_202
-        assert oobiery.hby.db.oobis.cntAll() == 1
-        (url,), item = next(oobiery.hby.db.oobis.getItemIter())
-        assert item is not None
-        assert (
-            url
-            == "http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/"
-        )
-        oobiery.hby.db.oobis.rem(keys=(url,))
+        assert result.json == {"name": "oobi.test", "done": False}
+        agent.oobier.resolve.assert_called_once_with(body)
 
-        # Post an RPY
-        data = dict(oobialias="sal", rpy={})
-        b = json.dumps(data).encode("utf-8")
-        result = client.simulate_post(path="/oobi", body=b)
-        assert result.status == falcon.HTTP_501
 
-        # POST without an oobialias
-        data = dict(
-            url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/"
-        )
-        b = json.dumps(data).encode("utf-8")
-        result = client.simulate_post(path="/oobi", body=b)
-        assert result.status == falcon.HTTP_202
-        assert oobiery.hby.db.oobis.cntAll() == 1
-        (url,), item = next(oobiery.hby.db.oobis.getItemIter())
-        assert item is not None
-        assert (
-            url
-            == "http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/"
-        )
-        assert item.oobialias is None
-        oobiery.hby.db.oobis.rem(keys=(url,))
+@pytest.mark.parametrize(
+    "error, status",
+    [
+        (kering.ValidationError("invalid body"), falcon.HTTP_400),
+        (NotImplementedError("rpy unsupported"), falcon.HTTP_501),
+    ],
+)
+def test_oobi_collection_end_maps_service_errors(error, status, helpers):
+    with helpers.openKeria() as (_, agent, app, client):
+        app.add_route("/oobis", agenting.OOBICollectionEnd())
+        agent.oobier.resolve = mock.Mock(side_effect=error)
 
-        data = dict(
-            oobialias="sal",
-            url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A"
-            "/witness/",
-        )
-        b = json.dumps(data).encode("utf-8")
-        result = client.simulate_post(path="/oobi", body=b)
-        assert result.status == falcon.HTTP_202
-        assert oobiery.hby.db.oobis.cntAll() == 1
-        (url,), item = next(oobiery.hby.db.oobis.getItemIter())
-        assert item is not None
-        assert (
-            url
-            == "http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/"
-        )
-        assert item.oobialias == "sal"
+        result = client.simulate_post(path="/oobis", json={})
 
-        op = helpers.createAid(client, "aggie", salt)
-        aid = op["response"]
-        aggiePre = aid["i"]
-        assert aggiePre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
-
-        keys = (aggiePre, kering.Roles.agent, agent.agentHab.pre)
-        ender = basing.EndpointRecord(allowed=True)
-        agent.hby.db.ends.pin(keys=keys, val=ender)  # overwrite
-        url = "http://127.0.0.1:3902"
-        agent.hby.db.locs.put(
-            keys=(agent.agentHab.pre, kering.Schemes.http),
-            val=basing.LocationRecord(url=url),
-        )
-
-        result = client.simulate_get(path="/oobi/aggie?role=agent")
-        assert result.status == falcon.HTTP_200
-        assert result.json == {
-            "oobis": [
-                "http://127.0.0.1:3902/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/agent"
-                "/EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
-            ],
-            "role": "agent",
-        }
-
-        result = client.simulate_get(path="/oobi/aggie?role=agent&includeEid=true")
-        assert result.status == falcon.HTTP_200
-        assert result.json["oobis"] == [
-            "http://127.0.0.1:3902/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/agent"
-            "/EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
-        ]
-
-        # Tests with actual multisig AID that Agent AID is not on OOBI unless includeEid is specified
-        group = helpers.createMultisigAid(
-            [client, otherClient],
-            "multisig",
-            [
-                ("multisig0", b"abcdef0123456789"),
-                ("multisig1", b"fedcba9876543210"),
-            ],
-        )[0]
-        groupPre = group["prefix"]
-        assert isinstance(agent.hby.habs[groupPre], habbing.SignifyGroupHab)
-        other = "EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-        # Just pin the endpoint role and locs records to simplify the test code as we are testing
-        # OOBI generation, not endrole or loc scheme addition/authorization
-        agent.hby.db.ends.pin(
-            keys=(groupPre, kering.Roles.agent, agent.agentHab.pre),
-            val=basing.EndpointRecord(allowed=True),
-        )
-        agent.hby.db.ends.pin(
-            keys=(groupPre, kering.Roles.agent, other),
-            val=basing.EndpointRecord(allowed=True),
-        )
-        agent.hby.db.locs.put(
-            keys=(other, kering.Schemes.http),
-            val=basing.LocationRecord(url=url),
-        )
-
-        # without includeEid - should not have agent AID suffix
-        result = client.simulate_get(path="/oobi/multisig?role=agent")
-        assert result.status == falcon.HTTP_200
-        assert result.json == {
-            "oobis": [f"http://127.0.0.1:3902/oobi/{groupPre}/agent"],
-            "role": "agent",
-        }
-
-        # with includeEid - should have agent AID suffix
-        result = client.simulate_get(path="/oobi/multisig?role=agent&includeEid=true")
-        assert result.status == falcon.HTTP_200
-        assert set(result.json["oobis"]) == {
-            f"http://127.0.0.1:3902/oobi/{groupPre}/agent/{agent.agentHab.pre}",
-            f"http://127.0.0.1:3902/oobi/{groupPre}/agent/{other}",
-        }
+        assert result.status == status
+        assert result.json["description"] == str(error)
 
 
 def test_querier(helpers):

@@ -9,7 +9,6 @@ import falcon
 import json
 from dataclasses import asdict, dataclass, field
 from typing import Dict, Optional, List, Union
-from urllib.parse import urlparse, urljoin
 from keri import kering
 from keri import core
 from keri.app import habbing
@@ -1298,38 +1297,6 @@ def info(hab, rm, full=False):
     return data
 
 
-Role = namedtupleToEnum(kering.Roles, "Role")
-
-
-@dataclass
-class OOBI:
-    """Data class for OOBI URLs"""
-
-    role: Role  # type: ignore
-    oobis: List[str] = field(
-        default_factory=list,
-        metadata={"marshmallow_field": fields.List(fields.String(), required=True)},
-    )
-
-
-def includeEidParam(req):
-    """Return True when the request explicitly asks for endpoint-qualified OOBIs."""
-    return req.params.get("includeEid", "").lower() in ("true", "1")
-
-
-def agentOobiUrl(hab, url, eid, includeEid=False):
-    """
-    Only return agent AID suffix when AID is single sig, by default.
-    Agent AID suffix not included by default for multisig/group habs.
-    """
-    up = urlparse(url)
-    path = f"/oobi/{hab.pre}/agent"
-    if includeEid or not isinstance(hab, habbing.SignifyGroupHab):
-        path = f"{path}/{eid}"
-
-    return urljoin(up.geturl(), path)
-
-
 class IdentifierOOBICollectionEnd:
     """
     This class represents the OOBI subresource collection endpoint for identifiers
@@ -1362,6 +1329,13 @@ class IdentifierOOBICollectionEnd:
             type: string
           required: true
           description: The role for which to fetch the OOBI URLs. Can be a witness, controller, agent, or mailbox.
+        - in: query
+          name: includeEid
+          schema:
+            type: boolean
+            default: false
+          required: false
+          description: Include endpoint-qualified agent OOBIs for multisig identifiers.
         responses:
             200:
               description: Successfully fetched the OOBI URLs. The response body contains the OOBI URLs.
@@ -1378,123 +1352,22 @@ class IdentifierOOBICollectionEnd:
         if not name:
             raise falcon.HTTPBadRequest(description="name is required")
 
-        hab = (
-            agent.hby.habs[name]
-            if name in agent.hby.habs
-            else agent.hby.habByName(name)
-        )
-        if not hab:
-            raise falcon.HTTPNotFound(description="invalid alias or prefix {name}")
-
         if "role" not in req.params:
             raise falcon.HTTPBadRequest(description="role parameter required")
 
         role = req.params["role"]
+        include_eid = req.params.get("includeEid", "").lower() in ("true", "1")
 
-        res = dict(role=role)
-        if role in (kering.Roles.witness,):  # Fetch URL OOBIs for all witnesses
-            oobis = []
-            for wit in hab.kever.wits:
-                urls = hab.fetchUrls(
-                    eid=wit, scheme=kering.Schemes.http
-                ) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
-                if not urls:
-                    raise falcon.HTTPNotFound(
-                        description=f"unable to query witness {wit}, no http endpoint"
-                    )
-
-                url = (
-                    urls[kering.Schemes.http]
-                    if kering.Schemes.http in urls
-                    else urls[kering.Schemes.https]
-                )
-                up = urlparse(url)
-                oobis.append(urljoin(up.geturl(), f"/oobi/{hab.pre}/witness/{wit}"))
-            res["oobis"] = oobis
-        elif role in (kering.Roles.controller,):  # Fetch any controller URL OOBIs
-            oobis = []
-            urls = hab.fetchUrls(
-                eid=hab.pre, scheme=kering.Schemes.http
-            ) or hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.https)
-            if not urls:
-                raise falcon.HTTPNotFound(
-                    description=f"unable to query controller {hab.pre}, no http endpoint"
-                )
-
-            url = (
-                urls[kering.Schemes.http]
-                if kering.Schemes.http in urls
-                else urls[kering.Schemes.https]
-            )
-            up = urlparse(url)
-            oobis.append(urljoin(up.geturl(), f"/oobi/{hab.pre}/controller"))
-            res["oobis"] = oobis
-        elif role in (kering.Roles.agent,):  # Fetch URL OOBIs for all agent endpoints
-            includeEid = includeEidParam(req)
-            roleUrls = hab.fetchRoleUrls(
-                cid=hab.pre, role=kering.Roles.agent, scheme=kering.Schemes.http
-            ) or hab.fetchRoleUrls(
-                cid=hab.pre, role=kering.Roles.agent, scheme=kering.Schemes.https
-            )
-            if kering.Roles.agent not in roleUrls:
-                res["oobis"] = []
-            else:
-                oobis = list()
-                # Outer for loops over multi-valued mict that could have multiple "agent" dict values
-                for aoobis in roleUrls.naball(kering.Roles.agent):
-                    for agent in set(aoobis.keys()):
-                        murls = aoobis.naball(agent)
-                        for murl in murls:
-                            urls = []
-                            if kering.Schemes.http in murl:
-                                urls.extend(murl.naball(kering.Schemes.http))
-                            if kering.Schemes.https in murl:
-                                urls.extend(murl.naball(kering.Schemes.https))
-                            for url in urls:
-                                oobi = agentOobiUrl(
-                                    hab, url, agent, includeEid=includeEid
-                                )
-                                if oobi not in oobis:
-                                    oobis.append(oobi)
-
-                res["oobis"] = oobis
-        elif role in (kering.Roles.mailbox,):  # Fetch URL OOBIs for all witnesses
-            roleUrls = hab.fetchRoleUrls(
-                cid=hab.pre, role=kering.Roles.mailbox, scheme=kering.Schemes.http
-            ) or hab.fetchRoleUrls(
-                cid=hab.pre, role=kering.Roles.mailbox, scheme=kering.Schemes.https
-            )
-            if kering.Roles.mailbox not in roleUrls:
-                res["oobis"] = []
-            else:
-                aoobis = roleUrls[kering.Roles.mailbox]
-
-                oobis = list()
-                for mailbox in set(aoobis.keys()):
-                    murls = aoobis.naball(mailbox)
-                    for murl in murls:
-                        urls = []
-                        if kering.Schemes.http in murl:
-                            urls.extend(murl.naball(kering.Schemes.http))
-                        if kering.Schemes.https in murl:
-                            urls.extend(murl.naball(kering.Schemes.https))
-                        for url in urls:
-                            up = urlparse(url)
-                            oobis.append(
-                                urljoin(
-                                    up.geturl(), f"/oobi/{hab.pre}/mailbox/{mailbox}"
-                                )
-                            )
-
-                res["oobis"] = oobis
-        else:
-            raise falcon.HTTPBadRequest(
-                description=f"unsupport role type {role} for oobi request"
-            )
+        try:
+            result = agent.oobier.get(name, role, include_eid=include_eid)
+        except kering.MissingEntryError as ex:
+            raise falcon.HTTPNotFound(description=str(ex))
+        except kering.ValidationError as ex:
+            raise falcon.HTTPBadRequest(description=str(ex))
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
-        rep.data = json.dumps(res).encode("utf-8")
+        rep.data = json.dumps(asdict(result)).encode("utf-8")
 
 
 @dataclass

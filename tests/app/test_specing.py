@@ -94,11 +94,19 @@ def test_spec_resource(helpers):
         assert "/oobi/{aid}/{role}" in paths
         assert "/oobi/{aid}/{role}/{eid}" in paths
         assert "/oobis" in paths
-        assert "/oobis/{alias}" in paths
+        assert "/oobis/{alias}" not in paths
         assert "/operations" in paths
         assert "/operations/{name}" in paths
         assert "/queries" in paths
         assert "/states" in paths
         assert "/config" in paths
+        identifier_oobi_parameters = paths["/identifiers/{name}/oobis"]["get"][
+            "parameters"
+        ]
+        assert any(
+            parameter["name"] == "includeEid"
+            and parameter["schema"] == {"type": "boolean", "default": False}
+            for parameter in identifier_oobi_parameters
+        )
 
         _validate_openapi_semantics(sd)

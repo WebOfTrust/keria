@@ -30,7 +30,7 @@ from hio.base import doing
 
 
 from keria.app import aiding, agenting
-from keria.app.aiding import IdentifierOOBICollectionEnd, RpyEscrowCollectionEnd
+from keria.app.aiding import RpyEscrowCollectionEnd
 from keria.core import longrunning
 from keria.testing.testing_helper import SCRIPTS_DIR
 
@@ -1891,207 +1891,58 @@ def test_identifier_resource_end(helpers):
         assert res.json == {"title": "No AID with name or prefix EInvalidPrefix found"}
 
 
-def test_oobi_ends(helpers):
-    with (
-        helpers.openKeria() as (agency, agent, app, client),
-        helpers.openKeria(salter=core.Salter(raw=b"0123456789abcM01")) as (
-            _,
-            _,
-            otherApp,
-            otherClient,
-        ),
-    ):
-        end = aiding.IdentifierCollectionEnd()
-        app.add_route("/identifiers", end)
-        otherApp.add_route("/identifiers", aiding.IdentifierCollectionEnd())
-
-        endRolesEnd = aiding.EndRoleCollectionEnd()
-        app.add_route("/identifiers/{name}/endroles", endRolesEnd)
-        aidOOBIsEnd = IdentifierOOBICollectionEnd()
-        app.add_route("/identifiers/{name}/oobis", aidOOBIsEnd)
-
-        client = testing.TestClient(app)
-        # Create an AID to test against
-        salt = b"0123456789abcdef"
-        op = helpers.createAid(client, "pal", salt)
-        iserder = serdering.SerderKERI(sad=op["response"])
-        assert iserder.pre == "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
-
-        # Test empty
-        res = client.simulate_get("/identifiers//oobis?role=agent")
-        assert res.status_code == 400
-        assert res.json == {
-            "description": "name is required",
-            "title": "400 Bad Request",
-        }
-
-        # Test before endroles are added
-        res = client.simulate_get("/identifiers/pal/oobis?role=agent")
-        assert res.status_code == 200
-        assert res.json == {"oobis": [], "role": "agent"}
-
-        rpy = helpers.endrole(iserder.pre, agent.agentHab.pre)
-
-        # first try with bad signatures
-        sigs = helpers.sign(b"0123456789xyzxyz", 0, 0, rpy.raw)
-        body = dict(rpy=rpy.ked, sigs=sigs)
-        res = client.simulate_post(path="/identifiers/pal/endroles", json=body)
-        assert res.status_code == 400
-        assert res.json == {
-            "description": "unable to verify end role reply message",
-            "title": "400 Bad Request",
-        }
-
-        # now with correct
-        sigs = helpers.sign(salt, 0, 0, rpy.raw)
-        body = dict(rpy=rpy.ked, sigs=sigs)
-
-        res = client.simulate_post(path="/identifiers/pal/endroles", json=body)
-        op = res.json
-        ked = op["response"]
-        serder = serdering.SerderKERI(sad=ked)
-        assert serder.raw == rpy.raw
-
-        # not valid calls
-        res = client.simulate_post(path="/identifiers/pal/endroles/agent", json=body)
-        assert res.status_code == 404
-
-        res = client.simulate_post(path="/endroles/pal", json=body)
-        assert res.status_code == 404
-
-        # must be a valid aid alias
-        res = client.simulate_get("/identifiers/bad/oobis")
-        assert res.status_code == 404
-
-        # role parameter is required
-        res = client.simulate_get("/identifiers/pal/oobis")
-        assert res.status_code == 400
-        assert res.json == {
-            "description": "role parameter required",
-            "title": "400 Bad Request",
-        }
-
-        # role parameter must be valie
-        res = client.simulate_get("/identifiers/pal/oobis?role=banana")
-        assert res.status_code == 400
-        assert res.json == {
-            "description": "unsupport role type banana for oobi request",
-            "title": "400 Bad Request",
-        }
-
-        res = client.simulate_get("/identifiers/pal/oobis?role=agent")
-        assert res.status_code == 200
-        role = res.json["role"]
-        oobis = res.json["oobis"]
-
-        res = client.simulate_get("/identifiers/pal/oobis?role=witness")
-        assert res.status_code == 200
-
-        assert role == "agent"
-        assert len(oobis) == 1
-        assert oobis[0] == (
-            "http://127.0.0.1:3902/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/agent/EI7AkI40M1"
-            "1MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
-        )
-        res = client.simulate_get("/identifiers/pal/oobis?role=agent&includeEid=true")
-        assert res.status_code == 200
-        assert res.json["oobis"] == [oobis[0]]
-
-        # Tests with actual multisig AID that Agent AID is not on OOBI unless includeEid is specified
-        group = helpers.createMultisigAid(
-            [client, otherClient],
-            "multisig",
-            [
-                ("multisig0", b"abcdef0123456789"),
-                ("multisig1", b"fedcba9876543210"),
-            ],
-        )[0]
-        groupPre = group["prefix"]
-        assert isinstance(agent.hby.habs[groupPre], habbing.SignifyGroupHab)
-        other = "EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-        # Just pin the endpoint role and locs records to simplify the test code as we are testing
-        # OOBI generation, not endrole or loc scheme addition/authorization
+def test_identifier_oobi_collection_end(helpers):
+    with helpers.openKeria() as (_, agent, app, client):
+        app.add_route("/identifiers", aiding.IdentifierCollectionEnd())
+        app.add_route("/identifiers/{name}/oobis", aiding.IdentifierOOBICollectionEnd())
+        created = helpers.createAid(client, "pal", b"0123456789abcdef")
+        aid = created["response"]["i"]
         agent.hby.db.ends.pin(
-            keys=(groupPre, kering.Roles.agent, agent.agentHab.pre),
+            keys=(aid, kering.Roles.agent, agent.agentHab.pre),
             val=basing.EndpointRecord(allowed=True),
         )
-        agent.hby.db.ends.pin(
-            keys=(groupPre, kering.Roles.agent, other),
-            val=basing.EndpointRecord(allowed=True),
-        )
-        agent.hby.db.locs.put(
-            keys=(other, kering.Schemes.http),
+        agent.hby.db.locs.pin(
+            keys=(agent.agentHab.pre, kering.Schemes.http),
             val=LocationRecord(url="http://127.0.0.1:3902"),
         )
+        agent.oobier.get = mock.Mock(wraps=agent.oobier.get)
 
-        # without includeEid - should not have agent AID suffix
-        res = client.simulate_get("/identifiers/multisig/oobis?role=agent")
+        res = client.simulate_get("/identifiers/pal/oobis?role=agent&includeEid=true")
+
         assert res.status_code == 200
         assert res.json == {
-            "oobis": [f"http://127.0.0.1:3902/oobi/{groupPre}/agent"],
+            "oobis": [f"http://127.0.0.1:3902/oobi/{aid}/agent/{agent.agentHab.pre}"],
             "role": "agent",
         }
+        agent.oobier.get.assert_called_once_with("pal", "agent", include_eid=True)
 
-        # with includeEid - should have agent AID suffix
-        res = client.simulate_get(
-            "/identifiers/multisig/oobis?role=agent&includeEid=true"
-        )
-        assert res.status_code == 200
-        assert set(res.json["oobis"]) == {
-            f"http://127.0.0.1:3902/oobi/{groupPre}/agent/{agent.agentHab.pre}",
-            f"http://127.0.0.1:3902/oobi/{groupPre}/agent/{other}",
-        }
 
-        res = client.simulate_get("/identifiers/pal/oobis?role=witness")
-        assert res.status_code == 200
-        role = res.json["role"]
-        oobis = res.json["oobis"]
+def test_identifier_oobi_collection_end_validates_transport(helpers):
+    with helpers.openKeria() as (_, _, app, client):
+        app.add_route("/identifiers/{name}/oobis", aiding.IdentifierOOBICollectionEnd())
 
-        assert role == "witness"
-        assert len(oobis) == 0
+        res = client.simulate_get("/identifiers/pal/oobis")
 
-        res = client.simulate_get("/identifiers/pal/oobis?role=controller")
-        assert res.status_code == 404
+        assert res.status_code == 400
+        assert res.json["description"] == "role parameter required"
 
-        # Jam HTTP loc record for pre in database
-        agent.hby.db.locs.pin(
-            keys=(iserder.pre, kering.Schemes.http),
-            val=LocationRecord(url="http://localhost:1234/"),
-        )
 
-        res = client.simulate_get("/identifiers/pal/oobis?role=controller")
-        assert res.status_code == 200
-        role = res.json["role"]
-        oobis = res.json["oobis"]
+@pytest.mark.parametrize(
+    "error, status",
+    [
+        (kering.MissingEntryError("missing identifier"), falcon.HTTP_404),
+        (kering.ValidationError("invalid role"), falcon.HTTP_400),
+    ],
+)
+def test_identifier_oobi_collection_end_maps_service_errors(error, status, helpers):
+    with helpers.openKeria() as (_, agent, app, client):
+        app.add_route("/identifiers/{name}/oobis", aiding.IdentifierOOBICollectionEnd())
+        agent.oobier.get = mock.Mock(side_effect=error)
 
-        assert role == "controller"
-        assert len(oobis) == 1
-        assert (
-            oobis[0]
-            == "http://localhost:1234/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/controller"
-        )
+        res = client.simulate_get("/identifiers/pal/oobis?role=agent")
 
-        rpy = helpers.endrole(iserder.pre, agent.agentHab.pre, role="mailbox")
-        sigs = helpers.sign(salt, 0, 0, rpy.raw)
-        body = dict(rpy=rpy.ked, sigs=sigs)
-
-        res = client.simulate_post(path="/identifiers/pal/endroles", json=body)
-        op = res.json
-        ked = op["response"]
-        serder = serdering.SerderKERI(sad=ked)
-        assert serder.raw == rpy.raw
-
-        res = client.simulate_get("/identifiers/pal/oobis?role=mailbox")
-        assert res.status_code == 200
-        role = res.json["role"]
-        oobis = res.json["oobis"]
-
-        assert role == "mailbox"
-        assert len(oobis) == 1
-        assert (
-            oobis[0]
-            == "http://127.0.0.1:3902/oobi/EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY/mailbox/EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
-        )
+        assert res.status == status
+        assert res.json["description"] == str(error)
 
 
 def test_rpy_escow_end(helpers):
