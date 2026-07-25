@@ -523,6 +523,28 @@ class Agency(doing.DoDoer):
             raise KeyboardInterrupt("Agency shutdown complete. Exiting Agency.")
 
 
+class SignifyExchanger(exchanging.Exchanger):
+    """Elect one Signify multisig member to send an exchange message."""
+
+    def lead(self, hab, said):
+        """Apply group sender election to KERIA's Signify group habitat."""
+        if not isinstance(hab, habbing.SignifyGroupHab):
+            return super().lead(hab, said)
+
+        signature_groups = eventing.fetchTsgs(
+            self.hby.db.esigs,
+            coring.Saider(qb64=said),
+        )
+        if not signature_groups:
+            return False
+
+        signing_keys = [verfer.qb64 for verfer in hab.kever.verfers]
+        _, _, _, signatures = signature_groups[0]
+        elected_index = min(signature.index for signature in signatures)
+        member_key = hab.mhab.kever.verfers[0].qb64
+        return member_key == signing_keys[elected_index]
+
+
 class Agent(doing.DoDoer):
     """
     An network accessible agent paired to a remote Signify controller holding keys at the edge.
@@ -724,7 +746,7 @@ class Agent(doing.DoDoer):
         challengeHandler = challenging.ChallengeHandler(db=hby.db, signaler=signaler)
 
         handlers = [challengeHandler]
-        self.exc = exchanging.Exchanger(hby=hby, handlers=handlers)
+        self.exc = SignifyExchanger(hby=hby, handlers=handlers)
         grouping.loadHandlers(exc=self.exc, mux=self.mux)
         kdelegating.loadHandlers(hby=self.hby, exc=self.exc, notifier=self.notifier)
         protocoling.loadHandlers(hby=self.hby, exc=self.exc, notifier=self.notifier)

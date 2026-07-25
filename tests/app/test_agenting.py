@@ -13,6 +13,8 @@ import shutil
 import signal
 import time
 from base64 import b64encode
+from types import SimpleNamespace
+from unittest import mock
 
 import falcon
 import hio
@@ -35,6 +37,88 @@ from keri.vdr import credentialing
 from keria.app import agenting, aiding
 from keria.core import longrunning, httping
 from keria.testing.testing_helper import SCRIPTS_DIR
+
+
+def test_signify_exchanger_elects_lowest_signature_index():
+    """The local member with the lowest present signature index sends."""
+
+    class FakeSignifyGroupHab:
+        pass
+
+    signing_keys = [
+        SimpleNamespace(qb64="key-0"),
+        SimpleNamespace(qb64="key-1"),
+        SimpleNamespace(qb64="key-2"),
+    ]
+    hab = FakeSignifyGroupHab()
+    hab.kever = SimpleNamespace(verfers=signing_keys)
+    hab.mhab = SimpleNamespace(
+        kever=SimpleNamespace(verfers=[SimpleNamespace(qb64="key-1")])
+    )
+
+    exchanger = object.__new__(agenting.SignifyExchanger)
+    exchanger.hby = SimpleNamespace(db=SimpleNamespace(esigs=object()))
+
+    with (
+        mock.patch.object(agenting.habbing, "SignifyGroupHab", FakeSignifyGroupHab),
+        mock.patch.object(
+            agenting.eventing,
+            "fetchTsgs",
+            return_value=[
+                (
+                    None,
+                    None,
+                    None,
+                    [SimpleNamespace(index=2), SimpleNamespace(index=1)],
+                )
+            ],
+        ),
+    ):
+        assert exchanger.lead(hab, "E" + "A" * 43) is True
+
+        hab.mhab.kever.verfers[0].qb64 = "key-2"
+        assert exchanger.lead(hab, "E" + "A" * 43) is False
+
+
+def test_signify_exchanger_requires_stored_signatures():
+    """A Signify group cannot elect a sender before signatures are stored."""
+
+    class FakeSignifyGroupHab:
+        pass
+
+    exchanger = object.__new__(agenting.SignifyExchanger)
+    exchanger.hby = SimpleNamespace(db=SimpleNamespace(esigs=object()))
+
+    with (
+        mock.patch.object(agenting.habbing, "SignifyGroupHab", FakeSignifyGroupHab),
+        mock.patch.object(agenting.eventing, "fetchTsgs", return_value=[]),
+    ):
+        assert exchanger.lead(FakeSignifyGroupHab(), "E" + "A" * 43) is False
+
+
+def test_signify_exchanger_delegates_other_habitats():
+    """Single-signature and KERIpy group habitats retain base behavior."""
+    exchanger = object.__new__(agenting.SignifyExchanger)
+    habitats = [object(), object.__new__(agenting.habbing.GroupHab)]
+
+    with mock.patch.object(
+        agenting.exchanging.Exchanger,
+        "lead",
+        side_effect=[True, False],
+    ) as lead:
+        assert exchanger.lead(habitats[0], "single-sig") is True
+        assert exchanger.lead(habitats[1], "group") is False
+
+    assert lead.call_args_list == [
+        mock.call(habitats[0], "single-sig"),
+        mock.call(habitats[1], "group"),
+    ]
+
+
+def test_agent_uses_signify_exchanger(helpers):
+    """Every KERIA Agent uses Signify-aware sender election."""
+    with helpers.openKeria() as (_, agent, _, _):
+        assert isinstance(agent.exc, agenting.SignifyExchanger)
 
 
 def test_setup_no_http():
