@@ -259,7 +259,7 @@ class ESSRAuthenticator(Authenticator):
             raise kering.AuthNError("Signature invalid")
 
         # The real HTTP request is the plaintext of the body of the wrapper to POST /
-        environ = self.buildEnviron(agent.agentHab.decrypt(ser=cipher).decode("utf-8"))
+        environ = self.buildEnviron(agent.agentHab.decrypt(ser=cipher))
 
         # ESSR "Encrypt Sender"
         if (
@@ -288,9 +288,7 @@ class ESSRAuthenticator(Authenticator):
         response.set_header(
             "SIGNIFY-RESOURCE", agent.agentHab.pre
         )  # ESSR "Encrypt Sender"
-        inner = self.serializeResponse(
-            request.env.get("SERVER_PROTOCOL"), response
-        ).encode("utf-8")
+        inner = self.serializeResponse(request.env.get("SERVER_PROTOCOL"), response)
 
         response.status = 200
 
@@ -336,31 +334,32 @@ class ESSRAuthenticator(Authenticator):
             response.set_header(key, val)
 
     @staticmethod
-    def buildEnviron(raw: str) -> Dict[str, Any]:
-        """Deserializes a HTTP request string into an environ dict that can initialize falcon request object
+    def buildEnviron(raw: bytes) -> Dict[str, Any]:
+        """Deserializes a serialized HTTP request into an environ dict that can initialize falcon request object
+
+        The head is split from the body on the first CRLFCRLF and decoded as UTF-8. The body is
+        carried through as raw bytes so the tunnel is byte transparent.
 
         Parameters:
-            raw (str): The serialized HTTP request
+            raw (bytes): The serialized HTTP request
 
         Returns:
-            str: The serialized HTTP string
+            dict: The WSGI environ
 
         """
-        lines = raw.splitlines()
+        head, _, body = raw.partition(b"\r\n\r\n")
+        lines = head.decode("utf-8").split("\r\n")
 
-        method, url, protocol = lines[0].strip().split()
+        method, url, protocol = lines[0].split()
         splitUrl = urlsplit(url)
         splitHost = splitUrl.netloc.split(":")
 
         headers = {}
-        i = 1
-        while i < len(lines) and lines[i].strip() != "":
-            header_line = lines[i].strip()
-            header_name, header_value = header_line.split(":", 1)
-            headers[header_name.strip()] = header_value.strip()
-            i += 1
-
-        body = "\n".join(lines[i + 1 :]).strip().encode("utf-8")
+        for line in lines[1:]:
+            name, sep, value = line.partition(":")
+            if not sep:
+                raise ValueError(f"Invalid header line {line}")
+            headers[name.strip().lower()] = value.strip()
 
         environ = {
             "wsgi.input": BytesIO(body),
@@ -375,7 +374,7 @@ class ESSRAuthenticator(Authenticator):
             "PATH_INFO": splitUrl.path,
             "QUERY_STRING": splitUrl.query,
             "CONTENT_TYPE": headers.get("content-type", ""),
-            "CONTENT_LENGTH": str(len(body)) if body else "0",
+            "CONTENT_LENGTH": str(len(body)),
         }
 
         for key, value in headers.items():
@@ -385,34 +384,30 @@ class ESSRAuthenticator(Authenticator):
         return environ
 
     @staticmethod
-    def serializeResponse(protocol: str, response: falcon.Response) -> str:
-        """Serializes a falcon response object into a HTTP string
+    def serializeResponse(protocol: str, response: falcon.Response) -> bytes:
+        """Serializes a falcon response object into a serialized HTTP response
 
         Parameters:
             protocol (str): HTTP protocol string
             response (falcon.Response): Falcon response object
 
         Returns:
-            str: The serialized HTTP string
+            bytes: The serialized HTTP response
 
         """
-        status_line = f"{protocol} {response.status}"
-        headers = "\r\n".join(
-            [
-                f"{key}: {value}"
-                for key, value in response.headers.items()
-                if key.lower() not in CORS_HEADERS
-            ]
+        # rendering can set content-type, so it has to happen before the head is built
+        body = response.render_body() or b""
+
+        lines = [f"{protocol} {response.status}"]
+        lines.extend(
+            f"{key}: {value}"
+            for key, value in response.headers.items()
+            if key.lower() not in CORS_HEADERS
         )
 
-        if response.text:
-            body = response.text
-        elif response.data:
-            body = response.data.decode("utf-8")
-        else:
-            body = ""
+        head = "\r\n".join(lines).encode("utf-8")
 
-        return f"{status_line}\r\n{headers}\r\n\r\n{body}"
+        return head + b"\r\n\r\n" + body
 
 
 class AuthenticationMiddleware:
@@ -456,7 +451,7 @@ class AuthenticationMiddleware:
         try:
             authenticator.inbound(req)
             return
-        except (kering.AuthNError, ValueError):
+        except (kering.AuthNError, ValueError, UnicodeDecodeError):
             pass
 
         rep.complete = (

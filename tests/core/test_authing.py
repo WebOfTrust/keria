@@ -28,6 +28,11 @@ def create_req(**kwargs):
     return authing.ModifiableRequest(testing.create_environ(**kwargs))
 
 
+def essr_request(requestLine, headers=(), body=b""):
+    head = "\r\n".join([requestLine, *(f"{name}: {value}" for name, value in headers)])
+    return head.encode("utf-8") + b"\r\n\r\n" + body
+
+
 def test_signed_header_authenticator(mockHelpingNowUTC):
     salt = b"1111456789abcdef"
     salter = core.Salter(raw=salt)
@@ -211,11 +216,16 @@ def test_essr_authenticator(mockHelpingNowUTC):
         assert str(e.value) == "Request should not expose endpoint in the clear"
 
         dt = "2022-09-24T00:05:48.196795+00:00"
-        http = """GET http://127.0.0.1:3901/identifiers/aid1?x=y HTTP/1.1
-content-type: application/json
-signify-resource: ECjmyrSFFfOb3VJi1JUKTy-Vn766h-VKl3XY8OEFdxBF
-
-""".encode("utf-8")
+        http = essr_request(
+            "GET http://127.0.0.1:3901/identifiers/aid1?x=y HTTP/1.1",
+            [
+                ("content-type", "application/json"),
+                (
+                    "signify-resource",
+                    "ECjmyrSFFfOb3VJi1JUKTy-Vn766h-VKl3XY8OEFdxBF",
+                ),
+            ],
+        )
         pubkey = pysodium.crypto_sign_pk_to_box_pk(agent.agentHab.kever.verfers[0].raw)
         raw = pysodium.crypto_box_seal(http, pubkey)
 
@@ -310,11 +320,13 @@ signify-resource: ECjmyrSFFfOb3VJi1JUKTy-Vn766h-VKl3XY8OEFdxBF
 
         # Finally correct ESSR
         dt = "2022-09-24T00:05:48.196795+00:00"
-        http = f"""GET http://127.0.0.1:3901/identifiers/aid1?x=y HTTP/1.1
-        content-type: application/json
-        signify-resource: {controller.pre}
-
-        """.encode("utf-8")
+        http = essr_request(
+            "GET http://127.0.0.1:3901/identifiers/aid1?x=y HTTP/1.1",
+            [
+                ("Content-Type", "application/json"),  # liberal on header name case
+                ("signify-resource", controller.pre),
+            ],
+        )
         pubkey = pysodium.crypto_sign_pk_to_box_pk(agent.agentHab.kever.verfers[0].raw)
         raw = pysodium.crypto_box_seal(http, pubkey)
 
@@ -420,19 +432,98 @@ signify-resource: EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy\r
 """
         )
 
+        def sealed(http):
+            raw = pysodium.crypto_box_seal(http, pubkey)
+            payload = dict(
+                src=controller.pre,
+                dest=agent.pre,
+                d=coring.Diger(ser=raw, code=MtrDex.Blake3_256).qb64,
+                dt=dt,
+            )
+            sig = controller.sign(
+                json.dumps(payload, separators=(",", ":")).encode("utf-8"),
+                indexed=False,
+            )
+            return create_req(
+                method="POST",
+                path="/",
+                body=raw,
+                headers={
+                    "SIGNATURE": ending.signature(
+                        [
+                            ending.Signage(
+                                markers=dict(signify=sig[0]),
+                                indexed=False,
+                                signer=None,
+                                ordinal=None,
+                                digest=None,
+                                kind=None,
+                            )
+                        ]
+                    )["Signature"],
+                    "SIGNIFY-TIMESTAMP": dt,
+                    "SIGNIFY-RESOURCE": controller.pre,
+                    "SIGNIFY-RECEIVER": agent.pre,
+                },
+            )
+
+        # Nothing in the tunnel is normalized, stripped or re-encoded in either direction
+        body = json.dumps({"alias": "a\u2028b\u2029c\u0085d\r\ne "}).encode("utf-8")
+        req = sealed(
+            essr_request(
+                "POST http://127.0.0.1:3901/contacts HTTP/1.1",
+                [
+                    ("content-type", "application/json"),
+                    ("signify-resource", controller.pre),
+                ],
+                body,
+            )
+        )
+
+        authn.inbound(req)
+        assert req.path == "/contacts"
+        assert req.content_length == len(body)
+        assert req.bounded_stream.read() == body
+
+        rep = falcon.Response()
+        rep.status = "200 OK"
+        rep.data = body
+        authn.outbound(req, rep)
+        assert controller.decrypt(ser=rep.data) == (
+            b"HTTP/1.1 200 OK\r\nsignify-resource: "
+            + agent.agentHab.pre.encode("utf-8")
+            + b"\r\n\r\n"
+            + body
+        )
+
+        middleware = authing.AuthenticationMiddleware(
+            agency=agency, authn=None, essrAuthn=authn
+        )
+        for malformed in (
+            b"GET http://127.0.0.1:3901/contacts\r\n\r\n",
+            b"GET http://127.0.0.1:3901/contacts HTTP/1.1\r\nnot-a-header\r\n\r\n",
+            b"\xff\xfe\r\n\r\n",
+        ):
+            rep = falcon.Response()
+            middleware.process_request(sealed(malformed), rep)
+            assert rep.complete is True
+            assert rep.status == falcon.HTTP_401
+
+
+RESOURCE = "ECjmyrSFFfOb3VJi1JUKTy-Vn766h-VKl3XY8OEFdxBF"
+
 
 def test_build_environ():
-    http = """GET http://127.0.0.1:3901/identifiers/aid1?x=y HTTP/1.1
-    content-type: application/json
-    signify-resource: ECjmyrSFFfOb3VJi1JUKTy-Vn766h-VKl3XY8OEFdxBF
-
-    """
+    http = essr_request(
+        "GET http://127.0.0.1:3901/identifiers/aid1?x=y HTTP/1.1",
+        [("content-type", "application/json"), ("signify-resource", RESOURCE)],
+    )
     environ = authing.ESSRAuthenticator.buildEnviron(http)
     assert environ == {
         "CONTENT_LENGTH": "0",
         "CONTENT_TYPE": "application/json",
         "HTTP_CONTENT_TYPE": "application/json",
-        "HTTP_SIGNIFY_RESOURCE": "ECjmyrSFFfOb3VJi1JUKTy-Vn766h-VKl3XY8OEFdxBF",
+        "HTTP_SIGNIFY_RESOURCE": RESOURCE,
         "PATH_INFO": "/identifiers/aid1",
         "QUERY_STRING": "x=y",
         "REQUEST_METHOD": "GET",
@@ -443,18 +534,18 @@ def test_build_environ():
         "wsgi.input": mock.ANY,
         "wsgi.url_scheme": "http",
     }
+    assert environ["wsgi.input"].read() == b""
 
-    http = """POST http://127.0.0.1/ HTTP/1.0
-    content-type: text/plain
-    signify-resource: ECjmyrSFFfOb3VJi1JUKTy-Vn766h-VKl3XY8OEFdxBF
-
-    """
+    http = essr_request(
+        "POST http://127.0.0.1/ HTTP/1.0",
+        [("content-type", "text/plain"), ("signify-resource", RESOURCE)],
+    )
     environ = authing.ESSRAuthenticator.buildEnviron(http)
     assert environ == {
         "CONTENT_LENGTH": "0",
         "CONTENT_TYPE": "text/plain",
         "HTTP_CONTENT_TYPE": "text/plain",
-        "HTTP_SIGNIFY_RESOURCE": "ECjmyrSFFfOb3VJi1JUKTy-Vn766h-VKl3XY8OEFdxBF",
+        "HTTP_SIGNIFY_RESOURCE": RESOURCE,
         "PATH_INFO": "/",
         "QUERY_STRING": "",
         "REQUEST_METHOD": "POST",
@@ -466,18 +557,17 @@ def test_build_environ():
         "wsgi.url_scheme": "http",
     }
 
-    http = """POST https://127.0.0.1/main HTTP/1.1
-    content-type: application/json
-    signify-resource: ECjmyrSFFfOb3VJi1JUKTy-Vn766h-VKl3XY8OEFdxBF
-
-    {}
-    """
+    http = essr_request(
+        "POST https://127.0.0.1/main HTTP/1.1",
+        [("content-type", "application/json"), ("signify-resource", RESOURCE)],
+        b"{}",
+    )
     environ = authing.ESSRAuthenticator.buildEnviron(http)
     assert environ == {
         "CONTENT_LENGTH": "2",
         "CONTENT_TYPE": "application/json",
         "HTTP_CONTENT_TYPE": "application/json",
-        "HTTP_SIGNIFY_RESOURCE": "ECjmyrSFFfOb3VJi1JUKTy-Vn766h-VKl3XY8OEFdxBF",
+        "HTTP_SIGNIFY_RESOURCE": RESOURCE,
         "PATH_INFO": "/main",
         "QUERY_STRING": "",
         "REQUEST_METHOD": "POST",
@@ -488,29 +578,72 @@ def test_build_environ():
         "wsgi.input": mock.ANY,
         "wsgi.url_scheme": "https",
     }
+    assert environ["wsgi.input"].read() == b"{}"
 
-    http = """POST https://127.0.0.1/main HTTP/1.1
-    content-type: application/json
-    signify-resource: ECjmyrSFFfOb3VJi1JUKTy-Vn766h-VKl3XY8OEFdxBF
-
-    ññ
-    """
+    http = essr_request(
+        "POST https://127.0.0.1/main HTTP/1.1",
+        [("content-type", "application/json"), ("signify-resource", RESOURCE)],
+        "ññ".encode("utf-8"),
+    )
     environ = authing.ESSRAuthenticator.buildEnviron(http)
-    assert environ == {
-        "CONTENT_LENGTH": "4",  # ñ takes 2
-        "CONTENT_TYPE": "application/json",
-        "HTTP_CONTENT_TYPE": "application/json",
-        "HTTP_SIGNIFY_RESOURCE": "ECjmyrSFFfOb3VJi1JUKTy-Vn766h-VKl3XY8OEFdxBF",
-        "PATH_INFO": "/main",
-        "QUERY_STRING": "",
-        "REQUEST_METHOD": "POST",
-        "SERVER_NAME": "127.0.0.1",
-        "SERVER_PORT": "433",
-        "SERVER_PROTOCOL": "HTTP/1.1",
-        "wsgi.errors": mock.ANY,
-        "wsgi.input": mock.ANY,
-        "wsgi.url_scheme": "https",
-    }
+    assert environ["CONTENT_LENGTH"] == "4"  # ñ takes 2
+    assert environ["wsgi.input"].read() == "ññ".encode("utf-8")
+
+
+def test_build_environ_body_is_verbatim():
+    def body_of(body):
+        environ = authing.ESSRAuthenticator.buildEnviron(
+            essr_request(
+                "POST http://127.0.0.1/main HTTP/1.1",
+                [("content-type", "application/json")],
+                body,
+            )
+        )
+        assert environ["CONTENT_LENGTH"] == str(len(body))
+        return environ["wsgi.input"].read()
+
+    # the hazard class that made the client escape these before sealing
+    hazards = json.dumps({"alias": "a\u2028b\u2029c\u0085d"}).encode("utf-8")
+    assert body_of(hazards) == hazards
+
+    assert body_of(b'{"a": "x\r\ny"}') == b'{"a": "x\r\ny"}'
+    assert body_of(b"one\r\n\r\ntwo") == b"one\r\n\r\ntwo"
+    assert body_of(b"  padded  \n") == b"  padded  \n"
+    assert body_of(b"\xff\xfe\x00binary") == b"\xff\xfe\x00binary"
+
+
+def test_build_environ_header_names_are_case_insensitive():
+    http = essr_request(
+        "POST http://127.0.0.1/main HTTP/1.1",
+        [
+            ("Content-Type", "application/json"),
+            ("Signify-Resource", RESOURCE),
+            ("Location", "http://example.com: 8080"),
+        ],
+    )
+    environ = authing.ESSRAuthenticator.buildEnviron(http)
+    assert environ["CONTENT_TYPE"] == "application/json"
+    assert environ["HTTP_CONTENT_TYPE"] == "application/json"
+    assert environ["HTTP_SIGNIFY_RESOURCE"] == RESOURCE
+    assert environ["HTTP_LOCATION"] == "http://example.com: 8080"
+
+
+def test_build_environ_malformed():
+    with pytest.raises(ValueError):  # head not terminated by CRLFCRLF
+        authing.ESSRAuthenticator.buildEnviron(
+            b"GET http://127.0.0.1/main HTTP/1.1\r\n"
+        )
+
+    with pytest.raises(ValueError):
+        authing.ESSRAuthenticator.buildEnviron(b"GET http://127.0.0.1/main\r\n\r\n")
+
+    with pytest.raises(ValueError):
+        authing.ESSRAuthenticator.buildEnviron(
+            b"GET http://127.0.0.1/main HTTP/1.1\r\nnot-a-header\r\n\r\n"
+        )
+
+    with pytest.raises(UnicodeDecodeError):
+        authing.ESSRAuthenticator.buildEnviron(b"\xff\xfe\r\n\r\n")
 
 
 def test_serialize_response():
@@ -528,33 +661,43 @@ def test_serialize_response():
     rep.status = "400 Bad Request"
 
     serialized = authing.ESSRAuthenticator.serializeResponse("HTTP/1.1", rep)
-    assert (
-        serialized
-        == """HTTP/1.1 400 Bad Request\r
-signify-resource: EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy\r
-\r
-"""
+    assert serialized == (
+        b"HTTP/1.1 400 Bad Request\r\n"
+        b"signify-resource: EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy\r\n"
+        b"\r\n"
     )
 
     rep.data = json.dumps({"a": "b"}).encode("utf-8")
     serialized = authing.ESSRAuthenticator.serializeResponse("HTTP/1.1", rep)
-    assert (
-        serialized
-        == """HTTP/1.1 400 Bad Request\r
-signify-resource: EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy\r
-\r
-{"a": "b"}"""
+    assert serialized == (
+        b"HTTP/1.1 400 Bad Request\r\n"
+        b"signify-resource: EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy\r\n"
+        b"\r\n"
+        b'{"a": "b"}'
     )
 
     rep.data = None
     rep.text = "Identifier not found!"
     serialized = authing.ESSRAuthenticator.serializeResponse("HTTP/1.1", rep)
+    assert serialized == (
+        b"HTTP/1.1 400 Bad Request\r\n"
+        b"signify-resource: EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy\r\n"
+        b"\r\n"
+        b"Identifier not found!"
+    )
+
+
+def test_serialize_response_without_headers():
+    rep = falcon.Response()
+    rep.status = "204 No Content"
     assert (
-        serialized
-        == """HTTP/1.1 400 Bad Request\r
-signify-resource: EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy\r
-\r
-Identifier not found!"""
+        authing.ESSRAuthenticator.serializeResponse("HTTP/1.1", rep)
+        == b"HTTP/1.1 204 No Content\r\n\r\n"
+    )
+
+    rep.data = b"\xff\xfe\x00binary"
+    assert authing.ESSRAuthenticator.serializeResponse("HTTP/1.1", rep) == (
+        b"HTTP/1.1 204 No Content\r\n\r\n\xff\xfe\x00binary"
     )
 
 
@@ -650,6 +793,19 @@ def test_authentication_middleware(mockHelpingNowUTC):
 
     mockESSRAuthN.reset_mock()
     mockESSRAuthN.inbound.side_effect = ValueError()
+
+    req = create_req(method="POST", path="/")
+    rep = falcon.Response()
+
+    vc.process_request(req, rep)
+    mockESSRAuthN.inbound.assert_called_once()
+    assert rep.complete is True
+    assert rep.status == falcon.HTTP_401
+
+    mockESSRAuthN.reset_mock()
+    mockESSRAuthN.inbound.side_effect = UnicodeDecodeError(
+        "utf-8", b"\xff", 0, 1, "invalid start byte"
+    )
 
     req = create_req(method="POST", path="/")
     rep = falcon.Response()
