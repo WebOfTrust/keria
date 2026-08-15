@@ -83,14 +83,14 @@ class RequestLoggerMiddleware:
         if req.content_length and logger.isEnabledFor(logging.DEBUG):
             # Read and re-set the stream to allow further processing
             body = req.stream.read()
-            decoded_body = body.decode("utf-8") if body else "<empty>"
-            logger.debug("Request body    : %s", decoded_body)
-            req.env["wsgi.input"] = io.BytesIO(
-                body
-            )  # Reset the stream for further processing
+            logger.debug("Request body    : %r", body)
+            stream = io.BytesIO(body)
+            req.stream = stream
+            req.env["wsgi.input"] = stream
             req.env["CONTENT_LENGTH"] = str(
                 len(body)
             )  # match WSGI env content length to body length
+            req._bounded_stream = None
         else:
             logger.debug("Request body    : No body")
 

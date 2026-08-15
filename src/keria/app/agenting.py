@@ -944,12 +944,15 @@ def createAdminServerDoer(config: KERIAServerConfig, agency: Agency):
     """
     # Create Authenticater for verifying signatures on all requests
     authn = SignedHeaderAuthenticator(agency=agency)
+    essrAuthn = authing.ESSRAuthenticator(agency=agency)
 
     adminApp = falconApp(config.logRequests, request_type=authing.ModifiableRequest)
     if config.cors:
         adminApp.add_middleware(middleware=httping.HandleCORS())
     adminApp.add_middleware(
-        authing.AuthenticationMiddleware(agency=agency, authn=authn, allowed=["/agent"])
+        authing.AuthenticationMiddleware(
+            agency=agency, authn=authn, essrAuthn=essrAuthn, allowed=["/agent"]
+        )
     )
     adminApp.req_options.media_handlers.update(media.Handlers())
     adminApp.resp_options.media_handlers.update(media.Handlers())
@@ -965,7 +968,11 @@ def createAdminServerDoer(config: KERIAServerConfig, agency: Agency):
     ipexing.loadEnds(app=adminApp)
 
     adminServer = createHttpServer(
-        config.adminPort, adminApp, config.keyPath, config.certPath, config.caFilePath
+        config.adminPort,
+        authing.ESSRResponseWrapper(adminApp, essrAuthn),
+        config.keyPath,
+        config.certPath,
+        config.caFilePath,
     )
     if not adminServer.reopen():
         raise RuntimeError(

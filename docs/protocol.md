@@ -276,6 +276,34 @@ To perform a passcode rotation recovery, the Signify Client requires only the ne
 ## Signify Request/Response Authentication
 Signify clients must sign all requests to the KERIA Admin Interface using the latest signing key of the Client AID and must expect all responses from the KERIA service be signed by the latest signing key of the Agent AID.  Both request and response signing rely on the same set of HTTP headers to accomplish request/response signing.
 
+### ESSR encrypted HTTP tunnel
+
+ESSR mode signs and encrypts a complete, finite HTTP request or response inside
+an outer `POST /` message. The inner-message reader is an ESSR-specific envelope
+parser, not a general HTTP server or HTTP parser.
+
+An inner request uses an ASCII HTTP/1.0 or HTTP/1.1 head, an absolute `http` or
+`https` request target, and a mandatory `CRLFCRLF` separator. The first separator
+ends the head; every remaining octet is the body and is not decoded as text or
+JSON. KERIA maps the parsed target and headers to a complete WSGI 1.0 environment.
+The URL authority supplies `HTTP_HOST`, `SERVER_NAME`, and `SERVER_PORT`; an
+omitted HTTPS port is 443. Bracketed IPv6 authorities are supported.
+
+The envelope does not support chunked transfer coding, trailers, folded or
+duplicate fields, origin-form request targets, or a chain of informational
+responses. `Content-Type` and `Content-Length` use their special WSGI variables
+and are not duplicated as `HTTP_CONTENT_TYPE` or `HTTP_CONTENT_LENGTH`.
+
+Falcon finalizes an inner response before ESSR protects it. This means Falcon's
+normal `render_body()` path handles text, data, and media, while its WSGI body
+iterable handles `Response.stream`. ESSR then buffers the finalized response
+because sealed-box encryption requires the complete plaintext. A response stream
+is accepted only when a valid `Content-Length` bounds it; KERIA's contact-image
+download is the current example. An unknown-length or live stream fails promptly
+with an encrypted 501 response and is never consumed. Progressive streaming
+requires signed-header mode or a future, separately specified framed encryption
+protocol.
+
 ### Metadata Headers
 Document `Signify-Resource` and `Signify-Timestamp` headers here.
 

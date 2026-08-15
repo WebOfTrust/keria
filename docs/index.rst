@@ -28,6 +28,7 @@ Welcome to KERIA's documentation!
    :caption: Contents:
 
    README
+   protocol
 
 API Reference
 =============

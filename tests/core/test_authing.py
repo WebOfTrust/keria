@@ -9,6 +9,9 @@ Testing httping utils
 import pysodium
 from unittest import mock
 import json
+from io import BytesIO
+from wsgiref.validate import check_environ
+
 import falcon
 import pytest
 from falcon import testing
@@ -20,7 +23,7 @@ from keri.app import habbing
 from keri.core import parsing, eventing, coring, MtrDex
 from keri.end import ending
 
-from keria.app import agenting
+from keria.app import agenting, aiding
 from keria.core import authing
 
 
@@ -373,60 +376,59 @@ def test_essr_authenticator(mockHelpingNowUTC):
         assert req.get_param("x") == "y"
         assert req.method == "GET"
 
-        # Now test outbound
-        req = create_req(
-            method="POST",
-            path="/reward",
-            headers={
-                "SIGNIFY-RESOURCE": controller.pre,
-                "access-control-allow-origin": "*",
-                "access-control-allow-methods": "*",
-                "access-control-allow-headers": "*",
-                "access-control-max-age": "17200",
-            },
+        # Now test protecting finalized response components.
+        context = authing.ESSRResponseContext(
+            agent=agent,
+            destination=controller.pre,
+            protocol="HTTP/1.1",
+            method="GET",
         )
-        req.context.agent = agent
-        req.context.mode = authing.AuthMode.ESSR
+        status, headers, ciphertext = authn.wrapResponse(
+            context,
+            falcon.HTTP_400,
+            [("content-length", "0")],
+            b"",
+            [
+                ("access-control-allow-origin", "*"),
+                ("access-control-allow-methods", "*"),
+                ("access-control-allow-headers", "*"),
+                ("access-control-max-age", "17200"),
+            ],
+        )
 
-        rep = falcon.Response()
-        rep.set_header("access-control-allow-origin", "*")
-        rep.set_header("access-control-allow-methods", "*")
-        rep.set_header("access-control-allow-headers", "*")
-        rep.set_header("access-control-max-age", 17200)
-        rep.status = "400 Bad Request"
-
-        authn.outbound(req, rep)
-
-        # Signature will change each time due to crypto_box_seal
-        assert rep.headers == {
+        # Signature will change each time due to crypto_box_seal.
+        headers = {name.lower(): value for name, value in headers}
+        assert headers == {
             "signature": mock.ANY,
             "signify-resource": "EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy",
             "signify-receiver": "EJPEPKslRHD_fkug3zmoyjQ90DazQAYWI8JIrV2QXyhg",
             "signify-timestamp": "2021-01-01T00:00:00.000000+00:00",
             "content-type": "application/octet-stream",
+            "content-length": str(len(ciphertext)),
             "access-control-allow-origin": "*",
             "access-control-allow-methods": "*",
             "access-control-allow-headers": "*",
             "access-control-max-age": "17200",
         }
-        assert rep.status == 200
+        assert status == falcon.HTTP_200
 
-        signages = ending.designature(rep.headers.get("signature"))
+        signages = ending.designature(headers.get("signature"))
         cig = signages[0].markers["signify"]
         payload = dict(
             src="EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy",
             dest="EJPEPKslRHD_fkug3zmoyjQ90DazQAYWI8JIrV2QXyhg",
-            d=coring.Diger(ser=rep.data, code=MtrDex.Blake3_256).qb64,
+            d=coring.Diger(ser=ciphertext, code=MtrDex.Blake3_256).qb64,
             dt="2021-01-01T00:00:00.000000+00:00",
         )
         assert agent.agentHab.kever.verfers[0].verify(
             sig=cig.raw, ser=json.dumps(payload, separators=(",", ":")).encode("utf-8")
         )
 
-        plaintext = controller.decrypt(ser=rep.data).decode("utf-8")
+        plaintext = controller.decrypt(ser=ciphertext).decode("utf-8")
         assert (
             plaintext
             == """HTTP/1.1 400 Bad Request\r
+content-length: 0\r
 signify-resource: EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy\r
 \r
 """
@@ -467,8 +469,10 @@ signify-resource: EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy\r
                 },
             )
 
-        # Nothing in the tunnel is normalized, stripped or re-encoded in either direction
-        body = json.dumps({"alias": "a\u2028b\u2029c\u0085d\r\ne "}).encode("utf-8")
+        # Literal Unicode bytes survive; ensure_ascii=True would only test escapes.
+        body = json.dumps(
+            {"alias": "a\u2028b\u2029c\u0085d"}, ensure_ascii=False
+        ).encode("utf-8")
         req = sealed(
             essr_request(
                 "POST http://127.0.0.1:3901/contacts HTTP/1.1",
@@ -485,12 +489,16 @@ signify-resource: EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy\r
         assert req.content_length == len(body)
         assert req.bounded_stream.read() == body
 
-        rep = falcon.Response()
-        rep.status = "200 OK"
-        rep.data = body
-        authn.outbound(req, rep)
-        assert controller.decrypt(ser=rep.data) == (
-            b"HTTP/1.1 200 OK\r\nsignify-resource: "
+        _, _, ciphertext = authn.wrapResponse(
+            context,
+            falcon.HTTP_200,
+            [("content-length", str(len(body)))],
+            body,
+        )
+        assert controller.decrypt(ser=ciphertext) == (
+            b"HTTP/1.1 200 OK\r\ncontent-length: "
+            + str(len(body)).encode("ascii")
+            + b"\r\nsignify-resource: "
             + agent.agentHab.pre.encode("utf-8")
             + b"\r\n\r\n"
             + body
@@ -509,6 +517,42 @@ signify-resource: EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy\r
             assert rep.complete is True
             assert rep.status == falcon.HTTP_401
 
+        # The existing contact image endpoint is a real bounded Falcon stream.
+        image = b"\xff\xfe\x00contact-image"
+        agent.org.setImg(pre=controller.pre, typ="image/png", stream=BytesIO(image))
+        app = falcon.App(
+            middleware=[
+                authing.AuthenticationMiddleware(
+                    agency=agency,
+                    authn=authing.SignedHeaderAuthenticator(agency=agency),
+                    essrAuthn=authn,
+                )
+            ],
+            request_type=authing.ModifiableRequest,
+        )
+        app.add_route("/contacts/{prefix}/img", aiding.ContactImageResourceEnd())
+        client = testing.TestClient(authing.ESSRResponseWrapper(app, authn))
+        outer = sealed(
+            essr_request(
+                f"GET http://127.0.0.1:3901/contacts/{controller.pre}/img HTTP/1.1",
+                [("signify-resource", controller.pre)],
+            )
+        )
+        result = client.simulate_post(
+            "/",
+            body=outer.bounded_stream.read(),
+            headers=dict(outer.headers),
+        )
+
+        assert result.status == falcon.HTTP_200
+        plaintext = controller.decrypt(ser=result.content)
+        head, separator, responseBody = plaintext.partition(b"\r\n\r\n")
+        assert separator
+        assert head.startswith(b"HTTP/1.1 200 OK\r\n")
+        assert b"content-type: image/png" in head.lower()
+        assert f"content-length: {len(image)}".encode("ascii") in head.lower()
+        assert responseBody == image
+
 
 RESOURCE = "ECjmyrSFFfOb3VJi1JUKTy-Vn766h-VKl3XY8OEFdxBF"
 
@@ -519,21 +563,25 @@ def test_build_environ():
         [("content-type", "application/json"), ("signify-resource", RESOURCE)],
     )
     environ = authing.ESSRAuthenticator.buildEnviron(http)
-    assert environ == {
-        "CONTENT_LENGTH": "0",
-        "CONTENT_TYPE": "application/json",
-        "HTTP_CONTENT_TYPE": "application/json",
-        "HTTP_SIGNIFY_RESOURCE": RESOURCE,
-        "PATH_INFO": "/identifiers/aid1",
-        "QUERY_STRING": "x=y",
-        "REQUEST_METHOD": "GET",
-        "SERVER_NAME": "127.0.0.1",
-        "SERVER_PORT": "3901",
-        "SERVER_PROTOCOL": "HTTP/1.1",
-        "wsgi.errors": mock.ANY,
-        "wsgi.input": mock.ANY,
-        "wsgi.url_scheme": "http",
-    }
+    check_environ(environ)
+    assert environ["CONTENT_LENGTH"] == "0"
+    assert environ["CONTENT_TYPE"] == "application/json"
+    assert environ["HTTP_SIGNIFY_RESOURCE"] == RESOURCE
+    assert environ["HTTP_HOST"] == "127.0.0.1:3901"
+    assert environ["PATH_INFO"] == "/identifiers/aid1"
+    assert environ["QUERY_STRING"] == "x=y"
+    assert environ["REQUEST_METHOD"] == "GET"
+    assert environ["SCRIPT_NAME"] == ""
+    assert environ["SERVER_NAME"] == "127.0.0.1"
+    assert environ["SERVER_PORT"] == "3901"
+    assert environ["SERVER_PROTOCOL"] == "HTTP/1.1"
+    assert environ["wsgi.version"] == (1, 0)
+    assert environ["wsgi.url_scheme"] == "http"
+    assert environ["wsgi.multithread"] is False
+    assert environ["wsgi.multiprocess"] is False
+    assert environ["wsgi.run_once"] is False
+    assert "HTTP_CONTENT_TYPE" not in environ
+    assert "HTTP_CONTENT_LENGTH" not in environ
     assert environ["wsgi.input"].read() == b""
 
     http = essr_request(
@@ -541,21 +589,12 @@ def test_build_environ():
         [("content-type", "text/plain"), ("signify-resource", RESOURCE)],
     )
     environ = authing.ESSRAuthenticator.buildEnviron(http)
-    assert environ == {
-        "CONTENT_LENGTH": "0",
-        "CONTENT_TYPE": "text/plain",
-        "HTTP_CONTENT_TYPE": "text/plain",
-        "HTTP_SIGNIFY_RESOURCE": RESOURCE,
-        "PATH_INFO": "/",
-        "QUERY_STRING": "",
-        "REQUEST_METHOD": "POST",
-        "SERVER_NAME": "127.0.0.1",
-        "SERVER_PORT": "80",
-        "SERVER_PROTOCOL": "HTTP/1.0",
-        "wsgi.errors": mock.ANY,
-        "wsgi.input": mock.ANY,
-        "wsgi.url_scheme": "http",
-    }
+    check_environ(environ)
+    assert environ["CONTENT_TYPE"] == "text/plain"
+    assert environ["HTTP_HOST"] == "127.0.0.1"
+    assert environ["PATH_INFO"] == "/"
+    assert environ["SERVER_PORT"] == "80"
+    assert environ["SERVER_PROTOCOL"] == "HTTP/1.0"
 
     http = essr_request(
         "POST https://127.0.0.1/main HTTP/1.1",
@@ -563,21 +602,13 @@ def test_build_environ():
         b"{}",
     )
     environ = authing.ESSRAuthenticator.buildEnviron(http)
-    assert environ == {
-        "CONTENT_LENGTH": "2",
-        "CONTENT_TYPE": "application/json",
-        "HTTP_CONTENT_TYPE": "application/json",
-        "HTTP_SIGNIFY_RESOURCE": RESOURCE,
-        "PATH_INFO": "/main",
-        "QUERY_STRING": "",
-        "REQUEST_METHOD": "POST",
-        "SERVER_NAME": "127.0.0.1",
-        "SERVER_PORT": "433",
-        "SERVER_PROTOCOL": "HTTP/1.1",
-        "wsgi.errors": mock.ANY,
-        "wsgi.input": mock.ANY,
-        "wsgi.url_scheme": "https",
-    }
+    check_environ(environ)
+    assert environ["CONTENT_LENGTH"] == "2"
+    assert environ["HTTP_HOST"] == "127.0.0.1"
+    assert environ["SERVER_NAME"] == "127.0.0.1"
+    assert environ["SERVER_PORT"] == "443"
+    assert environ["SERVER_PORT"] != "433"
+    assert environ["wsgi.url_scheme"] == "https"
     assert environ["wsgi.input"].read() == b"{}"
 
     http = essr_request(
@@ -588,6 +619,64 @@ def test_build_environ():
     environ = authing.ESSRAuthenticator.buildEnviron(http)
     assert environ["CONTENT_LENGTH"] == "4"  # ñ takes 2
     assert environ["wsgi.input"].read() == "ññ".encode("utf-8")
+
+
+@pytest.mark.parametrize(
+    "url, expected_port, expected_host",
+    [
+        ("https://[2001:db8::1]/main", "443", "[2001:db8::1]"),
+        ("https://[2001:db8::1]:8443/main", "8443", "[2001:db8::1]:8443"),
+    ],
+)
+def test_build_environ_ipv6(url, expected_port, expected_host):
+    http = essr_request(f"GET {url} HTTP/1.1")
+    environ = authing.ESSRAuthenticator.buildEnviron(http)
+
+    check_environ(environ)
+    assert environ["SERVER_NAME"] == "2001:db8::1"
+    assert environ["SERVER_PORT"] == expected_port
+    assert environ["HTTP_HOST"] == expected_host
+
+
+def test_build_environ_inherits_wsgi_server_context():
+    outer = testing.create_environ(remote_addr="192.0.2.10")
+    outer["REMOTE_PORT"] = "54321"
+    outer["wsgi.server_name"] = "hio"
+    wrapper = object()
+    outer["wsgi.file_wrapper"] = wrapper
+
+    environ = authing.ESSRAuthenticator.buildEnviron(
+        essr_request("GET https://example.com/main HTTP/1.1"), outer
+    )
+
+    assert environ["REMOTE_ADDR"] == "192.0.2.10"
+    assert environ["REMOTE_PORT"] == "54321"
+    assert environ["wsgi.server_name"] == "hio"
+    assert environ["wsgi.file_wrapper"] is wrapper
+
+
+def test_build_environ_decodes_path_once_for_wsgi():
+    environ = authing.ESSRAuthenticator.buildEnviron(
+        essr_request("GET https://example.com/names/caf%C3%A9%252Fkey HTTP/1.1")
+    )
+
+    req = authing.ModifiableRequest(environ)
+    assert req.path == "/names/café%2Fkey"
+
+
+def test_modifiable_request_reinit_preserves_options():
+    options = falcon.RequestOptions()
+    options.default_media_type = "application/example"
+    req = authing.ModifiableRequest(testing.create_environ(), options=options)
+
+    req.reinit(
+        authing.ESSRAuthenticator.buildEnviron(
+            essr_request("GET https://example.com/main HTTP/1.1")
+        )
+    )
+
+    assert req.options is options
+    assert req.options.default_media_type == "application/example"
 
 
 def test_build_environ_body_is_verbatim():
@@ -603,7 +692,9 @@ def test_build_environ_body_is_verbatim():
         return environ["wsgi.input"].read()
 
     # the hazard class that made the client escape these before sealing
-    hazards = json.dumps({"alias": "a\u2028b\u2029c\u0085d"}).encode("utf-8")
+    hazards = json.dumps(
+        {"alias": "a\u2028b\u2029c\u0085d"}, ensure_ascii=False
+    ).encode("utf-8")
     assert body_of(hazards) == hazards
 
     assert body_of(b'{"a": "x\r\ny"}') == b'{"a": "x\r\ny"}'
@@ -623,7 +714,7 @@ def test_build_environ_header_names_are_case_insensitive():
     )
     environ = authing.ESSRAuthenticator.buildEnviron(http)
     assert environ["CONTENT_TYPE"] == "application/json"
-    assert environ["HTTP_CONTENT_TYPE"] == "application/json"
+    assert "HTTP_CONTENT_TYPE" not in environ
     assert environ["HTTP_SIGNIFY_RESOURCE"] == RESOURCE
     assert environ["HTTP_LOCATION"] == "http://example.com: 8080"
 
@@ -645,60 +736,264 @@ def test_build_environ_malformed():
     with pytest.raises(UnicodeDecodeError):
         authing.ESSRAuthenticator.buildEnviron(b"\xff\xfe\r\n\r\n")
 
+    malformed = (
+        b"GET /main HTTP/1.1\r\n\r\n",
+        b"GET ftp://example.com/main HTTP/1.1\r\n\r\n",
+        b"GET https://user@example.com/main HTTP/1.1\r\n\r\n",
+        b"GET https://example.com/main#fragment HTTP/1.1\r\n\r\n",
+        b"GET https://2001:db8::1/main HTTP/1.1\r\n\r\n",
+        b"GET https://example.com/main HTTP/2\r\n\r\n",
+        b"GET https://example.com/main HTTP/1.1\r\nHost: other.example\r\n\r\n",
+        b"GET https://example.com/main HTTP/1.1\r\nX-Test: one\r\nX-Test: two\r\n\r\n",
+        b"POST https://example.com/main HTTP/1.1\r\nContent-Length: 2\r\n\r\nabc",
+        b"POST https://example.com/main HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n",
+    )
+    for raw in malformed:
+        with pytest.raises(ValueError):
+            authing.ESSRAuthenticator.buildEnviron(raw)
+
 
 def test_serialize_response():
-    rep = falcon.Response()
-    rep.set_headers(
+    serialized = authing.ESSRAuthenticator.serializeResponse(
+        "HTTP/1.1",
+        falcon.HTTP_400,
         [
             ("signify-resource", "EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy"),
-            ("access-control-allow-origin", "*"),  # CORS should be ignored
-            ("access-control-allow-methods", "*"),
-            ("access-control-allow-headers", "*"),
-            ("access-control-expose-headers", "*"),
-            ("access-control-max-age", "1728000"),
-        ]
+        ],
+        b"",
     )
-    rep.status = "400 Bad Request"
-
-    serialized = authing.ESSRAuthenticator.serializeResponse("HTTP/1.1", rep)
     assert serialized == (
         b"HTTP/1.1 400 Bad Request\r\n"
         b"signify-resource: EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy\r\n"
         b"\r\n"
     )
 
-    rep.data = json.dumps({"a": "b"}).encode("utf-8")
-    serialized = authing.ESSRAuthenticator.serializeResponse("HTTP/1.1", rep)
+    body = json.dumps({"a": "b"}).encode("utf-8")
+    serialized = authing.ESSRAuthenticator.serializeResponse(
+        "HTTP/1.1",
+        falcon.HTTP_400,
+        [
+            ("signify-resource", "EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy"),
+            ("content-length", str(len(body))),
+        ],
+        body,
+    )
     assert serialized == (
         b"HTTP/1.1 400 Bad Request\r\n"
         b"signify-resource: EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy\r\n"
+        b"content-length: 10\r\n"
         b"\r\n"
         b'{"a": "b"}'
     )
 
-    rep.data = None
-    rep.text = "Identifier not found!"
-    serialized = authing.ESSRAuthenticator.serializeResponse("HTTP/1.1", rep)
-    assert serialized == (
-        b"HTTP/1.1 400 Bad Request\r\n"
-        b"signify-resource: EDqDrGuzned0HOKFTLqd7m7O7WGE5zYIOHrlCq4EnWxy\r\n"
-        b"\r\n"
-        b"Identifier not found!"
-    )
-
 
 def test_serialize_response_without_headers():
-    rep = falcon.Response()
-    rep.status = "204 No Content"
     assert (
-        authing.ESSRAuthenticator.serializeResponse("HTTP/1.1", rep)
+        authing.ESSRAuthenticator.serializeResponse(
+            "HTTP/1.1", falcon.HTTP_204, [], b""
+        )
         == b"HTTP/1.1 204 No Content\r\n\r\n"
     )
 
-    rep.data = b"\xff\xfe\x00binary"
-    assert authing.ESSRAuthenticator.serializeResponse("HTTP/1.1", rep) == (
-        b"HTTP/1.1 204 No Content\r\n\r\n\xff\xfe\x00binary"
+    assert authing.ESSRAuthenticator.serializeResponse(
+        "HTTP/1.1",
+        falcon.HTTP_200,
+        [("content-length", "9")],
+        b"\xff\xfe\x00binary",
+    ) == (b"HTTP/1.1 200 OK\r\ncontent-length: 9\r\n\r\n\xff\xfe\x00binary")
+
+
+class RecordingESSRAuthenticator:
+    def __init__(self):
+        self.calls = []
+
+    def wrapResponse(self, context, status, headers, body, cors=()):
+        self.calls.append((context, status, headers, body, cors))
+        inner = authing.ESSRAuthenticator.serializeResponse(
+            context.protocol, status, headers, body
+        )
+        return (
+            falcon.HTTP_200,
+            [("content-type", "application/octet-stream"), *cors],
+            inner,
+        )
+
+
+class ESSRContextMiddleware:
+    def __init__(self, method="GET"):
+        self.method = method
+        self.context = authing.ESSRResponseContext(
+            agent=object(),
+            destination=RESOURCE,
+            protocol="HTTP/1.1",
+            method=method,
+        )
+
+    def process_request(self, req, _resp):
+        outer = req.env
+        outer[authing.ESSR_CONTEXT_KEY] = self.context
+        req.reinit(testing.create_environ(method=self.method, path=req.path))
+
+
+class CloseableStream:
+    def __init__(self, chunks, fail=False):
+        self.chunks = iter(chunks)
+        self.fail = fail
+        self.closed = False
+        self.iterated = False
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        self.iterated = True
+        if self.fail:
+            raise RuntimeError("stream failed")
+        return next(self.chunks)
+
+    def close(self):
+        self.closed = True
+
+
+def wrapped_client(resource, method="GET"):
+    recorder = RecordingESSRAuthenticator()
+    app = falcon.App(
+        middleware=[ESSRContextMiddleware(method)],
+        request_type=authing.ModifiableRequest,
     )
+    app.add_route("/", resource)
+    wrapper = authing.ESSRResponseWrapper(app, recorder)
+    return testing.TestClient(wrapper), recorder
+
+
+def test_essr_response_wrapper_uses_falcon_finalization():
+    class Resource:
+        def on_get(self, _req, resp):
+            resp.media = {"ok": True}
+            resp.set_cookie("first", "one")
+            resp.set_cookie("second", "two")
+            resp.set_header("Access-Control-Allow-Credentials", "true")
+
+    client, recorder = wrapped_client(Resource())
+    result = client.simulate_post("/")
+
+    assert result.status == falcon.HTTP_200
+    assert result.headers["access-control-allow-credentials"] == "true"
+    _, status, headers, body, cors = recorder.calls[0]
+    assert status == falcon.HTTP_200
+    assert ("content-type", "application/json") in headers
+    assert ("content-length", str(len(body))) in headers
+    assert sum(name.lower() == "set-cookie" for name, _ in headers) == 2
+    assert all(not authing.isCorsHeader(name) for name, _ in headers)
+    assert cors == [("access-control-allow-credentials", "true")]
+    assert json.loads(body) == {"ok": True}
+
+
+@pytest.mark.parametrize(
+    "method, status, expected_length",
+    [
+        ("HEAD", falcon.HTTP_200, "9"),
+        ("GET", falcon.HTTP_204, None),
+        ("GET", falcon.HTTP_205, "0"),
+        ("GET", falcon.HTTP_304, None),
+    ],
+)
+def test_essr_response_wrapper_suppresses_body(method, status, expected_length):
+    class Resource:
+        def on_get(self, _req, resp):
+            resp.status = status
+            resp.data = b"forbidden"
+
+        on_head = on_get
+
+    client, recorder = wrapped_client(Resource(), method=method)
+    result = client.simulate_post("/")
+
+    assert result.status == falcon.HTTP_200
+    _, _, headers, body, _ = recorder.calls[0]
+    assert body == b""
+    lengths = [value for name, value in headers if name.lower() == "content-length"]
+    assert lengths == ([] if expected_length is None else [expected_length])
+
+
+def test_essr_response_wrapper_buffers_bounded_stream():
+    stream = CloseableStream([b"", b"\xff\xfe", b"\x00binary"])
+
+    class Resource:
+        def on_get(self, _req, resp):
+            resp.content_type = "application/octet-stream"
+            resp.set_header("Content-Length", "9")
+            resp.stream = stream
+
+    client, recorder = wrapped_client(Resource())
+    result = client.simulate_post("/")
+
+    assert result.status == falcon.HTTP_200
+    _, status, headers, body, _ = recorder.calls[0]
+    assert status == falcon.HTTP_200
+    assert ("content-length", "9") in headers
+    assert body == b"\xff\xfe\x00binary"
+    assert stream.closed is True
+
+
+def test_essr_response_wrapper_rejects_unbounded_stream_without_iteration():
+    stream = CloseableStream([b"never-read"])
+
+    class Resource:
+        def on_get(self, _req, resp):
+            resp.content_type = "text/event-stream"
+            resp.stream = stream
+
+    client, recorder = wrapped_client(Resource())
+    result = client.simulate_post("/")
+
+    assert result.status == falcon.HTTP_200
+    _, status, headers, body, _ = recorder.calls[0]
+    assert status == falcon.HTTP_501
+    assert ("content-length", str(len(body))) in headers
+    assert b"Unbounded response streams" in body
+    assert stream.iterated is False
+    assert stream.closed is True
+
+
+@pytest.mark.parametrize(
+    "length, chunks",
+    [
+        ("4", [b"short"]),
+        ("10", [b"short"]),
+    ],
+)
+def test_essr_response_wrapper_rejects_stream_length_errors(length, chunks):
+    stream = CloseableStream(chunks)
+
+    class Resource:
+        def on_get(self, _req, resp):
+            resp.set_header("Content-Length", length)
+            resp.stream = stream
+
+    client, recorder = wrapped_client(Resource())
+    client.simulate_post("/")
+
+    assert recorder.calls[0][1] == falcon.HTTP_500
+    assert stream.closed is True
+
+
+def test_essr_response_wrapper_preserves_non_essr_streaming():
+    stream = CloseableStream([b"streamed"])
+
+    class Resource:
+        def on_get(self, _req, resp):
+            resp.set_header("Content-Length", "8")
+            resp.stream = stream
+
+    app = falcon.App()
+    app.add_route("/", Resource())
+    recorder = RecordingESSRAuthenticator()
+    client = testing.TestClient(authing.ESSRResponseWrapper(app, recorder))
+
+    result = client.simulate_get("/")
+    assert result.content == b"streamed"
+    assert recorder.calls == []
 
 
 class MockAgency:
@@ -827,4 +1122,4 @@ def test_authentication_middleware(mockHelpingNowUTC):
 
     req.context.mode = authing.AuthMode.ESSR
     vc.process_response(req, rep, None, True)
-    mockESSRAuthN.outbound.assert_called_once()
+    mockESSRAuthN.outbound.assert_not_called()

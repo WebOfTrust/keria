@@ -1,7 +1,10 @@
 import unittest
+from unittest import mock
+
 from falcon import falcon
 from falcon.testing import helpers
 from falcon.http_status import HTTPStatus
+from keria.core import httping
 from keria.core.httping import HandleCORS
 
 
@@ -28,3 +31,21 @@ class HandleCORSTest(unittest.TestCase):
             self.cors_handler.process_request(req, resp)
 
         self.assertEqual(cm.exception.status, falcon.HTTP_200)
+
+
+def test_request_logger_preserves_binary_body():
+    body = b"\xff\xfe\x00sealed"
+    req = helpers.create_req(method="POST", body=body)
+    resp = falcon.Response()
+    middleware = httping.RequestLoggerMiddleware()
+
+    with (
+        mock.patch.object(httping.logger, "isEnabledFor", return_value=True),
+        mock.patch.object(httping.logger, "debug") as debug,
+    ):
+        middleware.process_request(req, resp)
+
+    debug.assert_any_call("Request body    : %r", body)
+    assert req.stream.read() == body
+    req.stream.seek(0)
+    assert req.bounded_stream.read() == body
