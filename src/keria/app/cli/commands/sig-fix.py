@@ -54,11 +54,17 @@ def fix(tymth, tock=0.0, **opts):
         caids.append(caid)
 
     signify_group_habs = dict()
+    malformed_caids = set()
     for caid in caids:
-        with existing.existingHby(name=caid, base=args.base) as hby:
-            for pre, hab in hby.habs.items():
-                if type(hab) is habbing.SignifyGroupHab:
-                    signify_group_habs[pre] = hab.name
+        try:
+            with existing.existingHby(name=caid, base=args.base) as hby:
+                for pre, hab in hby.habs.items():
+                    if type(hab) is habbing.SignifyGroupHab:
+                        signify_group_habs[pre] = hab.name
+        except KeyError:
+            print(f"This controller AID: {caid} is malformed in some way.  Won't fix sigs.")
+            malformed_caids.add(caid)
+    caids = [c for c in caids if c not in malformed_caids]
 
     # create caches of existing public keys and next key digests and the associated prefixes
     for caid in caids:
@@ -122,13 +128,18 @@ def fix(tymth, tock=0.0, **opts):
                     print()
                     smids = set()
                     rmids = set()
-                    for v in hab.kever.verfers:
-                        if v.qb64 in prefix_by_public_key:
-                            smids.add(prefix_by_public_key[v.qb64][0].qb64)
+                    if hab.kever:
+                        for v in hab.kever.verfers:
+                            if v.qb64 in prefix_by_public_key:
+                                smids.add(prefix_by_public_key[v.qb64][0].qb64)
 
-                    for v in hab.kever.ndigers:
-                        if v.qb64 in prefix_by_next_key_digest:
-                            rmids.add(prefix_by_next_key_digest[v.qb64][0].qb64)
+                        for v in hab.kever.ndigers:
+                            if v.qb64 in prefix_by_next_key_digest:
+                                rmids.add(prefix_by_next_key_digest[v.qb64][0].qb64)
+                    else:
+                        print(f"This hab {hab.name} - {pre} has no kever?  Won't fix sigs")
+                        malformed_caids.add(caid)
+                        continue
 
                     print(
                         f"\t Proposed smids and rmids updates for {hab.name} - {pre}:"
@@ -139,6 +150,7 @@ def fix(tymth, tock=0.0, **opts):
                     print(f"\t\t rmids: {rmids}")
                     for rmid in rmids:
                         print(f"\t\t\t -> {rmid} {pre_name_cache.get(rmid)}")
+
 
                     if args.force:
                         habr = hab.db.habs.get(keys=(hab.pre,))
@@ -151,3 +163,8 @@ def fix(tymth, tock=0.0, **opts):
                         print()
                         print("no updates performed, use --force to apply changes")
                         print()
+
+    print(f"{len(malformed_caids)} malformed caids with issues that might not have had sig-fix applied")
+    print(malformed_caids)
+
+    print(f"{len(set(caids) - malformed_caids)} caids that might have had sig-fix applied")
