@@ -62,7 +62,9 @@ def fix(tymth, tock=0.0, **opts):
                     if type(hab) is habbing.SignifyGroupHab:
                         signify_group_habs[pre] = hab.name
         except KeyError:
-            print(f"This controller AID: {caid} is malformed in some way.  Won't fix sigs.")
+            print(
+                f"This controller AID: {caid} is malformed in some way.  Won't fix sigs."
+            )
             malformed_caids.add(caid)
     caids = [c for c in caids if c not in malformed_caids]
 
@@ -137,7 +139,9 @@ def fix(tymth, tock=0.0, **opts):
                             if v.qb64 in prefix_by_next_key_digest:
                                 rmids.add(prefix_by_next_key_digest[v.qb64][0].qb64)
                     else:
-                        print(f"This hab {hab.name} - {pre} has no kever?  Won't fix sigs")
+                        print(
+                            f"This hab {hab.name} - {pre} has no kever?  Won't fix sigs"
+                        )
                         malformed_caids.add(caid)
                         continue
 
@@ -151,7 +155,6 @@ def fix(tymth, tock=0.0, **opts):
                     for rmid in rmids:
                         print(f"\t\t\t -> {rmid} {pre_name_cache.get(rmid)}")
 
-
                     if args.force:
                         habr = hab.db.habs.get(keys=(hab.pre,))
                         habr.smids = list(smids)
@@ -164,7 +167,11 @@ def fix(tymth, tock=0.0, **opts):
                         print("no updates performed, use --force to apply changes")
                         print()
 
-    print(f"{len(malformed_caids)} malformed caids with issues that might not have had sig-fix applied")
+    print(
+        f"{len(malformed_caids)} malformed caids with issues that might not have had sig-fix applied"
+    )
     print(malformed_caids)
 
-    print(f"{len(set(caids) - malformed_caids)} caids that might have had sig-fix applied")
+    print(
+        f"{len(set(caids) - malformed_caids)} caids that might have had sig-fix applied"
+    )
