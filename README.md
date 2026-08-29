@@ -54,7 +54,7 @@ uv run keria start --config-dir scripts --config-file demo-witness-oobis
 
 * Build KERIA docker image:
     ```bash
-    make build-keria
+    docker build .
     ```
 
 #### Run with docker
@@ -88,18 +88,3 @@ You can see a [working example here](https://github.com/WebOfTrust/signify-ts/bl
     ```bash
     make test-coverage
     ```
-
-## Publishing containers
-
-Enable the containerd image store
-
-The containerd image store isn't enabled by default. To enable the feature for Docker Desktop:
-
-Navigate to Settings in Docker Desktop.
-In the General tab, check Use containerd for pulling and storing images.
-Select Apply & Restart.
-
-```shell
-make build-keri
-make publish-keri
-```

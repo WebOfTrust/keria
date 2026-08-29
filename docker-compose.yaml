@@ -1,8 +1,6 @@
 services:
   keria:
-    build:
-      context: .
-      dockerfile: ./images/keria.dockerfile
+    build: ./
     healthcheck:
       test: curl http://localhost:3902/health
       interval: 5s

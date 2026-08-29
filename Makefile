@@ -17,20 +17,6 @@ endef
 build-wheel:
 	@uv build
 
-build-keria: .warn
-	@docker build \
-		--build-arg KERI_AGENT_CORS=false \
-		--platform=linux/amd64,linux/arm64 \
-		--no-cache \
-		-f images/keria.dockerfile \
-		-t $(LATEST_TAG) \
-		-t $(VERSION_TAG) \
-		.
-
-publish-keria:
-	@docker push $(VERSION_TAG) && docker push $(LATEST_TAG)
-
-# UV development targets
 install:
 	@uv sync
 
@@ -59,10 +45,3 @@ clean:
 	@rm -rf build/ dist/ *.egg-info/
 	@find . -type d -name __pycache__ -delete
 	@find . -type f -name "*.pyc" -delete
-
-.warn:
-	@echo -e ${RED}"$$DOCKER_WARNING"${NO_COLOUR}
-
-RED="\033[0;31m"
-NO_COLOUR="\033[0m"
-export DOCKER_WARNING
