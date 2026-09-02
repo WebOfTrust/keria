@@ -19,9 +19,9 @@ jobs:
         os: [macos-15, ubuntu-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Set up Python 3.12.8
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: 3.12.8
       - name: Config libsodium
@@ -30,9 +30,7 @@ jobs:
           echo "SODIUM_INSTALL=system" >> $GITHUB_ENV
           echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
-        with:
-          version: "0.9.5"
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # 10.0.1
       - name: Install dependencies
         run: make install-dev
       - name: Lint changes
@@ -45,7 +43,7 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run docker container
         # Ensure that the image can be built and started
         run: docker compose up --build --wait
@@ -53,20 +51,18 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Set up Python 3.12.8
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: 3.12.8
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
-        with:
-          version: "0.9.5"
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # 10.0.1
       - name: Install dependencies
         run: make install-dev
       - name: Run core KERIA tests
         run: make test-coverage
       - name: Upload
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
