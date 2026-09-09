@@ -154,6 +154,75 @@ def test_endrole_ends(helpers):
         }
 
 
+def test_endrole_after_interaction(helpers):
+    with helpers.openKeria() as (agency, agent, app, client):
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+        idResEnd = aiding.IdentifierResourceEnd()
+        app.add_route("/identifiers/{name}/events", idResEnd)
+        endRolesEnd = aiding.EndRoleCollectionEnd()
+        app.add_route("/identifiers/{name}/endroles", endRolesEnd)
+
+        salt = b"0123456789abcdef"
+        op = helpers.createAid(client, "user1", salt)
+        aid = op["response"]
+        recp = aid["i"]
+
+        serder, sigs = helpers.interact(
+            pre=recp, bran=salt, pidx=0, ridx=0, sn="1", dig=aid["d"], data=[recp]
+        )
+        body = dict(ixn=serder.ked, sigs=sigs)
+        res = client.simulate_post(path="/identifiers/user1/events", json=body)
+        assert res.status_code == 200
+
+        rpy = helpers.endrole(recp, agent.agentHab.pre)
+        sigs = helpers.sign(salt, 0, 0, rpy.raw)
+        body = dict(rpy=rpy.ked, sigs=sigs)
+        res = client.simulate_post(path="/identifiers/user1/endroles", json=body)
+        assert res.status_code == 202
+        op = res.json
+        ked = op["response"]
+        serder = serdering.SerderKERI(sad=ked)
+        assert serder.raw == rpy.raw
+
+        end = agent.hby.db.ends.get(keys=(recp, "agent", agent.agentHab.pre))
+        assert end is not None
+        assert end.allowed is True
+
+
+def test_locscheme_after_interaction(helpers, mockHelpingNowUTC):
+    with helpers.openKeria() as (agency, agent, app, client):
+        end = aiding.IdentifierCollectionEnd()
+        app.add_route("/identifiers", end)
+        idResEnd = aiding.IdentifierResourceEnd()
+        app.add_route("/identifiers/{name}/events", idResEnd)
+        locSchemesEnd = aiding.LocSchemeCollectionEnd()
+        app.add_route("/identifiers/{name}/locschemes", locSchemesEnd)
+
+        salt = b"0123456789abcdef"
+        op = helpers.createAid(client, "user1", salt)
+        aid = op["response"]
+        recp = aid["i"]
+
+        serder, sigs = helpers.interact(
+            pre=recp, bran=salt, pidx=0, ridx=0, sn="1", dig=aid["d"], data=[recp]
+        )
+        body = dict(ixn=serder.ked, sigs=sigs)
+        res = client.simulate_post(path="/identifiers/user1/events", json=body)
+        assert res.status_code == 200
+
+        rpy = helpers.locscheme(recp, "http://testurl.com")
+        sigs = helpers.sign(salt, 0, 0, rpy.raw)
+        body = dict(rpy=rpy.ked, sigs=sigs)
+        res = client.simulate_post(path="/identifiers/user1/locschemes", json=body)
+        assert res.status_code == 202
+        assert res.json["done"]
+
+        loc = agent.hby.db.locs.get(keys=(recp, "http"))
+        assert loc is not None
+        assert loc.url == "http://testurl.com"
+
+
 def test_locscheme_ends(helpers, mockHelpingNowUTC):
     with helpers.openKeria() as (agency, agent, app, client):
         locSchemesEnd = aiding.LocSchemeCollectionEnd()

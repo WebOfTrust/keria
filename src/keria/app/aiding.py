@@ -1662,8 +1662,8 @@ class EndRoleCollectionEnd:
         rsigers = [core.Siger(qb64=rsig) for rsig in rsigs]
         tsg = (
             hab.kever.prefixer,
-            coring.Seqner(sn=hab.kever.sn),
-            coring.Saider(qb64=hab.kever.serder.said),
+            coring.Seqner(sn=hab.kever.lastEst.s),
+            coring.Saider(qb64=hab.kever.lastEst.d),
             rsigers,
         )
         try:
@@ -1763,8 +1763,8 @@ class LocSchemeCollectionEnd:
         rsigers = [core.Siger(qb64=rsig) for rsig in rsigs]
         tsg = (
             hab.kever.prefixer,
-            coring.Seqner(sn=hab.kever.sn),
-            coring.Saider(qb64=hab.kever.serder.said),
+            coring.Seqner(sn=hab.kever.lastEst.s),
+            coring.Saider(qb64=hab.kever.lastEst.d),
             rsigers,
         )
         try:
