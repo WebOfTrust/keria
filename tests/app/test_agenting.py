@@ -13,6 +13,8 @@ import shutil
 import signal
 import time
 from base64 import b64encode
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import falcon
 import hio
@@ -48,6 +50,109 @@ def test_setup_no_http():
     doers = agenting.setupDoers(agency, config)
     assert len(doers) == 3
     assert isinstance(doers[0], agenting.Agency) is True
+
+
+def test_exchange_sender_uses_exchange_recipient(monkeypatch):
+    class Poster:
+        instances = []
+
+        def __init__(self, hby, hab, recp, topic):
+            self.hby = hby
+            self.hab = hab
+            self.recp = recp
+            self.topic = topic
+            self.sent = []
+            self.__class__.instances.append(self)
+
+        def send(self, serder, attachment):
+            self.sent.append((serder, attachment))
+
+        def deliver(self):
+            return []
+
+    hab = SimpleNamespace(name="sender", pre="EPRE")
+    serder = SimpleNamespace(ked={"rp": "ERECIPIENT"}, size=0)
+    hby = SimpleNamespace(habs={hab.pre: hab})
+    exc = SimpleNamespace(
+        complete=lambda said: True,
+        lead=lambda hab, said: True,
+    )
+    exchanges = decking.Deck([dict(said="ESAW", pre=hab.pre, topic="credential")])
+
+    monkeypatch.setattr(
+        agenting.exchanging, "cloneMessage", lambda hby, said: (serder, {})
+    )
+    monkeypatch.setattr(
+        agenting.exchanging, "serializeMessage", lambda hby, said: bytearray()
+    )
+    monkeypatch.setattr(agenting.forwarding, "StreamPoster", Poster)
+
+    sender = agenting.ExchangeSender(
+        hby=hby,
+        agentHab=SimpleNamespace(),
+        exc=exc,
+        exchanges=exchanges,
+    )
+    doist = doing.Doist(tock=0.03125)
+    doist.enter(doers=[sender])
+    sender.recur(tyme=0.0)
+
+    assert len(Poster.instances) == 1
+    poster = Poster.instances[0]
+    assert poster.recp == "ERECIPIENT"
+    assert poster.topic == "credential"
+    assert poster.sent == [(serder, bytearray())]
+
+
+def test_grant_doer_uses_exchange_recipient(monkeypatch):
+    class Poster:
+        instances = []
+
+        def __init__(self, hby, hab, recp, topic):
+            self.recp = recp
+            self.topic = topic
+            self.sent = []
+            self.__class__.instances.append(self)
+
+        def send(self, serder, attachment):
+            self.sent.append((serder, attachment))
+
+        def deliver(self):
+            return []
+
+    hab = SimpleNamespace(pre="EPRE")
+    serder = SimpleNamespace(
+        ked={"rp": "ERECIPIENT", "e": {"acdc": {"d": "ECREDENTIAL"}}}
+    )
+    hby = SimpleNamespace(habs={hab.pre: hab})
+    exc = SimpleNamespace(
+        complete=lambda said: True,
+        lead=lambda hab, said: True,
+    )
+    granter = Mock()
+
+    monkeypatch.setattr(
+        agenting.exchanging, "cloneMessage", lambda hby, said: (serder, {})
+    )
+    monkeypatch.setattr(agenting.forwarding, "StreamPoster", Poster)
+
+    grant = agenting.GrantDoer(
+        hby=hby,
+        rgy=Mock(),
+        agentHab=SimpleNamespace(),
+        exc=exc,
+        granter=granter,
+        grants=decking.Deck(),
+        grant_msg=dict(said="ESAW", pre=hab.pre),
+    )
+    monkeypatch.setattr(grant, "gatherAgentKEL", lambda pre, recp, postman: [])
+    monkeypatch.setattr(grant, "getCredArtifacts", lambda recp, cred_said: [])
+
+    assert grant.postGrant() is True
+    assert len(Poster.instances) == 1
+    assert Poster.instances[0].recp == "ERECIPIENT"
+    assert Poster.instances[0].topic == "credential"
+    granter.extend.assert_called_once()
 
 
 def test_setup():

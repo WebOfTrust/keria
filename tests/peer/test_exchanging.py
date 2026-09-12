@@ -65,10 +65,15 @@ def test_exchange_end(helpers):
         payload = dict(
             i=pre, words="these are the words being signed for this response"
         )
-        cexn, _ = exchange(route="/challenge/response", payload=payload, sender=pre)
+        cexn, _ = exchange(
+            route="/challenge/response",
+            payload=payload,
+            sender=pre,
+            recipient=pre1,
+        )
         sig = signer.sign(ser=cexn.raw, index=0).qb64
 
-        body = dict(exn=cexn.ked, sigs=[sig], atc="", rec=[pre1], tpc="/credentials")
+        body = dict(exn=cexn.ked, sigs=[sig], atc="", tpc="/credentials")
 
         res = client.simulate_post(path="/identifiers/aid1/exchanges", json=body)
         assert res.status_code == 202
