@@ -493,7 +493,7 @@ wheels = [
 
 [[package]]
 name = "keri"
-version = "1.2.13"
+version = "1.2.14"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "apispec" },
@@ -517,7 +517,7 @@ dependencies = [
     { name = "qrcode" },
     { name = "semver" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/29/0f/6a7fd0cbd681c31fad385e2a5f27ac9ea9e6f7aae6f30b5814f960acdf17/keri-1.2.13.tar.gz", hash = "sha256:aef033ec3b17d4b04d8801b5365b225b6cba5630a67aaad2f306aaecbd256fcd", size = 479577, upload-time = "2026-05-06T18:24:47.865Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/71/c4/2d63280bb5d9599d9766d22db58a45ddd1fdb0fb12b839692a7a3a76b3c4/keri-1.2.14.tar.gz", hash = "sha256:f921a42794aa83988987f97d27337da38194dcd7fb0124511374112997660656", size = 494448, upload-time = "2026-09-09T15:28:06.354Z" }
 
 [[package]]
 name = "keria"
@@ -555,7 +555,7 @@ requires-dist = [
     { name = "falcon", specifier = "==4.0.2" },
     { name = "hio", specifier = "==0.6.14" },
     { name = "http-sfv", specifier = "==0.9.9" },
-    { name = "keri", specifier = ">=1.2.13,<1.3" },
+    { name = "keri", specifier = "==1.2.14" },
     { name = "marshmallow-dataclass", specifier = "==8.7.1" },
     { name = "mnemonic", specifier = "==0.21" },
     { name = "multicommand", specifier = ">=1.0.0" },

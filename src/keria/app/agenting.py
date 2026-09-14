@@ -39,6 +39,7 @@ from keri.app import (
     querying,
     connecting,
     grouping,
+    tocking,
 )
 from keri.app import delegating as kdelegating
 from keri.app.grouping import Counselor
@@ -161,6 +162,32 @@ def readConfigFile(configDir: str, configFile: str, temp=False):
         temp=temp,
         reopen=True,
         clear=False,
+    )
+
+
+def keriTocks(cf):
+    """Resolve KERIpy cadences while reserving the existing KERIA Agent keys.
+
+    Keep the config file intact so Agent can still read its legacy flat tocks.
+    Unknown keys and KERIpy values remain subject to KERIpy's validation.
+    """
+    return tocking.resolveTocks(
+        cf.get().get("tocks") if cf is not None else None,
+        reserved=(
+            "signify",
+            "initer",
+            "querier",
+            "escrower",
+            "parser",
+            "witnesser",
+            "delegator",
+            "exchangeSender",
+            "granter",
+            "admitter",
+            "groupRequester",
+            "seeker",
+            "exchangecue",
+        ),
     )
 
 
@@ -361,6 +388,7 @@ class Agency(doing.DoDoer):
             bran=self.bran,
             ks=ks,
             cf=agent_cf,
+            tocks=keriTocks(agent_cf),
             temp=self.temp,
             salt=salt,
         )
@@ -441,8 +469,17 @@ class Agency(doing.DoDoer):
 
         ks = keeping.Keeper(name=caid, base=self.base, temp=self.temp, reopen=True)
 
+        cf = configing.Configer(
+            name=caid, base=self.base, temp=self.temp, reopen=True, clear=False
+        )
         agentHby = habbing.Habery(
-            name=caid, base=self.base, bran=self.bran, ks=ks, temp=self.temp
+            name=caid,
+            base=self.base,
+            bran=self.bran,
+            ks=ks,
+            temp=self.temp,
+            cf=cf,
+            tocks=keriTocks(cf),
         )
 
         agentHab = agentHby.habByName(f"agent-{caid}", ns="agent")
