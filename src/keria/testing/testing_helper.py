@@ -656,6 +656,81 @@ class Helpers:
         return res.json
 
     @staticmethod
+    def createMultisigAid(clients, name, members):
+        """
+        Helper to support creating a multisig with a single member per effective Signify client.
+        We should only ever make one multisig member per agent.
+        See https://github.com/WebOfTrust/keria/issues/165
+        """
+        assert len(clients) == len(members)
+
+        member_habs = []
+        member_serders = []  # inception events of members - used for key extraction
+        member_signers = []
+        for client, (alias, salt) in zip(clients, members):
+            Helpers.createAid(client, alias, salt)
+            serder, signers = Helpers.incept(salt, "signify:aid", pidx=0)
+            assert len(signers) == 1
+            member_serders.append(serder)
+            member_signers.append(signers[0])
+
+            result = client.simulate_get(path="/identifiers")
+            assert result.status_code == 200
+            member_hab = next(
+                (hab for hab in result.json if hab["name"] == alias),
+                None,
+            )
+            assert member_hab is not None
+            assert member_hab["prefix"] == serder.pre
+            member_habs.append(member_hab)
+
+        states = [serder.ked for serder in member_serders]
+        keys = [state["k"][0] for state in states]
+        ndigs = [state["n"][0] for state in states]
+
+        # Multisig incept
+        serder = eventing.incept(
+            keys=keys,
+            isith=str(len(members)),
+            nsith=str(len(members)),
+            ndigs=ndigs,
+            code=coring.MtrDex.Blake3_256,
+            toad=0,
+            wits=[],
+        )
+        sigers = [
+            signer.sign(ser=serder.raw, index=index).qb64
+            for index, signer in enumerate(member_signers)
+        ]
+        smids = rmids = [state["i"] for state in states]
+
+        body = {
+            "name": name,
+            "icp": serder.ked,
+            "sigs": sigers,
+            "smids": smids,
+            "rmids": rmids,
+        }
+
+        group_habs = []
+        for client, member_hab in zip(clients, member_habs):
+            group_body = dict(body)
+            group_body["group"] = {"mhab": member_hab, "keys": keys, "ndigs": ndigs}
+            result = client.simulate_post(
+                path="/identifiers", body=json.dumps(group_body)
+            )
+            assert result.status_code == 202
+
+            result = client.simulate_get(path="/identifiers")
+            assert result.status_code == 200
+            group_hab = next((hab for hab in result.json if hab["name"] == name), None)
+            assert group_hab is not None
+            assert group_hab["prefix"] == serder.pre
+            group_habs.append(group_hab)
+
+        return group_habs
+
+    @staticmethod
     def createEndRole(client, agent, recp, name, salt):
         rpy = Helpers.endrole(recp, agent.agentHab.pre)
         sigs = Helpers.sign(salt, 0, 0, rpy.raw)
