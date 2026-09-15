@@ -16,10 +16,26 @@ from keri.app import habbing
 from keri.app.delegating import DelegateRequestHandler
 from keri.core import coring, eventing, parsing
 
-from keria.app import aiding, delegating, notifying
+from keria.app import aiding, delegating, notifying, scheduling
 from keria.core import longrunning
 from keria.end import ending
 from keria.app import agenting
+
+
+@pytest.mark.parametrize("cadence", [0.0, 0.125])
+def test_anchorer_escrow_cadence(cadence):
+    tocks = scheduling.resolveTocks({"anchorerEscrow": cadence}, environ={}).keri
+    with habbing.openHby(name="cadence", temp=True, tocks=tocks) as hby:
+        anchorer = delegating.Anchorer(hby=hby)
+        escrow = anchorer.doers[-1]
+        assert escrow.tock == cadence
+        dog = escrow(tymth=doing.Doist().tymen(), tock=escrow.tock)
+        try:
+            assert next(dog) == cadence  # Initial doify binding.
+            assert next(dog) == cadence  # Recurrence must not revert to 0.5 s.
+            assert anchorer.tock == scheduling.DEFAULT_TOCK  # Keep the parent cadence.
+        finally:
+            dog.close()
 
 
 def test_sealer():

@@ -751,12 +751,13 @@ class Helpers:
             )
 
         agency = agenting.Agency(name="agency", bran=None, temp=True)
+        resolvedTocks = agenting.scheduling.loadTocks(cf)
         with habbing.openHby(
             name="keria",
             salt=salter.qb64,
             temp=temp,
             cf=cf,
-            tocks=agenting.keriTocks(cf),
+            tocks=resolvedTocks.keri,
         ) as hby:
             ims = eventing.messagize(serder, sigers=sigers)
             parsing.Parser(kvy=hby.kvy).parseOne(ims=ims)
@@ -769,7 +770,12 @@ class Helpers:
                 hby=hby, name=agentHab.name, base=hby.base, temp=True
             )
             agent = agenting.Agent(
-                hby=hby, rgy=rgy, agentHab=agentHab, agency=agency, caid=serder.pre
+                hby=hby,
+                rgy=rgy,
+                agentHab=agentHab,
+                agency=agency,
+                caid=serder.pre,
+                tocks=resolvedTocks.signify,
             )
             agency.agents[serder.pre] = agent
 

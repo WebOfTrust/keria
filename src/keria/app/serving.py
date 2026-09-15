@@ -57,7 +57,7 @@ class GracefulShutdownDoer(doing.Doer):
         """Generator coroutine checking once per tock for shutdown flag"""
         # Checks once per tock if the shutdown flag has been set and if so initiates the shutdown process
         while not self.shutdown_received:
-            yield tock  # will iterate forever in here until shutdown flag set
+            yield self.tock  # will iterate forever in here until shutdown flag set
         logger.info("Shutdown flag received, initiating graceful shutdown of agents")
         self.shutdownAgency()
         # Once shutdown_received is set, trigger agency shutdown which will eventually shut down
