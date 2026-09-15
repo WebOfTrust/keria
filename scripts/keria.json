@@ -10,7 +10,9 @@
     "http://127.0.0.1:5644/oobi/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX/controller?name=Wes&tag=witness"
   ],
   "tocks": {
-    "initer": 0.0,
-    "escrower": 1.0
+    "signify": {
+      "initer": 0.0,
+      "escrower": 1.0
+    }
   }
 }
