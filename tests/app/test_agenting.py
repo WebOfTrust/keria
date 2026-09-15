@@ -34,6 +34,7 @@ from keri.vdr import credentialing
 
 from keria.app import agenting, aiding
 from keria.core import longrunning, httping
+from keria.db import basing as agencybasing
 from keria.testing.testing_helper import SCRIPTS_DIR
 
 
@@ -190,6 +191,67 @@ def test_load_ends(helpers):
         assert isinstance(end, agenting.QueryCollectionEnd)
         (end, *_) = app._router.find("/config")
         assert isinstance(end, agenting.ConfigResourceEnd)
+
+
+def test_keri_tocks_preserves_agent_config(monkeypatch):
+    config = {"tocks": {"escrower": 1.0, "initer": 0.0, "receiptor": 0.25}}
+    with configing.openCF(temp=True) as cf:
+        cf.put(config)
+        monkeypatch.setenv("KERI_RECEIPTOR_TOCK", "0.125")
+        tocks = agenting.keriTocks(cf)
+        assert tocks["receiptor"] == 0.125
+        assert "escrower" not in tocks
+        assert "initer" not in tocks
+        assert cf.get() == config
+
+        cf.put({"tocks": {"escrower": 1.0, "receiptorTypo": 0.25}})
+        with pytest.raises(kering.ConfigurationError, match="receiptorTypo"):
+            agenting.keriTocks(cf)
+
+
+def test_agency_reopens_legacy_tocks():
+    """Reload an evicted Agent from disk and retain its legacy tock settings."""
+    caid = core.Signer().verfer.qb64
+    with dbing.openLMDB(cls=agencybasing.AgencyBaser, temp=True) as adb:
+        cf = agenting.readConfigFile(SCRIPTS_DIR, "legacy-tocks")
+        agency = agenting.Agency(name="agency", bran=None, cf=cf, adb=adb)
+        doist = doing.Doist()
+        doist.enter(doers=[agency])
+        # Provision the Agent and write its own config from the legacy fixture.
+        agent = agency.create(caid)
+        try:
+            assert agent.tocks["escrower"] == 1.0
+            assert agent.hby.tocks["receiptor"] == 0.25
+            persisted_config_path = agent.hby.cf.path
+            # Close the Agent's resources and evict it from the Agency cache,
+            # leaving its configuration and databases on disk for reopening.
+            agency.shut(agent)
+            assert caid not in agency.agents
+
+            # This cache miss is the reopen: Agency.get constructs a new Agent
+            # from its persisted config and databases, rather than returning
+            # the previously cached instance or provisioning it again.
+            agent = agency.get(caid)
+            assert agent.hby.cf.path == persisted_config_path
+            assert agent.hby.cf.get()["tocks"] == cf.get()["tocks"]
+            assert agent.tocks["escrower"] == 1.0
+            assert agent.hby.tocks["receiptor"] == 0.25
+        finally:
+            agency.shut(agent)
+            doist.exit()
+            for resource in (
+                agent.seeker,
+                agent.exnseeker,
+                agent.monitor.opr,
+                agent.notifier.noter,
+                agent.rep.mbx,
+                agent.rgy.reger,
+                agent.mgr.rb,
+                agent.hby,
+                agent.hby.cf,
+            ):
+                resource.close(clear=True)
+            cf.close()
 
 
 def test_load_tocks_config(helpers):
