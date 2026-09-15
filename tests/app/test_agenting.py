@@ -32,7 +32,7 @@ from keri.db import basing, dbing
 from keri.help import nowIso8601
 from keri.vdr import credentialing
 
-from keria.app import agenting, aiding
+from keria.app import agenting, aiding, tocking
 from keria.core import longrunning, httping
 from keria.db import basing as agencybasing
 from keria.testing.testing_helper import SCRIPTS_DIR
@@ -209,35 +209,56 @@ def test_keri_tocks_preserves_agent_config(monkeypatch):
             agenting.keriTocks(cf)
 
 
-def test_agency_reopens_legacy_tocks():
-    """Reload an evicted Agent from disk and retain its legacy tock settings."""
+@pytest.mark.parametrize("legacy_persisted", [False, True])
+@pytest.mark.parametrize("use_base", [False, True])
+def test_agency_reopens_legacy_tocks(tmp_path, monkeypatch, legacy_persisted, use_base):
+    """Reload each file format without inheriting a changed Agency template."""
     caid = core.Signer().verfer.qb64
+    base = f"tocks-{caid}" if use_base else ""
+    fixture_path = os.path.join(SCRIPTS_DIR, "keri/cf/legacy-tocks.json")
+    config_path = tmp_path / "keri/cf/legacy-tocks.json"
+    config_path.parent.mkdir(parents=True)
+    shutil.copyfile(fixture_path, config_path)
     with dbing.openLMDB(cls=agencybasing.AgencyBaser, temp=True) as adb:
-        cf = agenting.readConfigFile(SCRIPTS_DIR, "legacy-tocks")
-        agency = agenting.Agency(name="agency", bran=None, cf=cf, adb=adb)
+        cf = agenting.readConfigFile(str(tmp_path), "legacy-tocks")
+        monkeypatch.setenv("KERIA_ESCROWER_TOCK", "0.75")
+        agency = agenting.Agency(name="agency", base=base, bran=None, cf=cf, adb=adb)
         doist = doing.Doist()
         doist.enter(doers=[agency])
-        # Provision the Agent and write its own config from the legacy fixture.
         agent = agency.create(caid)
         try:
-            assert agent.tocks["escrower"] == 1.0
+            assert agent.tocks["escrower"] == 0.75
             assert agent.hby.tocks["receiptor"] == 0.25
+            # New Agents persist canonical file values, not resolved env overrides.
+            canonical = {
+                "receiptor": 0.25,
+                "signify": {"initer": 0.0, "escrower": 1.0},
+            }
+            assert agent.hby.cf.get()["tocks"] == canonical
             persisted_config_path = agent.hby.cf.path
-            # Close the Agent's resources and evict it from the Agency cache,
-            # leaving its configuration and databases on disk for reopening.
             agency.shut(agent)
             assert caid not in agency.agents
 
-            # This cache miss is the reopen: Agency.get constructs a new Agent
-            # from its persisted config and databases, rather than returning
-            # the previously cached instance or provisioning it again.
+            # Model an existing deployment with an actual old-format config file.
+            if legacy_persisted:
+                shutil.copyfile(fixture_path, persisted_config_path)
+            with open(persisted_config_path, "rb") as config_file:
+                persisted_bytes = config_file.read()
+
+            # Neither a changed template nor removing a temporary env override
+            # changes the Agent's persisted settings when it is reopened.
+            cf.put({"tocks": {"signify": {"escrower": 0.125}}})
+            monkeypatch.delenv("KERIA_ESCROWER_TOCK")
+            # This cache miss reopens the Agent from its own files on disk.
             agent = agency.get(caid)
             assert agent.hby.cf.path == persisted_config_path
-            assert agent.hby.cf.get()["tocks"] == cf.get()["tocks"]
             assert agent.tocks["escrower"] == 1.0
             assert agent.hby.tocks["receiptor"] == 0.25
+            with open(persisted_config_path, "rb") as config_file:
+                assert config_file.read() == persisted_bytes
         finally:
-            agency.shut(agent)
+            if caid in agency.agents:
+                agency.shut(agent)
             doist.exit()
             for resource in (
                 agent.seeker,
@@ -252,6 +273,39 @@ def test_agency_reopens_legacy_tocks():
             ):
                 resource.close(clear=True)
             cf.close()
+
+
+def test_agent_tock_bindings_are_isolated(helpers):
+    bindings = {
+        "initer": agenting.Initer,
+        "querier": agenting.Querier,
+        "escrower": agenting.Escrower,
+        "parser": agenting.ParserDoer,
+        "witnesser": agenting.Witnesser,
+        "delegator": agenting.Delegator,
+        "exchangeSender": agenting.ExchangeSender,
+        "granter": agenting.Granter,
+        "admitter": agenting.Admitter,
+        "groupRequester": agenting.GroupRequester,
+        "seeker": agenting.SeekerDoer,
+        "exchangecue": agenting.ExchangeCueDoer,
+    }
+    first = {key: (index + 1) / 10 for index, key in enumerate(bindings)}
+    second = {key: value + 1 for key, value in first.items()}
+    with configing.openCF(temp=True) as cf1, configing.openCF(temp=True) as cf2:
+        cf1.put({"tocks": {"signify": first}})
+        cf2.put({"tocks": {"signify": second}})
+        with (
+            helpers.openKeria(cf=cf1) as (_, agent1, _, _),
+            helpers.openKeria(cf=cf2) as (_, agent2, _, _),
+        ):
+            for agent, expected in ((agent1, first), (agent2, second)):
+                for key, cls in bindings.items():
+                    doer = next(doer for doer in agent.doers if isinstance(doer, cls))
+                    assert doer.tock == expected[key]
+                assert agent.tocks == expected
+                with pytest.raises(TypeError):
+                    agent.tocks["escrower"] = 99
 
 
 def test_load_tocks_config(helpers):
@@ -276,10 +330,10 @@ def test_load_tocks_config(helpers):
             "iurls": [
                 "http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller&tag=witness"
             ],
-            "tocks": {"initer": 0.0, "escrower": 1.0},
+            "tocks": {"signify": {"initer": 0.0, "escrower": 1.0}},
         }
 
-        assert agent.tocks == {"initer": 0.0, "escrower": 1.0}
+        assert agent.tocks == {**dict.fromkeys(tocking.TOCKS, 0.0), "escrower": 1.0}
 
         escrower_doer = next(
             (doer for doer in agent.doers if isinstance(doer, agenting.Escrower)), None

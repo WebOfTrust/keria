@@ -10,6 +10,7 @@ import os
 from base64 import b64decode
 import json
 import datetime
+from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from typing import List, Union
 from urllib.parse import urlparse, urljoin
@@ -39,7 +40,6 @@ from keri.app import (
     querying,
     connecting,
     grouping,
-    tocking,
 )
 from keri.app import delegating as kdelegating
 from keri.app.grouping import Counselor
@@ -60,7 +60,15 @@ from keri.app import challenging
 
 from keria.utils.openapi import dataclassFromFielddom
 
-from . import aiding, notifying, indirecting, credentialing, ipexing, delegating
+from . import (
+    aiding,
+    notifying,
+    indirecting,
+    credentialing,
+    ipexing,
+    delegating,
+    tocking,
+)
 from . import grouping as keriagrouping
 from .serving import GracefulShutdownDoer
 from .. import log_name, ogler, set_log_level
@@ -166,29 +174,8 @@ def readConfigFile(configDir: str, configFile: str, temp=False):
 
 
 def keriTocks(cf):
-    """Resolve KERIpy cadences while reserving the existing KERIA Agent keys.
-
-    Keep the config file intact so Agent can still read its legacy flat tocks.
-    Unknown keys and KERIpy values remain subject to KERIpy's validation.
-    """
-    return tocking.resolveTocks(
-        cf.get().get("tocks") if cf is not None else None,
-        reserved=(
-            "signify",
-            "initer",
-            "querier",
-            "escrower",
-            "parser",
-            "witnesser",
-            "delegator",
-            "exchangeSender",
-            "granter",
-            "admitter",
-            "groupRequester",
-            "seeker",
-            "exchangecue",
-        ),
-    )
+    """Return KERIpy cadences after validating both configuration namespaces."""
+    return tocking.loadTocks(cf).keri
 
 
 def runAgency(config: KERIAServerConfig, temp=False):
@@ -298,6 +285,7 @@ class Agency(doing.DoDoer):
         else:
             self.cf = cf
 
+        self._tockConfig = tocking.loadTocks(self.cf)
         self.agents = dict()
 
         self.adb = (
@@ -322,6 +310,9 @@ class Agency(doing.DoDoer):
         """
         timestamp = nowIso8601()
         config = dict(self.cf.get() if self.cf is not None else {"dt": timestamp})
+
+        # Persist the configured snapshot, not environment overrides or defaults.
+        config["tocks"] = deepcopy(self._tockConfig.configured)
 
         # Renames sub-section of config
         habName = f"agent-{caid}"
@@ -388,7 +379,7 @@ class Agency(doing.DoDoer):
             bran=self.bran,
             ks=ks,
             cf=agent_cf,
-            tocks=keriTocks(agent_cf),
+            tocks=self._tockConfig.keri,
             temp=self.temp,
             salt=salt,
         )
@@ -398,7 +389,12 @@ class Agency(doing.DoDoer):
         )
 
         agent = Agent(
-            hby=agentHby, rgy=agentRgy, agentHab=agentHab, caid=caid, agency=self
+            hby=agentHby,
+            rgy=agentRgy,
+            agentHab=agentHab,
+            caid=caid,
+            agency=self,
+            tocks=self._tockConfig.signify,
         )
 
         self.adb.agnt.pin(keys=(caid,), val=coring.Prefixer(qb64=agent.pre))
@@ -467,11 +463,13 @@ class Agency(doing.DoDoer):
         if aaid is None:
             return None
 
-        ks = keeping.Keeper(name=caid, base=self.base, temp=self.temp, reopen=True)
-
+        # Agent configs are written with base="" by _writeAgentConfig, even
+        # when the Agent's databases use a nonempty base.
         cf = configing.Configer(
-            name=caid, base=self.base, temp=self.temp, reopen=True, clear=False
+            name=caid, base="", temp=self.temp, reopen=True, clear=False
         )
+        resolvedTocks = tocking.loadTocks(cf)
+        ks = keeping.Keeper(name=caid, base=self.base, temp=self.temp, reopen=True)
         agentHby = habbing.Habery(
             name=caid,
             base=self.base,
@@ -479,7 +477,7 @@ class Agency(doing.DoDoer):
             ks=ks,
             temp=self.temp,
             cf=cf,
-            tocks=keriTocks(cf),
+            tocks=resolvedTocks.keri,
         )
 
         agentHab = agentHby.habByName(f"agent-{caid}", ns="agent")
@@ -492,7 +490,12 @@ class Agency(doing.DoDoer):
             hby=agentHby, name=agentHab.name, base=self.base, temp=self.temp
         )
         agent = Agent(
-            hby=agentHby, rgy=agentRgy, agentHab=agentHab, agency=self, caid=caid
+            hby=agentHby,
+            rgy=agentRgy,
+            agentHab=agentHab,
+            agency=self,
+            caid=caid,
+            tocks=resolvedTocks.signify,
         )
 
         self.agents[caid] = agent
@@ -576,7 +579,7 @@ class Agent(doing.DoDoer):
       hierarchical deterministic key (HDK) management scheme used to select keys at the edge.
     """
 
-    def __init__(self, hby, rgy, agentHab, agency, caid, **opts):
+    def __init__(self, hby, rgy, agentHab, agency, caid, tocks=None, **opts):
         """
         Initialize the Agent with the given Habery, Regery, and agent's Hab.
         Parameters:
@@ -677,7 +680,9 @@ class Agent(doing.DoDoer):
         self.cfd = MappingProxyType(
             dict(self.hby.cf.get()) if self.hby.cf is not None else dict()
         )
-        self.tocks = MappingProxyType(self.cfd.get("tocks", {}))
+        self.tocks = MappingProxyType(
+            dict(tocking.loadTocks(hby.cf).signify if tocks is None else tocks)
+        )
         self.last = helping.nowUTC()
         self._shouldShutdown = False
 
@@ -802,15 +807,13 @@ class Agent(doing.DoDoer):
 
         doers.extend(
             [
-                Initer(
-                    agentHab=agentHab, caid=caid, tock=self.tocks.get("initer", 0.0)
-                ),
+                Initer(agentHab=agentHab, caid=caid, tock=self.tocks["initer"]),
                 Querier(
                     hby=hby,
                     agentHab=agentHab,
                     kvy=self.kvy,
                     queries=self.queries,
-                    tock=self.tocks.get("querier", 0.0),
+                    tock=self.tocks["querier"],
                 ),
                 Escrower(
                     kvy=self.kvy,
@@ -821,28 +824,26 @@ class Agent(doing.DoDoer):
                     vry=self.verifier,
                     registrar=self.registrar,
                     credentialer=self.credentialer,
-                    tock=self.tocks.get("escrower", 0.0),
+                    tock=self.tocks["escrower"],
                 ),
-                ParserDoer(
-                    kvy=self.kvy, parser=self.parser, tock=self.tocks.get("parser", 0.0)
-                ),
+                ParserDoer(kvy=self.kvy, parser=self.parser, tock=self.tocks["parser"]),
                 Witnesser(
                     receiptor=receiptor,
                     witners=self.witners,
-                    tock=self.tocks.get("witnesser", 0.0),
+                    tock=self.tocks["witnesser"],
                 ),
                 Delegator(
                     agentHab=agentHab,
                     swain=self.swain,
                     anchors=self.anchors,
-                    tock=self.tocks.get("delegator", 0.0),
+                    tock=self.tocks["delegator"],
                 ),
                 ExchangeSender(
                     hby=hby,
                     agentHab=agentHab,
                     exc=self.exc,
                     exchanges=self.exchanges,
-                    tock=self.tocks.get("exchangeSender", 0.0),
+                    tock=self.tocks["exchangeSender"],
                 ),
                 Granter(
                     hby=hby,
@@ -850,7 +851,7 @@ class Agent(doing.DoDoer):
                     agentHab=agentHab,
                     exc=self.exc,
                     grants=self.grants,
-                    tock=self.tocks.get("granter", 0.0),
+                    tock=self.tocks["granter"],
                 ),
                 Admitter(
                     hby=hby,
@@ -859,25 +860,25 @@ class Agent(doing.DoDoer):
                     agentHab=agentHab,
                     exc=self.exc,
                     admits=self.admits,
-                    tock=self.tocks.get("admitter", 0.0),
+                    tock=self.tocks["admitter"],
                 ),
                 GroupRequester(
                     hby=hby,
                     agentHab=agentHab,
                     counselor=self.counselor,
                     groups=self.groups,
-                    tock=self.tocks.get("groupRequester", 0.0),
+                    tock=self.tocks["groupRequester"],
                 ),
                 SeekerDoer(
                     seeker=self.seeker,
                     cues=self.verifier.cues,
-                    tock=self.tocks.get("seeker", 0.0),
+                    tock=self.tocks["seeker"],
                 ),
                 ExchangeCueDoer(
                     seeker=self.exnseeker,
                     cues=self.exc.cues,
                     queries=self.queries,
-                    tock=self.tocks.get("exchangecue", 0.0),
+                    tock=self.tocks["exchangecue"],
                 ),
                 self.submitter,
             ]
