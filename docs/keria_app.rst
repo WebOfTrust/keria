@@ -103,6 +103,12 @@ keria.app.notifying
 .. automodule:: keria.app.notifying
     :members:
 
+keria.app.streaming
+-------------------
+
+.. automodule:: keria.app.streaming
+    :members:
+
 keria.app.presenting
 --------------------
 
