@@ -12,7 +12,6 @@ import json
 import datetime
 from dataclasses import asdict, dataclass, field
 from typing import List, Union
-from urllib.parse import urlparse, urljoin
 from types import MappingProxyType
 from deprecation import deprecated
 
@@ -33,7 +32,6 @@ from keri.app import (
     habbing,
     storing,
     signaling,
-    oobiing,
     agenting,
     forwarding,
     querying,
@@ -46,8 +44,7 @@ from keri.app.grouping import Counselor
 from keri.app.keeping import Algos
 from keri.core import coring, parsing, eventing, routing, serdering
 from keri.core.coring import Ilks
-from keri.core.signing import Salter
-from keri.db.basing import OobiRecord
+from keri.app import oobiing
 from keri.vc import protocoling
 
 from keria.end import ending
@@ -60,7 +57,7 @@ from keri.app import challenging
 
 from keria.utils.openapi import dataclassFromFielddom
 
-from . import aiding, notifying, indirecting, credentialing, ipexing, delegating
+from . import aiding, notifying, indirecting, credentialing, ipexing, delegating, oobier
 from . import grouping as keriagrouping
 from .serving import GracefulShutdownDoer
 from .. import log_name, ogler, set_log_level
@@ -626,6 +623,7 @@ class Agent(doing.DoDoer):
             .exc (Exchanger): Handles peer-to-peer message routing and processing.
             .submitter (Submitter): Submits the last event from a KEL to the witnesses to obtain receipts and propagate to all other witnesses.
             .monitor (Monitor): Monitors the agent's state and performs long-running tasks like credential issuance and revocation.
+            .oobier (Oobier): Generates managed-identifier OOBIs and submits OOBI resolution operations.
             .rvy (Revery): Reply event message processor for routing and processing 'rpy' messages.
             .kvy (Kevery): Key Event Log (KEL) event processor for routing and processing KEL messages.
             .tvy (Tevery): TEL event processor for routing and processing TEL messages.
@@ -778,6 +776,7 @@ class Agent(doing.DoDoer):
             submitter=self.submitter,
             exchanger=self.exc,
         )
+        self.oobier = oobier.Oobier(hby=self.hby, monitor=self.monitor)
 
         self.rvy = routing.Revery(db=hby.db, cues=self.cues)
         self.kvy = eventing.Kevery(
@@ -1628,8 +1627,6 @@ def loadEnds(app):
 
     oobiColEnd = OOBICollectionEnd()
     app.add_route("/oobis", oobiColEnd)
-    oobiResEnd = OobiResourceEnd()
-    app.add_route("/oobis/{alias}", oobiResEnd)
 
     statesEnd = KeyStateCollectionEnd()
     app.add_route("/states", statesEnd)
@@ -1977,9 +1974,6 @@ class KeyEventCollectionEnd:
 
 
 class OOBICollectionEnd:
-    def __init__(self):
-        """Create OOBI Collection endpoint instance"""
-
     @staticmethod
     def on_post(req, rep):
         """Resolve OOBI endpoint.
@@ -2024,145 +2018,16 @@ class OOBICollectionEnd:
         agent = req.context.agent
         body = req.get_media()
 
-        if "url" in body:
-            oobi = body["url"]
-            dt = helping.nowUTC()
-
-            obr = OobiRecord(date=helping.toIso8601(dt))
-            if "oobialias" in body:
-                obr.oobialias = body["oobialias"]
-
-            agent.hby.db.oobis.pin(keys=(oobi,), val=obr)
-
-        elif "rpy" in body:
-            raise falcon.HTTPNotImplemented(
-                description="'rpy' support not implemented yet"
-            )
-
-        else:
-            raise falcon.HTTPBadRequest(
-                description="invalid OOBI request body, either 'rpy' or 'url' is required"
-            )
-
-        oid = Salter().qb64
-        op = agent.monitor.submit(
-            oid, longrunning.OpTypes.oobi, metadata=dict(oobi=oobi)
-        )
+        try:
+            op = agent.oobier.resolve(body)
+        except NotImplementedError as ex:
+            raise falcon.HTTPNotImplemented(description=str(ex))
+        except kering.ValidationError as ex:
+            raise falcon.HTTPBadRequest(description=str(ex))
 
         rep.status = falcon.HTTP_202
         rep.content_type = "application/json"
         rep.data = op.to_json().encode("utf-8")
-
-
-class OobiResourceEnd:
-    @staticmethod
-    def on_get(req, rep, alias):
-        """OOBI GET endpoint
-
-        Parameters:
-            req: falcon.Request HTTP request
-            rep: falcon.Response HTTP response
-            alias: option route parameter for specific identifier to get
-
-        ---
-        summary:  Get OOBI for specific identifier
-        description:  Generate OOBI for the identifier of the specified alias and role
-        tags:
-           - OOBIs
-        parameters:
-          - in: path
-            name: alias
-            schema:
-              type: string
-            required: true
-            description: human readable alias for the identifier generate OOBI for
-          - in: query
-            name: role
-            schema:
-              type: string
-            required: true
-            description: role for which to generate OOBI
-        responses:
-            200:
-              description: An array of Identifier key state information
-              content:
-                  application/json:
-                    schema:
-                        $ref: '#/components/schemas/OOBI'
-        """
-        agent = req.context.agent
-        hab = agent.hby.habByName(alias)
-        if hab is None:
-            raise falcon.HTTPBadRequest(description="Invalid alias to generate OOBI")
-
-        role = req.params["role"]
-
-        res = dict(role=role)
-        if role in (kering.Roles.witness,):  # Fetch URL OOBIs for all witnesses
-            oobis = []
-            for wit in hab.kever.wits:
-                urls = hab.fetchUrls(
-                    eid=wit, scheme=kering.Schemes.http
-                ) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
-                if not urls:
-                    raise falcon.HTTPNotFound(
-                        description=f"unable to query witness {wit}, no http endpoint"
-                    )
-
-                url = (
-                    urls[kering.Schemes.http]
-                    if kering.Schemes.http in urls
-                    else urls[kering.Schemes.https]
-                )
-                up = urlparse(url)
-                oobis.append(urljoin(up.geturl(), f"/oobi/{hab.pre}/witness/{wit}"))
-            res["oobis"] = oobis
-        elif role in (kering.Roles.controller,):  # Fetch any controller URL OOBIs
-            oobis = []
-            urls = hab.fetchUrls(
-                eid=hab.pre, scheme=kering.Schemes.http
-            ) or hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.https)
-            if not urls:
-                raise falcon.HTTPNotFound(
-                    description=f"unable to query controller {hab.pre}, no http endpoint"
-                )
-
-            url = (
-                urls[kering.Schemes.http]
-                if kering.Schemes.http in urls
-                else urls[kering.Schemes.https]
-            )
-            up = urlparse(url)
-            oobis.append(urljoin(up.geturl(), f"/oobi/{hab.pre}/controller"))
-            res["oobis"] = oobis
-        elif role in (kering.Roles.agent,):
-            oobis = []
-            roleUrls = hab.fetchRoleUrls(
-                hab.pre, scheme=kering.Schemes.http, role=kering.Roles.agent
-            ) or hab.fetchRoleurls(
-                hab.pre, scheme=kering.Schemes.https, role=kering.Roles.agent
-            )
-            if not roleUrls:
-                raise falcon.HTTPNotFound(
-                    description=f"unable to query controller {hab.pre}, no http endpoint"
-                )
-
-            for eid, urls in roleUrls["agent"].items():
-                url = (
-                    urls[kering.Schemes.http]
-                    if kering.Schemes.http in urls
-                    else urls[kering.Schemes.https]
-                )
-                up = urlparse(url)
-                oobis.append(urljoin(up.geturl(), f"/oobi/{hab.pre}/agent/{eid}"))
-                res["oobis"] = oobis
-        else:
-            rep.status = falcon.HTTP_404
-            return
-
-        rep.status = falcon.HTTP_200
-        rep.content_type = "application/json"
-        rep.data = json.dumps(res).encode("utf-8")
 
 
 class QueryCollectionEnd:

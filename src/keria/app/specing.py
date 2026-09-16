@@ -5,7 +5,7 @@ from apispec import yaml_utils
 from apispec.core import VALID_METHODS, APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 
-from keria.app import aiding, agenting, grouping, notifying
+from keria.app import aiding, agenting, grouping, notifying, oobier
 from keria.peer import exchanging
 from ..core import optypes
 from ..utils.openapi import applyAltConstraintsToOpenApiSchema
@@ -302,7 +302,7 @@ class AgentSpecResource:
 
         # OOBIS
         self.spec.components.schema(
-            "OOBI", schema=marshmallow_dataclass.class_schema(aiding.OOBI)()
+            "OOBI", schema=marshmallow_dataclass.class_schema(oobier.OOBI)()
         )
 
         # End Roles
