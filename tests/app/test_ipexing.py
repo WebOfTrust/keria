@@ -1123,7 +1123,7 @@ def test_multisig(seeder, helpers):
             path="/identifiers/issuer/credentials",
             body=json.dumps(body).encode("utf-8"),
         )
-        assert result.status == falcon.HTTP_200
+        assert result.status == falcon.HTTP_202
 
         # Submit the Credential to Agent 1
         body = dict(
@@ -1139,7 +1139,7 @@ def test_multisig(seeder, helpers):
             path="/identifiers/issuer/credentials",
             body=json.dumps(body).encode("utf-8"),
         )
-        assert result.status == falcon.HTTP_200
+        assert result.status == falcon.HTTP_202
 
         # Wait for Agent 0 to resolve the credential
         while not agent0.credentialer.complete(creder.said):
@@ -1761,7 +1761,7 @@ def test_multisig(seeder, helpers):
             body=json.dumps(body).encode("utf-8"),
         )
 
-        assert result.status == falcon.HTTP_200
+        assert result.status == falcon.HTTP_202
 
         # Submit the Revocation to Agent 1
         body = dict(
@@ -1776,7 +1776,7 @@ def test_multisig(seeder, helpers):
             body=json.dumps(body).encode("utf-8"),
         )
 
-        assert result.status == falcon.HTTP_200
+        assert result.status == falcon.HTTP_202
 
 
 def test_granter(helpers):
