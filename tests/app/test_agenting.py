@@ -220,6 +220,7 @@ def test_agency_reopens_legacy_tocks(tmp_path, monkeypatch, legacy_persisted, us
             }
             assert agent.hby.cf.get()["tocks"] == canonical
             persisted_config_path = agent.hby.cf.path
+            # Close resources and evict the cached Agent, keeping its files for reopen.
             agency.shut(agent)
             assert caid not in agency.agents
 
@@ -235,10 +236,12 @@ def test_agency_reopens_legacy_tocks(tmp_path, monkeypatch, legacy_persisted, us
             monkeypatch.delenv("KERIA_ESCROWER_TOCK")
             # This cache miss reopens the Agent from its own files on disk.
             agent = agency.get(caid)
+            # A database base must not redirect lookup away from the written config.
             assert agent.hby.cf.path == persisted_config_path
             assert agent.tocks["escrower"] == 1.0
             assert agent.hby.tocks["receiptor"] == 0.25
             with open(persisted_config_path, "rb") as config_file:
+                # Loading legacy settings must not silently migrate the file on disk.
                 assert config_file.read() == persisted_bytes
         finally:
             if caid in agency.agents:
@@ -275,6 +278,7 @@ def test_agent_tock_bindings_are_isolated(helpers):
         "exchangecue": agenting.ExchangeCueDoer,
         "submitter": agenting.Submitter,
     }
+    # Distinct worker and Agent values expose crossed bindings or shared configuration.
     first = {key: (index + 1) / 10 for index, key in enumerate(bindings)}
     second = {key: value + 1 for key, value in first.items()}
     with configing.openCF(temp=True) as cf1, configing.openCF(temp=True) as cf2:
@@ -285,6 +289,7 @@ def test_agent_tock_bindings_are_isolated(helpers):
             helpers.openKeria(cf=cf2) as (_, agent2, _, _),
         ):
             for agent, expected in ((agent1, first), (agent2, second)):
+                # Containers inherit their parent cadence; worker overrides stay local.
                 assert agent.tock == agent.agency.tock
                 assert agent.swain.tock == agent.tock
                 for key, cls in bindings.items():
@@ -936,7 +941,7 @@ def test_querier(helpers):
         qry.queries.append(
             dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9", sn="1")
         )
-        qry.recur(1.0, deeds=deeds)
+        qry.recur(1.0, deeds=deeds)  # Pass 1: dispatch the sequence-number query.
 
         assert len(qry.doers) == 1
         seqNoDoer = qry.doers[0]
@@ -947,11 +952,11 @@ def test_querier(helpers):
 
         qry.doers.remove(seqNoDoer)
 
-        # Anchor not implemented yet
+        # Exercise anchor dispatch and cadence binding without waiting for resolution.
         qry.queries.append(
             dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9", anchor={})
         )
-        qry.recur(1.0, deeds=deeds)
+        qry.recur(1.0, deeds=deeds)  # Pass 2: dispatch the anchor query.
         assert len(qry.doers) == 1
         anchorDoer = qry.doers[0]
         assert isinstance(anchorDoer, querying.AnchorQuerier) is True
@@ -961,7 +966,7 @@ def test_querier(helpers):
         qry.doers.remove(anchorDoer)
 
         qry.queries.append(dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"))
-        qry.recur(1.0, deeds=deeds)
+        qry.recur(1.0, deeds=deeds)  # Pass 3: dispatch the prefix-only query.
 
         assert len(qry.doers) == 1
         qryDoer = qry.doers[0]

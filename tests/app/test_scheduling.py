@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 from keri import kering
-from keri.app import configing, tocking
+from keri.app import configing
 
 from keria.app import scheduling
 
@@ -17,6 +17,7 @@ def test_defaults_and_environment_coverage():
     assert defaults.signify["releaser"] == 60.0
     assert {v for k, v in defaults.signify.items() if k != "releaser"} == {0.03125}
     assert set(defaults.keri.values()) == {0.03125}
+    # Unique values expose environment variables accidentally bound to the wrong key.
     expected = {key: (index + 1) / 10 for index, key in enumerate(scheduling.SIG_TOCKS)}
     environ = {
         scheduling.SIG_TOCKS[key].env: str(value) for key, value in expected.items()
@@ -30,7 +31,9 @@ def test_sample_configs_cover_defaults_without_persisting_them():
     for name in ("scripts/keria.json", "scripts/keri/cf/keria.json"):
         configured = json.loads((root / name).read_text())["tocks"]
         assert configured == {**defaults.keri, "signify": defaults.signify}
-    assert defaults.configured == {}
+    assert (
+        defaults.configured == {}
+    )  # Effective defaults are not explicit file settings.
 
 
 def test_core_alias_and_environment_override_keria_defaults():
@@ -39,6 +42,7 @@ def test_core_alias_and_environment_override_keria_defaults():
     )
     assert resolved.keri["registrarEscrow"] == 0.25
     assert resolved.keri["credentialerEscrow"] == 0.0
+    # Persist the file's alias, not its expansion or the environment override.
     assert resolved.configured == {"vdrEscrow": 0.25}
 
 
@@ -55,6 +59,7 @@ def test_specific_and_coarse_precedence(environ, expected):
         {"signify": {"agent": 0.1, "escrower": 0.2}}, environ=environ
     )
     assert resolved.signify["escrower"] == expected
+    # An untargeted worker still follows the group value at the winning layer.
     assert resolved.signify["initer"] == float(environ.get("KERIA_AGENT_TOCK", 0.1))
 
 
@@ -70,6 +75,7 @@ def test_legacy_normalization_is_lossless_and_warns_per_load(caplog):
         assert raw == original
         assert resolved.signify["escrower"] == 0.5
         assert resolved.keri["receiptor"] == 0.125
+        # Legacy KERIA keys must be removed before passing the core map to Habery.
         assert not resolved.keri.keys() & scheduling.SIG_TOCKS.keys()
         assert resolved.configured == {"receiptor": 0.25, "signify": {"escrower": 1.0}}
         warning = caplog.text
@@ -79,6 +85,7 @@ def test_legacy_normalization_is_lossless_and_warns_per_load(caplog):
         scheduling.resolveTocks(raw, environ={})
         assert len(caplog.records) == 2
         caplog.clear()
+        # Reload the normalized form: no legacy placement remains to warn about.
         scheduling.resolveTocks(resolved.configured, environ={})
         assert not caplog.records
     finally:

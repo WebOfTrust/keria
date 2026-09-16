@@ -31,9 +31,14 @@ def test_anchorer_escrow_cadence(cadence):
         assert escrow.tock == cadence
         dog = escrow(tymth=doing.Doist().tymen(), tock=escrow.tock)
         try:
-            assert next(dog) == cadence  # Initial doify binding.
-            assert next(dog) == cadence  # Recurrence must not revert to 0.5 s.
-            assert anchorer.tock == scheduling.DEFAULT_TOCK  # Keep the parent cadence.
+            assert (
+                next(dog) == cadence
+            )  # Step 1: bind the clock; yield before escrow work.
+            assert (
+                next(dog) == cadence
+            )  # Step 2: process escrows; yield the same cadence.
+            # The escrow override must not retime the container's other children.
+            assert anchorer.tock == scheduling.DEFAULT_TOCK
         finally:
             dog.close()
 
