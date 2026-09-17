@@ -290,12 +290,11 @@ class Agency(doing.DoDoer):
             if adb is not None
             else basing.AgencyBaser(name="TheAgency", base=base, reopen=True, temp=temp)
         )
+        self.releaser = Releaser(
+            self, releaseTimeout=releaseTimeout, tock=self.tocks["releaser"]
+        )
         super(Agency, self).__init__(
-            doers=[
-                Releaser(
-                    self, releaseTimeout=releaseTimeout, tock=self.tocks["releaser"]
-                )
-            ],
+            doers=[self.releaser],
             tock=scheduling.DEFAULT_TOCK,
         )
 
@@ -734,7 +733,8 @@ class Agent(doing.DoDoer):
         signaler = signaling.Signaler()
         # Own expiry here: KERIpy's expireDo yields during deque iteration,
         # allowing concurrent notification pushes to invalidate the iterator.
-        doers.append(SignalExpirer(signaler=signaler, tock=self.tocks["signalExpiry"]))
+        self.expirer = SignalExpirer(signaler=signaler, tock=self.tocks["signalExpiry"])
+        doers.append(self.expirer)
         self.notifier = Notifier(hby=hby, signaler=signaler)
         self.mux = grouping.Multiplexor(hby=hby, notifier=self.notifier)
 
@@ -1636,7 +1636,7 @@ class Releaser(doing.Doer):
         """Check open agents and close if idle for more than releaseTimeout seconds
         Parameters:
             agency (Agency): KERIA agent manager
-            releaseTimeout (int): Timeout in seconds
+            releaseTimeout (int | None): Timeout in seconds
 
         """
         # Housekeeping scans all open Agents for a 24-hour inactivity timeout.

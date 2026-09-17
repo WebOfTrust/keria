@@ -57,6 +57,7 @@ class Anchorer(doing.DoDoer):
         self.postman = forwarding.Poster(hby=hby)
         self.witq = agenting.WitnessInquisitor(hby=hby)
         self.witDoer = agenting.Receiptor(hby=self.hby)
+        self.escrowDoer = doing.doify(self.escrowDo, tock=hby.tocks["anchorerEscrow"])
         self.proxy = proxy
 
         kwa.setdefault("tock", scheduling.DEFAULT_TOCK)
@@ -65,7 +66,7 @@ class Anchorer(doing.DoDoer):
                 self.witq,
                 self.witDoer,
                 self.postman,
-                doing.doify(self.escrowDo, tock=hby.tocks["anchorerEscrow"]),
+                self.escrowDoer,
             ],
             **kwa,
         )

@@ -1,28 +1,43 @@
 """Scheduler-facing yields and ownership, beyond configuration properties."""
 
 import pytest
+from contextlib import closing
 from hio.base import doing
 from hio.help import decking
 from keri.app import configing
 from keri.core import coring, eventing, parsing, signing
 
 from keria.app import agenting
+from keria.app.serving import GracefulShutdownDoer
 
 
-@pytest.mark.parametrize("cadence", [0.0, 0.25])
+@pytest.mark.parametrize(
+    "cadence",
+    [
+        pytest.param(0.0, id="next-cycle"),
+        pytest.param(0.25, id="positive-delay"),
+    ],
+)
 def test_parser_yields(cadence):
+    """ParserDoer must yield its configured cadence while waiting for either an
+    initial frame or missing bytes, including an explicit zero cadence.
+    """
     parser = parsing.Parser()
     doer = agenting.ParserDoer(kvy=None, parser=parser, tock=cadence)
     dog = doer.recur()
-    try:
+    with closing(dog):
         assert next(dog) == cadence  # Step 1: wait for input on an empty stream.
         parser.ims.extend(b"-")  # Supply only the start of a CESR frame.
         assert next(dog) == cadence  # Step 2: wait for the rest of the frame.
-    finally:
-        dog.close()
 
 
-def test_witnesser_threads_cadence_through_both_operations():
+def test_witnesser_threads_tock_through_receiptor_child_ops():
+    """
+    Proves that the Witnesser passes its parent tock to its child tasks/Doers.
+
+    A rotation adding a witness must pass Witnesser's tock through catch-up
+    and receipt collection, then use that tock for its own outer-loop yield.
+    """
     key = signing.Signer(raw=b"a" * 32).verfer.qb64
     witness = signing.Signer(raw=b"b" * 32, transferable=False).verfer.qb64
     inception = eventing.incept(keys=[key], ndigs=[coring.Diger(ser=key.encode()).qb64])
@@ -45,7 +60,7 @@ def test_witnesser_threads_cadence_through_both_operations():
         receiptor=Receiptor(), witners=decking.Deck([{"serder": event}]), tock=0.25
     )
     dog = doer.recur()
-    try:
+    with closing(dog):
         assert next(dog) == 0.25  # Step 1: dequeue rotation; catch-up yields.
         assert next(dog) == 0.25  # Step 2: catch-up finishes; receipt yields.
         assert next(dog) == 0.25  # Step 3: receipt finishes; outer loop yields.
@@ -54,38 +69,35 @@ def test_witnesser_threads_cadence_through_both_operations():
             ("catchup", event.pre, witness),
             ("receipt", event.pre, event.sn),
         ]
-    finally:
-        dog.close()
 
 
 def test_signaler_is_scheduled_and_expires_signals(helpers):
+    """The Agent must schedule expiry for its notifier's actual signal queue at
+    the configured cadence, removing expired signals while retaining fresh ones.
+    """
     with configing.openCF(temp=True) as cf:
         cf.put({"tocks": {"signify": {"signalExpiry": 0.125}}})
         with helpers.openKeria(cf=cf) as (_, agent, _, _):
             signaler = agent.notifier.signaler
-            expirers = [d for d in agent.doers if isinstance(d, agenting.SignalExpirer)]
-            assert len(expirers) == 1
-            expiry = expirers[0]
+            expirer = agent.expirer
+            assert expirer in agent.doers  # The Agent must schedule its expiry worker.
             # Expiry must service the notifier's live queue, not a separate Signaler.
-            assert expiry.signaler is signaler
-            assert expiry.tock == 0.125
+            assert expirer.signaler is signaler
+            assert expirer.tock == 0.125
             signaler.push(attrs={}, topic="test", dt="2000-01-01T00:00:00.000000+00:00")
             doist = doing.Doist(tock=0.03125)
-            deeds = doist.enter(
-                doers=[expiry]
-            )  # Prime expiry; recur has not scanned yet.
+            # Prime expiry; recur has not scanned yet.
+            deeds = doist.enter(doers=[expirer])
             try:
                 # Cycles 1-6 visit t=0 through 0.15625; expiry scans at 0 and 0.125.
                 for _ in range(6):
                     doist.recur(deeds)  # Advance one 0.03125-second scheduler cycle.
                 assert not signaler.signals
-                # Add a fresh signal between scans to exercise queue reuse after removal.
+                # Add a fresh, non-expiring signal between scans to exercise queue reuse after removal.
                 signaler.push(attrs={}, topic="live")
                 # Cycles 7-12 visit t=0.1875 through 0.34375; expiry scans at 0.25.
                 for _ in range(6):
-                    doist.recur(
-                        deeds
-                    )  # Advance one cycle; the fresh signal must survive.
+                    doist.recur(deeds)  # Advance one cycle; retain the fresh signal.
                 assert len(signaler.signals) == 1
                 assert signaler.signals[0].topic == "live"
             finally:
@@ -93,6 +105,9 @@ def test_signaler_is_scheduled_and_expires_signals(helpers):
 
 
 def test_agency_service_bindings():
+    """Bind distinct config values to all three HTTP servers, shutdown, and cleanup;
+    verify shutdown and cleanup generators actually yield their assigned cadences.
+    """
     configured = {
         "bootServer": 0.125,
         "adminServer": 0.25,
@@ -108,32 +123,42 @@ def test_agency_service_bindings():
         )
         servers = []
         try:
-            servers.append(agenting.createBootServerDoer(config, agency))
-            app, admin = agenting.createAdminServerDoer(config, agency)
-            servers.append(admin)
-            servers.append(agenting.createHttpServerDoer(config, agency, app))
-            assert [server.tock for server in servers] == [0.125, 0.25, 0.375]
+            boot_server = agenting.createBootServerDoer(config, agency)
+            servers.append(boot_server)
+            app, admin_server = agenting.createAdminServerDoer(config, agency)
+            servers.append(admin_server)
+            public_server = agenting.createHttpServerDoer(config, agency, app)
+            servers.append(public_server)
+            assert boot_server.tock == 0.125
+            assert admin_server.tock == 0.25
+            assert public_server.tock == 0.375
             doist = agenting.agencyDoist([agency, *servers])
-            shutdown = doist.doers[-1]
+            shutdown = next(
+                d for d in doist.doers if isinstance(d, GracefulShutdownDoer)
+            )
             assert shutdown.tock == 0.5
-            dog = shutdown.recur()
-            try:
+            shutdown_dog = shutdown.recur()
+            with closing(shutdown_dog):
+                # Before a request: poll at the configured cadence; keep Agency running.
+                assert next(shutdown_dog) == configured["shutdown"]  # First poll.
                 assert not agency.shouldShutdown
-                # Step 1: no shutdown request; yield the configured polling cadence.
-                assert next(dog) == configured["shutdown"]
+
+                # Simulate the flag set by a signal handler; no OS signal is sent.
                 shutdown.shutdown_received = True
+
+                # Next poll: request Agency shutdown and complete the generator.
                 with pytest.raises(StopIteration):
-                    next(dog)  # Step 2: forward the request to Agency and finish.
+                    next(shutdown_dog)
                 assert agency.shouldShutdown
-            finally:
-                dog.close()
-            release = next(d for d in agency.doers if isinstance(d, agenting.Releaser))
-            dog = release.recur()
-            try:
-                assert next(dog) == 30.0  # Step 1: scan the empty cache, then yield.
-                assert next(dog) == 30.0  # Step 2: repeat the scan at the same cadence.
-            finally:
-                dog.close()
+            releaser = agency.releaser
+            releaser_dog = releaser.recur()
+            with closing(releaser_dog):
+                assert (
+                    next(releaser_dog) == 30.0
+                )  # Step 1: scan the empty cache, then yield.
+                assert (
+                    next(releaser_dog) == 30.0
+                )  # Step 2: repeat the scan at the same cadence.
         finally:
             for server in servers:
                 server.server.close()
