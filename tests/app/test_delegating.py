@@ -36,7 +36,8 @@ def test_anchorer_escrow_cadence(cadence):
     """
     tocks = scheduling.resolveTocks({"anchorerEscrow": cadence}, environ={}).keri
     with habbing.openHby(name="cadence", temp=True, tocks=tocks) as hby:
-        anchorer = delegating.Anchorer(hby=hby)
+        parent_tock = 0.25
+        anchorer = delegating.Anchorer(hby=hby, tock=parent_tock)
         escrow = anchorer.escrowDoer
         assert escrow in anchorer.doers
         assert escrow.tock == cadence
@@ -47,7 +48,7 @@ def test_anchorer_escrow_cadence(cadence):
             # Step 2: process escrows; yield the same cadence.
             assert next(dog) == cadence
             # The escrow override must not retime the container's other children.
-            assert anchorer.tock == scheduling.DEFAULT_TOCK
+            assert anchorer.tock == parent_tock
 
 
 def test_sealer():

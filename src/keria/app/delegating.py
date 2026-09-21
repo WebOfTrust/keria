@@ -60,7 +60,6 @@ class Anchorer(doing.DoDoer):
         self.escrowDoer = doing.doify(self.escrowDo, tock=hby.tocks["anchorerEscrow"])
         self.proxy = proxy
 
-        kwa.setdefault("tock", scheduling.DEFAULT_TOCK)
         super(Anchorer, self).__init__(
             doers=[
                 self.witq,
