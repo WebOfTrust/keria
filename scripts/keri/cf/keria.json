@@ -2,7 +2,9 @@
   "dt": "2025-01-03T16:08:30.123456+00:00",
   "keria": {
     "dt": "2025-01-03T16:08:30.123457+00:00",
-    "curls": ["http://127.0.0.1:3902/"]
+    "curls": [
+      "http://127.0.0.1:3902/"
+    ]
   },
   "iurls": [
     "http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller?name=Wan&tag=witness",
@@ -10,7 +12,55 @@
     "http://127.0.0.1:5644/oobi/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX/controller?name=Wes&tag=witness"
   ],
   "tocks": {
-    "initer": 0.0,
-    "escrower": 1.0
+    "witnessMsg": 0.03125,
+    "witnessEscrow": 0.03125,
+    "witnessCue": 0.03125,
+    "indirectorMsg": 0.03125,
+    "indirectorCue": 0.03125,
+    "indirectorEscrow": 0.03125,
+    "mailboxPoll": 0.03125,
+    "mailboxMsg": 0.03125,
+    "mailboxEscrow": 0.03125,
+    "pollerEvent": 0.03125,
+    "pollerConnect": 0.03125,
+    "receiptIntercept": 0.03125,
+    "reactorMsg": 0.03125,
+    "reactorCue": 0.03125,
+    "reactorEscrow": 0.03125,
+    "reactantMsg": 0.03125,
+    "reactantCue": 0.03125,
+    "reactantEscrow": 0.03125,
+    "respondant": 0.03125,
+    "receiptor": 0.03125,
+    "oobi": 0.03125,
+    "witnessReceiptor": 0.03125,
+    "witnessReceiptorIdle": 0.03125,
+    "witnessInquisitor": 0.03125,
+    "witnessPublisher": 0.03125,
+    "registrarEscrow": 0.03125,
+    "credentialerEscrow": 0.03125,
+    "counselorEscrow": 0.03125,
+    "anchorerEscrow": 0.03125,
+    "signify": {
+      "initer": 0.03125,
+      "querier": 0.03125,
+      "escrower": 0.03125,
+      "parser": 0.03125,
+      "witnesser": 0.03125,
+      "delegator": 0.03125,
+      "exchangeSender": 0.03125,
+      "granter": 0.03125,
+      "admitter": 0.03125,
+      "groupRequester": 0.03125,
+      "seeker": 0.03125,
+      "exchangecue": 0.03125,
+      "submitter": 0.03125,
+      "bootServer": 0.03125,
+      "adminServer": 0.03125,
+      "httpServer": 0.03125,
+      "shutdown": 0.03125,
+      "signalExpiry": 0.03125,
+      "releaser": 60.0
+    }
   }
 }

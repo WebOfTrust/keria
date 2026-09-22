@@ -10,6 +10,7 @@ import os
 from base64 import b64decode
 import json
 import datetime
+from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from typing import List, Union
 from urllib.parse import urlparse, urljoin
@@ -39,7 +40,6 @@ from keri.app import (
     querying,
     connecting,
     grouping,
-    tocking,
 )
 from keri.app import delegating as kdelegating
 from keri.app.grouping import Counselor
@@ -60,7 +60,15 @@ from keri.app import challenging
 
 from keria.utils.openapi import dataclassFromFielddom
 
-from . import aiding, notifying, indirecting, credentialing, ipexing, delegating
+from . import (
+    aiding,
+    notifying,
+    indirecting,
+    credentialing,
+    ipexing,
+    delegating,
+    scheduling,
+)
 from . import grouping as keriagrouping
 from .serving import GracefulShutdownDoer
 from .. import log_name, ogler, set_log_level
@@ -165,32 +173,6 @@ def readConfigFile(configDir: str, configFile: str, temp=False):
     )
 
 
-def keriTocks(cf):
-    """Resolve KERIpy cadences while reserving the existing KERIA Agent keys.
-
-    Keep the config file intact so Agent can still read its legacy flat tocks.
-    Unknown keys and KERIpy values remain subject to KERIpy's validation.
-    """
-    return tocking.resolveTocks(
-        cf.get().get("tocks") if cf is not None else None,
-        reserved=(
-            "signify",
-            "initer",
-            "querier",
-            "escrower",
-            "parser",
-            "witnesser",
-            "delegator",
-            "exchangeSender",
-            "granter",
-            "admitter",
-            "groupRequester",
-            "seeker",
-            "exchangecue",
-        ),
-    )
-
-
 def runAgency(config: KERIAServerConfig, temp=False):
     """Runs a KERIA Agency with the given Doers by calling Doist.do(). Useful for testing."""
     set_log_level(config.logLevel, logger)
@@ -219,9 +201,10 @@ def runAgency(config: KERIAServerConfig, temp=False):
 
 def agencyDoist(doers: List[Doer]):
     """Creates a Doist for the Agency doers and adds a graceful shutdown handler. Useful for testing."""
-    tock = 0.03125
+    tock = scheduling.DEFAULT_TOCK
     doist = doing.Doist(limit=0.0, tock=tock, real=True)
-    doers.append(GracefulShutdownDoer(agency=getAgency(doers)))
+    agency = getAgency(doers)
+    doers.append(GracefulShutdownDoer(agency=agency, tock=agency.tocks["shutdown"]))
     doist.doers = doers
     return doist
 
@@ -298,6 +281,8 @@ class Agency(doing.DoDoer):
         else:
             self.cf = cf
 
+        self._tockConfig = scheduling.loadTocks(self.cf)
+        self.tocks = dict(self._tockConfig.signify)
         self.agents = dict()
 
         self.adb = (
@@ -305,8 +290,12 @@ class Agency(doing.DoDoer):
             if adb is not None
             else basing.AgencyBaser(name="TheAgency", base=base, reopen=True, temp=temp)
         )
+        self.releaser = Releaser(
+            self, releaseTimeout=releaseTimeout, tock=self.tocks["releaser"]
+        )
         super(Agency, self).__init__(
-            doers=[Releaser(self, releaseTimeout=releaseTimeout)]
+            doers=[self.releaser],
+            tock=scheduling.DEFAULT_TOCK,
         )
 
     def _loadConfigForAgent(self, caid):
@@ -322,6 +311,9 @@ class Agency(doing.DoDoer):
         """
         timestamp = nowIso8601()
         config = dict(self.cf.get() if self.cf is not None else {"dt": timestamp})
+
+        # Persist the configured snapshot, not environment overrides or defaults.
+        config["tocks"] = deepcopy(self._tockConfig.configured)
 
         # Renames sub-section of config
         habName = f"agent-{caid}"
@@ -388,7 +380,7 @@ class Agency(doing.DoDoer):
             bran=self.bran,
             ks=ks,
             cf=agent_cf,
-            tocks=keriTocks(agent_cf),
+            tocks=self._tockConfig.keri,
             temp=self.temp,
             salt=salt,
         )
@@ -398,7 +390,12 @@ class Agency(doing.DoDoer):
         )
 
         agent = Agent(
-            hby=agentHby, rgy=agentRgy, agentHab=agentHab, caid=caid, agency=self
+            hby=agentHby,
+            rgy=agentRgy,
+            agentHab=agentHab,
+            caid=caid,
+            agency=self,
+            tocks=self._tockConfig.signify,
         )
 
         self.adb.agnt.pin(keys=(caid,), val=coring.Prefixer(qb64=agent.pre))
@@ -467,11 +464,13 @@ class Agency(doing.DoDoer):
         if aaid is None:
             return None
 
-        ks = keeping.Keeper(name=caid, base=self.base, temp=self.temp, reopen=True)
-
+        # Agent configs are written with base="" by _writeAgentConfig, even
+        # when the Agent's databases use a nonempty base.
         cf = configing.Configer(
-            name=caid, base=self.base, temp=self.temp, reopen=True, clear=False
+            name=caid, base="", temp=self.temp, reopen=True, clear=False
         )
+        resolvedTocks = scheduling.loadTocks(cf)
+        ks = keeping.Keeper(name=caid, base=self.base, temp=self.temp, reopen=True)
         agentHby = habbing.Habery(
             name=caid,
             base=self.base,
@@ -479,7 +478,7 @@ class Agency(doing.DoDoer):
             ks=ks,
             temp=self.temp,
             cf=cf,
-            tocks=keriTocks(cf),
+            tocks=resolvedTocks.keri,
         )
 
         agentHab = agentHby.habByName(f"agent-{caid}", ns="agent")
@@ -492,7 +491,12 @@ class Agency(doing.DoDoer):
             hby=agentHby, name=agentHab.name, base=self.base, temp=self.temp
         )
         agent = Agent(
-            hby=agentHby, rgy=agentRgy, agentHab=agentHab, agency=self, caid=caid
+            hby=agentHby,
+            rgy=agentRgy,
+            agentHab=agentHab,
+            agency=self,
+            caid=caid,
+            tocks=resolvedTocks.signify,
         )
 
         self.agents[caid] = agent
@@ -576,7 +580,7 @@ class Agent(doing.DoDoer):
       hierarchical deterministic key (HDK) management scheme used to select keys at the edge.
     """
 
-    def __init__(self, hby, rgy, agentHab, agency, caid, **opts):
+    def __init__(self, hby, rgy, agentHab, agency, caid, tocks=None, **opts):
         """
         Initialize the Agent with the given Habery, Regery, and agent's Hab.
         Parameters:
@@ -594,7 +598,7 @@ class Agent(doing.DoDoer):
             .agentHab (Hab): The Hab instance representing the agent itself.
             .rgy (Regery): The Regery instance for the agent's registry access.
             .cfd (MappingProxyType): Configuration data for the agent.
-            .tocks (MappingProxyType): Escrow timing configurations for the underlying Hio tasks comprising this agent.
+            .tocks (dict): Construction-time scheduler settings; changing these does not reconfigure existing doers.
             .last (datetime.datetime): Last activity timestamp for the agent.
             .shouldShutdown (bool): Flag indicating if the agent should shut down.
             .swain (delegating.Anchorer): Watches the delegator for delegation approval seals for inception and rotation.
@@ -670,6 +674,7 @@ class Agent(doing.DoDoer):
             submits (Deck): KEL messages to be resubmitted to witnesses to obtain receipts of.
         """
         self.agency = agency
+        parentTock = opts.setdefault("tock", agency.tock)
         self.caid = caid
         self.hby = hby
         self.agentHab = agentHab
@@ -677,11 +682,13 @@ class Agent(doing.DoDoer):
         self.cfd = MappingProxyType(
             dict(self.hby.cf.get()) if self.hby.cf is not None else dict()
         )
-        self.tocks = MappingProxyType(self.cfd.get("tocks", {}))
+        self.tocks = dict(
+            scheduling.loadTocks(hby.cf).signify if tocks is None else tocks
+        )
         self.last = helping.nowUTC()
         self._shouldShutdown = False
 
-        self.swain = delegating.Anchorer(hby=hby, proxy=agentHab)
+        self.swain = delegating.Anchorer(hby=hby, proxy=agentHab, tock=parentTock)
         self.counselor = Counselor(hby=hby, swain=self.swain, proxy=agentHab)
         self.org = connecting.Organizer(hby=hby)
 
@@ -712,7 +719,7 @@ class Agent(doing.DoDoer):
         )
 
         doers = [
-            habbing.HaberyDoer(habery=hby),
+            habbing.HaberyDoer(habery=hby, tock=parentTock),
             receiptor,
             self.witq,
             self.witPub,
@@ -724,6 +731,10 @@ class Agent(doing.DoDoer):
         ]
 
         signaler = signaling.Signaler()
+        # Own expiry here: KERIpy's expireDo yields during deque iteration,
+        # allowing concurrent notification pushes to invalidate the iterator.
+        self.expirer = SignalExpirer(signaler=signaler, tock=self.tocks["signalExpiry"])
+        doers.append(self.expirer)
         self.notifier = Notifier(hby=hby, signaler=signaler)
         self.mux = grouping.Multiplexor(hby=hby, notifier=self.notifier)
 
@@ -766,7 +777,10 @@ class Agent(doing.DoDoer):
         kdelegating.loadHandlers(hby=self.hby, exc=self.exc, notifier=self.notifier)
         protocoling.loadHandlers(hby=self.hby, exc=self.exc, notifier=self.notifier)
         self.submitter = Submitter(
-            hby=hby, submits=self.submits, witRec=self.witSubmitDoer
+            hby=hby,
+            submits=self.submits,
+            witRec=self.witSubmitDoer,
+            tock=self.tocks["submitter"],
         )
         self.monitor = longrunning.Monitor(
             hby=hby,
@@ -802,15 +816,13 @@ class Agent(doing.DoDoer):
 
         doers.extend(
             [
-                Initer(
-                    agentHab=agentHab, caid=caid, tock=self.tocks.get("initer", 0.0)
-                ),
+                Initer(agentHab=agentHab, caid=caid, tock=self.tocks["initer"]),
                 Querier(
                     hby=hby,
                     agentHab=agentHab,
                     kvy=self.kvy,
                     queries=self.queries,
-                    tock=self.tocks.get("querier", 0.0),
+                    tock=self.tocks["querier"],
                 ),
                 Escrower(
                     kvy=self.kvy,
@@ -821,28 +833,26 @@ class Agent(doing.DoDoer):
                     vry=self.verifier,
                     registrar=self.registrar,
                     credentialer=self.credentialer,
-                    tock=self.tocks.get("escrower", 0.0),
+                    tock=self.tocks["escrower"],
                 ),
-                ParserDoer(
-                    kvy=self.kvy, parser=self.parser, tock=self.tocks.get("parser", 0.0)
-                ),
+                ParserDoer(kvy=self.kvy, parser=self.parser, tock=self.tocks["parser"]),
                 Witnesser(
                     receiptor=receiptor,
                     witners=self.witners,
-                    tock=self.tocks.get("witnesser", 0.0),
+                    tock=self.tocks["witnesser"],
                 ),
                 Delegator(
                     agentHab=agentHab,
                     swain=self.swain,
                     anchors=self.anchors,
-                    tock=self.tocks.get("delegator", 0.0),
+                    tock=self.tocks["delegator"],
                 ),
                 ExchangeSender(
                     hby=hby,
                     agentHab=agentHab,
                     exc=self.exc,
                     exchanges=self.exchanges,
-                    tock=self.tocks.get("exchangeSender", 0.0),
+                    tock=self.tocks["exchangeSender"],
                 ),
                 Granter(
                     hby=hby,
@@ -850,7 +860,7 @@ class Agent(doing.DoDoer):
                     agentHab=agentHab,
                     exc=self.exc,
                     grants=self.grants,
-                    tock=self.tocks.get("granter", 0.0),
+                    tock=self.tocks["granter"],
                 ),
                 Admitter(
                     hby=hby,
@@ -859,25 +869,25 @@ class Agent(doing.DoDoer):
                     agentHab=agentHab,
                     exc=self.exc,
                     admits=self.admits,
-                    tock=self.tocks.get("admitter", 0.0),
+                    tock=self.tocks["admitter"],
                 ),
                 GroupRequester(
                     hby=hby,
                     agentHab=agentHab,
                     counselor=self.counselor,
                     groups=self.groups,
-                    tock=self.tocks.get("groupRequester", 0.0),
+                    tock=self.tocks["groupRequester"],
                 ),
                 SeekerDoer(
                     seeker=self.seeker,
                     cues=self.verifier.cues,
-                    tock=self.tocks.get("seeker", 0.0),
+                    tock=self.tocks["seeker"],
                 ),
                 ExchangeCueDoer(
                     seeker=self.exnseeker,
                     cues=self.exc.cues,
                     queries=self.queries,
-                    tock=self.tocks.get("exchangecue", 0.0),
+                    tock=self.tocks["exchangecue"],
                 ),
                 self.submitter,
             ]
@@ -971,7 +981,7 @@ def createBootServerDoer(config: KERIAServerConfig, agency: Agency):
     )
     if not bootServer.reopen():
         raise RuntimeError(f"Cannot create boot HTTP server on port {config.bootPort}")
-    return http.ServerDoer(server=bootServer)
+    return http.ServerDoer(server=bootServer, tock=agency.tocks["bootServer"])
 
 
 def createAdminServerDoer(config: KERIAServerConfig, agency: Agency):
@@ -1008,7 +1018,9 @@ def createAdminServerDoer(config: KERIAServerConfig, agency: Agency):
         raise RuntimeError(
             f"cannot create admin HTTP server on port {config.adminPort}"
         )
-    return adminApp, http.ServerDoer(server=adminServer)
+    return adminApp, http.ServerDoer(
+        server=adminServer, tock=agency.tocks["adminServer"]
+    )
 
 
 def createHttpServerDoer(
@@ -1035,7 +1047,7 @@ def createHttpServerDoer(
     )
     if not server.reopen():
         raise RuntimeError(f"cannot create local http server on port {config.httpPort}")
-    return http.ServerDoer(server=server)
+    return http.ServerDoer(server=server, tock=agency.tocks["httpServer"])
 
 
 def createAgency(config: KERIAServerConfig, temp=False, cf=None):
@@ -1096,8 +1108,12 @@ class ParserDoer(doing.Doer):
             logger.info(
                 "Agent %s received:\n%s\n...\n", self.kvy, self.parser.ims[:1024]
             )
-        done = yield from self.parser.parsator()  # process messages continuously
-        return done  # should never get here except forced close
+        parsator = self.parser.parsator()
+        try:
+            for _ in parsator:
+                yield self.tock
+        finally:
+            parsator.close()
 
 
 class Witnesser(doing.Doer):
@@ -1122,9 +1138,11 @@ class Witnesser(doing.Doer):
                 if serder.ked["t"] in (Ilks.rot, Ilks.drt):
                     adds = serder.ked["ba"]
                     for wit in adds:
-                        yield from self.receiptor.catchup(serder.pre, wit)
+                        yield from self.receiptor.catchup(
+                            serder.pre, wit, tock=self.tock
+                        )
 
-                yield from self.receiptor.receipt(serder.pre, serder.sn)
+                yield from self.receiptor.receipt(serder.pre, serder.sn, tock=self.tock)
 
             yield self.tock
 
@@ -1190,7 +1208,7 @@ class ExchangeSender(doing.DoDoer):
                     except kering.ValidationError:
                         logger.info(f"unable to send to recipient={recp}")
                     else:
-                        doer = doing.DoDoer(doers=postman.deliver())
+                        doer = doing.DoDoer(doers=postman.deliver(), tock=self.tock)
                         self.extend([doer])
 
         return super(ExchangeSender, self).recur(tyme, deeds)
@@ -1347,7 +1365,7 @@ class GrantDoer(doing.Doer):
                 except KeyError:
                     logger.info(f"invalid grant message={serder.ked}")
                 else:
-                    doer = doing.DoDoer(doers=postman.deliver())
+                    doer = doing.DoDoer(doers=postman.deliver(), tock=self.tock)
                     self.parent.extend([doer])
         return True
 
@@ -1531,18 +1549,26 @@ class Querier(doing.DoDoer):
             if "sn" in msg:
                 sn = int(msg["sn"], 16)
                 seqNoDo = querying.SeqNoQuerier(
-                    hby=self.hby, hab=self.agentHab, pre=pre, sn=sn
+                    hby=self.hby, hab=self.agentHab, pre=pre, sn=sn, tock=self.tock
                 )
                 self.extend([seqNoDo])
             elif "anchor" in msg:
                 anchor = msg["anchor"]
                 anchorDo = querying.AnchorQuerier(
-                    hby=self.hby, hab=self.agentHab, pre=pre, anchor=anchor
+                    hby=self.hby,
+                    hab=self.agentHab,
+                    pre=pre,
+                    anchor=anchor,
+                    tock=self.tock,
                 )
                 self.extend([anchorDo])
             else:
                 qryDo = querying.QueryDoer(
-                    hby=self.hby, hab=self.agentHab, pre=pre, kvy=self.kvy
+                    hby=self.hby,
+                    hab=self.agentHab,
+                    pre=pre,
+                    kvy=self.kvy,
+                    tock=self.tock,
                 )
                 self.extend([qryDo])
 
@@ -1590,15 +1616,33 @@ class Escrower(doing.Doer):
         return False
 
 
+class SignalExpirer(doing.Doer):
+    """Expire controller signals without holding a deque iterator across yields."""
+
+    def __init__(self, signaler, tock=scheduling.DEFAULT_TOCK):
+        self.signaler = signaler
+        super().__init__(tock=tock)
+
+    def recur(self, tyme=None):
+        now = helping.nowUTC()
+        for sig in tuple(self.signaler.signals):
+            if now - helping.fromIso8601(sig.dt) > self.signaler.SignalTimeout:
+                self.signaler.signals.remove(sig)
+        return False
+
+
 class Releaser(doing.Doer):
-    def __init__(self, agency: Agency, releaseTimeout=86400):
+    def __init__(self, agency: Agency, releaseTimeout=86400, tock=60.0):
         """Check open agents and close if idle for more than releaseTimeout seconds
         Parameters:
             agency (Agency): KERIA agent manager
-            releaseTimeout (int): Timeout in seconds
+            releaseTimeout (int | None): Timeout in seconds
 
         """
-        self.tock = 60.0
+        # Housekeeping scans all open Agents for a 24-hour inactivity timeout.
+        # The default minute of cleanup lag avoids scanning every scheduler tick;
+        # this interval does not delay active message processing.
+        self.tock = tock
         self.agents = agency.agents
         self.agency = agency
         self.releaseTimeout = releaseTimeout
@@ -2237,7 +2281,7 @@ class QueryCollectionEnd:
 
 
 class Submitter(doing.DoDoer):
-    def __init__(self, hby, submits, witRec):
+    def __init__(self, hby, submits, witRec, tock=scheduling.DEFAULT_TOCK):
         """
         Process to re-submit the last event from the KEL to the witnesses for receipts and to propogate it to each witness
         """
@@ -2245,7 +2289,7 @@ class Submitter(doing.DoDoer):
         self.submits = submits
         self.witRec = witRec
 
-        super(Submitter, self).__init__(always=True)
+        super(Submitter, self).__init__(always=True, tock=tock)
 
     def recur(self, tyme, deeds=None):
         """Processes submit reqests submitting any on the cue"""

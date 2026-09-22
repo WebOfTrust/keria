@@ -13,6 +13,8 @@ import shutil
 import signal
 import time
 from base64 import b64encode
+from pathlib import Path
+from contextlib import ExitStack, closing, contextmanager
 
 import falcon
 import hio
@@ -32,7 +34,7 @@ from keri.db import basing, dbing
 from keri.help import nowIso8601
 from keri.vdr import credentialing
 
-from keria.app import agenting, aiding
+from keria.app import agenting, aiding, scheduling
 from keria.core import longrunning, httping
 from keria.db import basing as agencybasing
 from keria.testing.testing_helper import SCRIPTS_DIR
@@ -193,65 +195,179 @@ def test_load_ends(helpers):
         assert isinstance(end, agenting.ConfigResourceEnd)
 
 
-def test_keri_tocks_preserves_agent_config(monkeypatch):
-    config = {"tocks": {"escrower": 1.0, "initer": 0.0, "receiptor": 0.25}}
-    with configing.openCF(temp=True) as cf:
-        cf.put(config)
-        monkeypatch.setenv("KERI_RECEIPTOR_TOCK", "0.125")
-        tocks = agenting.keriTocks(cf)
-        assert tocks["receiptor"] == 0.125
-        assert "escrower" not in tocks
-        assert "initer" not in tocks
-        assert cf.get() == config
-
-        cf.put({"tocks": {"escrower": 1.0, "receiptorTypo": 0.25}})
-        with pytest.raises(kering.ConfigurationError, match="receiptorTypo"):
-            agenting.keriTocks(cf)
-
-
-def test_agency_reopens_legacy_tocks():
-    """Reload an evicted Agent from disk and retain its legacy tock settings."""
-    caid = core.Signer().verfer.qb64
+@contextmanager
+def openAgencyAndAgent(*, cf, caid, base=""):
+    """Own a persistent Agent and scheduler, preserving LMDB and config files for explicit reopen
+    steps inside the context and deleting test-owned state on exit. The caller owns cf.
+    """
     with dbing.openLMDB(cls=agencybasing.AgencyBaser, temp=True) as adb:
-        cf = agenting.readConfigFile(SCRIPTS_DIR, "legacy-tocks")
-        agency = agenting.Agency(name="agency", bran=None, cf=cf, adb=adb)
+        agency = agenting.Agency(name="agency", base=base, bran=None, cf=cf, adb=adb)
         doist = doing.Doist()
-        doist.enter(doers=[agency])
-        # Provision the Agent and write its own config from the legacy fixture.
-        agent = agency.create(caid)
+        agentOnCreate = None
         try:
-            assert agent.tocks["escrower"] == 1.0
-            assert agent.hby.tocks["receiptor"] == 0.25
-            persisted_config_path = agent.hby.cf.path
-            # Close the Agent's resources and evict it from the Agency cache,
-            # leaving its configuration and databases on disk for reopening.
+            doist.enter(doers=[agency])
+            agentOnCreate = agency.create(caid)
+            yield agency, agentOnCreate
+        finally:
+            agentOnGet = agency.agents.get(caid)
+            # ExitStack runs in reverse: stop the Agent, exit the scheduler,
+            # then dispose of files. Later callbacks still run if one fails.
+            with ExitStack() as cleanup:
+                seen = set()
+                # Keep the original resources even if the test evicted the Agent.
+                # Include reopened handles too; identical objects need closing only once.
+                for agent in (agentOnCreate, agentOnGet):
+                    if agent is None:
+                        continue
+                    for resource in (
+                        agent.seeker,
+                        agent.exnseeker,
+                        agent.monitor.opr,
+                        agent.notifier.noter,
+                        agent.rep.mbx,
+                        agent.rgy.reger,
+                        agent.mgr.rb,
+                        agent.hby.ks,
+                        agent.hby.db,
+                        agent.hby.cf,
+                    ):
+                        if id(resource) not in seen:
+                            seen.add(id(resource))
+                            cleanup.callback(resource.close, clear=True)
+
+                cleanup.callback(doist.exit)
+                if agentOnGet is not None:
+                    cleanup.callback(agency.shut, agentOnGet)
+
+
+@pytest.mark.parametrize(
+    "legacy_agent_config",
+    [
+        pytest.param(False, id="canonical-agent-config"),
+        pytest.param(True, id="legacy-agent-config"),
+    ],
+)
+def test_agency_reopens_legacy_tocks(tmp_path, monkeypatch, legacy_agent_config):
+    """Reopen an Agent from its saved default or legacy config, ignoring Agency
+    config changes.
+    """
+    caid = core.Signer().verfer.qb64  # simulate an edge Signify controller AID
+
+    fixture_path = os.path.join(SCRIPTS_DIR, "keri/cf/legacy-tocks.json")
+    # Give each run a private Agency template to change after Agent creation.
+    config_path = tmp_path / "keri/cf/legacy-tocks.json"
+    config_path.parent.mkdir(parents=True)
+    shutil.copyfile(fixture_path, config_path)
+
+    # The Agency reads the private template; the helper owns the Agent's separate
+    # <caid>.json under /usr/local/var/keri/cf (or ~/.keri/cf on fallback).
+    agencyConfig = agenting.readConfigFile(str(tmp_path), "legacy-tocks")
+    with closing(agencyConfig) as cf:
+        # The environment override affects runtime values, not the saved Agent file.
+        monkeypatch.setenv("KERIA_ESCROWER_TOCK", "0.75")
+        with openAgencyAndAgent(cf=cf, caid=caid) as (agency, agent):
+            assert agent.tocks["escrower"] == 0.75  # env var overrides default.
+            assert agent.hby.tocks["receiptor"] == 0.25  # Copied from Agency config.
+
+            # Persist the Agency's file values, not environment overrides.
+            configFileVals = {
+                "receiptor": 0.25,
+                "signify": {"initer": 0.0, "escrower": 1.0},
+            }
+            assert agent.hby.cf.get()["tocks"] == configFileVals
+
+            # Close resources and evict the cached Agent, keeping its files for reopen.
             agency.shut(agent)
             assert caid not in agency.agents
 
-            # This cache miss is the reopen: Agency.get constructs a new Agent
-            # from its persisted config and databases, rather than returning
-            # the previously cached instance or provisioning it again.
+            # Keep the canonical Agent config unless testing legacy flat tock keys.
+            # Both config file values use the same file path.
+            persisted_config_path = Path(agent.hby.cf.path)
+            if legacy_agent_config:
+                shutil.copyfile(fixture_path, persisted_config_path)
+            persisted_bytes = persisted_config_path.read_bytes()
+
+            # Change only the Agency template at config_path; the Agent file is untouched.
+            cf.put({"tocks": {"signify": {"escrower": 0.125}}})
+            monkeypatch.delenv("KERIA_ESCROWER_TOCK")  # Reopen using file values.
+            # This cache miss reloads the Agent's saved config, not the Agency template.
             agent = agency.get(caid)
-            assert agent.hby.cf.path == persisted_config_path
-            assert agent.hby.cf.get()["tocks"] == cf.get()["tocks"]
-            assert agent.tocks["escrower"] == 1.0
-            assert agent.hby.tocks["receiptor"] == 0.25
-        finally:
-            agency.shut(agent)
-            doist.exit()
-            for resource in (
-                agent.seeker,
-                agent.exnseeker,
-                agent.monitor.opr,
-                agent.notifier.noter,
-                agent.rep.mbx,
-                agent.rgy.reger,
-                agent.mgr.rb,
-                agent.hby,
-                agent.hby.cf,
+            assert agent.tocks["escrower"] == 1.0  # Saved value, not the override.
+            assert agent.hby.tocks["receiptor"] == 0.25  # must match config file
+            # Loading legacy settings must not silently migrate the file on disk.
+            assert persisted_config_path.read_bytes() == persisted_bytes
+
+
+def test_agency_reopens_config_with_database_base():
+    """
+    Creating and reopening an Agent use the same config outside its database base.
+    Tests that agency.create(caid) and agency.get(caid) use the same config file path.
+    """
+    caid = core.Signer().verfer.qb64  # Simulate Signify controller edge AID.
+    with configing.openCF(temp=True) as cf:
+        cf.put({"tocks": {"signify": {"escrower": 0.375}}})
+        with openAgencyAndAgent(cf=cf, caid=caid, base=f"config-path-{caid}") as (
+            agency,
+            agent,
+        ):
+            # Databases use the namespace, but create writes cf/<caid>.json without it.
+            assert agent.hby.base == agency.base
+            assert agent.hby.cf.base == ""
+            config_path = agent.hby.cf.path
+            agency.shut(agent)  # Evict the Agent so get must reopen its files.
+            assert caid not in agency.agents
+
+            agent = agency.get(caid)
+            # get must find the file written by create, not cf/<base>/<caid>.json.
+            assert agent.hby.cf.path == config_path
+            assert agent.tocks["escrower"] == 0.375
+
+
+def test_agent_tock_bindings_are_isolated(helpers):
+    """Construct two Agents with distinct per-worker tock cadences to catch miswired
+    settings or configuration shared between Agents. Checks constructor bindings
+    and parent tock cadence inheritance as well.
+    """
+    bindings = {
+        "initer": agenting.Initer,
+        "querier": agenting.Querier,
+        "escrower": agenting.Escrower,
+        "parser": agenting.ParserDoer,
+        "witnesser": agenting.Witnesser,
+        "delegator": agenting.Delegator,
+        "exchangeSender": agenting.ExchangeSender,
+        "granter": agenting.Granter,
+        "admitter": agenting.Admitter,
+        "groupRequester": agenting.GroupRequester,
+        "seeker": agenting.SeekerDoer,
+        "exchangecue": agenting.ExchangeCueDoer,
+        "submitter": agenting.Submitter,
+    }
+    # Distinct worker and Agent values expose crossed bindings or shared configuration.
+    first_worker_tocks = {key: (index + 1) / 10 for index, key in enumerate(bindings)}
+    second_worker_tocks = {key: value + 1 for key, value in first_worker_tocks.items()}
+    with configing.openCF(temp=True) as cf1, configing.openCF(temp=True) as cf2:
+        cf1.put({"tocks": {"signify": first_worker_tocks}})
+        cf2.put({"tocks": {"signify": second_worker_tocks}})
+        # Construct Agents directly with separate configs; Agency provisioning is not tested here.
+        with (
+            helpers.openKeria(cf=cf1) as (_, agent1, _, _),
+            helpers.openKeria(cf=cf2) as (_, agent2, _, _),
+        ):
+            for agent, expected_worker_tocks in (
+                (agent1, first_worker_tocks),
+                (agent2, second_worker_tocks),
             ):
-                resource.close(clear=True)
-            cf.close()
+                # Containers inherit their parent tock; worker overrides stay local.
+                assert agent.tock == agent.agency.tock
+                assert agent.swain.tock == agent.tock
+                for key, cls in bindings.items():
+                    doer = next(doer for doer in agent.doers if isinstance(doer, cls))
+                    assert doer.tock == expected_worker_tocks[key]
+                # Worker overrides replace defaults; other settings retain their defaults.
+                expected_tocks = scheduling.resolveTocks(environ={}).signify
+                expected_tocks.update(expected_worker_tocks)
+                assert agent.tocks == expected_tocks
 
 
 def test_load_tocks_config(helpers):
@@ -276,31 +392,14 @@ def test_load_tocks_config(helpers):
             "iurls": [
                 "http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller&tag=witness"
             ],
-            "tocks": {"initer": 0.0, "escrower": 1.0},
+            "tocks": {"signify": {"initer": 0.0, "escrower": 1.0}},
         }
 
-        assert agent.tocks == {"initer": 0.0, "escrower": 1.0}
-
-        escrower_doer = next(
-            (doer for doer in agent.doers if isinstance(doer, agenting.Escrower)), None
-        )
-        assert escrower_doer is not None
-        assert escrower_doer.tock == 1.0
-
-        initer_doer = next(
-            (doer for doer in agent.doers if isinstance(doer, agenting.Initer)), None
-        )
-        assert initer_doer is not None
-        assert initer_doer.tock == 0.0
-
-        querier_doer = next(
-            (doer for doer in agent.doers if isinstance(doer, agenting.Querier)), None
-        )
-        assert querier_doer is not None
-        assert querier_doer.tock == 0.0
-
-        with pytest.raises(TypeError):
-            agent.tocks["initer"] = 1.0  # agent.tocks is read-only
+        assert agent.tocks == {
+            **scheduling.resolveTocks(environ={}).signify,
+            "initer": 0.0,
+            "escrower": 1.0,
+        }
 
 
 def test_agency():
@@ -903,6 +1002,7 @@ def test_querier(helpers):
             agentHab=agent.agentHab,
             queries=decking.Deck(),
             kvy=agent.kvy,
+            tock=0.125,
         )
         doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
         deeds = doist.enter(doers=[qry])
@@ -910,34 +1010,37 @@ def test_querier(helpers):
         qry.queries.append(
             dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9", sn="1")
         )
-        qry.recur(1.0, deeds=deeds)
+        qry.recur(1.0, deeds=deeds)  # Pass 1: dispatch the sequence-number query.
 
         assert len(qry.doers) == 1
         seqNoDoer = qry.doers[0]
         assert isinstance(seqNoDoer, querying.SeqNoQuerier) is True
+        assert seqNoDoer.tock == qry.tock
         assert seqNoDoer.pre == "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
         assert seqNoDoer.sn == 1
 
         qry.doers.remove(seqNoDoer)
 
-        # Anchor not implemented yet
+        # Exercise anchor dispatch and cadence binding without waiting for resolution.
         qry.queries.append(
             dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9", anchor={})
         )
-        qry.recur(1.0, deeds=deeds)
+        qry.recur(1.0, deeds=deeds)  # Pass 2: dispatch the anchor query.
         assert len(qry.doers) == 1
         anchorDoer = qry.doers[0]
         assert isinstance(anchorDoer, querying.AnchorQuerier) is True
+        assert anchorDoer.tock == qry.tock
         assert anchorDoer.pre == "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
         assert anchorDoer.anchor == {}
         qry.doers.remove(anchorDoer)
 
         qry.queries.append(dict(pre="EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"))
-        qry.recur(1.0, deeds=deeds)
+        qry.recur(1.0, deeds=deeds)  # Pass 3: dispatch the prefix-only query.
 
         assert len(qry.doers) == 1
         qryDoer = qry.doers[0]
         assert isinstance(qryDoer, querying.QueryDoer) is True
+        assert qryDoer.tock == qry.tock
         assert qryDoer.pre == "EI7AkI40M11MS7lkTCb10JC9-nDt-tXwQh44OHAFlv_9"
 
 

@@ -23,6 +23,7 @@ from keri.app import forwarding, agenting, habbing, delegating
 from keri.core import coring, serdering
 from keri.db import dbing
 from keria.core import httping, longrunning
+from keria.app import scheduling
 
 DELEGATION_ROUTE = "/identifiers/{name}/delegation"
 
@@ -56,10 +57,16 @@ class Anchorer(doing.DoDoer):
         self.postman = forwarding.Poster(hby=hby)
         self.witq = agenting.WitnessInquisitor(hby=hby)
         self.witDoer = agenting.Receiptor(hby=self.hby)
+        self.escrowDoer = doing.doify(self.escrowDo, tock=hby.tocks["anchorerEscrow"])
         self.proxy = proxy
 
         super(Anchorer, self).__init__(
-            doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)],
+            doers=[
+                self.witq,
+                self.witDoer,
+                self.postman,
+                self.escrowDoer,
+            ],
             **kwa,
         )
 
@@ -111,7 +118,7 @@ class Anchorer(doing.DoDoer):
 
         return True
 
-    def escrowDo(self, tymth, tock=1.0, temp=False, **opts):
+    def escrowDo(self, tymth, tock=scheduling.DEFAULT_TOCK, temp=False, **opts):
         """Process escrows of group multisig identifiers waiting to be compeleted.
 
         Steps involve:
@@ -125,17 +132,16 @@ class Anchorer(doing.DoDoer):
         Parameters:
             tymth (function): injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value.  Default to 1.0 to slow down processing
+            tock (float): injected cadence from the Habery anchoring configuration
 
         """
         # enter context
         self.wind(tymth)
-        self.tock = tock
-        _ = yield self.tock
+        _ = yield tock
 
         while True:
             self.processEscrows()
-            yield 0.5
+            yield tock
 
     def processEscrows(self):
         self.processPartialWitnessEscrow()

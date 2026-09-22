@@ -9,6 +9,7 @@ Testing the Mark II Agent Anchorer
 import json
 import time
 import pytest
+from contextlib import closing
 
 from hio.base import doing
 from keri import kering
@@ -16,10 +17,38 @@ from keri.app import habbing
 from keri.app.delegating import DelegateRequestHandler
 from keri.core import coring, eventing, parsing
 
-from keria.app import aiding, delegating, notifying
+from keria.app import aiding, delegating, notifying, scheduling
 from keria.core import longrunning
 from keria.end import ending
 from keria.app import agenting
+
+
+@pytest.mark.parametrize(
+    "cadence",
+    [
+        pytest.param(0.0, id="next-cycle"),
+        pytest.param(0.125, id="positive-delay"),
+    ],
+)
+def test_anchorer_escrow_cadence(cadence):
+    """The doified escrow worker must use its configured cadence on initial and
+    recurring yields without changing the Anchorer container's cadence.
+    """
+    tocks = scheduling.resolveTocks({"anchorerEscrow": cadence}, environ={}).keri
+    with habbing.openHby(name="cadence", temp=True, tocks=tocks) as hby:
+        parent_tock = 0.25
+        anchorer = delegating.Anchorer(hby=hby, tock=parent_tock)
+        escrow = anchorer.escrowDoer
+        assert escrow in anchorer.doers
+        assert escrow.tock == cadence
+        dog = escrow(tymth=doing.Doist().tymen(), tock=escrow.tock)
+        with closing(dog):
+            # Step 1: bind the clock; yield before escrow work.
+            assert next(dog) == cadence
+            # Step 2: process escrows; yield the same cadence.
+            assert next(dog) == cadence
+            # The escrow override must not retime the container's other children.
+            assert anchorer.tock == parent_tock
 
 
 def test_sealer():
