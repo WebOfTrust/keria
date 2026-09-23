@@ -9,13 +9,14 @@ Testing credentialing endpoint in the Mark II Agent
 import json
 
 import falcon
+import pytest
 from falcon import testing
 from hio.base import doing
 from keri.app import habbing
 from keri.core import scheming, coring, parsing, serdering
 from keri.core.eventing import SealEvent
 from keri.core.signing import Salter
-from keri.kering import TraitCodex
+from keri.kering import KeriError, TraitCodex
 from keri.vc import proving
 from keri.vdr import eventing
 from keri.vdr.credentialing import Regery, Registrar
@@ -38,6 +39,92 @@ def test_load_ends(helpers):
         assert isinstance(end, credentialing.SchemaResourceEnd)
         (end, *_) = app._router.find("/identifiers/NAME/registries")
         assert isinstance(end, credentialing.RegistryCollectionEnd)
+        (end, *_) = app._router.find("/credentials/verify")
+        assert isinstance(end, credentialing.CredentialVerificationCollectionEnd)
+        (end, *_) = app._router.find("/verify")
+        assert isinstance(end, credentialing.VerificationCollectionEnd)
+
+
+def test_verify_end(helpers):
+    salt = b"0123456789abcdef"
+    with helpers.openKeria() as (agency, agent, app, client):
+        app.add_route("/identifiers", aiding.IdentifierCollectionEnd())
+        app.add_route("/verify", credentialing.VerificationCollectionEnd())
+
+        op = helpers.createAid(client, "issuer", salt)
+        issuerPre = op["response"]["i"]
+        assert issuerPre in agent.hby.kevers
+
+        # registry inception (vcp) -> registry operation
+        vcp = eventing.incept(issuerPre)
+        body = dict(serder=vcp.sad, atc="")
+        res = client.simulate_post("/verify", body=json.dumps(body).encode("utf-8"))
+        assert res.status_code == 202
+        rop = res.json
+        assert rop["name"] == f"registry.{vcp.pre}"
+        assert rop["metadata"]["pre"] == issuerPre
+        assert rop["metadata"]["anchor"] == dict(i=vcp.pre, s="0", d=vcp.pre)
+
+        # TEL issuance (iss) -> credential operation keyed on the credential SAID
+        iss = eventing.issue(
+            vcdig="EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao", regk=vcp.pre
+        )
+        body = dict(serder=iss.sad, atc="")
+        res = client.simulate_post("/verify", body=json.dumps(body).encode("utf-8"))
+        assert res.status_code == 202
+        iop = res.json
+        assert iop["name"] == f"credential.{iss.sad['i']}"
+        assert iop["metadata"]["ced"]["d"] == iss.sad["i"]
+
+        # ACDC -> credential operation
+        creder = serdering.SerderACDC(
+            sad=dict(
+                v="ACDC10JSON000000_",
+                d="",
+                i=issuerPre,
+                ri=vcp.pre,
+                s="EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao",
+                a={},
+            ),
+            makify=True,
+        )
+        body = dict(serder=creder.sad, atc="")
+        res = client.simulate_post("/verify", body=json.dumps(body).encode("utf-8"))
+        assert res.status_code == 202
+        cop = res.json
+        assert cop["name"] == f"credential.{creder.said}"
+        assert cop["metadata"]["ced"] == creder.sad
+
+        # unsupported ilk (icp) -> 400
+        icp = agent.hby.kevers[issuerPre].serder
+        body = dict(serder=icp.sad, atc="")
+        res = client.simulate_post("/verify", body=json.dumps(body).encode("utf-8"))
+        assert res.status_code == 400
+
+        # 'serder' that is not a valid Serder field map -> 400
+        # TypeError: valid JSON but not an object (number, string, array)
+        # KeriError: empty sad, missing/invalid "v" version string, bad SAID
+        tampered = dict(vcp.sad, d="E" + "A" * 43)
+        for value, etype in (
+            (123, TypeError),
+            ("v str", TypeError),
+            (["v"], TypeError),
+            ({}, KeriError),
+            ({"a": 1}, KeriError),
+            ({"v": "bogus"}, KeriError),
+            (tampered, KeriError),
+        ):
+            with pytest.raises(etype):
+                serdering.Serder(sad=value)
+            body = dict(serder=value, atc="")
+            res = client.simulate_post("/verify", body=json.dumps(body).encode("utf-8"))
+            assert res.status_code == 400
+
+        # missing required param -> 400
+        res = client.simulate_post(
+            "/verify", body=json.dumps(dict(atc="")).encode("utf-8")
+        )
+        assert res.status_code == 400
 
 
 def test_schema_ends(helpers):
