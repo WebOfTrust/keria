@@ -208,10 +208,8 @@ class SignedHeaderAuthenticator(Authenticator):
             request (ModifiableRequest): Falcon request object
 
         """
-        headers = request.headers
-
-        siginput = self.getRequiredHeader(request, "SIGNATURE-INPUT")
-        signature = self.getRequiredHeader(request, "SIGNATURE")
+        self.getRequiredHeader(request, "SIGNATURE-INPUT")
+        self.getRequiredHeader(request, "SIGNATURE")
 
         resource = self.resource(request)
         agent = self.agency.get(resource)
@@ -219,57 +217,20 @@ class SignedHeaderAuthenticator(Authenticator):
         if agent is None:
             raise kering.AuthNError("Unknown controller")
 
-        if resource not in agent.agentHab.kevers:
-            raise kering.AuthNError(
-                "Unknown or invalid controller (controller KEL not resolved)"
-            )
+        # The signer is the first current key of Signify-Resource's KEL,
+        # with no derivation-code or single-signer rules (KERI profile
+        # section 8); a KEL the agent has not resolved is refused with
+        # "Unknown or invalid controller (controller KEL not resolved)".
+        verfer = httpsigning.keverResolver(agent.agentHab.kevers).legacy(resource)
 
-        inputs = ending.desiginput(siginput.encode("utf-8"))
-        inputs = [i for i in inputs if i.name == "signify"]
-
-        if not inputs:
-            raise kering.AuthNError("Missing signify inputs in signature")
-
-        for inputage in inputs:
-            items = []
-            for field in inputage.fields:
-                if field.startswith("@"):
-                    if field == "@method":
-                        items.append(f'"{field}": {request.method}')
-                    elif field == "@path":
-                        items.append(f'"{field}": {request.path}')
-
-                else:
-                    key = field.upper()
-                    field = field.lower()
-                    if key not in headers:
-                        continue
-
-                    value = ending.normalize(headers[key])
-                    items.append(f'"{field}": {value}')
-
-            values = [f"({' '.join(inputage.fields)})", f"created={inputage.created}"]
-            if inputage.expires is not None:
-                values.append(f"expires={inputage.expires}")
-            if inputage.nonce is not None:
-                values.append(f"nonce={inputage.nonce}")
-            if inputage.keyid is not None:
-                values.append(f"keyid={inputage.keyid}")
-            if inputage.context is not None:
-                values.append(f"context={inputage.context}")
-            if inputage.alg is not None:
-                values.append(f"alg={inputage.alg}")
-
-            params = ";".join(values)
-
-            items.append(f'"@signature-params: {params}"')
-            ser = "\n".join(items).encode("utf-8")
-
-            ckever = agent.agentHab.kevers[resource]
-            signages = ending.designature(signature)
-            cig = signages[0].markers[inputage.name]
-            if not ckever.verfers[0].verify(sig=cig.raw, ser=ser):
-                raise kering.AuthNError(f"Signature for {inputage} invalid")
+        # keripy rebuilds the legacy base and verifies it exactly as KERIA
+        # always has, with the same refusal messages.
+        httpsigning.verifyLegacy(
+            method=request.method,
+            path=request.path,
+            headers=request.headers,
+            verfer=verfer,
+        )
 
         request.path = unquote(request.path)
         request.context.mode = AuthMode.SIGNED_HEADERS
