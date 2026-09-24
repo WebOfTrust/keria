@@ -25,6 +25,7 @@ from hio.core import http
 from hio.help import decking
 
 from keri import core, kering
+from keri.end import httpsigning
 from keri.app.notifying import Notifier
 from keri.app.storing import Mailboxer
 
@@ -154,6 +155,18 @@ class KERIAServerConfig:
     iurls: List[str] = field(default_factory=list)
     # Data OOBI URLs resolved at startup of each Agent. For things like ACDC schemas, ACDCs (credentials), or other CESR streams.
     durls: List[str] = field(default_factory=list)
+
+    # Request signatures (RFC 9421, KERI profile)
+    # Accept requests signed in the legacy Signify scheme alongside canonical RFC 9421 ones.
+    # Turn off once every client signs in canonical mode. Default is True. KERIA_ACCEPT_LEGACY also sets this
+    acceptLegacy: bool = True
+    # Oldest a canonical signature's created time may be, in seconds. Default is 300. KERIA_SIGNATURE_MAX_AGE also sets this
+    signatureMaxAge: int = 300
+    # Clock skew allowed either side of now for canonical signatures, in seconds. Default is 60. KERIA_SIGNATURE_SKEW also sets this
+    signatureSkew: int = 60
+    # Authorities (host[:port], default port omitted) this server answers to. When set, canonical requests must cover
+    # @authority and name one of them. Default is empty, not required. KERIA_SIGNATURE_AUTHORITIES (';' separated) also sets this
+    signatureAuthorities: List[str] = field(default_factory=list)
 
     # Experimental configuration
     # Experimental password for boot endpoint. Enables HTTP Basic Authentication for the boot endpoint. Only meant to be used for testing purposes.
@@ -990,7 +1003,16 @@ def createAdminServerDoer(config: KERIAServerConfig, agency: Agency):
     Returns the Doer and the Falcon app so the HTTP app can use it for OpenAPI docs.
     """
     # Create Authenticater for verifying signatures on all requests
-    authn = SignedHeaderAuthenticator(agency=agency)
+    authorities = frozenset(a.lower() for a in (config.signatureAuthorities or []))
+    policy = httpsigning.Policy(
+        requireAuthority=bool(authorities),
+        authorities=authorities,
+        maxAge=config.signatureMaxAge,
+        skew=config.signatureSkew,
+    )
+    authn = SignedHeaderAuthenticator(
+        agency=agency, acceptLegacy=config.acceptLegacy, policy=policy
+    )
 
     adminApp = falconApp(config.logRequests, request_type=authing.ModifiableRequest)
     if config.cors:

@@ -6,6 +6,7 @@ keria.core.authing module
 """
 
 import pysodium
+import io
 import json
 import sys
 from urllib.parse import urlsplit
@@ -17,8 +18,10 @@ import falcon
 from hio.help import Hict
 from keri import kering
 from keri.core import coring, MtrDex
-from keri.end import ending
+from keri.end import ending, httpsigning
 from keri.help import helping
+
+from keria.core.httping import rawPath
 
 from typing import TYPE_CHECKING, Dict, Any
 
@@ -37,6 +40,43 @@ CORS_HEADERS = [
 class AuthMode(Enum):
     SIGNED_HEADERS = ("SIGNED_HEADERS",)
     ESSR = "ESSR"
+    CANONICAL = "CANONICAL"  # RFC 9421 as written, KERI profile
+
+
+DefaultPorts = {"http": "80", "https": "443"}
+
+
+def requestAuthority(request: falcon.Request):
+    """
+    Returns the authority a request was sent to, from its Host field,
+    lowercased and without the scheme's default port (RFC 9421 section
+    2.2.3), or None when there is no Host field.
+    """
+    host = request.get_header("Host")
+    if not host:
+        return None
+    host = host.strip().lower()
+    port = DefaultPorts.get(request.scheme)
+    if port is not None and host.endswith(f":{port}"):
+        host = host[: -(len(port) + 1)]
+    return host
+
+
+def readBody(request: falcon.Request):
+    """
+    Returns the request body as bytes and resets the request so that the
+    resource can read it again. The bytes are cached on request.context, so
+    a second call, such as the re-verification in AgentResourceEnd.on_put,
+    sees the same body even after the resource has consumed the stream.
+    """
+    body = getattr(request.context, "rawBody", None)
+    if body is not None:
+        return body
+    body = request.bounded_stream.read()
+    request.stream = request.env["wsgi.input"] = io.BytesIO(body)
+    request._bounded_stream = None
+    request.context.rawBody = body
+    return body
 
 
 class ModifiableRequest(falcon.Request):
@@ -80,19 +120,131 @@ class Authenticator(ABC):
 class SignedHeaderAuthenticator(Authenticator):
     DefaultFields = ["Signify-Resource", "@method", "@path", "Signify-Timestamp"]
 
-    def __init__(self, agency):
+    def __init__(self, agency, acceptLegacy=True, policy=None, clock=None):
         """Create agent authenticator based on RFC-9421 signed header message signatures
+
+        Two modes are verified. Canonical mode is RFC 9421 as written, per the
+        KERI profile: the signature covers the method, path and query, and the
+        body through Content-Digest, and responses are signed over their
+        status and body and bound to the request. Legacy mode is the scheme
+        Signify has used since KERIA's first release, verified exactly as
+        before. The mode is chosen from the form of the Signature header, and
+        a response is signed in the mode its request used.
 
         Parameters:
             agency(Agency): KERIA agency for handling creation and management of Signify agents
+            acceptLegacy (bool): False refuses legacy-mode requests
+            policy (httpsigning.Policy): canonical-mode coverage and freshness
+                policy; default httpsigning.DefaultPolicy
+            clock (callable): returns now in integer seconds since the epoch,
+                for freshness checks; None reads the system clock
 
         Returns:
               SignedHeaderAuthenticator
 
         """
         super().__init__(agency)
+        self.acceptLegacy = acceptLegacy
+        self.policy = policy if policy is not None else httpsigning.DefaultPolicy
+        self.clock = clock
+
+    @staticmethod
+    def signatureMode(request: falcon.Request):
+        """Returns the mode of the request's Signature header, httpsigning.Canonical
+        or httpsigning.Legacy, or None when it is absent or neither form."""
+        signature = request.get_header("Signature")
+        if signature is None:
+            return None
+        try:
+            return httpsigning.detectMode(signature)
+        except httpsigning.MalformedSignature:
+            return None
+
+    @staticmethod
+    def isCanonical(request: falcon.Request):
+        """True when the request's Signature header is in canonical form."""
+        return SignedHeaderAuthenticator.signatureMode(request) == httpsigning.Canonical
 
     def inbound(self, request: ModifiableRequest):
+        """Validate that the request is correctly signed, in canonical or legacy mode
+
+        Parameters:
+            request (ModifiableRequest): Falcon request object
+
+        """
+        # Only a request whose Signature header parses as legacy takes the
+        # legacy path. Everything else, including an absent or unparsable
+        # header, goes to the canonical verifier, which names the refusal by
+        # its profile code and, with legacy mode off, refuses a legacy
+        # request as malformed-signature.
+        if self.acceptLegacy and self.signatureMode(request) == httpsigning.Legacy:
+            return self.inboundLegacy(request)
+
+        return self.inboundCanonical(request)
+
+    def inboundCanonical(self, request: ModifiableRequest):
+        """Verify a canonical-mode (RFC 9421) request and its body
+
+        The agent is found from the keyid the request claims, then the
+        signature is verified against the controller's key state as that
+        agent holds it, then the body is read and checked against the
+        covered Content-Digest. Any refusal raises an httpsigning.HttpSigError,
+        a kering.AuthNError whose code is the KERI profile's section 9 code.
+
+        Parameters:
+            request (ModifiableRequest): Falcon request object
+
+        """
+        keyid = httpsigning.signatureKeyid(request.headers)
+        agent = self.agency.get(keyid) if keyid else None
+        if agent is None:
+            resolver = self.unknownResolver
+        else:
+            resolver = httpsigning.keverResolver(agent.agentHab.kevers)
+
+        path = rawPath(request)
+        query = request.query_string
+        authority = requestAuthority(request)
+        now = self.clock() if self.clock is not None else None
+
+        verified = httpsigning.verifyRequest(
+            method=request.method,
+            path=path,
+            query=query,
+            authority=authority,
+            headers=request.headers,
+            resolver=resolver,
+            policy=self.policy,
+            now=now,
+            acceptLegacy=self.acceptLegacy,
+        )
+
+        body = readBody(request)
+        httpsigning.checkBody(verified, request.headers, body)
+
+        request.context.requestage = httpsigning.Requestage(
+            method=request.method,
+            authority=authority,
+            path=path,
+            query=query,
+            headers=dict(request.headers),
+            body=body,
+        )
+        request.context.verified = verified
+        request.path = unquote(request.path)
+        request.context.mode = AuthMode.CANONICAL
+        request.context.agent = agent
+
+    @staticmethod
+    def unknownResolver(keyid):
+        """Resolver for a keyid no agent here serves. A keyid that is not an
+        AID is still reported as malformed-key; any other is unknown-key,
+        including a non-transferable one, since without an agent there is no
+        one to act for it."""
+        httpsigning.keverResolver({})(keyid)
+        raise httpsigning.UnknownKey(f"Unknown controller {keyid}.")
+
+    def inboundLegacy(self, request: ModifiableRequest):
         """Validate that the request is correctly signed based on our version of RFC-9421
 
         Parameters:
@@ -167,6 +319,52 @@ class SignedHeaderAuthenticator(Authenticator):
         request.context.agent = agent
 
     def outbound(self, request: ModifiableRequest, response: falcon.Response):
+        """Sign the response in the mode its request used
+
+        Parameters:
+            request (ModifiableRequest): Falcon request object
+            response (Response): Falcon response object
+
+        """
+        if getattr(request.context, "mode", None) == AuthMode.CANONICAL:
+            return self.outboundCanonical(request, response)
+        return self.outboundLegacy(request, response)
+
+    @staticmethod
+    def outboundCanonical(request: ModifiableRequest, response: falcon.Response):
+        """Sign a response to a canonical-mode request (KERI profile section 3)
+
+        The signature covers @status, the response body through
+        Content-Digest, and the request's method, path, query and
+        Content-Digest, each marked req. A streamed body is buffered first so
+        that it can be digested; KERIA's only streamed response is a contact
+        image capped at 1 MB.
+
+        Parameters:
+            request (ModifiableRequest): Falcon request object
+            response (Response): Falcon response object
+
+        """
+        if response.stream is not None:
+            stream = response.stream
+            data = stream.read()
+            if hasattr(stream, "close"):
+                stream.close()
+            response.stream = None
+            response.data = data
+
+        body = response.render_body() or b""
+        agent = request.context.agent
+        added = httpsigning.signResponse(
+            status=response.status_code,
+            request=request.context.requestage,
+            body=body,
+            hab=agent.agentHab,
+        )
+        for key, val in added.items():
+            response.set_header(key, val)
+
+    def outboundLegacy(self, request: ModifiableRequest, response: falcon.Response):
         """Generate and add Signature Input and Signature fields to headers of the response
 
         Parameters:
@@ -444,6 +642,11 @@ class AuthenticationMiddleware:
         """
         for path in self.allowed:
             if req.path.startswith(path):
+                # An unprotected resource may still verify a canonical
+                # signature itself after reading the body (AgentResourceEnd.on_put),
+                # so keep a copy of the body for it.
+                if SignedHeaderAuthenticator.isCanonical(req):
+                    readBody(req)
                 return
 
         authenticator = self.essrAuthn if req.path == "/" else self.authn

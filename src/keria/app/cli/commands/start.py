@@ -155,6 +155,11 @@ def launch(args):
             logRequests=args.logrequests if args.logrequests else False,
             cors=os.getenv("KERI_AGENT_CORS", "false").lower() in ("true", "1"),
             releaseTimeout=int(os.getenv("KERIA_RELEASER_TIMEOUT", "86400")),
+            acceptLegacy=os.getenv("KERIA_ACCEPT_LEGACY", "true").lower()
+            in ("true", "1"),
+            signatureMaxAge=int(os.getenv("KERIA_SIGNATURE_MAX_AGE", "300")),
+            signatureSkew=int(os.getenv("KERIA_SIGNATURE_SKEW", "60")),
+            signatureAuthorities=getListVariable("KERIA_SIGNATURE_AUTHORITIES") or [],
             curls=getListVariable("KERIA_CURLS"),
             iurls=getListVariable("KERIA_IURLS"),
             durls=getListVariable("KERIA_DURLS"),
