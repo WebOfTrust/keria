@@ -155,8 +155,7 @@ def launch(args):
             logRequests=args.logrequests if args.logrequests else False,
             cors=os.getenv("KERI_AGENT_CORS", "false").lower() in ("true", "1"),
             releaseTimeout=int(os.getenv("KERIA_RELEASER_TIMEOUT", "86400")),
-            acceptLegacy=os.getenv("KERIA_ACCEPT_LEGACY", "true").lower()
-            in ("true", "1"),
+            acceptLegacy=getBoolVariable("KERIA_ACCEPT_LEGACY", default=True),
             signatureMaxAge=int(os.getenv("KERIA_SIGNATURE_MAX_AGE", "300")),
             signatureSkew=int(os.getenv("KERIA_SIGNATURE_SKEW", "60")),
             signatureAuthorities=getListVariable("KERIA_SIGNATURE_AUTHORITIES") or [],
@@ -173,3 +172,29 @@ def launch(args):
 def getListVariable(name):
     value = os.getenv(name)
     return value.split(";") if value else None
+
+
+TrueValues = ("true", "1", "yes", "on")
+FalseValues = ("false", "0", "no", "off")
+
+
+def getBoolVariable(name, default):
+    """
+    Returns the boolean environment variable name, or default when unset.
+
+    Accepts true, 1, yes or on, and false, 0, no or off, in any case and
+    with surrounding whitespace. Anything else is a ValueError, so that a
+    typo stops KERIA at startup rather than silently choosing a value.
+    """
+    value = os.getenv(name)
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    if normalized in TrueValues:
+        return True
+    if normalized in FalseValues:
+        return False
+    raise ValueError(
+        f"{name}={value!r} is not a boolean; use one of "
+        f"{', '.join(TrueValues)} or {', '.join(FalseValues)}."
+    )
