@@ -61,3 +61,23 @@ def test_accept_legacy_refuses_anything_else(launched, value):
     and names the variable, rather than silently turning legacy mode off."""
     with pytest.raises(ValueError, match="KERIA_ACCEPT_LEGACY"):
         launched(KERIA_ACCEPT_LEGACY=value)
+
+
+def test_signature_authorities_stripped(launched):
+    """Entries are stripped and empty ones dropped, so a space after a ';'
+    or a trailing ';' does not produce an authority no request can match."""
+    config = launched(
+        KERIA_SIGNATURE_AUTHORITIES=" keria.example.com ; ;127.0.0.1:3901; "
+    )
+    assert config.signatureAuthorities == ["keria.example.com", "127.0.0.1:3901"]
+    assert config.signaturePolicy().authorities == frozenset(
+        {"keria.example.com", "127.0.0.1:3901"}
+    )
+
+
+@pytest.mark.parametrize("value", [None, "", " ; ; "])
+def test_signature_authorities_none(launched, value):
+    env = {} if value is None else dict(KERIA_SIGNATURE_AUTHORITIES=value)
+    config = launched(**env)
+    assert config.signatureAuthorities == []
+    assert config.signaturePolicy().requireAuthority is False
