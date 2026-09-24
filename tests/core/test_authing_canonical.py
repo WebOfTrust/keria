@@ -293,9 +293,9 @@ def test_vector_legacy():
 
 
 def test_raw_uri_server_environ():
-    """RawUriServer passes the request target through as RAW_URI, so @path
+    """KERIA's server passes the request target through as RAW_URI, so @path
     keeps the client's encoding where hio re-encodes PATH_INFO (profile O1)."""
-    server = httping.RawUriServer(port=0, app=falcon.App())
+    server = httping.createHttpServer(0, falcon.App())
     plain = httping.http.Server(port=0, app=falcon.App())
     vectors = loadVectors("requests")
     agency, _ = vectorAgency(vectors)
