@@ -1,6 +1,6 @@
 # KERI profile RFC 9421 vectors
 
-These five JSON files are copied verbatim from fiki, `vectors/keri/`, at commit `34f37a0dd953976a64f914bb22f6d68fd4d1f393`, `keri_vectors_format` 2, which targets the profile's draft 6. fiki is an RFC 9421 implementation independent of keripy and KERIA and generates them itself (`vectors/keri/generate.py` there). keripy and signify-ts carry identical copies.
+These five JSON files are copied verbatim from fiki, `vectors/keri/`, at commit `c6ec3b5c921c16ba8f9d818356de8c12b0be2f8d` (fiki main, the merge of bakobo/fiki#4), `keri_vectors_format` 2, which targets [version 1 of the KERI profile](https://github.com/bakobo/fiki/blob/c6ec3b5c921c16ba8f9d818356de8c12b0be2f8d/docs/keri-profile.md). They differ from the earlier copy at fiki `34f37a0` only in header text (the profile citation, and the wording of `policy.body_rule` and `keys_rule`); every case is unchanged. fiki is an RFC 9421 implementation independent of keripy and KERIA and generates them itself (`vectors/keri/generate.py` there). keripy and signify-ts carry identical copies.
 
 Do not edit them here. A case that disagrees with KERIA is resolved against the profile and, if the vector is wrong, fixed at the source and copied again.
 
