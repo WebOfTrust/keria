@@ -421,7 +421,6 @@ def keria(mockHelpingNowUTC):
         yield SimpleNamespace(
             controller=controller, agent=agent, agency=agency, app=app
         )
-        agency.shut(agent)
 
 
 def signed(controller, method, path, query="", body=None, created=NOW, **kwa):
