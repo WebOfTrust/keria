@@ -7,6 +7,7 @@ keria.core.httping module
 
 import io
 import logging
+from urllib.parse import urlsplit
 
 import falcon
 from falcon.http_status import HTTPStatus
@@ -127,6 +128,42 @@ def falconApp(logRequests=False, request_type=falcon.Request):
     return falcon.App(middleware=middlewares, request_type=request_type)
 
 
+class RawUriServer(http.Server):
+    """
+    hio WSGI server that also exposes the request target as sent.
+
+    hio percent-decodes the request path and re-encodes it with quote() to
+    build PATH_INFO, so the application never sees the client's bytes. An RFC
+    9421 verifier needs them for @path (RFC 9421 section 2.2.6), so this
+    server adds the raw request target to the environ as RAW_URI, the name
+    gunicorn uses.
+    """
+
+    def buildEnviron(self, requestant):
+        environ = super().buildEnviron(requestant)
+        environ["RAW_URI"] = requestant.url
+        return environ
+
+
+def rawPath(req):
+    """
+    Returns the path of the request target as the client sent it, percent
+    encoding included, from RAW_URI when the server provides it, and
+    otherwise req.path. An empty path is "/".
+
+    Parameters:
+        req (falcon.Request): request whose environ may carry RAW_URI
+    """
+    raw = req.env.get("RAW_URI")
+    if raw is None:
+        return req.path
+    if raw.startswith("/"):  # origin-form, the usual case
+        path = raw.split("?", 1)[0].split("#", 1)[0]
+    else:  # absolute-form
+        path = urlsplit(raw).path
+    return path or "/"
+
+
 def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):
     """
     Create an HTTP or HTTPS server depending on whether TLS key material is present
@@ -138,7 +175,7 @@ def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):
         certpath (string)  : the file path to the TLS signed certificate (public key)
         cafilepath (string): the file path to the TLS CA certificate chain file
     Returns:
-        hio.core.http.Server
+        RawUriServer: an hio.core.http.Server
     """
     if keypath is not None and certpath is not None and cafilepath is not None:
         servant = tcp.ServerTls(
@@ -148,7 +185,7 @@ def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):
             cafilepath=cafilepath,
             port=port,
         )
-        server = http.Server(port=port, app=app, servant=servant)
+        server = RawUriServer(port=port, app=app, servant=servant)
     else:
-        server = http.Server(port=port, app=app)
+        server = RawUriServer(port=port, app=app)
     return server
