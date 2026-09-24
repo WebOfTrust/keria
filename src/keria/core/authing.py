@@ -43,25 +43,6 @@ class AuthMode(Enum):
     CANONICAL = "CANONICAL"  # RFC 9421 as written, KERI profile
 
 
-DefaultPorts = {"http": "80", "https": "443"}
-
-
-def requestAuthority(request: falcon.Request):
-    """
-    Returns the authority a request was sent to, from its Host field,
-    lowercased and without the scheme's default port (RFC 9421 section
-    2.2.3), or None when there is no Host field.
-    """
-    host = request.get_header("Host")
-    if not host:
-        return None
-    host = host.strip().lower()
-    port = DefaultPorts.get(request.scheme)
-    if port is not None and host.endswith(f":{port}"):
-        host = host[: -(len(port) + 1)]
-    return host
-
-
 def readBody(request: falcon.Request):
     """
     Returns the request body as bytes and resets the request so that the
@@ -149,21 +130,9 @@ class SignedHeaderAuthenticator(Authenticator):
         self.clock = clock
 
     @staticmethod
-    def signatureMode(request: falcon.Request):
-        """Returns the mode of the request's Signature header, httpsigning.Canonical
-        or httpsigning.Legacy, or None when it is absent or neither form."""
-        signature = request.get_header("Signature")
-        if signature is None:
-            return None
-        try:
-            return httpsigning.detectMode(signature)
-        except httpsigning.MalformedSignature:
-            return None
-
-    @staticmethod
     def isCanonical(request: falcon.Request):
         """True when the request's Signature header is in canonical form."""
-        return SignedHeaderAuthenticator.signatureMode(request) == httpsigning.Canonical
+        return httpsigning.peekMode(request.headers) == httpsigning.Canonical
 
     def inbound(self, request: ModifiableRequest):
         """Validate that the request is correctly signed, in canonical or legacy mode
@@ -177,7 +146,10 @@ class SignedHeaderAuthenticator(Authenticator):
         # header, goes to the canonical verifier, which names the refusal by
         # its profile code and, with legacy mode off, refuses a legacy
         # request as malformed-signature.
-        if self.acceptLegacy and self.signatureMode(request) == httpsigning.Legacy:
+        if (
+            self.acceptLegacy
+            and httpsigning.peekMode(request.headers) == httpsigning.Legacy
+        ):
             return self.inboundLegacy(request)
 
         return self.inboundCanonical(request)
@@ -186,10 +158,14 @@ class SignedHeaderAuthenticator(Authenticator):
         """Verify a canonical-mode (RFC 9421) request and its body
 
         The agent is found from the keyid the request claims, then the
-        signature is verified against the controller's key state as that
-        agent holds it, then the body is read and checked against the
-        covered Content-Digest. Any refusal raises an httpsigning.HttpSigError,
-        a kering.AuthNError whose code is the KERI profile's section 9 code.
+        signature is verified on the headers alone against the controller's
+        key state as that agent holds it, before the body is read. Only then
+        is the body read and checked against the covered Content-Digest. Any
+        refusal raises an httpsigning.HttpSigError, a kering.AuthNError whose
+        code is the KERI profile's section 9 code.
+
+        On success request.context.verified is a completed verification
+        (bodyOwed False) whose request field is what the response is bound to.
 
         Parameters:
             request (ModifiableRequest): Falcon request object
@@ -197,52 +173,33 @@ class SignedHeaderAuthenticator(Authenticator):
         """
         keyid = httpsigning.signatureKeyid(request.headers)
         agent = self.agency.get(keyid) if keyid else None
-        if agent is None:
-            resolver = self.unknownResolver
-        else:
-            resolver = httpsigning.keverResolver(agent.agentHab.kevers)
-
-        path = rawPath(request)
-        query = request.query_string
-        authority = requestAuthority(request)
-        now = self.clock() if self.clock is not None else None
+        # With no agent for the keyid there is no key state to resolve it in;
+        # resolver None refuses a non-AID keyid as malformed-key and any
+        # other as unknown-key.
+        resolver = (
+            httpsigning.keverResolver(agent.agentHab.kevers)
+            if agent is not None
+            else None
+        )
 
         verified = httpsigning.verifyRequest(
             method=request.method,
-            path=path,
-            query=query,
-            authority=authority,
+            path=rawPath(request),
+            query=request.query_string,
             headers=request.headers,
+            body=httpsigning.Deferred,
             resolver=resolver,
             policy=self.policy,
-            now=now,
+            now=self.clock() if self.clock is not None else None,
             acceptLegacy=self.acceptLegacy,
         )
 
-        body = readBody(request)
-        httpsigning.checkBody(verified, request.headers, body)
+        verified = httpsigning.checkBody(verified, request.headers, readBody(request))
 
-        request.context.requestage = httpsigning.Requestage(
-            method=request.method,
-            authority=authority,
-            path=path,
-            query=query,
-            headers=dict(request.headers),
-            body=body,
-        )
         request.context.verified = verified
         request.path = unquote(request.path)
         request.context.mode = AuthMode.CANONICAL
         request.context.agent = agent
-
-    @staticmethod
-    def unknownResolver(keyid):
-        """Resolver for a keyid no agent here serves. A keyid that is not an
-        AID is still reported as malformed-key; any other is unknown-key,
-        including a non-transferable one, since without an agent there is no
-        one to act for it."""
-        httpsigning.keverResolver({})(keyid)
-        raise httpsigning.UnknownKey(f"Unknown controller {keyid}.")
 
     def inboundLegacy(self, request: ModifiableRequest):
         """Validate that the request is correctly signed based on our version of RFC-9421
@@ -357,7 +314,7 @@ class SignedHeaderAuthenticator(Authenticator):
         agent = request.context.agent
         added = httpsigning.signResponse(
             status=response.status_code,
-            request=request.context.requestage,
+            request=request.context.verified.request,
             body=body,
             hab=agent.agentHab,
         )
@@ -653,15 +610,28 @@ class AuthenticationMiddleware:
 
         try:
             authenticator.inbound(req)
-            return
+            if not self.bodyOwed(req):
+                return
         except (kering.AuthNError, ValueError, UnicodeDecodeError):
             pass
+
+        # A refused request is not signed in response
+        if hasattr(req.context, "agent"):
+            del req.context.agent
 
         rep.complete = (
             True  # This short-circuits Falcon, skipping all further processing
         )
         rep.status = falcon.HTTP_401
         return
+
+    @staticmethod
+    def bodyOwed(req: ModifiableRequest):
+        """True when the request's verification is not complete because its
+        body check is still owed (KERI profile section 5). Such a request must
+        not reach a resource."""
+        verified = getattr(req.context, "verified", None)
+        return verified is not None and verified.bodyOwed
 
     def process_response(
         self,

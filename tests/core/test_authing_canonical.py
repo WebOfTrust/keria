@@ -205,7 +205,7 @@ def test_vector_responses():
         params = inner.params
         added = httpsigning.signResponse(
             status=response["status"],
-            request=req.context.requestage,
+            request=req.context.verified.request,
             body=body,
             hab=agent.agentHab,
             covered=case["expected"]["covered"],
@@ -342,24 +342,6 @@ def test_raw_path():
     assert httping.rawPath(req(RAW_URI="https://h.example/%7Eb?q")) == "/%7Eb"
     assert httping.rawPath(req(RAW_URI="https://h.example")) == "/"
     assert httping.rawPath(req(RAW_URI="//double/slash")) == "//double/slash"
-
-
-def test_request_authority():
-    def req(host, scheme="http"):
-        return falcon.Request(
-            testing.create_environ(scheme=scheme, headers={"Host": host})
-        )
-
-    assert authing.requestAuthority(req("KERIA.example.com:80")) == "keria.example.com"
-    assert (
-        authing.requestAuthority(req("keria.example.com:443", "https"))
-        == "keria.example.com"
-    )
-    assert (
-        authing.requestAuthority(req("keria.example.com:443"))
-        == "keria.example.com:443"
-    )
-    assert authing.requestAuthority(req("127.0.0.1:3901")) == "127.0.0.1:3901"
 
 
 # Round trip through the falcon middleware with a real agent
@@ -576,10 +558,10 @@ def test_canonical_refusals(keria):
 
 def test_canonical_freshness_policy(keria):
     """max_age and skew come from configuration."""
-    client = keria.app(policy=httpsigning.Policy(maxAge=10, skew=0))
-    headers = signed(keria.controller, "GET", "/echo", created=NOW - 10)
-    assert client.simulate_get("/echo", headers=headers).status_code == 200
+    client = keria.app(policy=httpsigning.Policy(maxAge=10, skew=1))
     headers = signed(keria.controller, "GET", "/echo", created=NOW - 11)
+    assert client.simulate_get("/echo", headers=headers).status_code == 200
+    headers = signed(keria.controller, "GET", "/echo", created=NOW - 12)
     assert client.simulate_get("/echo", headers=headers).status_code == 401
 
 
@@ -733,3 +715,70 @@ def test_server_config_defaults():
     assert config.signatureMaxAge == 300
     assert config.signatureSkew == 60
     assert config.signatureAuthorities == []
+
+
+def test_middleware_refuses_an_owed_body(keria):
+    """A verification whose body check is still owed never reaches a
+    resource (profile section 5), and its refusal is not signed."""
+
+    class Deferring(authing.SignedHeaderAuthenticator):
+        def inboundCanonical(self, request):
+            # verify on the headers and stop there, as a careless
+            # authenticator might
+            request.context.verified = httpsigning.verifyRequest(
+                method=request.method,
+                path=httping.rawPath(request),
+                query=request.query_string,
+                headers=request.headers,
+                body=httpsigning.Deferred,
+                resolver=httpsigning.keverResolver(keria.agent.agentHab.kevers),
+                now=NOW,
+            )
+            request.context.mode = authing.AuthMode.CANONICAL
+            request.context.agent = keria.agent
+
+    reached = []
+
+    class Recording:
+        def on_post(self, req, rep):
+            reached.append(req)
+
+    authn = Deferring(agency=keria.agency, clock=lambda: NOW)
+    app = falcon.App(request_type=authing.ModifiableRequest)
+    app.add_middleware(
+        authing.AuthenticationMiddleware(agency=keria.agency, authn=authn)
+    )
+    app.add_route("/echo", Recording())
+    client = testing.TestClient(app)
+
+    body = json.dumps(dict(name="alice")).encode("utf-8")
+    headers = signed(keria.controller, "POST", "/echo", body=body)
+    result = client.simulate_post("/echo", headers=headers, body=body)
+    assert result.status_code == 401
+    assert "signature" not in result.headers
+    assert reached == []
+
+    # KERIA's own authenticator completes the check before returning
+    result = keria.app().simulate_post("/echo", headers=headers, body=body)
+    assert result.status_code == 200
+
+
+def test_canonical_authority_from_host_drops_default_port(keria):
+    """@authority is taken from Host with :80 or :443 removed whatever the
+    scheme, so a proxy's explicit default port does not break a signature."""
+    policy = httpsigning.Policy(
+        requireAuthority=True, authorities=frozenset({"falconframework.org"})
+    )
+    client = keria.app(policy=policy)
+    for host in ("falconframework.org:443", "FalconFramework.org:80"):
+        headers = {"Host": host}
+        headers.update(
+            httpsigning.signRequest(
+                method="GET",
+                path="/echo",
+                authority="falconframework.org",
+                hab=keria.controller,
+                created=NOW,
+            )
+        )
+        assert client.simulate_get("/echo", headers=headers).status_code == 200, host
