@@ -20,7 +20,7 @@ from hio.base import doing
 from hio.help import Hict
 from keri import core, kering
 from keri.app import habbing
-from keri.core import eventing, parsing, MtrDex
+from keri.core import eventing, parsing
 from keri.end import httpsigning
 
 from keria.app import agenting
@@ -48,8 +48,13 @@ def stubKever(verfer):
     return SimpleNamespace(verfers=[verfer], tholder=core.Tholder(sith="1"))
 
 
-def rawKever(publicKey):
-    return stubKever(core.Verfer(raw=b64(publicKey), code=MtrDex.Ed25519))
+def stateKever(keyState):
+    """Key state as a vector's key_state gives it: current keys as qb64
+    verfers and the signing threshold in keripy's form (profile R4)."""
+    return SimpleNamespace(
+        verfers=[core.Verfer(qb64=k) for k in keyState["keys"]],
+        tholder=core.Tholder(sith=keyState["threshold"]),
+    )
 
 
 class StubHab:
@@ -76,13 +81,21 @@ class StubAgency:
 
 def vectorAgency(vectors):
     """Agency whose one agent holds the key state of every transferable
-    vector key, and signs with the vectors' agent key."""
+    vector key, and signs with the vectors' agent key. A keyid absent from
+    the vectors' key table has no agent here."""
     keys = {k["keyid"]: k for k in vectors["keys"]}
     kevers = {
-        keyid: rawKever(k["public_key"])
+        keyid: stateKever(k["key_state"])
         for keyid, k in keys.items()
         if k["kind"] == "transferable"
     }
+    for keyid, k in keys.items():
+        if k["effective_key"] is not None:
+            # the key state reduces to the vectors' effective key
+            kever = kevers.get(keyid)
+            if kever is not None:
+                verfer = httpsigning.effectiveVerfer(kever.verfers, kever.tholder)
+                assert verfer.raw == b64(k["effective_key"]), keyid
     agentKey = keys["EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"]
     hab = StubHab(agentKey["keyid"], agentKey["seed_hex"], kevers)
     agent = SimpleNamespace(agentHab=hab)
@@ -92,8 +105,12 @@ def vectorAgency(vectors):
 def falconRequest(method, url, headers, body, rawUri=True):
     """A ModifiableRequest as KERIA's hio server would hand it over: PATH_INFO
     re-encoded by hio, CONTENT_LENGTH always set to the body read, and
-    RAW_URI carrying the request target as sent."""
+    RAW_URI carrying the request target as sent. A URL without a host is
+    sent to the case's Host field."""
     split = urlsplit(url)
+    if not split.netloc:
+        host = next(v for k, v in headers.items() if k.lower() == "host")
+        split = urlsplit(f"http://{host}{url}")
     body = b"" if body is None else body.encode("utf-8")
     headers = dict(headers)
     if not any(k.lower() == "content-length" for k in headers):
@@ -125,6 +142,19 @@ def authenticator(agency, now, **kwa):
     return authing.SignedHeaderAuthenticator(agency=agency, clock=lambda: now, **kwa)
 
 
+def casePolicy(case):
+    """The verifier policy a case asks for: the default, or one serving the
+    case's authorities and so requiring @authority."""
+    authorities = (case.get("policy") or {}).get("authorities")
+    if not authorities:
+        return None
+    return httpsigning.Policy(requireAuthority=True, authorities=frozenset(authorities))
+
+
+def caseAuthenticator(agency, case):
+    return authenticator(agency, case["now"], policy=casePolicy(case))
+
+
 # Shared vectors through KERIA's verifier wiring
 
 
@@ -133,20 +163,21 @@ def test_vector_requests_accepted():
     agency, agent = vectorAgency(vectors)
     count = 0
     for case in vectors["cases"]:
-        authn = authenticator(agency, case["now"])
+        authn = caseAuthenticator(agency, case)
         req = caseRequest(case)
         authn.inbound(req)
         verified = req.context.verified
         assert verified.mode == httpsigning.Canonical, case["id"]
         assert verified.keyid == case["expected"]["keyid"], case["id"]
         assert list(verified.covered) == case["expected"]["covered"], case["id"]
+        assert verified.bodyOwed is False, case["id"]
         assert req.context.mode == authing.AuthMode.CANONICAL
         assert req.context.agent is agent
         body = case["request"]["body"]
         # the body is still there for the resource to read
         assert req.bounded_stream.read() == (body or "").encode("utf-8")
         count += 1
-    assert count == len(vectors["cases"]) == 18
+    assert count == len(vectors["cases"]) == 20
 
 
 def test_vector_refusals():
@@ -157,8 +188,9 @@ def test_vector_refusals():
         if case["kind"] != "request":
             # response verification and signer-side refusals are the
             # client's; KERIA's own responses are checked below
+            assert case["kind"] in ("response", "sign-request"), case["id"]
             continue
-        authn = authenticator(agency, case["now"])
+        authn = caseAuthenticator(agency, case)
         req = caseRequest(case)
         with pytest.raises(httpsigning.HttpSigError) as e:
             authn.inbound(req)
@@ -166,17 +198,18 @@ def test_vector_refusals():
         assert isinstance(e.value, kering.AuthNError)
         assert not hasattr(req.context, "agent"), case["id"]
         applied += 1
-    assert applied == 32
+    assert applied == 37
 
 
 def test_vector_refusals_through_middleware():
     """Every refusal is a bare, unsigned 401."""
     vectors = loadVectors("refusals")
     agency, _ = vectorAgency(vectors)
+    refused = 0
     for case in vectors["cases"]:
         if case["kind"] != "request":
             continue
-        authn = authenticator(agency, case["now"])
+        authn = caseAuthenticator(agency, case)
         mw = authing.AuthenticationMiddleware(agency=agency, authn=authn)
         req = caseRequest(case)
         rep = falcon.Response()
@@ -185,6 +218,8 @@ def test_vector_refusals_through_middleware():
         assert rep.status == falcon.HTTP_401, case["id"]
         mw.process_response(req, rep, None, False)
         assert "signature" not in {k.lower() for k in rep.headers}
+        refused += 1
+    assert refused == 37
 
 
 def test_vector_responses():
@@ -194,8 +229,9 @@ def test_vector_responses():
     verifies against the request as sent."""
     vectors = loadVectors("responses")
     agency, agent = vectorAgency(vectors)
+    responses = 0
     for case in vectors["cases"]:
-        authn = authenticator(agency, case["now"])
+        authn = caseAuthenticator(agency, case)
         req = caseRequest(case)
         authn.inbound(req)
 
@@ -241,6 +277,8 @@ def test_vector_responses():
             keyid=agent.agentHab.pre,
         )
         assert set(verified.covered) == set(case["expected"]["covered"]), case["id"]
+        responses += 1
+    assert responses == len(vectors["cases"]) == 4
 
 
 def _parseInput(value):
@@ -319,7 +357,7 @@ def test_raw_uri_server_environ():
         assert env["RAW_URI"] == split.path
         req = authing.ModifiableRequest(env)
         assert httping.rawPath(req) == split.path
-        authenticator(agency, case["now"]).inbound(req)
+        caseAuthenticator(agency, case).inbound(req)
         # routing still sees the decoded path
         assert req.path == unquote(split.path)
 
@@ -329,7 +367,7 @@ def test_raw_uri_server_environ():
         req = authing.ModifiableRequest(env)
         assert httping.rawPath(req) != split.path
         with pytest.raises(httpsigning.SignatureMismatch):
-            authenticator(agency, case["now"]).inbound(req)
+            caseAuthenticator(agency, case).inbound(req)
 
 
 def test_raw_path():

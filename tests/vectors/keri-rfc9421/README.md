@@ -1,13 +1,15 @@
 # KERI profile RFC 9421 vectors
 
-These five JSON files are copied verbatim from fiki, `vectors/keri/`, at commit `530cd8c269675bb8fc311d8896034cfd2a46fafc`, `keri_vectors_format` 1. fiki is an RFC 9421 implementation independent of keripy and KERIA and generates them itself (`vectors/keri/generate.py` there). keripy and signify-ts carry identical copies.
+These five JSON files are copied verbatim from fiki, `vectors/keri/`, at commit `34f37a0dd953976a64f914bb22f6d68fd4d1f393`, `keri_vectors_format` 2, which targets the profile's draft 6. fiki is an RFC 9421 implementation independent of keripy and KERIA and generates them itself (`vectors/keri/generate.py` there). keripy and signify-ts carry identical copies.
 
 Do not edit them here. A case that disagrees with KERIA is resolved against the profile and, if the vector is wrong, fixed at the source and copied again.
 
 - `requests.json`: signed requests a canonical verifier accepts, with the expected signature base.
 - `responses.json`: signed responses, each with the request it answers.
-- `refusals.json`: messages a canonical verifier refuses, each with its error code.
+- `refusals.json`: messages a canonical verifier refuses, each with its error code. The `request` cases are a server's; the `response` and `sign-request` cases are a client's.
 - `legacy.json`: legacy-mode signatures pinned in KERIA's and signify-ts's existing tests.
 - `rfc9421.json`: RFC 9421 Appendix B.2.6. KERIA does not run it; it is kept so the set stays whole.
 
-`tests/core/test_authing_canonical.py` runs `requests.json`, `refusals.json` (the request cases), `responses.json` and `legacy.json` through KERIA's `SignedHeaderAuthenticator`.
+Each key in the `keys` tables carries its `key_state` (current keys and signing threshold) and the `effective_key` that state reduces to under profile R4, or null when it has no single effective signer.
+
+`tests/core/test_authing_canonical.py` runs `requests.json`, the request cases of `refusals.json`, `responses.json` and `legacy.json` through KERIA's `SignedHeaderAuthenticator`, serving each vector key from its `key_state`.
