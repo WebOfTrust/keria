@@ -782,3 +782,40 @@ def test_canonical_authority_from_host_drops_default_port(keria):
             )
         )
         assert client.simulate_get("/echo", headers=headers).status_code == 200, host
+
+
+# Configuration
+
+
+@pytest.mark.parametrize(
+    "kwa",
+    [
+        dict(signatureMaxAge=0),
+        dict(signatureMaxAge=-300),
+        dict(signatureMaxAge="300"),
+        dict(signatureSkew=0),
+        dict(signatureSkew=1.5),
+        dict(signatureAuthorities="keria.example.com"),
+    ],
+)
+def test_server_config_refuses_a_policy_below_the_profile(kwa):
+    """max_age and skew must be positive, and a bad setting stops KERIA at
+    startup rather than on the first request (profile section 3)."""
+    with pytest.raises(ValueError):
+        agenting.KERIAServerConfig(**kwa)
+
+
+def test_server_config_signature_policy():
+    policy = agenting.KERIAServerConfig().signaturePolicy()
+    assert policy == httpsigning.DefaultPolicy
+
+    config = agenting.KERIAServerConfig(
+        signatureMaxAge=30,
+        signatureSkew=5,
+        signatureAuthorities=["KERIA.example.com:443", "127.0.0.1:3901"],
+    )
+    policy = config.signaturePolicy()
+    assert policy.maxAge == 30
+    assert policy.skew == 5
+    assert policy.requireAuthority is True
+    assert policy.authorities == frozenset({"keria.example.com", "127.0.0.1:3901"})

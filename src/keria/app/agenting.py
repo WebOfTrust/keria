@@ -160,11 +160,11 @@ class KERIAServerConfig:
     # Accept requests signed in the legacy Signify scheme alongside canonical RFC 9421 ones.
     # Turn off once every client signs in canonical mode. Default is True. KERIA_ACCEPT_LEGACY also sets this
     acceptLegacy: bool = True
-    # Oldest a canonical signature's created time may be, in seconds. Default is 300. KERIA_SIGNATURE_MAX_AGE also sets this
+    # Oldest a canonical signature's created time may be, in seconds; must be positive. Default is 300. KERIA_SIGNATURE_MAX_AGE also sets this
     signatureMaxAge: int = 300
-    # Clock skew allowed either side of now for canonical signatures, in seconds. Default is 60. KERIA_SIGNATURE_SKEW also sets this
+    # Clock skew allowed either side of now for canonical signatures, in seconds; must be positive. Default is 60. KERIA_SIGNATURE_SKEW also sets this
     signatureSkew: int = 60
-    # Authorities (host[:port], default port omitted) this server answers to. When set, canonical requests must cover
+    # Authorities (host[:port]; :80 and :443 are dropped) this server answers to. When set, canonical requests must cover
     # @authority and name one of them. Default is empty, not required. KERIA_SIGNATURE_AUTHORITIES (';' separated) also sets this
     signatureAuthorities: List[str] = field(default_factory=list)
 
@@ -173,6 +173,34 @@ class KERIAServerConfig:
     bootPassword: str = None
     # Experimental username for boot endpoint. Enables HTTP Basic Authentication for the boot endpoint. Only meant to be used for testing purposes.
     bootUsername: str = None
+
+    def __post_init__(self):
+        # Refuse a bad request-signature configuration at startup rather than
+        # on the first request.
+        self.signaturePolicy()
+
+    def signaturePolicy(self):
+        """
+        Returns the canonical-mode httpsigning.Policy this configuration
+        describes. The profile does not allow a policy below its minimum set,
+        so a max age or skew that is not a positive int, or authorities given
+        as a single string, is a ValueError.
+        """
+        authorities = self.signatureAuthorities or []
+        if isinstance(authorities, (str, bytes)):
+            raise ValueError(
+                "signatureAuthorities must be a list of authorities, not a string."
+            )
+        authorities = frozenset(authorities)
+        try:
+            return httpsigning.Policy(
+                requireAuthority=bool(authorities),
+                authorities=authorities,
+                maxAge=self.signatureMaxAge,
+                skew=self.signatureSkew,
+            )
+        except ValueError as ex:
+            raise ValueError(f"Invalid request signature configuration: {ex}") from ex
 
 
 def readConfigFile(configDir: str, configFile: str, temp=False):
@@ -1003,15 +1031,10 @@ def createAdminServerDoer(config: KERIAServerConfig, agency: Agency):
     Returns the Doer and the Falcon app so the HTTP app can use it for OpenAPI docs.
     """
     # Create Authenticater for verifying signatures on all requests
-    authorities = frozenset(a.lower() for a in (config.signatureAuthorities or []))
-    policy = httpsigning.Policy(
-        requireAuthority=bool(authorities),
-        authorities=authorities,
-        maxAge=config.signatureMaxAge,
-        skew=config.signatureSkew,
-    )
     authn = SignedHeaderAuthenticator(
-        agency=agency, acceptLegacy=config.acceptLegacy, policy=policy
+        agency=agency,
+        acceptLegacy=config.acceptLegacy,
+        policy=config.signaturePolicy(),
     )
 
     adminApp = falconApp(config.logRequests, request_type=authing.ModifiableRequest)
