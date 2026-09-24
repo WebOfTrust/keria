@@ -1235,3 +1235,46 @@ def test_cors_exposes_canonical_response_fields(keria):
     for field in ("signature", "signature-input", "content-digest"):
         assert field in result.headers, field
         assert field in exposed, field
+
+
+def test_signature_mode_peeked_once_per_request(mockHelpingNowUTC, monkeypatch):
+    """KERIA reads the Signature header's mode once per request, even on
+    PUT /agent/{caid}, where the middleware, the pre-rotation check and the
+    post-rotation check each need it."""
+    fx = rotationFixture()
+    calls = []
+    peek = httpsigning.peekMode
+
+    def counting(headers):
+        calls.append(1)
+        return peek(headers)
+
+    monkeypatch.setattr(httpsigning, "peekMode", counting)
+    result, _ = signedPut(fx, fx.new)
+    assert result.status_code == 204
+    assert len(calls) == 1
+
+
+def test_server_config_builds_its_policy_once(monkeypatch):
+    """The policy validated at startup is the one the authenticator uses."""
+    config = agenting.KERIAServerConfig(signatureMaxAge=30)
+    assert config.policy == config.signaturePolicy()
+    assert config.policy.maxAge == 30
+
+    captured = {}
+
+    class Capturing(authing.SignedHeaderAuthenticator):
+        def __init__(self, **kwa):
+            captured.update(kwa)
+            super().__init__(**kwa)
+
+    monkeypatch.setattr(agenting, "SignedHeaderAuthenticator", Capturing)
+    monkeypatch.setattr(
+        agenting.KERIAServerConfig,
+        "signaturePolicy",
+        lambda self: pytest.fail("policy rebuilt after startup"),
+    )
+    monkeypatch.setattr(agenting, "createHttpServer", lambda *a, **k: None)
+    with pytest.raises(AttributeError, match="reopen"):  # the stubbed server
+        agenting.createAdminServerDoer(config, SimpleNamespace(tocks={}))
+    assert captured["policy"] is config.policy

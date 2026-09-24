@@ -154,9 +154,18 @@ class SignedHeaderAuthenticator(Authenticator):
         self.clock = clock
 
     @staticmethod
+    def signatureMode(request: falcon.Request):
+        """Returns httpsigning.peekMode of the request's headers, computed on
+        the first call and kept on request.context, so the middleware and a
+        resource that verifies its own request read the header once."""
+        if not hasattr(request.context, "signatureMode"):
+            request.context.signatureMode = httpsigning.peekMode(request.headers)
+        return request.context.signatureMode
+
+    @staticmethod
     def isCanonical(request: falcon.Request):
         """True when the request's Signature header is in canonical form."""
-        return httpsigning.peekMode(request.headers) == httpsigning.Canonical
+        return SignedHeaderAuthenticator.signatureMode(request) == httpsigning.Canonical
 
     def inbound(self, request: ModifiableRequest):
         """Validate that the request is correctly signed, in canonical or legacy mode
@@ -179,10 +188,7 @@ class SignedHeaderAuthenticator(Authenticator):
         refusal by its profile code and, with legacy mode off, refuses a
         legacy request as malformed-signature.
         """
-        return (
-            self.acceptLegacy
-            and httpsigning.peekMode(request.headers) == httpsigning.Legacy
-        )
+        return self.acceptLegacy and self.signatureMode(request) == httpsigning.Legacy
 
     def verifyPending(self, request: ModifiableRequest, pre: str, serder):
         """Verify the request against the key state a pending establishment

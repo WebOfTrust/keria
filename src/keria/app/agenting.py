@@ -176,8 +176,9 @@ class KERIAServerConfig:
 
     def __post_init__(self):
         # Refuse a bad request-signature configuration at startup rather than
-        # on the first request.
-        self.signaturePolicy()
+        # on the first request, and keep the policy for the authenticator.
+        # The signature fields are read here, once.
+        self.policy = self.signaturePolicy()
 
     def signaturePolicy(self):
         """
@@ -1034,7 +1035,7 @@ def createAdminServerDoer(config: KERIAServerConfig, agency: Agency):
     authn = SignedHeaderAuthenticator(
         agency=agency,
         acceptLegacy=config.acceptLegacy,
-        policy=config.signaturePolicy(),
+        policy=config.policy,
     )
 
     adminApp = falconApp(config.logRequests, request_type=authing.ModifiableRequest)
