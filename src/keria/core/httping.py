@@ -82,12 +82,14 @@ class RequestLoggerMiddleware:
         logger.debug("Request headers : %s", req.headers)
         if req.content_length and logger.isEnabledFor(logging.DEBUG):
             # Read and re-set the stream to allow further processing
-            body = req.stream.read()
+            body = req.bounded_stream.read()
             decoded_body = body.decode("utf-8") if body else "<empty>"
             logger.debug("Request body    : %s", decoded_body)
-            req.env["wsgi.input"] = io.BytesIO(
-                body
-            )  # Reset the stream for further processing
+            # Reset the stream for further processing. Falcon reads the body
+            # through req.stream (bound to wsgi.input when the request was
+            # built) and caches req.bounded_stream, so all three are reset.
+            req.stream = req.env["wsgi.input"] = io.BytesIO(body)
+            req._bounded_stream = None
             req.env["CONTENT_LENGTH"] = str(
                 len(body)
             )  # match WSGI env content length to body length
