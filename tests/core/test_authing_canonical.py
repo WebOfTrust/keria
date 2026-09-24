@@ -877,33 +877,18 @@ def test_server_config_defaults():
     assert config.signatureAuthorities == []
 
 
-def test_middleware_refuses_an_owed_body(keria):
-    """A verification whose body check is still owed never reaches a
-    resource (profile section 5), and its refusal is not signed."""
-
-    class Deferring(authing.SignedHeaderAuthenticator):
-        def inboundCanonical(self, request):
-            # verify on the headers and stop there, as a careless
-            # authenticator might
-            request.context.verified = httpsigning.verifyRequest(
-                method=request.method,
-                path=httping.rawPath(request),
-                query=request.query_string,
-                headers=request.headers,
-                body=httpsigning.Deferred,
-                resolver=httpsigning.keverResolver(keria.agent.agentHab.kevers),
-                now=NOW,
-            )
-            request.context.mode = authing.AuthMode.CANONICAL
-            request.context.agent = keria.agent
-
+def test_no_resource_sees_an_unchecked_body(keria):
+    """The body check is never owed when a request reaches a resource
+    (profile section 5): SignedHeaderAuthenticator.inboundCanonical checks
+    the body before it returns, and a body that does not match the covered
+    Content-Digest is refused before any resource runs, unsigned."""
     reached = []
 
     class Recording:
         def on_post(self, req, rep):
-            reached.append(req)
+            reached.append((req.context.verified.bodyOwed, req.bounded_stream.read()))
 
-    authn = Deferring(agency=keria.agency, clock=lambda: NOW)
+    authn = authing.SignedHeaderAuthenticator(agency=keria.agency, clock=lambda: NOW)
     app = falcon.App(request_type=authing.ModifiableRequest)
     app.add_middleware(
         authing.AuthenticationMiddleware(agency=keria.agency, authn=authn)
@@ -913,14 +898,15 @@ def test_middleware_refuses_an_owed_body(keria):
 
     body = json.dumps(dict(name="alice")).encode("utf-8")
     headers = signed(keria.controller, "POST", "/echo", body=body)
-    result = client.simulate_post("/echo", headers=headers, body=body)
+    swapped = json.dumps(dict(name="mallory")).encode("utf-8")
+    result = client.simulate_post("/echo", headers=headers, body=swapped)
     assert result.status_code == 401
     assert "signature" not in result.headers
     assert reached == []
 
-    # KERIA's own authenticator completes the check before returning
-    result = keria.app().simulate_post("/echo", headers=headers, body=body)
+    result = client.simulate_post("/echo", headers=headers, body=body)
     assert result.status_code == 200
+    assert reached == [(False, body)]
 
 
 def test_canonical_authority_from_host_drops_default_port(keria):

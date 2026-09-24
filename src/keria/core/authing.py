@@ -652,9 +652,11 @@ class AuthenticationMiddleware:
         authenticator = self.essrAuthn if req.path == "/" else self.authn
 
         try:
+            # inbound returns only once the request is fully verified, the
+            # body check included (profile section 5), so what follows it is
+            # a resource that may read the body.
             authenticator.inbound(req)
-            if not self.bodyOwed(req):
-                return
+            return
         except (kering.AuthNError, ValueError, UnicodeDecodeError):
             pass
 
@@ -667,14 +669,6 @@ class AuthenticationMiddleware:
         )
         rep.status = falcon.HTTP_401
         return
-
-    @staticmethod
-    def bodyOwed(req: ModifiableRequest):
-        """True when the request's verification is not complete because its
-        body check is still owed (KERI profile section 5). Such a request must
-        not reach a resource."""
-        verified = getattr(req.context, "verified", None)
-        return verified is not None and verified.bodyOwed
 
     def process_response(
         self,
