@@ -5,6 +5,7 @@ keria.core.httping module
 
 """
 
+import functools
 import io
 import logging
 from urllib.parse import urlsplit
@@ -128,33 +129,33 @@ def falconApp(logRequests=False, request_type=falcon.Request):
     return falcon.App(middleware=middlewares, request_type=request_type)
 
 
-def exposeRawUri(server):
+@functools.cache
+def rawUriServerType(base):
     """
-    Makes an hio WSGI server also pass the request target as sent to the app.
+    Returns a subclass of the hio WSGI server class base that also passes the
+    request target as sent to the app.
 
     hio percent-decodes the request path and re-encodes it with quote() to
     build PATH_INFO, so the application never sees the client's bytes. An RFC
-    9421 verifier needs them for @path (RFC 9421 section 2.2.6), so this adds
-    the raw request target to every environ the server builds, as RAW_URI,
-    the name gunicorn uses.
+    9421 verifier needs them for @path (RFC 9421 section 2.2.6), so the
+    subclass adds the raw request target to every environ it builds, as
+    RAW_URI, the name gunicorn uses.
+
+    The class is made from base on demand, rather than once from
+    hio.core.http.Server at import, so that createHttpServer builds whatever
+    that name holds when it runs.
 
     Parameters:
-        server (hio.core.http.Server): server whose environ to extend
-
-    Returns:
-        hio.core.http.Server: the same server
+        base (type): hio.core.http.Server or a subclass
     """
-    build = getattr(server, "buildEnviron", None)
-    if build is None:  # not a WSGI server, nothing to extend
-        return server
 
-    def buildEnviron(requestant):
-        environ = build(requestant)
-        environ["RAW_URI"] = requestant.url
-        return environ
+    class RawUriServer(base):
+        def buildEnviron(self, requestant):
+            environ = super().buildEnviron(requestant)
+            environ["RAW_URI"] = requestant.url
+            return environ
 
-    server.buildEnviron = buildEnviron
-    return server
+    return RawUriServer
 
 
 def rawPath(req):
@@ -187,7 +188,7 @@ def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):
         certpath (string)  : the file path to the TLS signed certificate (public key)
         cafilepath (string): the file path to the TLS CA certificate chain file
     Returns:
-        hio.core.http.Server: with RAW_URI in its environ (see exposeRawUri)
+        hio.core.http.Server: with RAW_URI in its environ (see rawUriServerType)
     """
     if keypath is not None and certpath is not None and cafilepath is not None:
         servant = tcp.ServerTls(
@@ -197,7 +198,7 @@ def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):
             cafilepath=cafilepath,
             port=port,
         )
-        server = http.Server(port=port, app=app, servant=servant)
+        server = rawUriServerType(http.Server)(port=port, app=app, servant=servant)
     else:
-        server = http.Server(port=port, app=app)
-    return exposeRawUri(server)
+        server = rawUriServerType(http.Server)(port=port, app=app)
+    return server
