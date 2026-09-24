@@ -819,3 +819,169 @@ def test_server_config_signature_policy():
     assert policy.skew == 5
     assert policy.requireAuthority is True
     assert policy.authorities == frozenset({"keria.example.com", "127.0.0.1:3901"})
+
+
+# PUT /agent/{caid}: the rotation endpoint verifies its own request
+
+
+def rotationFixture():
+    """A booted agent whose controller is Signify's, and the rotation Signify
+    makes when its passcode changes: keys [new, prior-next] with threshold
+    ['1', '0'], signed by the new key and by the prior next key as ondex 0."""
+    from keri.app import keeping
+    from keri.core import coring
+    from keria.app import aiding
+    from keria.testing.testing_helper import Helpers
+
+    def signers(bran):
+        creator = keeping.SaltyCreator(
+            salt=core.Salter(raw=bran).qb64,
+            stem="signify:controller",
+            tier=coring.Tiers.low,
+        )
+        current = creator.create(pidx=0, ridx=0, tier=coring.Tiers.low, count=1)[0]
+        nxt = creator.create(pidx=0, ridx=1, tier=coring.Tiers.low, count=1)[0]
+        return current, nxt
+
+    oldBran, newBran = b"0123456789abcdefghijk", b"abcdefghijk0123456789"
+    icp, sigers = Helpers.controller(bran=oldBran)
+    old, priorNext = signers(oldBran)
+    new, newNext = signers(newBran)
+
+    agency = agenting.Agency(name="agency", base="", bran=None, temp=True)
+    doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+    doist.enter(doers=[agency])
+    agent = agency.create(caid=icp.pre)
+    agent.hby.makeSignifyHab(name=agent.caid, ns="agent", serder=icp, sigers=sigers)
+    agent.mgr.sxlt = "sxlt-before"
+
+    rot = eventing.rotate(
+        pre=icp.pre,
+        keys=[new.verfer.qb64, priorNext.verfer.qb64],
+        dig=icp.said,
+        isith=["1", "0"],
+        nsith="1",
+        ndigs=[core.Diger(ser=newNext.verfer.qb64b).qb64],
+    )
+    sigs = [
+        new.sign(ser=rot.raw, index=0).qb64,
+        priorNext.sign(ser=rot.raw, index=1, ondex=0).qb64,
+    ]
+    body = json.dumps(dict(rot=rot.ked, sigs=sigs, sxlt="sxlt-after", keys={})).encode(
+        "utf-8"
+    )
+
+    authn = authing.SignedHeaderAuthenticator(agency=agency, clock=lambda: NOW)
+    app = falcon.App(request_type=authing.ModifiableRequest)
+    app.add_middleware(
+        authing.AuthenticationMiddleware(agency=agency, authn=authn, allowed=["/agent"])
+    )
+    app.add_route("/agent/{caid}", aiding.AgentResourceEnd(agency=agency, authn=authn))
+    return SimpleNamespace(
+        agency=agency,
+        agent=agent,
+        client=testing.TestClient(app),
+        caid=icp.pre,
+        body=body,
+        old=old,
+        new=new,
+        priorNext=priorNext,
+    )
+
+
+def signedPut(fx, signer, body=None):
+    body = fx.body if body is None else body
+    path = f"/agent/{fx.caid}"
+    headers = {"Host": "falconframework.org", "Content-Type": "application/json"}
+    headers.update(
+        httpsigning.signRequest(
+            method="PUT",
+            path=path,
+            headers=headers,
+            body=body,
+            signer=signer,
+            keyid=fx.caid,
+            created=NOW,
+        )
+    )
+    return fx.client.simulate_put(path, headers=headers, body=body), headers
+
+
+def test_canonical_agent_rotation(mockHelpingNowUTC):
+    """PUT /agent/{caid} is outside the middleware's protection and verifies
+    its request itself, after applying the rotation. In canonical mode that
+    verification runs against the rotated key state, which is Signify's
+    passcode-rotated state; its single effective signer is the new key
+    (profile R4)."""
+    fx = rotationFixture()
+    result, headers = signedPut(fx, fx.new)
+    assert result.status_code == 204
+
+    kever = fx.agent.agentHab.kevers[fx.caid]
+    assert kever.sn == 1
+    assert [v.qb64 for v in kever.verfers] == [
+        fx.new.verfer.qb64,
+        fx.priorNext.verfer.qb64,
+    ]
+    assert kever.tholder.sith == ["1", "0"]
+    assert httpsigning.effectiveVerfer(kever.verfers, kever.tholder).qb64 == (
+        fx.new.verfer.qb64
+    )
+    assert fx.agent.mgr.sxlt is None  # the resource ran to the end
+
+    # the 204 is signed in canonical mode and bound to the request
+    verified = httpsigning.verifyResponse(
+        status=result.status_code,
+        headers=result.headers,
+        body=result.content,
+        request=httpsigning.Requestage(
+            method="PUT",
+            authority="falconframework.org",
+            path=f"/agent/{fx.caid}",
+            query="",
+            headers=headers,
+            body=fx.body,
+        ),
+        resolver=httpsigning.keverResolver(
+            {fx.agent.agentHab.pre: fx.agent.agentHab.kever}
+        ),
+        keyid=fx.agent.agentHab.pre,
+        now=NOW,
+    )
+    assert '"content-digest";req' in verified.covered
+
+
+@pytest.mark.parametrize("who", ["old", "priorNext"])
+def test_canonical_agent_rotation_wrong_signer(mockHelpingNowUTC, who):
+    """Signed by the rotated-away key, or by the prior next key, which does
+    not satisfy ['1', '0'] alone: the rotation endpoint answers 403 and the
+    resource stops before it touches the salt."""
+    fx = rotationFixture()
+    result, _ = signedPut(fx, getattr(fx, who))
+    assert result.status_code == 403
+    assert result.json["description"] == "invalid signature on request"
+    assert fx.agent.mgr.sxlt == "sxlt-before"
+
+
+def test_canonical_agent_rotation_body_swapped(mockHelpingNowUTC):
+    """The body the endpoint acted on is the body the signature covers."""
+    fx = rotationFixture()
+    signedBody = json.loads(fx.body)
+    signedBody["sxlt"] = "sxlt-signed"
+    signedBody = json.dumps(signedBody).encode("utf-8")
+    path = f"/agent/{fx.caid}"
+    headers = {"Host": "falconframework.org", "Content-Type": "application/json"}
+    headers.update(
+        httpsigning.signRequest(
+            method="PUT",
+            path=path,
+            headers=headers,
+            body=signedBody,
+            signer=fx.new,
+            keyid=fx.caid,
+            created=NOW,
+        )
+    )
+    result = fx.client.simulate_put(path, headers=headers, body=fx.body)
+    assert result.status_code == 403
+    assert fx.agent.mgr.sxlt == "sxlt-before"
