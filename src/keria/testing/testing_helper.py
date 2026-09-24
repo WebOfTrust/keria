@@ -28,6 +28,7 @@ from keri.vdr import eventing as veventing
 from keri.vdr.credentialing import Regery, Registrar
 
 from keria.app import agenting, indirecting
+from keria.core import httping
 
 SCRIPTS_DIR = str(
     pathlib.Path(
@@ -430,7 +431,7 @@ class Helpers:
         app = falcon.App()
         httpEnd = indirecting.HttpEnd(agency=agency)
         app.add_route("/", httpEnd)
-        server = http.Server(port=httpPort, app=app)
+        server = httping.createHttpServer(httpPort, app)
         httpServerDoer = http.ServerDoer(server=server)
         return httpServerDoer
 

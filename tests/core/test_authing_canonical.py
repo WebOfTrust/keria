@@ -371,6 +371,102 @@ def test_raw_uri_server_environ():
             caseAuthenticator(agency, case).inbound(req)
 
 
+def serveOnce(server, target, headers):
+    """Sends one GET for target to server over a real socket, servicing the
+    server until the response is complete. Returns (status, headers, body)."""
+    import socket
+    import time
+
+    assert server.reopen()
+    try:
+        sock = socket.create_connection(("127.0.0.1", server.servant.ha[1]))
+        sock.setblocking(False)
+        lines = [f"GET {target} HTTP/1.1", "Connection: close"]
+        lines.extend(f"{k}: {v}" for k, v in headers.items())
+        sock.sendall(("\r\n".join(lines) + "\r\n\r\n").encode("utf-8"))
+        data = b""
+        end = time.monotonic() + 10
+        while time.monotonic() < end:
+            server.service()
+            try:
+                chunk = sock.recv(65536)
+            except BlockingIOError:
+                time.sleep(0.005)
+                continue
+            if not chunk:
+                break
+            data += chunk
+        sock.close()
+    finally:
+        server.close()
+    head, _, body = data.partition(b"\r\n\r\n")
+    lines = head.decode("utf-8").split("\r\n")
+    status = int(lines[0].split()[1])
+    fields = {}
+    for line in lines[1:]:
+        name, _, value = line.partition(":")
+        fields[name.strip().lower()] = value.strip()
+    return status, fields, body
+
+
+def freePort():
+    import socket
+
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+
+
+@pytest.mark.parametrize("path", ["/echo/a%7Eb", "/echo/a:b"])
+def test_raw_uri_end_to_end(keria, path):
+    """Over a real socket, a canonical request whose path hio would re-encode
+    (%7E decoded to ~, ':' encoded to %3A) verifies through KERIA's server,
+    because RAW_URI carries the path as sent to @path, and is refused by a
+    plain hio server, whose PATH_INFO no longer matches the signature."""
+    app = falcon.App(request_type=authing.ModifiableRequest)
+    authn = authing.SignedHeaderAuthenticator(agency=keria.agency, clock=lambda: NOW)
+    app.add_middleware(
+        authing.AuthenticationMiddleware(agency=keria.agency, authn=authn)
+    )
+    app.add_route("/echo/{name}", EchoEnd(), suffix="named")
+    headers = signed(keria.controller, "GET", path)
+
+    server = httping.createHttpServer(freePort(), app)
+    status, fields, body = serveOnce(server, path, headers)
+    assert status == 200
+    assert json.loads(body) == dict(name=unquote(path).rsplit("/", 1)[1])
+    verified = httpsigning.verifyResponse(
+        status=status,
+        headers=fields,
+        body=body,
+        request=httpsigning.Requestage(
+            method="GET",
+            authority="falconframework.org",
+            path=path,
+            query="",
+            headers=headers,
+            body=b"",
+        ),
+        resolver=lambda keyid: keria.agent.agentHab.kever.verfers[0],
+        keyid=keria.agent.agentHab.pre,
+        now=NOW,
+    )
+    assert '"@path";req' in verified.covered
+
+    plain = httping.http.Server(port=freePort(), app=app)
+    status, _, _ = serveOnce(plain, path, headers)
+    assert status == 401
+
+
+def test_helper_server_passes_raw_uri():
+    """The test helper's server is built the way KERIA builds its own, so
+    tests that go through it see RAW_URI too."""
+    from keria.testing.testing_helper import Helpers
+
+    doer = Helpers.server(agency=None, httpPort=freePort())
+    assert isinstance(doer.server, httping.rawUriServerType(httping.http.Server))
+
+
 def test_raw_path():
     def req(**env):
         return SimpleNamespace(env=env, path="/decoded")
