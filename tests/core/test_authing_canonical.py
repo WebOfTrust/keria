@@ -1049,3 +1049,29 @@ def test_canonical_agent_rotation_body_swapped(mockHelpingNowUTC):
     result = fx.client.simulate_put(path, headers=headers, body=fx.body)
     assert result.status_code == 403
     assert fx.agent.mgr.sxlt == "sxlt-before"
+
+
+def test_cors_exposes_canonical_response_fields(keria):
+    """A browser shows a script only the CORS-safelisted response headers and
+    those in Access-Control-Expose-Headers. A canonical client verifies a
+    response from Signature, Signature-Input and Content-Digest, so all three
+    must be exposed, or verification fails in the browser alone."""
+    app = httping.falconApp(request_type=authing.ModifiableRequest)
+    authn = authing.SignedHeaderAuthenticator(agency=keria.agency, clock=lambda: NOW)
+    app.add_middleware(
+        authing.AuthenticationMiddleware(agency=keria.agency, authn=authn)
+    )
+    app.add_route("/echo", EchoEnd())
+    client = testing.TestClient(app)
+
+    headers = signed(keria.controller, "GET", "/echo")
+    headers["Origin"] = "https://wallet.example"
+    result = client.simulate_get("/echo", headers=headers)
+    assert result.status_code == 200
+    exposed = {
+        h.strip().lower()
+        for h in result.headers["access-control-expose-headers"].split(",")
+    }
+    for field in ("signature", "signature-input", "content-digest"):
+        assert field in result.headers, field
+        assert field in exposed, field

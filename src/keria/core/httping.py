@@ -106,9 +106,13 @@ class RequestLoggerMiddleware:
         logger.debug("Response headers: %s", resp.headers)
 
 
+# Response headers a browser client must be able to read. A canonical-mode
+# (RFC 9421) client verifies a response from signature, signature-input and
+# content-digest, and a browser hides any of them not listed here.
 keriHeaders = [
     "cesr-attachment",
     "cesr-date",
+    "content-digest",
     "content-type",
     "signature",
     "signature-input",
