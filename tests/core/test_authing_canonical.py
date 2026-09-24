@@ -269,7 +269,8 @@ def test_vector_responses():
                 path=split.path,
                 query=split.query,
                 headers=sent["headers"],
-                body=sent["body"],
+                # the request as sent; a record without its body is refused
+                body=sent["body"] if sent["body"] is not None else b"",
             ),
             resolver=httpsigning.keverResolver(
                 {agent.agentHab.pre: agent.agentHab.kever}
@@ -473,7 +474,7 @@ def verifyReply(keria, method, path, query, headers, body, result):
             path=path,
             query=query,
             headers=headers,
-            body=body,
+            body=body if body is not None else b"",  # b"" when none was sent
         ),
         resolver=lambda keyid: keria.agent.agentHab.kever.verfers[0],
         keyid=keria.agent.agentHab.pre,
