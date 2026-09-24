@@ -255,8 +255,10 @@ class SignedHeaderAuthenticator(Authenticator):
         The signature covers @status, the response body through
         Content-Digest, and the request's method, path, query and
         Content-Digest, each marked req. A streamed body is buffered first so
-        that it can be digested; KERIA's only streamed response is a contact
-        image capped at 1 MB.
+        that it can be digested, and is then sent from the buffer. The stream
+        may be a file-like object or an iterable of byte chunks: KERIA's only
+        streamed response is a contact image capped at 1 MB, which
+        Organizer.getImg streams from a generator.
 
         Parameters:
             request (ModifiableRequest): Falcon request object
@@ -265,7 +267,10 @@ class SignedHeaderAuthenticator(Authenticator):
         """
         if response.stream is not None:
             stream = response.stream
-            data = stream.read()
+            if hasattr(stream, "read"):
+                data = stream.read()
+            else:
+                data = b"".join(stream)
             if hasattr(stream, "close"):
                 stream.close()
             response.stream = None

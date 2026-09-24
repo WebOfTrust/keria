@@ -407,6 +407,17 @@ class StreamEnd:
         rep.stream = io.BytesIO(data)
 
 
+class GeneratorStreamEnd:
+    """Streams its body from a generator, as the contact image endpoint does
+    (aiding.py, rep.stream = agent.org.getImg(...), which yields 4k chunks)."""
+
+    def on_get(self, req, rep):
+        chunks = [b"\x89PNG chunk one ", b"chunk two ", b"chunk three"]
+        rep.set_header("Content-Type", "image/png")
+        rep.set_header("Content-Length", str(len(b"".join(chunks))))
+        rep.stream = (chunk for chunk in chunks)
+
+
 NOW = 1609459200  # the mocked clock, 2021-01-01T00:00:00Z
 
 
@@ -437,6 +448,7 @@ def keria(mockHelpingNowUTC):
             app.add_route("/echo", EchoEnd())
             app.add_route("/echo/{name}", EchoEnd(), suffix="named")
             app.add_route("/img", StreamEnd())
+            app.add_route("/imggen", GeneratorStreamEnd())
             return testing.TestClient(app)
 
         yield SimpleNamespace(
@@ -540,6 +552,19 @@ def test_canonical_streamed_response(keria):
     assert result.status_code == 200
     assert result.content == b"\x89PNG not really" * 10
     verified = verifyReply(keria, "GET", "/img", "", headers, None, result)
+    assert '"content-digest"' in verified.covered
+
+
+def test_canonical_generator_streamed_response(keria):
+    """A body streamed from a generator, which has no read(), is buffered,
+    digested, covered and still sent."""
+    client = keria.app()
+    headers = signed(keria.controller, "GET", "/imggen")
+    result = client.simulate_get("/imggen", headers=headers)
+    assert result.status_code == 200
+    assert result.content == b"\x89PNG chunk one chunk two chunk three"
+    assert result.headers["content-digest"] == httpsigning.contentDigest(result.content)
+    verified = verifyReply(keria, "GET", "/imggen", "", headers, None, result)
     assert '"content-digest"' in verified.covered
 
 
