@@ -888,7 +888,7 @@ def test_server_config_signature_policy():
 # PUT /agent/{caid}: the rotation endpoint verifies its own request
 
 
-def rotationFixture():
+def rotationFixture(**authnKwa):
     """A booted agent whose controller is Signify's, and the rotation Signify
     makes when its passcode changes: keys [new, prior-next] with threshold
     ['1', '0'], signed by the new key and by the prior next key as ondex 0."""
@@ -935,7 +935,9 @@ def rotationFixture():
         "utf-8"
     )
 
-    authn = authing.SignedHeaderAuthenticator(agency=agency, clock=lambda: NOW)
+    authn = authing.SignedHeaderAuthenticator(
+        agency=agency, clock=lambda: NOW, **authnKwa
+    )
     app = falcon.App(request_type=authing.ModifiableRequest)
     app.add_middleware(
         authing.AuthenticationMiddleware(agency=agency, authn=authn, allowed=["/agent"])
@@ -953,7 +955,7 @@ def rotationFixture():
     )
 
 
-def signedPut(fx, signer, body=None):
+def signedPut(fx, signer, body=None, created=NOW):
     body = fx.body if body is None else body
     path = f"/agent/{fx.caid}"
     headers = {"Host": "falconframework.org", "Content-Type": "application/json"}
@@ -965,16 +967,52 @@ def signedPut(fx, signer, body=None):
             body=body,
             signer=signer,
             keyid=fx.caid,
-            created=NOW,
+            created=created,
         )
     )
     return fx.client.simulate_put(path, headers=headers, body=body), headers
 
 
+def legacyPut(fx, signer):
+    """PUT /agent/{caid} signed in legacy mode by signer."""
+    from keri.end import ending
+
+    path = f"/agent/{fx.caid}"
+    headers = Hict(
+        [
+            ("Content-Type", "application/json"),
+            ("Signify-Resource", fx.caid),
+            ("Signify-Timestamp", "2022-09-24T00:05:48.196795+00:00"),
+        ]
+    )
+    header, qsig = ending.siginput(
+        "signify",
+        "PUT",
+        path,
+        headers,
+        fields=authing.SignedHeaderAuthenticator.DefaultFields,
+        signers=[signer],
+        alg="ed25519",
+        keyid=fx.caid,
+    )
+    headers.extend(header)
+    signage = ending.Signage(
+        markers=dict(signify=qsig),
+        indexed=False,
+        signer=None,
+        ordinal=None,
+        digest=None,
+        kind=None,
+    )
+    headers.extend(ending.signature([signage]))
+    return fx.client.simulate_put(path, headers=dict(headers), body=fx.body)
+
+
 def test_canonical_agent_rotation(mockHelpingNowUTC):
     """PUT /agent/{caid} is outside the middleware's protection and verifies
-    its request itself, after applying the rotation. In canonical mode that
-    verification runs against the rotated key state, which is Signify's
+    its request itself, before applying the rotation against the key state
+    the rotation would establish, and again after it. In canonical mode that
+    key state is Signify's
     passcode-rotated state; its single effective signer is the new key
     (profile R4)."""
     fx = rotationFixture()
@@ -1025,6 +1063,45 @@ def test_canonical_agent_rotation_wrong_signer(mockHelpingNowUTC, who):
     assert result.status_code == 403
     assert result.json["description"] == "invalid signature on request"
     assert fx.agent.mgr.sxlt == "sxlt-before"
+    assert fx.agent.agentHab.kevers[fx.caid].sn == 0  # not rotated
+
+
+def test_legacy_agent_rotation(mockHelpingNowUTC):
+    """A legacy PUT signed by the rotation's new key verifies, as before."""
+    fx = rotationFixture()
+    result = legacyPut(fx, fx.new)
+    assert result.status_code == 204
+    assert fx.agent.agentHab.kevers[fx.caid].sn == 1
+    assert fx.agent.mgr.sxlt is None
+
+
+@pytest.mark.parametrize(
+    "case",
+    ["stale", "unsigned", "legacy-off", "legacy-old-key"],
+)
+def test_agent_rotation_refused_before_rotating(mockHelpingNowUTC, case):
+    """A refused PUT /agent/{caid} leaves the controller's KEL unrotated.
+    The request is verified against the key state the rotation would
+    establish before the rotation is applied, so a refusal for any reason
+    (freshness, a missing signature, legacy mode turned off, the wrong key)
+    cannot leave the agent half-rotated: KEL rotated, salt not updated."""
+    fx = rotationFixture(acceptLegacy=case != "legacy-off")
+    if case == "stale":
+        result, _ = signedPut(fx, fx.new, created=NOW - 3600)
+    elif case == "unsigned":
+        result = fx.client.simulate_put(
+            f"/agent/{fx.caid}",
+            headers={"Content-Type": "application/json"},
+            body=fx.body,
+        )
+    elif case == "legacy-off":
+        result = legacyPut(fx, fx.new)
+    else:
+        result = legacyPut(fx, fx.old)
+    assert result.status_code == 403
+    assert result.json["description"] == "invalid signature on request"
+    assert fx.agent.agentHab.kevers[fx.caid].sn == 0
+    assert fx.agent.mgr.sxlt == "sxlt-before"
 
 
 def test_canonical_agent_rotation_body_swapped(mockHelpingNowUTC):
@@ -1049,6 +1126,7 @@ def test_canonical_agent_rotation_body_swapped(mockHelpingNowUTC):
     result = fx.client.simulate_put(path, headers=headers, body=fx.body)
     assert result.status_code == 403
     assert fx.agent.mgr.sxlt == "sxlt-before"
+    assert fx.agent.agentHab.kevers[fx.caid].sn == 0
 
 
 def test_cors_exposes_canonical_response_fields(keria):

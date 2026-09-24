@@ -344,6 +344,17 @@ class AgentResourceEnd:
         rot = serdering.SerderKERI(sad=body["rot"])
         sigs = body["sigs"]
 
+        # The request is signed with the rotated key. Verify it against the
+        # key state the rotation would establish before applying it, so that
+        # a refused request cannot leave the KEL rotated and the rest of this
+        # update undone; then verify again against the state as applied.
+        try:
+            self.authn.verifyPending(req, pre=caid, serder=rot)
+        except (kering.AuthNError, ValueError) as ex:
+            raise falcon.HTTPForbidden(
+                description="invalid signature on request"
+            ) from ex
+
         ctrlHab = agent.hby.habByName(caid, ns="agent")
         ctrlHab.rotate(serder=rot, sigers=[core.Siger(qb64=sig) for sig in sigs])
 

@@ -11,6 +11,7 @@ import json
 import sys
 from urllib.parse import urlsplit
 from io import BytesIO
+from types import SimpleNamespace
 from enum import Enum
 from urllib.parse import quote, unquote
 from abc import ABC, abstractmethod
@@ -58,6 +59,29 @@ def readBody(request: falcon.Request):
     request._bounded_stream = None
     request.context.rawBody = body
     return body
+
+
+class PendingKevers:
+    """Key state with one prefix's pending establishment event applied, for
+    resolving keys only: in and [] as httpsigning.KeverResolver uses them.
+    The pending prefix answers with the event's keys and signing threshold;
+    every other prefix reads through to kevers. Nothing is written."""
+
+    def __init__(self, kevers, pre, serder):
+        self.kevers = kevers
+        self.pre = pre
+        self.state = SimpleNamespace(verfers=serder.verfers, tholder=serder.tholder)
+
+    def __contains__(self, pre):
+        return pre == self.pre or pre in self.kevers
+
+    def __getitem__(self, pre):
+        return self.state if pre == self.pre else self.kevers[pre]
+
+
+def pendingKevers(kevers, pending=None):
+    """Returns kevers, or PendingKevers over it when pending is (pre, serder)."""
+    return kevers if pending is None else PendingKevers(kevers, *pending)
 
 
 class ModifiableRequest(falcon.Request):
@@ -141,18 +165,47 @@ class SignedHeaderAuthenticator(Authenticator):
             request (ModifiableRequest): Falcon request object
 
         """
-        # Only a request whose Signature header parses as legacy takes the
-        # legacy path. Everything else, including an absent or unparsable
-        # header, goes to the canonical verifier, which names the refusal by
-        # its profile code and, with legacy mode off, refuses a legacy
-        # request as malformed-signature.
-        if (
-            self.acceptLegacy
-            and httpsigning.peekMode(request.headers) == httpsigning.Legacy
-        ):
+        if self.isLegacy(request):
             return self.inboundLegacy(request)
 
         return self.inboundCanonical(request)
+
+    def isLegacy(self, request: falcon.Request):
+        """True when the request takes the legacy path.
+
+        Only a request whose Signature header parses as legacy does, and only
+        while legacy mode is accepted. Everything else, including an absent or
+        unparsable header, goes to the canonical verifier, which names the
+        refusal by its profile code and, with legacy mode off, refuses a
+        legacy request as malformed-signature.
+        """
+        return (
+            self.acceptLegacy
+            and httpsigning.peekMode(request.headers) == httpsigning.Legacy
+        )
+
+    def verifyPending(self, request: ModifiableRequest, pre: str, serder):
+        """Verify the request against the key state a pending establishment
+        event would give pre, without applying the event or changing the request
+
+        PUT /agent/{caid} rotates the controller and is signed with the
+        rotated key. Verifying it only after the rotation is applied lets a
+        refused request leave the KEL rotated and the rest of the update
+        undone, so the endpoint calls this first, with the rotation it has
+        not yet applied, and verifies again with inbound once it has.
+
+        Parameters:
+            request (ModifiableRequest): Falcon request object
+            pre (str): qb64 prefix whose key state serder would change
+            serder (SerderKERI): the establishment event, not yet applied
+
+        Raises:
+            kering.AuthNError or ValueError, as inbound does
+        """
+        if self.isLegacy(request):
+            self.verifyLegacy(request, pending=(pre, serder))
+        else:
+            self.verifyCanonical(request, pending=(pre, serder))
 
     def inboundCanonical(self, request: ModifiableRequest):
         """Verify a canonical-mode (RFC 9421) request and its body
@@ -171,13 +224,28 @@ class SignedHeaderAuthenticator(Authenticator):
             request (ModifiableRequest): Falcon request object
 
         """
+        agent, verified = self.verifyCanonical(request)
+        request.context.verified = verified
+        request.path = unquote(request.path)
+        request.context.mode = AuthMode.CANONICAL
+        request.context.agent = agent
+
+    def verifyCanonical(self, request: ModifiableRequest, pending=None):
+        """Returns (agent, verified) for a canonical-mode request, changing
+        nothing on the request. See inboundCanonical.
+
+        Parameters:
+            request (ModifiableRequest): Falcon request object
+            pending (tuple | None): (pre, serder) to verify against the key
+                state serder would give pre, as verifyPending does
+        """
         keyid = httpsigning.signatureKeyid(request.headers)
         agent = self.agency.get(keyid) if keyid else None
         # With no agent for the keyid there is no key state to resolve it in;
         # resolver None refuses a non-AID keyid as malformed-key and any
         # other as unknown-key.
         resolver = (
-            httpsigning.keverResolver(agent.agentHab.kevers)
+            httpsigning.keverResolver(pendingKevers(agent.agentHab.kevers, pending))
             if agent is not None
             else None
         )
@@ -195,11 +263,7 @@ class SignedHeaderAuthenticator(Authenticator):
         )
 
         verified = httpsigning.checkBody(verified, request.headers, readBody(request))
-
-        request.context.verified = verified
-        request.path = unquote(request.path)
-        request.context.mode = AuthMode.CANONICAL
-        request.context.agent = agent
+        return agent, verified
 
     def inboundLegacy(self, request: ModifiableRequest):
         """Validate that the request is correctly signed based on our version of RFC-9421
@@ -207,6 +271,20 @@ class SignedHeaderAuthenticator(Authenticator):
         Parameters:
             request (ModifiableRequest): Falcon request object
 
+        """
+        agent = self.verifyLegacy(request)
+        request.path = unquote(request.path)
+        request.context.mode = AuthMode.SIGNED_HEADERS
+        request.context.agent = agent
+
+    def verifyLegacy(self, request: ModifiableRequest, pending=None):
+        """Returns the agent for a legacy-mode request, changing nothing on
+        the request. See inboundLegacy.
+
+        Parameters:
+            request (ModifiableRequest): Falcon request object
+            pending (tuple | None): (pre, serder) to verify against the key
+                state serder would give pre, as verifyPending does
         """
         self.getRequiredHeader(request, "SIGNATURE-INPUT")
         self.getRequiredHeader(request, "SIGNATURE")
@@ -221,7 +299,9 @@ class SignedHeaderAuthenticator(Authenticator):
         # with no derivation-code or single-signer rules (KERI profile
         # section 8); a KEL the agent has not resolved is refused with
         # "Unknown or invalid controller (controller KEL not resolved)".
-        verfer = httpsigning.keverResolver(agent.agentHab.kevers).legacy(resource)
+        verfer = httpsigning.keverResolver(
+            pendingKevers(agent.agentHab.kevers, pending)
+        ).legacy(resource)
 
         # keripy rebuilds the legacy base and verifies it exactly as KERIA
         # always has, with the same refusal messages.
@@ -231,10 +311,7 @@ class SignedHeaderAuthenticator(Authenticator):
             headers=request.headers,
             verfer=verfer,
         )
-
-        request.path = unquote(request.path)
-        request.context.mode = AuthMode.SIGNED_HEADERS
-        request.context.agent = agent
+        return agent
 
     def outbound(self, request: ModifiableRequest, response: falcon.Response):
         """Sign the response in the mode its request used
