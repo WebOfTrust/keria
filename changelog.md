@@ -1,5 +1,51 @@
 # Changelog
 
+## 0.4.1 - Unreleased
+
+Changes since [0.4.0](https://github.com/WebOfTrust/keria/compare/0.4.0...9f38d063807620cca89d00e9119362a6fe850020), including the dependency upgrade from KERIpy `1.2.12` through `1.2.13` to `1.2.14`. HIO remains pinned to `0.6.14`; Python `>=3.12.2` is still required.
+
+### Authentication and API behavior
+
+- Added ESSR client authentication alongside signed HTTP headers. Clients can tunnel signed, encrypted requests through `POST /` and receive encrypted responses. Exposed authentication headers through CORS and improved signed-header error reporting. ([#351](https://github.com/WebOfTrust/keria/pull/351))
+- Made the ESSR tunnel byte-transparent, including binary bodies, trailing whitespace, and correct byte-based content lengths; malformed envelopes return `401`. ([#456](https://github.com/WebOfTrust/keria/pull/456))
+- Fixed controller-rotation authentication to use the updated authenticator contract and reject invalid request signatures. ([#451](https://github.com/WebOfTrust/keria/pull/451))
+- Added `GET /locschemes/{eid}` to retrieve a known endpoint identifier's location schemes. ([#437](https://github.com/WebOfTrust/keria/pull/437))
+- Bound end-role and location-scheme reply signatures to the last establishment event, allowing replies after interaction events to validate against the correct keys. ([#461](https://github.com/WebOfTrust/keria/pull/461))
+
+### Delegation, credentials, and operations
+
+- Added KERIpy-compatible `/delegate/request` EXN sending and receiving, including singlesig delegation requests and notifications. Approval remains an explicit delegator action; documented the sender/proxy KEL prerequisites and notification flow. ([#432](https://github.com/WebOfTrust/keria/pull/432))
+- Fixed IPEX grant artifact gathering for untargeted credentials and undisclosed issuees, while retaining issuer and available delegation-chain artifacts. ([#453](https://github.com/WebOfTrust/keria/pull/453))
+- Fixed `keria sig-fix` scheduler execution and database iteration, closed intermediate databases to avoid LMDB reader-slot failures, and skipped/reported malformed controller records or habitats without key state. ([#431](https://github.com/WebOfTrust/keria/pull/431), [#458](https://github.com/WebOfTrust/keria/pull/458))
+- Corrected generated OpenAPI schemas for ACDC ordering and extension fields, credential and registry states, anchoring attachments, key events, and nested group-member endpoints. Corrected operation dependency types, required registry dependencies, boolean `done` constants, and delegated inception/rotation embeds. ([#428](https://github.com/WebOfTrust/keria/pull/428), [#441](https://github.com/WebOfTrust/keria/pull/441), [#446](https://github.com/WebOfTrust/keria/pull/446), [#448](https://github.com/WebOfTrust/keria/pull/448))
+
+### Configuration and scheduling
+
+- Fixed startup to honor the supplied agent configuration parameters. ([#397](https://github.com/WebOfTrust/keria/pull/397))
+- Added validated scheduler configuration for long-running Agency/Agent tasks under `tocks.signify`, with KERIpy service settings directly under `tocks`. Resolution uses KERIpy's resolver with precedence `specific env > coarse env > specific config > coarse config > default`. Invalid or unknown settings fail at load time. ([#465](https://github.com/WebOfTrust/keria/pull/465))
+- Retained legacy flat KERIA tock names with deprecation warnings; identical legacy/canonical duplicates are accepted and conflicting duplicates rejected. Migrate these names to `tocks.signify`; removal will be announced in a future release.
+- Defaulted registered work cadences to `0.03125` seconds (one 32 Hz scheduler tick), with explicit `0.0` supported. The idle-Agent release scan remains `60.0` seconds; its inactivity timeout remains separate. Removed the fixed half-second delegation escrow delay and threaded configured or parent cadences through parser waits, witness receipt/resubmission, query/grant workers, servers, and shutdown.
+- Added Agent-owned signal expiry with a configurable scan cadence and safe iteration while notifications are queued. The ten-minute signal lifetime is unchanged.
+- Defined configuration snapshots: new Agents inherit configured Agency values; reopened Agents load their own persisted files. Defaults and environment overrides are not persisted, changes do not live-reload, and Agency template edits do not overwrite existing Agent configuration. Fixed reopening when database and configuration bases differ. Added complete sample configurations and scheduling documentation.
+
+### KERIpy dependency changes used by KERIA
+
+KERIA `0.4.0` pinned `keri==1.2.12`. This release first upgraded to `1.2.13` and then to the published `keri==1.2.14`, retaining the matching `hio==0.6.14` dependency. ([#434](https://github.com/WebOfTrust/keria/pull/434), [#464](https://github.com/WebOfTrust/keria/pull/464))
+
+- **1.2.13 — registry storage:** prevented a `Reger` LMDB environment from being opened twice. ([KERIpy #1366](https://github.com/WebOfTrust/keripy/pull/1366))
+- **1.2.14 — scheduler contracts:** centralized tock configuration and environment overrides, preserved generator-local cadences, corrected parser scheduler boundaries, and clarified Signaler scheduling ownership. These provide the resolver and runtime behavior used by KERIA's scheduling configuration. ([#1585](https://github.com/WebOfTrust/keripy/pull/1585), [#1592](https://github.com/WebOfTrust/keripy/pull/1592), [#1593](https://github.com/WebOfTrust/keripy/pull/1593), [#1594](https://github.com/WebOfTrust/keripy/pull/1594))
+- **Parsing and encrypted exchange:** aligned SPAC/ESSR processing, retained ESSR attachments across exchange escrow retries, consumed KERI/ACDC genus-version counters, handled incomplete Serders as shortages, and corrected the CESR Ed448 signature size. ([#1565](https://github.com/WebOfTrust/keripy/pull/1565), [#1603](https://github.com/WebOfTrust/keripy/pull/1603), [#1447](https://github.com/WebOfTrust/keripy/pull/1447), [#1634](https://github.com/WebOfTrust/keripy/pull/1634), [#1601](https://github.com/WebOfTrust/keripy/pull/1601))
+- **Credentials and notifications:** added revocation details and correct sequence handling to cloned credentials, honored explicitly supplied ACDC issuees, and suppressed IPEX notifications for the local initiator. ([#1599](https://github.com/WebOfTrust/keripy/pull/1599), [#1600](https://github.com/WebOfTrust/keripy/pull/1600), [#1604](https://github.com/WebOfTrust/keripy/pull/1604))
+- **Multisig and discovery:** fixed exchange leader election for `SignifyGroupHab`, made query-not-found escrow retries idempotent, and retained endpoint identifiers from OOBI replies when available. ([#1597](https://github.com/WebOfTrust/keripy/pull/1597), [#1579](https://github.com/WebOfTrust/keripy/pull/1579), [#1606](https://github.com/WebOfTrust/keripy/pull/1606))
+- **Witness delivery:** fixed publisher lifecycle tracking, admitted TCP stream payloads for delivery, avoided redundant messenger creation for completed receipts, and made HTTP/TCP messenger idle state reflect queued and active work rather than stale connection state. ([#1651](https://github.com/WebOfTrust/keripy/pull/1651), [#1653](https://github.com/WebOfTrust/keripy/pull/1653), [#1655](https://github.com/WebOfTrust/keripy/pull/1655), [#1633](https://github.com/WebOfTrust/keripy/pull/1633), [#1657](https://github.com/WebOfTrust/keripy/pull/1657))
+
+KERIpy `1.2.14` also adds operator-side registry rename, schema import, multisig import/export and catch-up workflows, witness query endpoints, and witness configuration/logging fixes. Its own Registrar now uses `Receiptor`, and its `sendArtifacts` handles untargeted credentials. These are dependency tools/services, not new KERIA REST endpoints; KERIA retains its own Registrar and artifact-gathering implementation. See the [complete KERIpy delta](https://github.com/WebOfTrust/keripy/compare/1.2.12...1.2.14) and [release history](https://github.com/WebOfTrust/keripy/blob/1.2.14/ref/ChangeLog.md) for CLI details. The experimental `gleif_hio` upgrade and deterministic TCP teardown changes were reverted before `1.2.14` and are not included.
+
+### Build and documentation
+
+- Refreshed GitHub Actions dependencies and repaired the Read the Docs configuration and documentation badge. ([#459](https://github.com/WebOfTrust/keria/pull/459), [#463](https://github.com/WebOfTrust/keria/pull/463), [#442](https://github.com/WebOfTrust/keria/pull/442))
+- Aligned Makefile Docker tags with `0.4.1`, corrected the documented container commands and package-version maintenance comment, and made Docker publishing build the requested release tag with generated OCI labels and a package-version check.
+
 ## 0.4.0 - 2026-03-23
 
 Changes in this draft cover the delta from `0.2.0-rc2` (`6ad36d5e171c599b078624c9ed4cd1c54e3c1b4a`) through `aba457cab3813078bfedb65a7d819f48d86974b8`.
