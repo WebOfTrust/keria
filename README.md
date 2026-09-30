@@ -100,6 +100,11 @@ In the General tab, check Use containerd for pulling and storing images.
 Select Apply & Restart.
 
 ```shell
-make build-keri
-make publish-keri
+make build-keria
+make publish-keria
 ```
+
+The manual **Publish Docker image** workflow builds the Git tag named by its
+`version` input (for example, `0.4.1`). Create that tag from the reviewed release
+commit, whose `pyproject.toml` version must match. The workflow publishes the
+version tag and `latest`; PyPI publication is a separate release step.

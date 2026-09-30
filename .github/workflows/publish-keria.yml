@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
+        description: Existing release tag matching the package version (e.g. 0.4.1)
+        type: string
         required: true
 jobs:
   push_to_registry:
@@ -12,6 +14,22 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ inputs.version }}
+
+      - name: Verify release version
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import tomllib
+
+          with open("pyproject.toml", "rb") as source:
+              version = tomllib.load(source)["project"]["version"]
+          if version != os.environ["RELEASE_VERSION"]:
+              raise SystemExit("Release tag must match the pyproject.toml version")
+          PY
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v4
@@ -24,6 +42,9 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: weboftrust/keria
+          tags: |
+            type=raw,value=${{ inputs.version }}
+            type=raw,value=latest
 
       # For multi-arch
       - name: Set up QEMU
@@ -48,10 +69,8 @@ jobs:
           file: images/keria.dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            weboftrust/keria:${{ github.event.inputs.version }}
-            weboftrust/keria:latest
-          labels: ${{ github.event.inputs.version }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 

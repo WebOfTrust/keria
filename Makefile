@@ -1,6 +1,6 @@
 .PHONY: build-keria
 
-VERSION=0.4.0
+VERSION=0.4.1
 IMAGE_NAME=weboftrust/keria
 VERSION_TAG=$(IMAGE_NAME):$(VERSION)
 LATEST_TAG=$(IMAGE_NAME):latest
