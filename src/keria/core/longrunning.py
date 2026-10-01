@@ -477,7 +477,7 @@ class Monitor:
                 )
 
             ced = op.metadata["ced"]
-            if self.credentialer.complete(ced["d"]):
+            if self.credentialer.rgy.reger.saved.get(keys=ced["d"]) is not None:
                 done = True
                 response = dict(ced=ced)
             else:
