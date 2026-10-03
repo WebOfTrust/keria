@@ -10,7 +10,7 @@ import json
 from dataclasses import asdict, dataclass, field
 
 import falcon
-from keri import kering, help
+from keri import core, help, kering
 from keri.app import signing
 from keri.app.habbing import SignifyGroupHab
 from keri.core import coring, scheming, serdering
@@ -57,7 +57,7 @@ def loadEnds(app, identifierResource):
     app.add_route("/identifiers/{name}/credentials", credentialCollectionEnd)
 
     credentialRegistryResEnd = CredentialRegistryResourceEnd()
-    app.add_route("/registries/{ri}/{vci}", credentialRegistryResEnd)
+    app.add_route("/registries/{ri}/{credential_said}", credentialRegistryResEnd)
 
     credentialResourceEnd = CredentialResourceEnd()
     app.add_route("/credentials/{said}", credentialResourceEnd)
@@ -849,6 +849,103 @@ class CredentialQueryCollectionEnd:
         rep.data = json.dumps(creds).encode("utf-8")
 
 
+def _telEventSaidProcessed(
+    reger: viring.Reger,
+    credential_said: str,
+    serder: serdering.SerderKERI,
+) -> bool:
+    """Return True when a TEL event with the same SAID already exists."""
+    return reger.getTvt(key=dbing.dgKey(credential_said, serder.said)) is not None
+
+
+def _validateTelAnchor(tel, anc):
+    anchor = dict(i=tel.ked["i"], s=tel.ked["s"], d=tel.said)
+    if anchor not in anc.ked.get("a", []):
+        raise falcon.HTTPBadRequest(
+            description="KEL event does not anchor the submitted TEL event"
+        )
+
+
+def _parseCredentialAnchor(body):
+    if "rot" in body:
+        raise falcon.HTTPBadRequest(
+            description="credential operations only support interaction anchors"
+        )
+    if "ixn" not in body:
+        raise falcon.HTTPBadRequest(
+            description="credential operations require an interaction anchor"
+        )
+
+    try:
+        anc = serdering.SerderKERI(sad=httping.getRequiredParam(body, "ixn"))
+        sigers = [
+            core.Siger(qb64=sig) for sig in httping.getRequiredParam(body, "sigs")
+        ]
+    except (kering.ValidationError, ValueError) as e:
+        raise falcon.HTTPBadRequest(description=e.args[0])
+
+    if not sigers:
+        raise falcon.HTTPBadRequest(
+            description="credential operations require interaction signatures"
+        )
+
+    return anc, sigers
+
+
+def _groupKelRecorded(agent, ghab, anc):
+    dig = agent.hby.db.getKeLast(key=dbing.snKey(pre=ghab.pre, sn=anc.sn))
+    if dig is None:
+        return False
+    if bytes(dig).decode("utf-8") != anc.said:
+        raise falcon.HTTPConflict(
+            description=f"group KEL event at sequence {anc.sn} does not match submitted event"
+        )
+    return True
+
+
+def _validateGroupTelAnchor(agent, ghab, tel, anc):
+    if anc.pre != ghab.pre:
+        raise falcon.HTTPBadRequest(
+            description="KEL event does not belong to the registry controller"
+        )
+    if anc.ilk != coring.Ilks.ixn:
+        raise falcon.HTTPBadRequest(description="KEL event must be an interaction")
+    if not _groupKelRecorded(agent, ghab, anc) and anc.sn != ghab.kever.sn + 1:
+        raise falcon.HTTPConflict(
+            description="KEL event sequence is not the next group event"
+        )
+    _validateTelAnchor(tel, anc)
+
+
+def _startGroupKel(agent, ghab, anc, sigers):
+    if not _groupKelRecorded(agent, ghab, anc):
+        ghab.interact(serder=anc, sigers=sigers)
+
+    agent.counselor.start(
+        ghab=ghab,
+        prefixer=coring.Prefixer(qb64=ghab.pre),
+        seqner=coring.Seqner(sn=anc.sn),
+        saider=coring.Saider(qb64=anc.said),
+    )
+
+
+def _groupCredentialOperation(agent, credential_said, tel, anc, creder=None):
+    metadata = dict(
+        group=dict(pre=anc.pre, sn=anc.sn, said=anc.said),
+        tel=dict(
+            sn=coring.Number(numh=tel.ked["s"]).sn,
+            said=tel.said,
+        ),
+    )
+    if creder is not None:
+        metadata["ced"] = creder.sad
+    else:
+        metadata["credential_said"] = credential_said
+    return agent.monitor.submit(
+        credential_said, longrunning.OpTypes.credential, metadata=metadata
+    )
+
+
 class CredentialCollectionEnd:
     def __init__(self, identifierResource):
         """
@@ -923,6 +1020,8 @@ class CredentialCollectionEnd:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/CredentialOperation'
+            202:
+                description: Group credential issuance accepted.
             400:
                 description: Bad request. This could be due to missing or invalid data.
 
@@ -939,17 +1038,21 @@ class CredentialCollectionEnd:
             raise falcon.HTTPNotFound(
                 description=f"{name} is not a valid reference to an identifier"
             )
+        if hab.kever.estOnly:
+            raise falcon.HTTPBadRequest(
+                description=(
+                    "credential issuance for establishment-only identifiers is not "
+                    "supported"
+                )
+            )
         try:
             creder = serdering.SerderACDC(sad=httping.getRequiredParam(body, "acdc"))
             iserder = serdering.SerderKERI(sad=httping.getRequiredParam(body, "iss"))
-            if "ixn" in body:
-                anc = serdering.SerderKERI(sad=httping.getRequiredParam(body, "ixn"))
-            else:
-                anc = serdering.SerderKERI(sad=httping.getRequiredParam(body, "rot"))
         except (kering.ValidationError, json.decoder.JSONDecodeError) as e:
             rep.status = falcon.HTTP_400
             rep.text = e.args[0]
             return
+        anc, sigers = _parseCredentialAnchor(body)
 
         regk = (
             iserder.ked["ri"]
@@ -966,20 +1069,102 @@ class CredentialCollectionEnd:
             raise falcon.HTTPNotFound(
                 description=f"issue against invalid registry SAID {regk}"
             )
+        if regk not in agent.rgy.regs:
+            raise falcon.HTTPNotFound(
+                description=f"issue against uncontrolled registry SAID {regk}"
+            )
+        registry = agent.rgy.regs[regk]
+        if registry.hab.pre != hab.pre:
+            raise falcon.HTTPNotFound(
+                description=f"registry {regk} is not controlled by identifier {name}"
+            )
 
-        if hab.kever.estOnly:
-            op = self.identifierResource.rotate(agent, name, body)
-        else:
-            op = self.identifierResource.interact(agent, name, body)
+        tever = agent.rgy.tevers[regk]
+        credential_said = creder.said
+        issuance_credential_said = iserder.ked.get("i")
+        if issuance_credential_said != credential_said:
+            raise falcon.HTTPBadRequest(
+                description=(
+                    f"issuance event credential SAID {issuance_credential_said} does not match "
+                    f"acdc credential SAID {credential_said}"
+                )
+            )
+
+        groupCredential = isinstance(registry.hab, SignifyGroupHab)
+        if groupCredential:
+            _validateGroupTelAnchor(agent, registry.hab, iserder, anc)
+            existing = agent.monitor.opr.ops.get(
+                keys=(f"{longrunning.OpTypes.credential}.{credential_said}",)
+            )
+            if (
+                existing is not None
+                and existing.metadata.get("tel", {}).get("said") == iserder.said
+            ):
+                op = agent.monitor.get(
+                    f"{longrunning.OpTypes.credential}.{credential_said}"
+                )
+                rep.status = falcon.HTTP_202
+                rep.data = op.to_json().encode("utf-8")
+                return
+
+            if _telEventSaidProcessed(agent.rgy.reger, credential_said, iserder):
+                _startGroupKel(agent, registry.hab, anc, sigers)
+                agent.registrar.escrowGroupTel(regk, iserder, anc)
+                agent.credentialer.issue(creder=creder, serder=iserder)
+                op = _groupCredentialOperation(
+                    agent, credential_said, iserder, anc, creder
+                )
+                rep.status = falcon.HTTP_202
+                rep.data = op.to_json().encode("utf-8")
+                return
+
+        if tever.vcState(credential_said) is not None:
+            raise falcon.HTTPConflict(
+                description=f"credential {credential_said} is already issued in registry {regk}"
+            )
+
+        iss_sn = coring.Number(numh=iserder.ked["s"]).sn
+        credential_event_sn = tever.vcSn(credential_said)
+        expected_sn = 0 if credential_event_sn is None else credential_event_sn + 1
+        if iss_sn != expected_sn:
+            raise falcon.HTTPConflict(
+                description=(
+                    f"issuance event sequence {iss_sn} does not chain to current "
+                    f"TEL head for credential {credential_said}"
+                )
+            )
+
+        if _telEventSaidProcessed(agent.rgy.reger, credential_said, iserder):
+            raise falcon.HTTPConflict(
+                description=f"issuance event {iserder.said} has already been processed"
+            )
+        _validateTelAnchor(iserder, anc)
 
         try:
             agent.credentialer.validate(creder)
+        except kering.ConfigurationError as e:
+            rep.status = falcon.HTTP_400
+            rep.text = e.args[0]
+            return
+
+        if groupCredential:
+            _startGroupKel(agent, registry.hab, anc, sigers)
+            agent.credentialer.issue(creder=creder, serder=iserder)
+            agent.registrar.issue(regk, iserder, anc)
+            op = _groupCredentialOperation(agent, credential_said, iserder, anc, creder)
+            rep.status = falcon.HTTP_202
+            rep.data = op.to_json().encode("utf-8")
+            return
+
+        op = self.identifierResource.interact(agent, name, body)
+
+        try:
             agent.registrar.issue(regk, iserder, anc)
             agent.credentialer.issue(creder=creder, serder=iserder)
             op = agent.monitor.submit(
                 creder.said,
                 longrunning.OpTypes.credential,
-                metadata=dict(ced=creder.sad, depends=op),
+                metadata=dict(ced=creder.sad),
             )
 
         except kering.ConfigurationError as e:
@@ -1175,7 +1360,6 @@ class CredentialResourceDeleteEnd:
         RequestBody:
             rev (str): serialized revocation event
             ixn (str): serialized interaction event
-            rot (str): serialized rotation event
             sigs (list): list of signatures for the revocation event
         ---
         summary: Perform credential revocation
@@ -1207,10 +1391,7 @@ class CredentialResourceDeleteEnd:
                       description: Serialized revocation event.
                     ixn:
                       type: string
-                      description: Serialized interaction event.
-                    rot:
-                      type: string
-                      description: Serialized rotation event.
+                      description: Required serialized interaction event that anchors the revocation.
                     sigs:
                       type: array
                       items:
@@ -1227,6 +1408,8 @@ class CredentialResourceDeleteEnd:
                         - $ref: '#/components/schemas/DelegationOperation'
                         - $ref: '#/components/schemas/WitnessOperation'
                         - $ref: '#/components/schemas/DoneOperation'
+            202:
+                description: Group credential revocation accepted.
             400:
                 description: Bad request. This could be due to invalid revocation event or other invalid parameters.
             404:
@@ -1245,13 +1428,30 @@ class CredentialResourceDeleteEnd:
             raise falcon.HTTPNotFound(
                 description=f"{name} is not a valid reference to an identifier"
             )
+        if hab.kever.estOnly:
+            raise falcon.HTTPBadRequest(
+                description=(
+                    "credential revocation for establishment-only identifiers is not "
+                    "supported"
+                )
+            )
 
         rserder = serdering.SerderKERI(sad=httping.getRequiredParam(body, "rev"))
+        anc, sigers = _parseCredentialAnchor(body)
 
         regk = rserder.ked["ri"]
         if regk not in agent.rgy.tevers:
             raise falcon.HTTPNotFound(
                 description=f"revocation against invalid registry SAID {regk}"
+            )
+        if regk not in agent.rgy.regs:
+            raise falcon.HTTPNotFound(
+                description=f"revocation against uncontrolled registry SAID {regk}"
+            )
+        registry = agent.rgy.regs[regk]
+        if registry.hab.pre != hab.pre:
+            raise falcon.HTTPNotFound(
+                description=f"registry {regk} is not controlled by identifier {name}"
             )
 
         try:
@@ -1261,12 +1461,71 @@ class CredentialResourceDeleteEnd:
                 description=f"credential for said {said} not found."
             )
 
-        if hab.kever.estOnly:
-            op = self.identifierResource.rotate(agent, name, body)
-            anc = httping.getRequiredParam(body, "rot")
-        else:
-            op = self.identifierResource.interact(agent, name, body)
-            anc = httping.getRequiredParam(body, "ixn")
+        tever = agent.rgy.tevers[regk]
+        revocation_credential_said = rserder.ked.get("i")
+        if revocation_credential_said != said:
+            raise falcon.HTTPBadRequest(description="invalid revocation event.")
+
+        groupCredential = isinstance(registry.hab, SignifyGroupHab)
+        if groupCredential:
+            _validateGroupTelAnchor(agent, registry.hab, rserder, anc)
+            existing = agent.monitor.opr.ops.get(
+                keys=(f"{longrunning.OpTypes.credential}.{said}",)
+            )
+            if (
+                existing is not None
+                and existing.metadata.get("tel", {}).get("said") == rserder.said
+            ):
+                op = agent.monitor.get(f"{longrunning.OpTypes.credential}.{said}")
+                rep.status = falcon.HTTP_202
+                rep.data = op.to_json().encode("utf-8")
+                return
+
+            if _telEventSaidProcessed(agent.rgy.reger, said, rserder):
+                _startGroupKel(agent, registry.hab, anc, sigers)
+                agent.registrar.escrowGroupTel(regk, rserder, anc)
+                op = _groupCredentialOperation(agent, said, rserder, anc)
+                rep.status = falcon.HTTP_202
+                rep.data = op.to_json().encode("utf-8")
+                return
+
+        state = tever.vcState(said)
+        if state is None:
+            raise falcon.HTTPConflict(
+                description=f"credential {said} is not issued in registry {regk}"
+            )
+
+        if state.et in (coring.Ilks.rev, coring.Ilks.brv):
+            raise falcon.HTTPConflict(
+                description=f"credential {said} is already revoked in registry {regk}"
+            )
+
+        rev_sn = coring.Number(numh=rserder.ked["s"]).sn
+        credential_event_sn = tever.vcSn(said)
+        expected_sn = 0 if credential_event_sn is None else credential_event_sn + 1
+        if rev_sn != expected_sn:
+            raise falcon.HTTPConflict(
+                description=(
+                    f"revocation event sequence {rev_sn} does not chain to current "
+                    f"TEL head for credential {said}"
+                )
+            )
+
+        if _telEventSaidProcessed(agent.rgy.reger, said, rserder):
+            raise falcon.HTTPConflict(
+                description=f"revocation event {rserder.said} has already been processed"
+            )
+        _validateTelAnchor(rserder, anc)
+
+        if groupCredential:
+            _startGroupKel(agent, registry.hab, anc, sigers)
+            agent.registrar.revoke(regk, rserder, anc)
+            op = _groupCredentialOperation(agent, said, rserder, anc)
+            rep.status = falcon.HTTP_202
+            rep.data = op.to_json().encode("utf-8")
+            return
+
+        op = self.identifierResource.interact(agent, name, body)
 
         try:
             agent.registrar.revoke(regk, rserder, anc)
@@ -1279,7 +1538,7 @@ class CredentialResourceDeleteEnd:
 
 class CredentialRegistryResourceEnd:
     @staticmethod
-    def on_get(req, rep, ri, vci):
+    def on_get(req, rep, ri, credential_said):
         """Get credential registry state
 
         Parameters:
@@ -1300,7 +1559,7 @@ class CredentialRegistryResourceEnd:
              required: true
              description: SAID of management TEL
            - in: path
-             name: vci
+             name: credential_said
              schema:
                type: string
              required: true
@@ -1321,10 +1580,10 @@ class CredentialRegistryResourceEnd:
             raise falcon.HTTPNotFound(description=f"registry {ri} not found")
         tever = agent.tvy.tevers[ri]
 
-        state = tever.vcState(vci)
+        state = tever.vcState(credential_said)
         if not state:
             raise falcon.HTTPNotFound(
-                description=f"credential {vci} not found in registry {ri}"
+                description=f"credential {credential_said} not found in registry {ri}"
             )
 
         rep.status = falcon.HTTP_200
@@ -1452,23 +1711,7 @@ class Registrar:
             return vcid, rseq.sn
 
         else:  # multisig group hab
-            sn = anc.sn
-            said = anc.said
-
-            prefixer = coring.Prefixer(qb64=hab.pre)
-            seqner = coring.Seqner(sn=sn)
-            saider = coring.Saider(qb64=said)
-
-            logger.info(
-                "[%s | %s]: Waiting for TEL iss event mulisig anchoring event %s",
-                hab.name,
-                hab.pre,
-                seqner.sn,
-            )
-            self.rgy.reger.tmse.add(
-                keys=(vcid, rseq.qb64, iserder.said), val=(prefixer, seqner, saider)
-            )
-            return vcid, rseq.sn
+            return self.escrowGroupTel(regk, iserder, anc)
 
     def revoke(self, regk, rserder, anc):
         """
@@ -1503,28 +1746,34 @@ class Registrar:
             )
             return vcid, rseq.sn
         else:
-            serder = serdering.SerderKERI(sad=anc)
-            sn = serder.sn
-            said = serder.said
+            return self.escrowGroupTel(regk, rserder, anc)
 
-            prefixer = coring.Prefixer(qb64=hab.pre)
-            seqner = coring.Seqner(sn=sn)
-            saider = coring.Saider(qb64=said)
-
-            self.counselor.start(
-                prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab
+    def escrowGroupTel(self, regk, serder, anc):
+        """Ensure the multisig escrow exists for a processed TEL event."""
+        registry = self.rgy.regs[regk]
+        hab = registry.hab
+        if not isinstance(hab, SignifyGroupHab):
+            raise kering.ConfigurationError(
+                f"registry {regk} is not controlled by a group identifier"
             )
 
-            logger.info(
-                "[%s | %s]: Waiting for TEL rev event mulisig anchoring event %s",
-                hab.name,
-                hab.pre,
-                seqner.sn,
-            )
-            self.rgy.reger.tmse.add(
-                keys=(vcid, rseq.qb64, rserder.said), val=(prefixer, seqner, saider)
-            )
-            return vcid, rseq.sn
+        vcid = serder.ked["i"]
+        rseq = coring.Seqner(snh=serder.ked["s"])
+        prefixer = coring.Prefixer(qb64=hab.pre)
+        seqner = coring.Seqner(sn=anc.sn)
+        saider = coring.Saider(qb64=anc.said)
+
+        logger.info(
+            "[%s | %s]: Waiting for TEL %s event multisig anchoring event %s",
+            hab.name,
+            hab.pre,
+            serder.ilk,
+            seqner.sn,
+        )
+        self.rgy.reger.tmse.add(
+            keys=(vcid, rseq.qb64, serder.said), val=(prefixer, seqner, saider)
+        )
+        return vcid, rseq.sn
 
     def complete(self, pre, sn=0):
         """Determine if registry event (inception, issuance, revocation, etc.) is finished validation

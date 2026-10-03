@@ -331,7 +331,7 @@ def test_operation_bad_metadata(helpers):
             agent.monitor.status(credop)
         assert (
             str(err.value)
-            == "invalid long running credential operation, metadata missing 'ced' field"
+            == "invalid long running credential operation, metadata missing 'ced' or 'credential_said' field"
         )
 
         # End role
@@ -426,6 +426,75 @@ def test_operation_bad_metadata(helpers):
             str(err.value)
             == "invalid long running challenge operation, metadata missing 'words' field"
         )
+
+
+def test_group_credential_operation_status(helpers, monkeypatch):
+    with helpers.openKeria() as (_, agent, _, _):
+        credential_said = "EHgwVwQT15OJvilVvW57HE4w0-GPs_Stj2OFoAHZSysY"
+        group = dict(
+            pre="EIsavDv6zpJDPauh24RSCx00jGc6VMe3l84Y8pPS8p-1",
+            sn=1,
+            said="EAF7geUfHm-M5lA-PI6Jv-4708a-KknnlMlA7U1_Wduv",
+        )
+        tel = dict(sn=0, said="EAyXphfc0qOLqEDAe0cCYCj-ovbSaEFgVgX6MrC_b5ZO")
+
+        def status(metadata):
+            return agent.monitor.status(
+                longrunning.Op(
+                    type=longrunning.OpTypes.credential,
+                    oid=credential_said,
+                    start=helping.nowIso8601(),
+                    metadata=metadata,
+                )
+            )
+
+        with pytest.raises(ValidationError) as err:
+            status(dict(credential_said=credential_said, group=dict(pre=group["pre"])))
+        assert (
+            str(err.value)
+            == "invalid long running credential operation, group metadata missing required fields ('pre', 'sn', 'said')"
+        )
+
+        with pytest.raises(ValidationError) as err:
+            status(dict(credential_said=credential_said, group=group))
+        assert (
+            str(err.value)
+            == "invalid long running credential operation, group credential metadata missing TEL sequence"
+        )
+
+        stages = dict(kel=False, tel=False, credential=False)
+        monkeypatch.setattr(agent.counselor, "complete", lambda *_: stages["kel"])
+        monkeypatch.setattr(agent.registrar, "complete", lambda **_: stages["tel"])
+        monkeypatch.setattr(
+            agent.credentialer, "complete", lambda _: stages["credential"]
+        )
+
+        metadata = dict(credential_said=credential_said, group=group, tel=tel)
+        operation = status(metadata)
+        assert operation.done is False
+        assert operation.metadata["state"] == "kel-pending"
+
+        stages["kel"] = True
+        operation = status(metadata)
+        assert operation.done is False
+        assert operation.metadata["state"] == "tel-pending"
+
+        stages["tel"] = True
+        operation = status(metadata)
+        assert operation.done is True
+        assert operation.metadata["state"] == "completed"
+        assert operation.response == dict(credential_said=credential_said)
+
+        credential_metadata = dict(ced=dict(d=credential_said), group=group, tel=tel)
+        operation = status(credential_metadata)
+        assert operation.done is False
+        assert operation.metadata["state"] == "credential-pending"
+
+        stages["credential"] = True
+        operation = status(credential_metadata)
+        assert operation.done is True
+        assert operation.metadata["state"] == "completed"
+        assert operation.response == dict(ced=credential_metadata["ced"])
 
 
 def test_error(helpers):

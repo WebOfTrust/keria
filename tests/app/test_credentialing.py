@@ -12,7 +12,9 @@ import falcon
 from falcon import testing
 from hio.base import doing
 from keri.app import habbing
-from keri.core import scheming, coring, parsing, serdering
+from keri.app.habbing import SignifyGroupHab
+from keri.core import eventing as keventing, scheming, coring, parsing, serdering
+from keri.db import dbing
 from keri.core.eventing import SealEvent
 from keri.core.signing import Salter
 from keri.kering import TraitCodex
@@ -313,7 +315,7 @@ def test_issue_credential(helpers, seeder):
         seeder.seedSchema(agent1.hby.db)
 
         # create the server that will receive the credential issuance messages
-        serverDoer = helpers.server(agency)
+        serverDoer = helpers.server(agency, httpPort=3903)
 
         tock = 0.03125
         limit = 1.0
@@ -444,7 +446,7 @@ def test_credentialing_ends(helpers, seeder):
         credResEnd = credentialing.CredentialResourceEnd()
         app.add_route("/credentials/{said}", credResEnd)
         credentialRegistryResEnd = credentialing.CredentialRegistryResourceEnd()
-        app.add_route("/registries/{ri}/{vci}", credentialRegistryResEnd)
+        app.add_route("/registries/{ri}/{credential_said}", credentialRegistryResEnd)
 
         assert hab.pre == "EIqTaQiZw73plMOq8pqHTi9BDgDrrE7iE9v2XfN2Izze"
 
@@ -682,12 +684,12 @@ def test_revoke_credential(helpers, seeder):
         credResEnd = credentialing.CredentialQueryCollectionEnd()
         app.add_route("/credentials/query", credResEnd)
         credentialRegistryResEnd = credentialing.CredentialRegistryResourceEnd()
-        app.add_route("/registries/{ri}/{vci}", credentialRegistryResEnd)
+        app.add_route("/registries/{ri}/{credential_said}", credentialRegistryResEnd)
 
         seeder.seedSchema(agent.hby.db)
 
         # create the server that will receive the credential issuance messages
-        serverDoer = helpers.server(agency)
+        serverDoer = helpers.server(agency, httpPort=3904)
 
         tock = 0.03125
         limit = 1.0
@@ -862,3 +864,651 @@ def test_revoke_credential(helpers, seeder):
         assert res.status_code == 200
         assert res.json["s"] == "1"
         assert res.json["et"] == "rev"
+
+
+def _setup_credential_issue_routes(app, idResEnd):
+    app.add_route("/identifiers/{name}", idResEnd)
+    registryEnd = credentialing.RegistryCollectionEnd(idResEnd)
+    app.add_route("/identifiers/{name}/registries", registryEnd)
+    credEnd = credentialing.CredentialCollectionEnd(idResEnd)
+    app.add_route("/identifiers/{name}/credentials", credEnd)
+    opEnd = longrunning.OperationResourceEnd()
+    app.add_route("/operations/{name}", opEnd)
+    end = aiding.IdentifierCollectionEnd()
+    app.add_route("/identifiers", end)
+    endRolesEnd = aiding.EndRoleCollectionEnd()
+    app.add_route("/identifiers/{name}/endroles", endRolesEnd)
+    credResEnd = credentialing.CredentialResourceEnd()
+    app.add_route("/credentials/{said}", credResEnd)
+    credResDelEnd = credentialing.CredentialResourceDeleteEnd(idResEnd)
+    app.add_route("/identifiers/{name}/credentials/{said}", credResDelEnd)
+    credentialRegistryResEnd = credentialing.CredentialRegistryResourceEnd()
+    app.add_route("/registries/{ri}/{credential_said}", credentialRegistryResEnd)
+
+
+def _create_group_member(client, helpers, name, salt):
+    helpers.createAid(client, name, salt)
+    member = client.simulate_get(f"/identifiers/{name}").json
+    _, signers = helpers.incept(salt, "signify:aid", pidx=0)
+    return member, signers[0]
+
+
+def _share_identifier(source, target, name):
+    target.parser.parse(ims=source.hby.habByName(name).replay())
+
+
+def _join_group(client, member, members, group_icp, group_sigs, keys, ndigs):
+    prefixes = [record["prefix"] for record in members]
+    result = client.simulate_post(
+        "/identifiers",
+        body=json.dumps(
+            dict(
+                name="group",
+                icp=group_icp.ked,
+                sigs=group_sigs,
+                smids=prefixes,
+                rmids=prefixes,
+                group=dict(mhab=member, keys=keys, ndigs=ndigs),
+            )
+        ),
+    )
+    assert result.status_code == 202
+
+
+def _group_interaction(ghab, signers, data):
+    serder = keventing.interact(
+        pre=ghab.pre,
+        dig=ghab.kever.serder.said,
+        sn=ghab.kever.sn + 1,
+        data=data,
+    )
+    sigs = [
+        signer.sign(ser=serder.raw, index=index).qb64
+        for index, signer in enumerate(signers)
+    ]
+    return serder, sigs
+
+
+def _run_until(doist, deeds, predicate):
+    for _ in range(100):
+        doist.recur(deeds=deeds)
+        if predicate():
+            return
+    assert predicate()
+
+
+def _create_group_registry(client, ghab, signers, agent, doist, deeds, registry=None):
+    if registry is None:
+        registry = eventing.incept(
+            ghab.pre,
+            baks=[],
+            toad="0",
+            nonce=Salter().qb64,
+            cnfg=[TraitCodex.NoBackers],
+            code=coring.MtrDex.Blake3_256,
+        )
+    anchor = dict(i=registry.ked["i"], s=registry.ked["s"], d=registry.said)
+    kel, sigs = _group_interaction(ghab, signers, [anchor])
+    result = client.simulate_post(
+        "/identifiers/group/registries",
+        body=json.dumps(
+            dict(
+                name="group-registry",
+                vcp=registry.ked,
+                ixn=kel.ked,
+                sigs=sigs,
+                group={},
+            )
+        ),
+    )
+    assert result.status_code == 202
+    _run_until(doist, deeds, lambda: registry.pre in agent.tvy.tevers)
+    return registry
+
+
+def _build_group_issuance(ghab, signers, registry, recipient, lei):
+    dt = "2021-01-01T00:00:00.000000+00:00"
+    credential = proving.credential(
+        issuer=ghab.pre,
+        schema="EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs",
+        recipient=recipient,
+        data=dict(LEI=lei, dt=dt),
+        source={},
+        status=registry.pre,
+    )
+    tel, kel, body = _build_group_credential_request(
+        ghab, signers, registry, credential
+    )
+    return credential, tel, kel, body
+
+
+def _build_group_credential_request(ghab, signers, registry, credential):
+    tel = eventing.issue(
+        vcdig=credential.said,
+        regk=registry.pre,
+        dt=credential.sad["a"]["dt"],
+    )
+    anchor = dict(i=tel.ked["i"], s=tel.ked["s"], d=tel.said)
+    kel, sigs = _group_interaction(ghab, signers, [anchor])
+    body = dict(acdc=credential.sad, iss=tel.ked, ixn=kel.ked, sigs=sigs, group={})
+    return tel, kel, body
+
+
+def _build_issuance_body(
+    helpers, registry, iaid, idig, isalt, recp, lei, sn, dig, dt, schema
+):
+    data = dict(LEI=lei, dt=dt)
+    creder = proving.credential(
+        issuer=iaid,
+        schema=schema,
+        recipient=recp,
+        data=data,
+        source={},
+        status=registry["regk"],
+    )
+    csigers = helpers.sign(bran=isalt, pidx=0, ridx=0, ser=creder.raw)
+    regser = eventing.issue(vcdig=creder.said, regk=registry["regk"], dt=dt)
+    anchor = dict(i=regser.ked["i"], s=regser.ked["s"], d=regser.said)
+    serder, sigers = helpers.interact(
+        pre=iaid, bran=isalt, pidx=0, ridx=0, dig=dig, sn=sn, data=[anchor]
+    )
+    pather = coring.Pather(path=[])
+    body = dict(
+        iss=regser.ked,
+        ixn=serder.ked,
+        sigs=sigers,
+        acdc=creder.sad,
+        csigs=csigers,
+        path=pather.qb64,
+    )
+    return creder, body, serder
+
+
+def test_duplicate_issuance_rejection(helpers, seeder):
+    with helpers.openKeria() as (agency, agent, app, client):
+        idResEnd = aiding.IdentifierResourceEnd()
+        _setup_credential_issue_routes(app, idResEnd)
+        seeder.seedSchema(agent.hby.db)
+
+        serverDoer = helpers.server(agency, httpPort=3905)
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+        deeds = doist.enter(doers=[agent, serverDoer])
+
+        isalt = b"0123456789abcdef"
+        registry, issuer = helpers.createRegistry(client, agent, isalt, doist, deeds)
+        iaid = issuer["prefix"]
+        idig = issuer["state"]["d"]
+
+        rsalt = b"abcdef0123456789"
+        op = helpers.createAid(client, "recipient", rsalt)
+        recp = op["response"]["i"]
+        helpers.createEndRole(client, agent, recp, "recipient", rsalt)
+
+        dt = "2021-01-01T00:00:00.000000+00:00"
+        schema = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
+        creder, body, _ = _build_issuance_body(
+            helpers,
+            registry,
+            iaid,
+            idig,
+            isalt,
+            recp,
+            "254900DA0GOGCFVWB618",
+            "2",
+            idig,
+            dt,
+            schema,
+        )
+        issuance_body = json.dumps(body).encode("utf-8")
+
+        result = client.simulate_post(
+            path="/identifiers/issuer/credentials", body=issuance_body
+        )
+        assert result.status_code == 200
+
+        while not agent.credentialer.complete(creder.said):
+            doist.recur(deeds=deeds)
+
+        res = client.simulate_get(f"/credentials/{creder.said}")
+        assert res.status_code == 200
+
+        result = client.simulate_post(
+            path="/identifiers/issuer/credentials", body=issuance_body
+        )
+        assert result.status_code == 409
+        assert "already issued" in result.json["description"]
+
+        res = client.simulate_get(f"/credentials/{creder.said}")
+        assert res.status_code == 200
+
+
+def test_issuance_rejects_stale_and_persisted_tel_events(helpers, seeder):
+    with helpers.openKeria() as (agency, agent, app, client):
+        idResEnd = aiding.IdentifierResourceEnd()
+        _setup_credential_issue_routes(app, idResEnd)
+        seeder.seedSchema(agent.hby.db)
+
+        serverDoer = helpers.server(agency, httpPort=3906)
+        doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+        deeds = doist.enter(doers=[agent, serverDoer])
+
+        salt = b"0123456789abcdef"
+        registry, issuer = helpers.createRegistry(client, agent, salt, doist, deeds)
+        iaid = issuer["prefix"]
+        idig = issuer["state"]["d"]
+        creder, body, _ = _build_issuance_body(
+            helpers,
+            registry,
+            iaid,
+            idig,
+            salt,
+            iaid,
+            "254900DA0GOGCFVWB618",
+            "2",
+            idig,
+            "2021-01-01T00:00:00.000000+00:00",
+            "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs",
+        )
+
+        staleKed = dict(body["iss"], s="1", d="")
+        stale = serdering.SerderKERI(sad=staleKed, makify=True)
+        staleBody = dict(body, iss=stale.ked)
+        result = client.simulate_post(
+            "/identifiers/issuer/credentials", body=json.dumps(staleBody)
+        )
+        assert result.status_code == 409
+        assert "does not chain to current TEL head" in result.json["description"]
+
+        iserder = serdering.SerderKERI(sad=body["iss"])
+        assert agent.rgy.reger.putTvt(
+            dbing.dgKey(creder.said, iserder.said), iserder.raw
+        )
+        result = client.simulate_post(
+            "/identifiers/issuer/credentials", body=json.dumps(body)
+        )
+        assert result.status_code == 409
+        assert "has already been processed" in result.json["description"]
+
+
+def test_credential_issuance_requires_interaction_anchor(helpers, seeder):
+    with helpers.openKeria() as (agency, agent, app, client):
+        idResEnd = aiding.IdentifierResourceEnd()
+        _setup_credential_issue_routes(app, idResEnd)
+        seeder.seedSchema(agent.hby.db)
+
+        serverDoer = helpers.server(agency, httpPort=3907)
+        doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+        deeds = doist.enter(doers=[agent, serverDoer])
+
+        salt = b"0123456789abcdef"
+        registry, issuer = helpers.createRegistry(client, agent, salt, doist, deeds)
+        iaid = issuer["prefix"]
+        idig = issuer["state"]["d"]
+        creder, body, _ = _build_issuance_body(
+            helpers,
+            registry,
+            iaid,
+            idig,
+            salt,
+            iaid,
+            "254900DA0GOGCFVWB618",
+            "2",
+            idig,
+            "2021-01-01T00:00:00.000000+00:00",
+            "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs",
+        )
+        issuer_hab = agent.hby.habByName("issuer")
+        kel_sn = issuer_hab.kever.sn
+
+        without_anchor = dict(body)
+        without_anchor.pop("ixn")
+        rotation_anchor = dict(body)
+        rotation_anchor["rot"] = rotation_anchor.pop("ixn")
+        both_anchors = dict(body, rot=body["ixn"])
+
+        for payload, description in (
+            (without_anchor, "require an interaction anchor"),
+            (rotation_anchor, "only support interaction anchors"),
+            (both_anchors, "only support interaction anchors"),
+        ):
+            result = client.simulate_post(
+                "/identifiers/issuer/credentials", body=json.dumps(payload)
+            )
+            assert result.status_code == 400
+            assert description in result.json["description"]
+            assert issuer_hab.kever.sn == kel_sn
+            assert agent.rgy.tevers[registry["regk"]].vcState(creder.said) is None
+
+
+def test_duplicate_issuance_rejection_registry_advanced(helpers, seeder):
+    with helpers.openKeria() as (agency, agent, app, client):
+        idResEnd = aiding.IdentifierResourceEnd()
+        _setup_credential_issue_routes(app, idResEnd)
+        seeder.seedSchema(agent.hby.db)
+
+        serverDoer = helpers.server(agency, httpPort=3908)
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+        deeds = doist.enter(doers=[agent, serverDoer])
+
+        isalt = b"0123456789abcdef"
+        registry, issuer = helpers.createRegistry(client, agent, isalt, doist, deeds)
+        iaid = issuer["prefix"]
+        idig = issuer["state"]["d"]
+
+        rsalt = b"abcdef0123456789"
+        op = helpers.createAid(client, "recipient", rsalt)
+        recp = op["response"]["i"]
+        helpers.createEndRole(client, agent, recp, "recipient", rsalt)
+
+        dt = "2021-01-01T00:00:00.000000+00:00"
+        schema = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
+        creder_a, body_a, ixn_a = _build_issuance_body(
+            helpers,
+            registry,
+            iaid,
+            idig,
+            isalt,
+            recp,
+            "254900DA0GOGCFVWB618",
+            "2",
+            idig,
+            dt,
+            schema,
+        )
+        issuance_body_a = json.dumps(body_a).encode("utf-8")
+        result = client.simulate_post(
+            path="/identifiers/issuer/credentials", body=issuance_body_a
+        )
+        assert result.status_code == 200
+
+        while not agent.credentialer.complete(creder_a.said):
+            doist.recur(deeds=deeds)
+
+        res = client.simulate_get(f"/credentials/{creder_a.said}")
+        assert res.status_code == 200
+
+        creder_b, body_b, _ = _build_issuance_body(
+            helpers,
+            registry,
+            iaid,
+            idig,
+            isalt,
+            recp,
+            "9845004CC7884BN85018",
+            "3",
+            ixn_a.said,
+            dt,
+            schema,
+        )
+        result = client.simulate_post(
+            path="/identifiers/issuer/credentials",
+            body=json.dumps(body_b).encode("utf-8"),
+        )
+        assert result.status_code == 200
+
+        while not agent.credentialer.complete(creder_b.said):
+            doist.recur(deeds=deeds)
+
+        result = client.simulate_post(
+            path="/identifiers/issuer/credentials", body=issuance_body_a
+        )
+        assert result.status_code == 409
+        assert "already issued" in result.json["description"]
+
+        res = client.simulate_get(f"/credentials/{creder_a.said}")
+        assert res.status_code == 200
+
+        res = client.simulate_get(f"/credentials/{creder_b.said}")
+        assert res.status_code == 200
+
+
+def test_duplicate_revocation_rejection(helpers, seeder):
+    with helpers.openKeria() as (agency, agent, app, client):
+        idResEnd = aiding.IdentifierResourceEnd()
+        _setup_credential_issue_routes(app, idResEnd)
+        seeder.seedSchema(agent.hby.db)
+
+        serverDoer = helpers.server(agency, httpPort=3909)
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+        deeds = doist.enter(doers=[agent, serverDoer])
+
+        isalt = b"0123456789abcdef"
+        registry, issuer = helpers.createRegistry(client, agent, isalt, doist, deeds)
+        iaid = issuer["prefix"]
+        idig = issuer["state"]["d"]
+
+        rsalt = b"abcdef0123456789"
+        op = helpers.createAid(client, "recipient", rsalt)
+        recp = op["response"]["i"]
+        helpers.createEndRole(client, agent, recp, "recipient", rsalt)
+
+        dt = "2021-01-01T00:00:00.000000+00:00"
+        schema = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
+        creder, body, ixn = _build_issuance_body(
+            helpers,
+            registry,
+            iaid,
+            idig,
+            isalt,
+            recp,
+            "254900DA0GOGCFVWB618",
+            "2",
+            idig,
+            dt,
+            schema,
+        )
+        result = client.simulate_post(
+            path="/identifiers/issuer/credentials",
+            body=json.dumps(body).encode("utf-8"),
+        )
+        assert result.status_code == 200
+
+        while not agent.credentialer.complete(creder.said):
+            doist.recur(deeds=deeds)
+
+        res = client.simulate_get(f"/credentials/{creder.said}")
+        assert res.status_code == 200
+
+        iss_regser = eventing.issue(vcdig=creder.said, regk=registry["regk"], dt=dt)
+        regser = eventing.revoke(
+            vcdig=creder.said, regk=registry["regk"], dig=iss_regser.said, dt=dt
+        )
+        anchor = dict(i=regser.ked["i"], s=regser.ked["s"], d=regser.said)
+        serder, sigers = helpers.interact(
+            pre=iaid, bran=isalt, pidx=0, ridx=0, dig=ixn.said, sn="3", data=[anchor]
+        )
+        revoke_body = dict(rev=regser.ked, ixn=serder.ked, sigs=sigers)
+        revoke_payload = json.dumps(revoke_body).encode("utf-8")
+
+        res = client.simulate_delete(
+            path=f"/identifiers/issuer/credentials/{creder.said}",
+            body=revoke_payload,
+        )
+        assert res.status_code == 200
+
+        while not agent.registrar.complete(creder.said, sn=1):
+            doist.recur(deeds=deeds)
+
+        res = client.simulate_delete(
+            path=f"/identifiers/issuer/credentials/{creder.said}",
+            body=revoke_payload,
+        )
+        assert res.status_code == 409
+        assert "already revoked" in res.json["description"]
+
+        res = client.simulate_get(f"/credentials/{creder.said}")
+        assert res.status_code == 200
+
+        res = client.simulate_get(f"/registries/{registry['regk']}/{creder.said}")
+        assert res.status_code == 200
+        assert res.json["et"] == "rev"
+
+
+def test_second_member_retry_does_not_block_in_flight_credential(helpers, seeder):
+    with (
+        helpers.openKeria(salter=Salter(raw=b"0123456789abcM01")) as (
+            _,
+            agent_one,
+            app_one,
+            client_one,
+        ),
+        helpers.openKeria(salter=Salter(raw=b"0123456789abcM02")) as (
+            _,
+            agent_two,
+            app_two,
+            client_two,
+        ),
+    ):
+        for app in (app_one, app_two):
+            _setup_credential_issue_routes(app, aiding.IdentifierResourceEnd())
+        for agent in (agent_one, agent_two):
+            seeder.seedSchema(agent.hby.db)
+
+        doist = doing.Doist(limit=1.0, tock=0.03125, real=True)
+        deeds = doist.enter(doers=[agent_one, agent_two])
+
+        member_one, signer_one = _create_group_member(
+            client_one, helpers, "member-one", b"0123456789abcM11"
+        )
+        member_two, signer_two = _create_group_member(
+            client_two, helpers, "member-two", b"0123456789abcM12"
+        )
+        _share_identifier(agent_one, agent_two, "member-one")
+        _share_identifier(agent_two, agent_one, "member-two")
+
+        members = [member_one, member_two]
+        keys = [member["state"]["k"][0] for member in members]
+        ndigs = [member["state"]["n"][0] for member in members]
+        group_icp = keventing.incept(
+            keys=keys,
+            isith="2",
+            nsith="2",
+            ndigs=ndigs,
+            code=coring.MtrDex.Blake3_256,
+            toad=0,
+            wits=[],
+        )
+        signers = [signer_one, signer_two]
+        group_sigs = [
+            signer.sign(ser=group_icp.raw, index=index).qb64
+            for index, signer in enumerate(signers)
+        ]
+        _join_group(client_one, member_one, members, group_icp, group_sigs, keys, ndigs)
+        _join_group(client_two, member_two, members, group_icp, group_sigs, keys, ndigs)
+        ghab_one = agent_one.hby.habByName("group")
+        ghab_two = agent_two.hby.habByName("group")
+        assert isinstance(ghab_one, SignifyGroupHab)
+        assert isinstance(ghab_two, SignifyGroupHab)
+
+        registry = _create_group_registry(
+            client_one, ghab_one, signers, agent_one, doist, deeds
+        )
+        _share_identifier(agent_one, agent_two, "group")
+        _create_group_registry(
+            client_two, ghab_two, signers, agent_two, doist, deeds, registry
+        )
+
+        holder_one = helpers.createAid(client_one, "holder-one", b"0123456789abcM13")[
+            "response"
+        ]["i"]
+        holder_two = helpers.createAid(client_one, "holder-two", b"0123456789abcM14")[
+            "response"
+        ]["i"]
+
+        credential_one, _, _, issue_one = _build_group_issuance(
+            ghab_one, signers, registry, holder_one, "254900DA0GOGCFVWB618"
+        )
+        result = client_one.simulate_post(
+            "/identifiers/group/credentials", body=json.dumps(issue_one)
+        )
+        assert result.status_code == 202
+        issue_one_op = result.json
+        _run_until(
+            doist,
+            deeds,
+            lambda: agent_one.credentialer.complete(credential_one.said),
+        )
+
+        # M2 accepts credential 1 from its ACDC, not M1's original request.
+        _share_identifier(agent_one, agent_two, "group")
+        _, _, accept_one = _build_group_credential_request(
+            ghab_two, signers, registry, credential_one
+        )
+        result = client_two.simulate_post(
+            "/identifiers/group/credentials", body=json.dumps(accept_one)
+        )
+        assert result.status_code == 202
+        accept_one_op = result.json
+        _run_until(
+            doist,
+            deeds,
+            lambda: agent_two.credentialer.complete(credential_one.said),
+        )
+        for client, op in (
+            (client_one, issue_one_op),
+            (client_two, accept_one_op),
+        ):
+            result = client.simulate_get(f"/operations/{op['name']}")
+            assert result.status_code == 200
+            assert result.json["done"]
+            result = client.simulate_get(f"/credentials/{credential_one.said}")
+            assert result.status_code == 200
+            assert result.json["iss"]
+
+        # M1 starts credential 2, but M2 has not yet accepted its exchange.
+        _share_identifier(agent_two, agent_one, "group")
+        credential_two, _, _, issue_two = _build_group_issuance(
+            ghab_one, signers, registry, holder_two, "9845004CC7884BN85018"
+        )
+        result = client_one.simulate_post(
+            "/identifiers/group/credentials", body=json.dumps(issue_two)
+        )
+        assert result.status_code == 202
+        issue_two_op = result.json
+        assert not agent_two.credentialer.complete(credential_two.said)
+
+        # A stale credential-1 acceptance must be idempotent and leave M2 able
+        # to accept the credential-2 exchange afterwards.
+        _, _, stale_accept = _build_group_credential_request(
+            ghab_two, signers, registry, credential_one
+        )
+        result = client_two.simulate_post(
+            "/identifiers/group/credentials", body=json.dumps(stale_accept)
+        )
+        assert result.status_code == 202
+        assert result.json["done"]
+
+        _share_identifier(agent_one, agent_two, "group")
+        _, _, accept_two = _build_group_credential_request(
+            ghab_two, signers, registry, credential_two
+        )
+        result = client_two.simulate_post(
+            "/identifiers/group/credentials", body=json.dumps(accept_two)
+        )
+        assert result.status_code == 202
+        accept_two_op = result.json
+        _run_until(
+            doist,
+            deeds,
+            lambda: (
+                agent_one.credentialer.complete(credential_two.said)
+                and agent_two.credentialer.complete(credential_two.said)
+            ),
+        )
+
+        for client, op in (
+            (client_one, issue_two_op),
+            (client_two, accept_two_op),
+        ):
+            result = client.simulate_get(f"/operations/{op['name']}")
+            assert result.status_code == 200
+            assert result.json["done"]
+            result = client.simulate_get(f"/credentials/{credential_two.said}")
+            assert result.status_code == 200
+            assert result.json["iss"]
