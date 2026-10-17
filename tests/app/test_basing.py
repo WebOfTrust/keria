@@ -3,7 +3,7 @@
 KERIA
 keria.app.basing module
 
-Testing the database classes
+Testing credential and exchange search indexes
 """
 
 import random
@@ -41,7 +41,7 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
         indexes = seeker.generateIndexes(QVI_SAID)
 
         # Verify the indexes created for the QVI schema
-        assert indexes == [
+        assert [index for index in indexes if "gracePeriod" not in index] == [
             "5AABAA-s",
             "5AABAA-i",
             "4AABA-ri",
@@ -74,7 +74,7 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
         ]
 
         # Test that the index tables were correctly created
-        assert len(seeker.indexes) == 29
+        assert len(seeker.indexes) == 35
 
         indexes = seeker.generateIndexes(LE_SAID)
 
@@ -112,7 +112,7 @@ def test_seeker(helpers, seeder, mockHelpingNowUTC):
         ]
 
         # Assure that no new index tables needed to be created
-        assert len(seeker.indexes) == 29
+        assert len(seeker.indexes) == 35
 
         # Test with a bad credential SAID
         with pytest.raises(ValueError):
