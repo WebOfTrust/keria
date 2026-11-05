@@ -1425,25 +1425,55 @@ class Admitter(doing.Doer):
 
 
 class SeekerDoer(doing.Doer):
+    """Schedule bounded repair work and saved cues; Seeker owns recovery state."""
+
+    # Bound work per scheduler turn without imposing one tick per index row.
+    RepairBatchSize = 128
+
     def __init__(self, seeker, cues, tock=0.0):
+        """Start reconciliation before serving queries and retain the shared cue deck."""
         self.seeker = seeker
         self.cues = cues
-        self.tock = tock
-        super(SeekerDoer, self).__init__(tock=self.tock)
+        self.repair = seeker.startRepair()
+        super(SeekerDoer, self).__init__(tock=tock)
 
     def recur(self, tyme=None, tock=0.0, **opts):
+        """Advance a repair batch, or check one pending schema and consume one cue."""
+        if self.repair is not None:
+            try:
+                for _ in range(self.RepairBatchSize):
+                    said = next(self.repair)
+                    if said is not None:
+                        self._report(said, self.seeker.failures.get(said))
+                return False
+            except StopIteration:
+                self.repair = None
+            except Exception as ex:
+                self.repair = None
+                self.seeker.failRepair(ex)
+                logger.exception("Seeker startup reconciliation failed")
+                return False
+        if (attempt := self.seeker.retry()) is not None:
+            self._report(*attempt)
         if self.cues:
             cue = self.cues.popleft()
             if cue["kin"] == "saved":
-                creder = cue["creder"]
-                try:
-                    self.seeker.index(said=creder.said)
-                except Exception:
-                    self.cues.append(cue)
-                    return False
+                said = cue["creder"].said
+                self._report(said, self.seeker.process(said))
             else:
                 self.cues.append(cue)
-                return False
+        return False
+
+    @staticmethod
+    def _report(said, error):
+        """Log classified failures once per attempt, retaining the original traceback."""
+        if error is not None:
+            logger.error(
+                "Seeker indexing failed for %s: %s",
+                said,
+                error,
+                exc_info=(type(error), error, error.__traceback__),
+            )
 
 
 class ExchangeCueDoer(doing.Doer):

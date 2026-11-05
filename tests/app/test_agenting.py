@@ -1157,7 +1157,8 @@ def test_seeker_doer(helpers):
 
         result = seeker.recur()
         assert result is False
-        assert len(cues) == 1
+        assert len(cues) == 0
+        assert not agent.seeker.failures  # stale cue: credential is no longer saved
 
 
 def test_submitter(seeder, helpers):

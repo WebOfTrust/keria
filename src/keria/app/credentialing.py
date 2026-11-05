@@ -21,6 +21,7 @@ from keri.vdr import viring
 from ..utils.openapi import dataclassFromFielddom
 from keri.core.serdering import Protocols, Vrsn_1_0, Vrsn_2_0, SerderKERI
 from ..core import httping, longrunning
+from .. import keriaing
 from marshmallow import fields, Schema as MarshmallowSchema
 from typing import List, Dict, Any, Optional, Literal, Union
 from .aiding import (
@@ -836,8 +837,17 @@ class CredentialQueryCollectionEnd:
             skip = 0
             limit = 25
 
-        cur = agent.seeker.find(filtr=filtr, sort=sort, skip=skip, limit=limit)
-        saids = [coring.Saider(qb64=said) for said in cur]
+        try:
+            cur = agent.seeker.find(filtr=filtr, sort=sort, skip=skip, limit=limit)
+            saids = [coring.Saider(qb64=said) for said in cur]
+        except keriaing.UnsupportedQueryError as ex:
+            raise falcon.HTTPBadRequest(
+                title="Unsupported credential query", description=str(ex)
+            )
+        except keriaing.IndexNotReadyError as ex:
+            raise falcon.HTTPServiceUnavailable(
+                title="Credential indexes unavailable", description=str(ex)
+            )
         creds = agent.rgy.reger.cloneCreds(saids=saids, db=agent.hby.db)
 
         end = skip + (len(creds) - 1) if len(creds) > 0 else 0
