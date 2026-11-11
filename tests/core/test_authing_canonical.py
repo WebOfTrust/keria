@@ -27,11 +27,16 @@ from keria.app import agenting
 from keria.core import authing, httping
 
 VECTORS = os.path.join(os.path.dirname(__file__), "..", "vectors", "keri-rfc9421")
+PROFILE = "https://github.com/bakobo/fiki/blob/keri-profile-v1.1/docs/keri-profile.md"
 
 
 def loadVectors(name):
     with open(os.path.join(VECTORS, f"{name}.json"), encoding="utf-8") as f:
-        return json.load(f)
+        vectors = json.load(f)
+    assert vectors["keri_vectors_format"] == 7
+    assert vectors["profile"]["version"] == "1.1"
+    assert vectors["profile"]["where"] == PROFILE
+    return vectors
 
 
 def b64(value):
@@ -126,6 +131,12 @@ def falconRequest(method, url, headers, body, rawUri=True):
         port=split.port,
     )
     env["PATH_INFO"] = quote(unquote(split.path) or "/")
+    # hio's buildEnviron also passes every received field through as HTTP_*,
+    # after CONTENT_LENGTH, so falcon's headers show Content-Length as sent
+    # rather than create_environ's parsed number.
+    env["HTTP_CONTENT_LENGTH"] = next(
+        v for k, v in headers.items() if k.lower() == "content-length"
+    )
     if rawUri:
         env["RAW_URI"] = split.path + (f"?{split.query}" if split.query else "")
     else:
@@ -177,7 +188,7 @@ def test_vector_requests_accepted():
         # the body is still there for the resource to read
         assert req.bounded_stream.read() == (body or "").encode("utf-8")
         count += 1
-    assert count == len(vectors["cases"]) == 20
+    assert count == len(vectors["cases"]) == 21
 
 
 def test_vector_refusals():
@@ -198,7 +209,7 @@ def test_vector_refusals():
         assert isinstance(e.value, kering.AuthNError)
         assert not hasattr(req.context, "agent"), case["id"]
         applied += 1
-    assert applied == 37
+    assert applied == 45
 
 
 def test_vector_refusals_through_middleware():
@@ -219,7 +230,7 @@ def test_vector_refusals_through_middleware():
         mw.process_response(req, rep, None, False)
         assert "signature" not in {k.lower() for k in rep.headers}
         refused += 1
-    assert refused == 37
+    assert refused == 45
 
 
 def test_vector_responses():
@@ -292,10 +303,14 @@ def _parseInput(value):
 
 def test_vector_legacy():
     """Today's traffic still verifies: legacy requests go through KERIA's
-    unchanged legacy path, and legacy responses verify over the pinned bases."""
+    unchanged legacy path, and legacy responses verify over the pinned bases.
+    The generated cases, which carry key_state, are
+    test_vector_legacy_effective_signer's."""
     vectors = loadVectors("legacy")
     requests = 0
     for case in vectors["cases"]:
+        if "key_state" in case:
+            continue
         if case["kind"] == "request":
             keyid = case["headers"]["Signify-Resource"]
             hab = SimpleNamespace(
@@ -326,6 +341,35 @@ def test_vector_legacy():
             )
             assert verified.mode == httpsigning.Legacy
     assert requests == 2
+
+
+def test_vector_legacy_effective_signer():
+    """Legacy requests from controllers with more than one current key go
+    through KERIA's legacy path against the key state each case states, and
+    verify with its single effective signer (profile version 1.1, section 8):
+    accepted, or refused with the case's code."""
+    vectors = loadVectors("legacy")
+    generated = 0
+    for case in vectors["cases"]:
+        if "key_state" not in case:
+            continue
+        keyid = case["headers"]["Signify-Resource"]
+        hab = SimpleNamespace(kevers={keyid: stateKever(case["key_state"])})
+        agency = StubAgency(SimpleNamespace(agentHab=hab), [keyid])
+        authn = authing.SignedHeaderAuthenticator(agency=agency)
+        req = falconRequest(
+            case["method"], f"http://127.0.0.1{case['path']}", case["headers"], None
+        )
+        if "error" in case:
+            with pytest.raises(httpsigning.HttpSigError) as e:
+                authn.inbound(req)
+            assert e.value.code == case["error"], case["id"]
+            assert not hasattr(req.context, "agent"), case["id"]
+        else:
+            authn.inbound(req)
+            assert req.context.mode == authing.AuthMode.SIGNED_HEADERS, case["id"]
+        generated += 1
+    assert generated == 4
 
 
 # RAW_URI
