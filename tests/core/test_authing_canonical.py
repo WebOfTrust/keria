@@ -315,7 +315,7 @@ def test_vector_legacy():
             req = falconRequest(
                 case["method"], f"http://127.0.0.1{case['path']}", case["headers"], None
             )
-            with pytest.raises(httpsigning.MalformedSignature):
+            with pytest.raises(kering.HttpSigMalformedSignatureError):
                 authn.inbound(req)
         else:
             verified = httpsigning.verifyLegacy(
@@ -367,7 +367,7 @@ def test_raw_uri_server_environ():
         assert "RAW_URI" not in env
         req = authing.ModifiableRequest(env)
         assert httping.rawPath(req) != split.path
-        with pytest.raises(httpsigning.SignatureMismatch):
+        with pytest.raises(kering.HttpSigSignatureMismatchError):
             caseAuthenticator(agency, case).inbound(req)
 
 
