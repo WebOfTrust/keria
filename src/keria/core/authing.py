@@ -301,9 +301,13 @@ class SignedHeaderAuthenticator(Authenticator):
         if agent is None:
             raise kering.AuthNError("Unknown controller")
 
-        # The signer is the first current key of Signify-Resource's KEL,
-        # with no derivation-code or single-signer rules (KERI profile
-        # section 8); a KEL the agent has not resolved is refused with
+        # The signer is the single effective signer of Signify-Resource's
+        # key state: the one current key that satisfies the signing
+        # threshold alone (KERI profile version 1.1, section 8, and R4),
+        # which for every Signify controller is its first current key. A
+        # controller with none, such as a 2-of-3 group, is refused as
+        # unsupported-signer. Canonical mode's derivation-code rules do not
+        # apply. A KEL the agent has not resolved is refused with
         # "Unknown or invalid controller (controller KEL not resolved)".
         verfer = httpsigning.keverResolver(
             pendingKevers(agent.agentHab.kevers, pending)
