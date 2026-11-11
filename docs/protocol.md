@@ -277,7 +277,7 @@ To perform a passcode rotation recovery, the Signify Client requires only the ne
 Signify clients must sign all requests to the KERIA Admin Interface using the latest signing key of the Client AID and must expect all responses from the KERIA service be signed by the latest signing key of the Agent AID. KERIA accepts two signing modes and answers each request in the mode it was signed in. It tells them apart by the form of the `Signature` header.
 
 ### Canonical mode
-Canonical mode is [RFC 9421, HTTP Message Signatures](https://www.rfc-editor.org/rfc/rfc9421), used as written, with the body covered by `Content-Digest` ([RFC 9530](https://www.rfc-editor.org/rfc/rfc9530)). The KERI-specific choices are all in fields RFC 9421 leaves to the application, and are specified by [version 1 of the KERI profile](https://github.com/bakobo/fiki/blob/keri-profile-v1/docs/keri-profile.md), which keripy's `keri.end.httpsigning` implements and KERIA calls.
+Canonical mode is [RFC 9421, HTTP Message Signatures](https://www.rfc-editor.org/rfc/rfc9421), used as written, with the body covered by `Content-Digest` ([RFC 9530](https://www.rfc-editor.org/rfc/rfc9530)). The KERI-specific choices are all in fields RFC 9421 leaves to the application, and are specified by [version 1.1 of the KERI profile](https://github.com/bakobo/fiki/blob/keri-profile-v1.1/docs/keri-profile.md), which keripy's `keri.end.httpsigning` implements and KERIA calls.
 
 - `Signature-Input` has exactly one member, labelled `signify`, with the parameters `created` (required), `expires`, `nonce`, `alg` (`ed25519`), `keyid` (required) and `tag`, in that order. Any other parameter is refused.
 - `keyid` is the Client AID in qb64. KERIA finds the Agent from it and verifies against the Client AID's current key state as the Agent holds it. Exactly one of its current signing keys must satisfy the signing threshold on its own, and that key is the one that verifies. A single-key AID qualifies, and so does a Signify Client AID after a passcode rotation, whose keys are the new key and the prior next key with threshold `['1', '0']`. A group, or a threshold any of several keys meets alone, is refused.
@@ -297,6 +297,7 @@ Legacy mode is the scheme Signify has used since KERIA's first release. Its sign
 - `Signify-Resource` is the Client AID on a request and the Agent AID on a response. `Signify-Timestamp` is an ISO 8601 time, covered but not checked.
 - `Signature-Input` covers `signify-resource`, `@method`, `@path` and `signify-timestamp`, labelled `signify`.
 - `Signature` is `indexed="?0";signify="<qb64>"`, a CESR Ed25519 signature.
+- KERIA verifies it against the key state it holds for `Signify-Resource`, with the same single effective signer as canonical mode: the one current signing key that satisfies the signing threshold on its own. For every Signify Client AID that is its first current key, including after a passcode rotation. A group, or a threshold any of several keys meets alone, is refused, and with threshold `['0', '1']` only the second key verifies. Version 1 of the profile took the first current key whatever the threshold said; version 1.1 changed that.
 
 ### Configuration
 | Setting | Environment variable | Default | Meaning |
