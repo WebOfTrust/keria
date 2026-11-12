@@ -91,7 +91,7 @@ class RequestLoggerMiddleware:
             # through req.stream (bound to wsgi.input when the request was
             # built) and caches req.bounded_stream, so all three are reset.
             req.stream = req.env["wsgi.input"] = io.BytesIO(body)
-            req._bounded_stream = None
+            req._bounded_stream = None  # falcon 4.0's private cache; see readBody
             req.env["CONTENT_LENGTH"] = str(
                 len(body)
             )  # match WSGI env content length to body length

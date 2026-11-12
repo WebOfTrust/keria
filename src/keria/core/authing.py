@@ -56,6 +56,8 @@ def readBody(request: falcon.Request):
         return body
     body = request.bounded_stream.read()
     request.stream = request.env["wsgi.input"] = io.BytesIO(body)
+    # falcon 4.0 caches bounded_stream in this private attribute; clearing it
+    # makes the next read wrap the new stream. Check it when falcon is upgraded.
     request._bounded_stream = None
     request.context.rawBody = body
     return body
