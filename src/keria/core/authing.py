@@ -167,6 +167,19 @@ class SignedHeaderAuthenticator(Authenticator):
         """True when the request's Signature header is in canonical form."""
         return SignedHeaderAuthenticator.signatureMode(request) == httpsigning.Canonical
 
+    def now(self, request: falcon.Request):
+        """Returns the time canonical freshness is checked against, in integer
+        seconds since the epoch, read from the clock on the first call and kept
+        on request.context, so a request verified twice, as PUT /agent/{caid}
+        is, is checked against one time and cannot pass once and fail once."""
+        if not hasattr(request.context, "signatureNow"):
+            request.context.signatureNow = (
+                self.clock()
+                if self.clock is not None
+                else int(helping.nowUTC().timestamp())
+            )
+        return request.context.signatureNow
+
     def inbound(self, request: ModifiableRequest):
         """Validate that the request is correctly signed, in canonical or legacy mode
 
@@ -276,7 +289,7 @@ class SignedHeaderAuthenticator(Authenticator):
             body=httpsigning.Deferred,
             resolver=resolver,
             policy=self.policy,
-            now=self.clock() if self.clock is not None else None,
+            now=self.now(request),
             acceptLegacy=self.acceptLegacy,
         )
 

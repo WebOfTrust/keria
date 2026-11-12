@@ -1082,9 +1082,8 @@ def rotationFixture(**authnKwa):
         "utf-8"
     )
 
-    authn = authing.SignedHeaderAuthenticator(
-        agency=agency, clock=lambda: NOW, **authnKwa
-    )
+    authnKwa.setdefault("clock", lambda: NOW)
+    authn = authing.SignedHeaderAuthenticator(agency=agency, **authnKwa)
     app = falcon.App(request_type=authing.ModifiableRequest)
     app.add_middleware(
         authing.AuthenticationMiddleware(agency=agency, authn=authn, allowed=["/agent"])
@@ -1249,6 +1248,19 @@ def test_agent_rotation_refused_before_rotating(mockHelpingNowUTC, case):
     assert result.json["description"] == "invalid signature on request"
     assert fx.agent.agentHab.kevers[fx.caid].sn == 0
     assert fx.agent.mgr.sxlt == "sxlt-before"
+
+
+def test_agent_rotation_reads_the_clock_once(mockHelpingNowUTC):
+    """PUT /agent/{caid} is verified before and after the rotation, both times
+    against the same now. A clock that moves past the signature's freshness
+    window between the two checks cannot leave the KEL rotated and the rest of
+    the update undone."""
+    times = iter([NOW, NOW + 3600])
+    fx = rotationFixture(clock=lambda: next(times))
+    result, _ = signedPut(fx, fx.new)
+    assert result.status_code == 204
+    assert fx.agent.agentHab.kevers[fx.caid].sn == 1
+    assert fx.agent.mgr.sxlt is None
 
 
 def test_canonical_agent_rotation_body_swapped(mockHelpingNowUTC):
