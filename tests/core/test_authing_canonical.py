@@ -502,6 +502,27 @@ def test_raw_uri_end_to_end(keria, path):
     assert status == 401
 
 
+@pytest.mark.parametrize(
+    "target", ["//other.example/echo/victim", "///echo/victim", "//echo/victim"]
+)
+def test_raw_uri_unrouted_path_refused(keria, target):
+    """A target that begins with "//" is signed as @path verbatim, but the
+    server parses what follows the slashes as an authority and routes on the
+    rest. The signature would then name a path other than the one served, so
+    it is refused."""
+    app = falcon.App(request_type=authing.ModifiableRequest)
+    authn = authing.SignedHeaderAuthenticator(agency=keria.agency, clock=lambda: NOW)
+    app.add_middleware(
+        authing.AuthenticationMiddleware(agency=keria.agency, authn=authn)
+    )
+    app.add_route("/echo/{name}", EchoEnd(), suffix="named")
+    headers = signed(keria.controller, "GET", target)
+
+    server = httping.createHttpServer(freePort(), app)
+    status, _, _ = serveOnce(server, target, headers)
+    assert status == 401
+
+
 def test_helper_server_passes_raw_uri():
     """The test helper's server is built the way KERIA builds its own, so
     tests that go through it see RAW_URI too."""

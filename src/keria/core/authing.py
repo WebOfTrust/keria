@@ -256,9 +256,21 @@ class SignedHeaderAuthenticator(Authenticator):
             else None
         )
 
+        path = rawPath(request)
+        # @path is the target as sent, but falcon routes on PATH_INFO, which
+        # the server derived from it. Where they differ, as for a target that
+        # begins with "//" and so parses as an authority, the signature would
+        # name one resource while another is served, so refuse it.
+        if "RAW_URI" in request.env and unquote(path) != unquote(
+            request.env.get("PATH_INFO") or "/"
+        ):
+            raise kering.HttpSigSignatureMismatchError(
+                "@path does not name the resource the request is routed to"
+            )
+
         verified = httpsigning.verifyRequest(
             method=request.method,
-            path=rawPath(request),
+            path=path,
             query=request.query_string,
             headers=request.headers,
             body=httpsigning.Deferred,
