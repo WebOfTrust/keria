@@ -124,6 +124,11 @@ class Authenticator(ABC):
         pass
 
 
+# Statuses whose responses falcon sends without content, as its
+# _BODILESS_STATUS_CODES lists them (RFC 9110 sections 15.2, 15.3.5, 15.4.5).
+BodilessStatuses = frozenset((100, 101, 204, 304))
+
+
 class SignedHeaderAuthenticator(Authenticator):
     DefaultFields = ["Signify-Resource", "@method", "@path", "Signify-Timestamp"]
 
@@ -455,7 +460,14 @@ class SignedHeaderAuthenticator(Authenticator):
             response.stream = None
             response.data = data
 
-        body = response.render_body() or b""
+        # falcon sends no content in a response to HEAD or with a status
+        # that has none (falcon.app._BODILESS_STATUS_CODES), whatever the
+        # resource gave it. A response's body is the content sent (KERI
+        # profile section 3), so such a response is signed as bodiless.
+        if request.method == "HEAD" or response.status_code in BodilessStatuses:
+            body = b""
+        else:
+            body = response.render_body() or b""
         agent = request.context.agent
         added = httpsigning.signResponse(
             status=response.status_code,

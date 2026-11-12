@@ -1482,3 +1482,34 @@ def test_unrouted_path_refused_in_profile_order(keria):
             signed(keria.controller, "GET", "/echo/victim")
             | {"Signature-Input": headers["Signature-Input"]}
         )
+
+
+class BodilessEnd:
+    """Gives a body falcon will not send: to HEAD, and with a 304."""
+
+    def on_head(self, req, rep):
+        rep.media = dict(would="be the GET body")
+
+    def on_get(self, req, rep):
+        rep.status = falcon.HTTP_304
+        rep.data = b"not sent"
+
+
+def test_canonical_bodiless_responses_signed_as_sent(keria):
+    """A response to HEAD, or with a status that has no content, carries no
+    body on the wire, so it is signed as bodiless: a response's body is its
+    content, not what its headers or the resource announced (profile
+    section 3), and the client verifies it over the empty content it holds."""
+    client = keria.app()
+    client.app.add_route("/bodiless", BodilessEnd())
+    ctrl = keria.controller
+    for method, path in (
+        ("HEAD", "/bodiless"),
+        ("HEAD", "/echo"),
+        ("GET", "/bodiless"),
+    ):
+        headers = signed(ctrl, method, path)
+        result = client.simulate_request(method, path, headers=headers)
+        assert result.content == b"", (method, path)
+        verified = verifyReply(keria, method, path, "", headers, None, result)
+        assert '"@status"' in verified.covered
