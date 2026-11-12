@@ -314,8 +314,12 @@ class SignedHeaderAuthenticator(Authenticator):
                 "@path does not name the resource the request is routed to"
             )
 
+        # @authority comes from Host, and drops only the default port of the
+        # scheme this request arrived with (KERI profile version 1.2,
+        # section 2), so KERIA passes that scheme.
         verified = httpsigning.verifyRequest(
             method=request.method,
+            scheme=request.scheme,
             path=path,
             query=request.query_string,
             headers=request.headers,

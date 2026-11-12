@@ -164,7 +164,7 @@ class KERIAServerConfig:
     signatureMaxAge: int = 300
     # Clock skew allowed either side of now for canonical signatures, in seconds; must be positive. Default is 60. KERIA_SIGNATURE_SKEW also sets this
     signatureSkew: int = 60
-    # Authorities (host[:port]; :80 and :443 are dropped) this server answers to. When set, canonical requests must cover
+    # Authorities (host[:port]; compared with @authority, which drops only the default port of the request's scheme) this server answers to. When set, canonical requests must cover
     # @authority and name one of them. Default is empty, not required. KERIA_SIGNATURE_AUTHORITIES (';' separated) also sets this
     signatureAuthorities: List[str] = field(default_factory=list)
 
