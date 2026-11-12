@@ -350,24 +350,34 @@ class SignedHeaderAuthenticator(Authenticator):
             pending (tuple | None): (pre, serder) to verify against the key
                 state serder would give pre, as verifyPending does
         """
-        self.getRequiredHeader(request, "SIGNATURE-INPUT")
-        self.getRequiredHeader(request, "SIGNATURE")
+        # Every refusal is a KERI profile section 9 code, in the profile's
+        # legacy order, with the messages KERIA has always given.
+        if "SIGNATURE-INPUT" not in request.headers:
+            raise kering.HttpSigMissingSignatureInputError(
+                "Missing SIGNATURE-INPUT header"
+            )
+        if "SIGNATURE" not in request.headers:
+            raise kering.HttpSigMissingSignatureError("Missing SIGNATURE header")
+        if "SIGNIFY-RESOURCE" not in request.headers:
+            raise kering.HttpSigMissingComponentError("Missing SIGNIFY-RESOURCE header")
 
         resource = self.resource(request)
         agent = self.agency.get(resource)
 
         if agent is None:
-            raise kering.AuthNError("Unknown controller")
+            raise kering.HttpSigUnknownKeyError("Unknown controller")
 
-        # The signer is the single effective signer of Signify-Resource's
-        # key state: the one current key that satisfies the signing
-        # threshold alone (KERI profile version 1.1, section 8, and R4),
-        # which for every Signify controller is its first current key. A
-        # controller with none, such as a 2-of-3 group, is refused as
-        # unsupported-signer. Canonical mode's derivation-code rules do not
-        # apply. A KEL the agent has not resolved is refused with
-        # "Unknown or invalid controller (controller KEL not resolved)".
-        verfer = httpsigning.keverResolver(
+        # The signature verifies under any current key of Signify-Resource's
+        # key state that alone satisfies the signing threshold (KERI profile
+        # version 1.2, section 8). For a Signify controller with one key, or
+        # after a passcode rotation, that is its first current key; for '1'
+        # over two keys, which signify-ts's createSignedRequest signs with its
+        # first key, either key. A key state with no such key, such as a
+        # 2-of-3 group, is refused as unsupported-signer. Canonical mode's
+        # derivation-code rules do not apply. A KEL the agent has not
+        # resolved is refused with "Unknown or invalid controller
+        # (controller KEL not resolved)".
+        verfers = httpsigning.keverResolver(
             pendingKevers(agent.agentHab.kevers, pending)
         ).legacy(resource)
 
@@ -377,7 +387,7 @@ class SignedHeaderAuthenticator(Authenticator):
             method=request.method,
             path=request.path,
             headers=request.headers,
-            verfer=verfer,
+            verfers=verfers,
         )
         return agent
 
