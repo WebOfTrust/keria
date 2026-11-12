@@ -307,6 +307,6 @@ Legacy mode is the scheme Signify has used since KERIA's first release. Its sign
 | `acceptLegacy` | `KERIA_ACCEPT_LEGACY` | `true` | Accept legacy-mode requests. Turn off once every client signs in canonical mode. |
 | `signatureMaxAge` | `KERIA_SIGNATURE_MAX_AGE` | `300` | Oldest a canonical signature may be, in seconds. Must be a positive integer. |
 | `signatureSkew` | `KERIA_SIGNATURE_SKEW` | `60` | Clock skew allowed either side, in seconds. Must be a positive integer. |
-| `signatureAuthorities` | `KERIA_SIGNATURE_AUTHORITIES` | none | `;`-separated authorities (`host[:port]`; a port of 80 or 443 is dropped whatever the scheme). When set, canonical requests must cover `@authority` and name one of them. |
+| `signatureAuthorities` | `KERIA_SIGNATURE_AUTHORITIES` | none | `;`-separated authorities (`host[:port]`; a port of 80 or 443 is dropped whatever the scheme). When set, canonical requests must cover `@authority` and name one of them. An entry with a scheme, user, path or query stops KERIA at startup. |
 
 KERIA refuses to start with a setting that would put canonical verification below the profile's minimum.

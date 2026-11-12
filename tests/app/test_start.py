@@ -81,3 +81,33 @@ def test_signature_authorities_none(launched, value):
     config = launched(**env)
     assert config.signatureAuthorities == []
     assert config.signaturePolicy().requireAuthority is False
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "https://keria.example.com",
+        "keria.example.com/admin",
+        "keria.example.com?x",
+        "user@keria.example.com",
+        "keria.example.com:notaport",
+        "keria.example.com:99999",
+        ":3901",
+        "keria.example.com;https://other.example",
+    ],
+)
+def test_signature_authorities_refuses_anything_but_host_port(launched, value):
+    """An entry that is not host[:port] could never match a request's
+    @authority, so every canonical request would be refused. It stops KERIA
+    at startup instead."""
+    with pytest.raises(ValueError, match="authority"):
+        launched(KERIA_SIGNATURE_AUTHORITIES=value)
+
+
+def test_signature_authorities_accepts_host_port_forms(launched):
+    config = launched(
+        KERIA_SIGNATURE_AUTHORITIES="Keria.Example.com;127.0.0.1:3901;[::1]:3901"
+    )
+    assert config.signaturePolicy().authorities == frozenset(
+        {"keria.example.com", "127.0.0.1:3901", "[::1]:3901"}
+    )

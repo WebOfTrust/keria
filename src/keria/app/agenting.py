@@ -13,7 +13,7 @@ import datetime
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from typing import List, Union
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse, urljoin, urlsplit
 from types import MappingProxyType
 from deprecation import deprecated
 
@@ -192,6 +192,8 @@ class KERIAServerConfig:
             raise ValueError(
                 "signatureAuthorities must be a list of authorities, not a string."
             )
+        for authority in authorities:
+            checkAuthority(authority)
         authorities = frozenset(authorities)
         try:
             return httpsigning.Policy(
@@ -202,6 +204,35 @@ class KERIAServerConfig:
             )
         except ValueError as ex:
             raise ValueError(f"Invalid request signature configuration: {ex}") from ex
+
+
+def checkAuthority(authority):
+    """
+    Raises ValueError unless authority is an @authority value, host[:port],
+    with no scheme, user information, path, query or fragment. An entry such
+    as https://keria.example.com could never equal a request's @authority, so
+    every canonical request would be refused; it is refused at startup instead.
+    Case is not checked, because the policy lowercases authorities.
+    """
+    bad = ValueError(
+        f"Invalid request signature configuration: authority {authority!r} "
+        "must be host[:port], with no scheme, user, path or query."
+    )
+    if (
+        not isinstance(authority, str)
+        or not authority
+        or any(c.isspace() for c in authority)
+    ):
+        raise bad
+    try:
+        parts = urlsplit("//" + authority)
+        parts.port  # raises ValueError for a port that is not a number in range
+    except ValueError:
+        raise bad from None
+    if parts.netloc != authority or not parts.hostname or "@" in authority:
+        raise bad
+    if parts.path or parts.query or parts.fragment:
+        raise bad
 
 
 def readConfigFile(configDir: str, configFile: str, temp=False):
