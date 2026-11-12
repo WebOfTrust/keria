@@ -319,6 +319,13 @@ class AgentResourceEnd:
             self.anchorSeals(agent, ixn)
             return
 
+        try:
+            self.authn.checkDigest(req)
+        except (kering.AuthNError, ValueError) as ex:
+            raise falcon.HTTPForbidden(
+                description="invalid signature on request"
+            ) from ex
+
         body = req.get_media()
 
         if "rot" not in body:

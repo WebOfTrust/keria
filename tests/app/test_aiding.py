@@ -350,7 +350,9 @@ def test_locscheme_resource_end(helpers, mockHelpingNowUTC):
 
 def test_agent_resource(helpers, mockHelpingNowUTC):
     with helpers.openKeria() as (agency, agent, app, client):
-        agentEnd = aiding.AgentResourceEnd(agency=agency, authn=None)
+        # The body checks below are reached only once the request's content
+        # is authenticated; a mock authenticator passes every request.
+        agentEnd = aiding.AgentResourceEnd(agency=agency, authn=mock.Mock())
         app.add_route("/agent/{caid}", agentEnd)
 
         client = testing.TestClient(app=app)

@@ -1288,6 +1288,42 @@ def test_canonical_agent_rotation_body_swapped(mockHelpingNowUTC):
     assert fx.agent.agentHab.kevers[fx.caid].sn == 0
 
 
+@pytest.mark.parametrize("digest", ["swapped", "absent"])
+def test_agent_rotation_body_checked_before_parsing(
+    mockHelpingNowUTC, monkeypatch, digest
+):
+    """PUT /agent/{caid} parses its body to find the rotation, so it checks the
+    body against Content-Digest first and never parses content that fails."""
+    fx = rotationFixture()
+    parsed = []
+    getMedia = authing.ModifiableRequest.get_media
+
+    def recordingGetMedia(self, *args, **kwargs):
+        parsed.append(self.path)
+        return getMedia(self, *args, **kwargs)
+
+    monkeypatch.setattr(authing.ModifiableRequest, "get_media", recordingGetMedia)
+    path = f"/agent/{fx.caid}"
+    headers = {"Host": "falconframework.org", "Content-Type": "application/json"}
+    if digest == "swapped":
+        headers.update(
+            httpsigning.signRequest(
+                method="PUT",
+                path=path,
+                headers=headers,
+                body=b'{"other": "content"}',
+                signer=fx.new,
+                keyid=fx.caid,
+                created=NOW,
+            )
+        )
+    result = fx.client.simulate_put(path, headers=headers, body=fx.body)
+    assert result.status_code == 403
+    assert parsed == []
+    assert fx.agent.agentHab.kevers[fx.caid].sn == 0
+    assert fx.agent.mgr.sxlt == "sxlt-before"
+
+
 def test_cors_exposes_canonical_response_fields(keria):
     """A browser shows a script only the CORS-safelisted response headers and
     those in Access-Control-Expose-Headers. A canonical client verifies a

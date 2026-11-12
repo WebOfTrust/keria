@@ -226,6 +226,36 @@ class SignedHeaderAuthenticator(Authenticator):
         else:
             self.verifyCanonical(request, pending=(pre, serder))
 
+    def checkDigest(self, request: ModifiableRequest):
+        """Check the body against the request's Content-Digest before a resource
+        that verifies its own request parses the body
+
+        PUT /agent/{caid} must parse its body to find the rotation it verifies
+        the request against, so it calls this first and parses only content
+        whose digest matches. Coverage of content-digest by the signature is
+        checked when the request is verified. A request on the legacy path,
+        which covers no body, is not checked.
+
+        Parameters:
+            request (ModifiableRequest): Falcon request object
+
+        Raises:
+            HttpSigInsufficientCoverageError for a body with no Content-Digest,
+            and HttpSigMalformedDigestError or HttpSigDigestMismatchError as
+            httpsigning.verifyContentDigest does
+        """
+        if self.isLegacy(request):
+            return
+        body = readBody(request)
+        value = request.get_header("content-digest")
+        if value is None:
+            if body:
+                raise kering.HttpSigInsufficientCoverageError(
+                    "Body is not covered by content-digest."
+                )
+            return
+        httpsigning.verifyContentDigest(value, body)
+
     def inboundCanonical(self, request: ModifiableRequest):
         """Verify a canonical-mode (RFC 9421) request and its body
 
