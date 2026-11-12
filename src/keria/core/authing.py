@@ -307,10 +307,15 @@ class SignedHeaderAuthenticator(Authenticator):
         # @path is the target as sent, but falcon routes on PATH_INFO, which
         # the server derived from it. Where they differ, as for a target that
         # begins with "//" and so parses as an authority, the signature would
-        # name one resource while another is served, so refuse it.
-        if "RAW_URI" in request.env and unquote(path) != unquote(
+        # name one resource while another is served, so it is refused as
+        # signature-mismatch. That is step 19 of the profile's refusal order
+        # (section 9), so every earlier refusal wins, and so does a signature
+        # that fails to verify; freshness, steps 20 and 21, does not.
+        unrouted = "RAW_URI" in request.env and unquote(path) != unquote(
             request.env.get("PATH_INFO") or "/"
-        ):
+        )
+
+        def refuseUnrouted():
             raise kering.HttpSigSignatureMismatchError(
                 "@path does not name the resource the request is routed to"
             )
@@ -318,18 +323,28 @@ class SignedHeaderAuthenticator(Authenticator):
         # @authority comes from Host, and drops only the default port of the
         # scheme this request arrived with (KERI profile version 1.2,
         # section 2), so KERIA passes that scheme.
-        verified = httpsigning.verifyRequest(
-            method=request.method,
-            scheme=request.scheme,
-            path=path,
-            query=request.query_string,
-            headers=request.headers,
-            body=httpsigning.Deferred,
-            resolver=resolver,
-            policy=self.policy,
-            now=self.now(request),
-            acceptLegacy=self.acceptLegacy,
-        )
+        try:
+            verified = httpsigning.verifyRequest(
+                method=request.method,
+                scheme=request.scheme,
+                path=path,
+                query=request.query_string,
+                headers=request.headers,
+                body=httpsigning.Deferred,
+                resolver=resolver,
+                policy=self.policy,
+                now=self.now(request),
+                acceptLegacy=self.acceptLegacy,
+            )
+        except (
+            kering.HttpSigSignatureStaleError,
+            kering.HttpSigSignatureExpiredError,
+        ):
+            if unrouted:
+                refuseUnrouted()
+            raise
+        if unrouted:
+            refuseUnrouted()
 
         verified = httpsigning.checkBody(verified, request.headers, readBody(request))
         if agent is None:

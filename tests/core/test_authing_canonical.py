@@ -1441,3 +1441,44 @@ def test_server_config_builds_its_policy_once(monkeypatch):
     with pytest.raises(AttributeError, match="reopen"):  # the stubbed server
         agenting.createAdminServerDoer(config, SimpleNamespace(tocks={}))
     assert captured["policy"] is config.policy
+
+
+def test_unrouted_path_refused_in_profile_order(keria):
+    """A target whose @path names a resource other than the one routed to is
+    signature-mismatch, which is step 19 of the profile's refusal order
+    (section 9): an earlier refusal wins over it, and freshness, step 20,
+    does not."""
+    target = "//other.example/echo/victim"
+
+    def inbound(headers):
+        env = testing.create_environ(method="GET", path="/echo/victim", headers=headers)
+        env["RAW_URI"] = target
+        authn = authing.SignedHeaderAuthenticator(
+            agency=keria.agency, clock=lambda: NOW
+        )
+        authn.inbound(authing.ModifiableRequest(env))
+
+    with pytest.raises(kering.HttpSigMissingSignatureError):
+        inbound({"Host": "falconframework.org"})
+    headers = signed(keria.controller, "GET", target)
+    with pytest.raises(kering.HttpSigMissingSignatureInputError):
+        inbound({k: v for k, v in headers.items() if k != "Signature-Input"})
+    with habbing.openHab(name="stranger", salt=b"2222456789abcdef", temp=True) as (
+        _,
+        stranger,
+    ):
+        with pytest.raises(kering.HttpSigUnknownKeyError):
+            inbound(signed(stranger, "GET", target))
+    # the signature verifies over the target as sent, and still names a
+    # resource other than the one served
+    with pytest.raises(kering.HttpSigSignatureMismatchError):
+        inbound(headers)
+    # a stale signature that names another resource is signature-mismatch
+    with pytest.raises(kering.HttpSigSignatureMismatchError):
+        inbound(signed(keria.controller, "GET", target, created=NOW - 1000))
+    # and a forged one too
+    with pytest.raises(kering.HttpSigSignatureMismatchError):
+        inbound(
+            signed(keria.controller, "GET", "/echo/victim")
+            | {"Signature-Input": headers["Signature-Input"]}
+        )
