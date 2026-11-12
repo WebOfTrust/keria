@@ -353,10 +353,10 @@ class AgentResourceEnd:
         rot = serdering.SerderKERI(sad=body["rot"])
         sigs = body["sigs"]
 
-        # The request is signed with the rotated key. Verify it against the
-        # key state the rotation would establish before applying it, so that
-        # a refused request cannot leave the KEL rotated and the rest of this
-        # update undone; then verify again against the state as applied.
+        # Verify the request before applying the rotation, with the key state
+        # the rotation would give caid substituted for caid's current state,
+        # so that a refused request cannot leave the KEL rotated and the rest
+        # of this update undone; then verify it again once it is applied.
         try:
             self.authn.verifyPending(req, pre=caid, serder=rot)
         except (kering.AuthNError, ValueError) as ex:

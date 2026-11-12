@@ -204,14 +204,15 @@ class SignedHeaderAuthenticator(Authenticator):
         return self.acceptLegacy and self.signatureMode(request) == httpsigning.Legacy
 
     def verifyPending(self, request: ModifiableRequest, pre: str, serder):
-        """Verify the request against the key state a pending establishment
-        event would give pre, without applying the event or changing the request
+        """Verify the request as inbound does, but with the key state a
+        pending establishment event would give pre substituted for pre's
+        current key state, without applying the event or changing the request
 
-        PUT /agent/{caid} rotates the controller and is signed with the
-        rotated key. Verifying it only after the rotation is applied lets a
-        refused request leave the KEL rotated and the rest of the update
-        undone, so the endpoint calls this first, with the rotation it has
-        not yet applied, and verifies again with inbound once it has.
+        PUT /agent/{caid} applies a rotation of caid and verifies its request.
+        Verifying only after the rotation is applied lets a refused request
+        leave the KEL rotated and the rest of the update undone, so the
+        endpoint calls this first, with the rotation it has not yet applied,
+        and verifies again with inbound once it has.
 
         Parameters:
             request (ModifiableRequest): Falcon request object
