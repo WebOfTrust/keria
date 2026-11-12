@@ -27,14 +27,14 @@ from keria.app import agenting
 from keria.core import authing, httping
 
 VECTORS = os.path.join(os.path.dirname(__file__), "..", "vectors", "keri-rfc9421")
-PROFILE = "https://github.com/bakobo/fiki/blob/keri-profile-v1.1/docs/keri-profile.md"
+PROFILE = "https://github.com/bakobo/fiki/blob/keri-profile-v1.2/docs/keri-profile.md"
 
 
 def loadVectors(name):
     with open(os.path.join(VECTORS, f"{name}.json"), encoding="utf-8") as f:
         vectors = json.load(f)
-    assert vectors["keri_vectors_format"] == 7
-    assert vectors["profile"]["version"] == "1.1"
+    assert vectors["keri_vectors_format"] == 8
+    assert vectors["profile"]["version"] == "1.2"
     assert vectors["profile"]["where"] == PROFILE
     return vectors
 
@@ -95,12 +95,16 @@ def vectorAgency(vectors):
         if k["kind"] == "transferable"
     }
     for keyid, k in keys.items():
+        kever = kevers.get(keyid)
+        if kever is None:
+            continue  # a B keyid's key is its prefix (profile R1)
         if k["effective_key"] is not None:
             # the key state reduces to the vectors' effective key
-            kever = kevers.get(keyid)
-            if kever is not None:
-                verfer = httpsigning.effectiveVerfer(kever.verfers, kever.tholder)
-                assert verfer.raw == b64(k["effective_key"]), keyid
+            verfer = httpsigning.effectiveVerfer(kever.verfers, kever.tholder)
+            assert verfer.raw == b64(k["effective_key"]), keyid
+        else:
+            with pytest.raises(httpsigning.HttpSigUnsupportedSignerError):
+                httpsigning.effectiveVerfer(kever.verfers, kever.tholder)
     agentKey = keys["EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"]
     hab = StubHab(agentKey["keyid"], agentKey["seed_hex"], kevers)
     agent = SimpleNamespace(agentHab=hab)
@@ -137,6 +141,11 @@ def falconRequest(method, url, headers, body, rawUri=True):
     env["HTTP_CONTENT_LENGTH"] = next(
         v for k, v in headers.items() if k.lower() == "content-length"
     )
+    # and Host as sent: create_environ strips it, with characters such as a
+    # no-break space that a field value keeps (profile section 2)
+    for k, v in headers.items():
+        if k.lower() == "host":
+            env["HTTP_HOST"] = v
     if rawUri:
         env["RAW_URI"] = split.path + (f"?{split.query}" if split.query else "")
     else:
@@ -172,6 +181,9 @@ def caseAuthenticator(agency, case):
 def test_vector_requests_accepted():
     vectors = loadVectors("requests")
     agency, agent = vectorAgency(vectors)
+    # a B keyid's key is its prefix, so one absent from the key table still
+    # verifies; KERIA acts for it only when it serves an agent for it
+    agency.keyids.update(c["expected"]["keyid"] for c in vectors["cases"])
     count = 0
     for case in vectors["cases"]:
         authn = caseAuthenticator(agency, case)
@@ -188,7 +200,30 @@ def test_vector_requests_accepted():
         # the body is still there for the resource to read
         assert req.bounded_stream.read() == (body or "").encode("utf-8")
         count += 1
-    assert count == len(vectors["cases"]) == 21
+    assert count == len(vectors["cases"]) == 25
+
+
+def test_b_keyid_without_an_agent():
+    """A B keyid verifies from its prefix without key state, but a request
+    from a controller KERIA serves no agent for is refused as unknown-key
+    rather than handed to a resource with no agent."""
+    vectors = loadVectors("requests")
+    agency, _ = vectorAgency(vectors)
+    case = next(
+        c
+        for c in vectors["cases"]
+        if c["id"] == "non-transferable-keyid-with-no-key-state"
+    )
+    with pytest.raises(kering.HttpSigUnknownKeyError):
+        caseAuthenticator(agency, case).inbound(caseRequest(case))
+
+
+# hio reads a request body only when Content-Length or Transfer-Encoding
+# announces it, and always hands falcon CONTENT_LENGTH, so KERIA never sees
+# the unannounced body this case pins for a verifier that does (profile
+# section 9, step 22). falconRequest delivers it announced, as the only form
+# KERIA can receive, and the covered list refuses it first.
+KERIA_CODES = {"unannounced-body-and-stale": "insufficient-coverage"}
 
 
 def test_vector_refusals():
@@ -205,11 +240,11 @@ def test_vector_refusals():
         req = caseRequest(case)
         with pytest.raises(httpsigning.HttpSigError) as e:
             authn.inbound(req)
-        assert e.value.code == case["error"], case["id"]
+        assert e.value.code == KERIA_CODES.get(case["id"], case["error"]), case["id"]
         assert isinstance(e.value, kering.AuthNError)
         assert not hasattr(req.context, "agent"), case["id"]
         applied += 1
-    assert applied == 45
+    assert applied == 56
 
 
 def test_vector_refusals_through_middleware():
@@ -230,7 +265,7 @@ def test_vector_refusals_through_middleware():
         mw.process_response(req, rep, None, False)
         assert "signature" not in {k.lower() for k in rep.headers}
         refused += 1
-    assert refused == 45
+    assert refused == 56
 
 
 def test_vector_responses():
@@ -305,7 +340,7 @@ def test_vector_legacy():
     """Today's traffic still verifies: legacy requests go through KERIA's
     unchanged legacy path, and legacy responses verify over the pinned bases.
     The generated cases, which carry key_state, are
-    test_vector_legacy_effective_signer's."""
+    test_vector_legacy_sufficient_keys's."""
     vectors = loadVectors("legacy")
     requests = 0
     for case in vectors["cases"]:
@@ -343,19 +378,23 @@ def test_vector_legacy():
     assert requests == 2
 
 
-def test_vector_legacy_effective_signer():
+def test_vector_legacy_sufficient_keys():
     """Legacy requests from controllers with more than one current key go
     through KERIA's legacy path against the key state each case states, and
-    verify with its single effective signer (profile version 1.1, section 8):
-    accepted, or refused with the case's code."""
+    verify under any current key that alone satisfies the signing threshold
+    (profile version 1.2, section 8): accepted, or refused with the case's
+    code. A case whose key_state is null is one KERIA serves no agent for."""
     vectors = loadVectors("legacy")
     generated = 0
     for case in vectors["cases"]:
         if "key_state" not in case:
             continue
         keyid = case["headers"]["Signify-Resource"]
-        hab = SimpleNamespace(kevers={keyid: stateKever(case["key_state"])})
-        agency = StubAgency(SimpleNamespace(agentHab=hab), [keyid])
+        state = case["key_state"]
+        kevers = {keyid: stateKever(state)} if state is not None else {}
+        hab = SimpleNamespace(kevers=kevers)
+        served = [keyid] if state is not None else []
+        agency = StubAgency(SimpleNamespace(agentHab=hab), served)
         authn = authing.SignedHeaderAuthenticator(agency=agency)
         req = falconRequest(
             case["method"], f"http://127.0.0.1{case['path']}", case["headers"], None
@@ -369,7 +408,7 @@ def test_vector_legacy_effective_signer():
             authn.inbound(req)
             assert req.context.mode == authing.AuthMode.SIGNED_HEADERS, case["id"]
         generated += 1
-    assert generated == 4
+    assert generated == 8
 
 
 # RAW_URI
@@ -975,13 +1014,19 @@ def test_no_resource_sees_an_unchecked_body(keria):
 
 
 def test_canonical_authority_from_host_drops_default_port(keria):
-    """@authority is taken from Host with :80 or :443 removed whatever the
-    scheme, so a proxy's explicit default port does not break a signature."""
+    """@authority is taken from Host with the default port of the scheme the
+    request arrived over removed, and any other port kept (profile version
+    1.2, section 2), so KERIA passes falcon's request scheme to keripy."""
     policy = httpsigning.Policy(
         requireAuthority=True, authorities=frozenset({"falconframework.org"})
     )
     client = keria.app(policy=policy)
-    for host in ("falconframework.org:443", "FalconFramework.org:80"):
+    for scheme, host, status in (
+        ("http", "FalconFramework.org:80", 200),
+        ("https", "falconframework.org:443", 200),
+        ("http", "falconframework.org:443", 401),
+        ("https", "falconframework.org:80", 401),
+    ):
         headers = {"Host": host}
         headers.update(
             httpsigning.signRequest(
@@ -992,7 +1037,8 @@ def test_canonical_authority_from_host_drops_default_port(keria):
                 created=NOW,
             )
         )
-        assert client.simulate_get("/echo", headers=headers).status_code == 200, host
+        result = client.simulate_get("/echo", headers=headers, protocol=scheme)
+        assert result.status_code == status, (scheme, host)
 
 
 # Configuration
@@ -1029,7 +1075,8 @@ def test_server_config_signature_policy():
     assert policy.maxAge == 30
     assert policy.skew == 5
     assert policy.requireAuthority is True
-    assert policy.authorities == frozenset({"keria.example.com", "127.0.0.1:3901"})
+    # lowercased only: a configured port is compared as configured
+    assert policy.authorities == frozenset({"keria.example.com:443", "127.0.0.1:3901"})
 
 
 # PUT /agent/{caid}: the rotation endpoint verifies its own request
