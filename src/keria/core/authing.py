@@ -294,8 +294,9 @@ class SignedHeaderAuthenticator(Authenticator):
         keyid = httpsigning.signatureKeyid(request.headers)
         agent = self.agency.get(keyid) if keyid else None
         # With no agent for the keyid there is no key state to resolve it in;
-        # resolver None refuses a non-AID keyid as malformed-key and any
-        # other as unknown-key.
+        # resolver None refuses a non-AID keyid as malformed-key and a
+        # transferable one as unknown-key. A B keyid's key is its prefix, so
+        # it verifies without key state, and is refused below.
         resolver = (
             httpsigning.keverResolver(pendingKevers(agent.agentHab.kevers, pending))
             if agent is not None
@@ -331,6 +332,10 @@ class SignedHeaderAuthenticator(Authenticator):
         )
 
         verified = httpsigning.checkBody(verified, request.headers, readBody(request))
+        if agent is None:
+            # a verified signature from a controller this server holds no
+            # agent for, as a B keyid's can be: there is no one to act for
+            raise kering.HttpSigUnknownKeyError(f"No agent for {verified.keyid}.")
         return agent, verified
 
     def inboundLegacy(self, request: ModifiableRequest):
