@@ -530,10 +530,10 @@ def test_agent_resource_authentication(helpers, error):
             assert agent.mgr.sxlt == agent.mgr.sxlt
             delete_sxlt.assert_called_once_with()
         else:
-            assert res.status_code == 403
+            assert res.status_code == 401
             assert res.json == {
                 "description": "invalid signature on request",
-                "title": "403 Forbidden",
+                "title": "401 Unauthorized",
             }
             delete_sxlt.assert_not_called()
 

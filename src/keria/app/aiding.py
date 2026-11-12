@@ -304,6 +304,8 @@ class AgentResourceEnd:
               description: Successfully updated the agent configuration.
             400:
               description: Bad request. This could be due to missing or invalid parameters.
+            401:
+              description: The request signature or body digest did not verify.
             404:
               description: The requested agent was not found.
             500:
@@ -322,7 +324,7 @@ class AgentResourceEnd:
         try:
             self.authn.checkDigest(req)
         except (kering.AuthNError, ValueError) as ex:
-            raise falcon.HTTPForbidden(
+            raise falcon.HTTPUnauthorized(
                 description="invalid signature on request"
             ) from ex
 
@@ -358,7 +360,7 @@ class AgentResourceEnd:
         try:
             self.authn.verifyPending(req, pre=caid, serder=rot)
         except (kering.AuthNError, ValueError) as ex:
-            raise falcon.HTTPForbidden(
+            raise falcon.HTTPUnauthorized(
                 description="invalid signature on request"
             ) from ex
 
@@ -368,7 +370,7 @@ class AgentResourceEnd:
         try:
             self.authn.inbound(req)
         except (kering.AuthNError, ValueError) as ex:
-            raise falcon.HTTPForbidden(
+            raise falcon.HTTPUnauthorized(
                 description="invalid signature on request"
             ) from ex
 

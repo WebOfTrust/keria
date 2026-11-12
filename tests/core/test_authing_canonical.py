@@ -1202,11 +1202,11 @@ def test_canonical_agent_rotation(mockHelpingNowUTC):
 @pytest.mark.parametrize("who", ["old", "priorNext"])
 def test_canonical_agent_rotation_wrong_signer(mockHelpingNowUTC, who):
     """Signed by the rotated-away key, or by the prior next key, which does
-    not satisfy ['1', '0'] alone: the rotation endpoint answers 403 and the
+    not satisfy ['1', '0'] alone: the rotation endpoint answers 401 and the
     resource stops before it touches the salt."""
     fx = rotationFixture()
     result, _ = signedPut(fx, getattr(fx, who))
-    assert result.status_code == 403
+    assert result.status_code == 401
     assert result.json["description"] == "invalid signature on request"
     assert fx.agent.mgr.sxlt == "sxlt-before"
     assert fx.agent.agentHab.kevers[fx.caid].sn == 0  # not rotated
@@ -1244,7 +1244,10 @@ def test_agent_rotation_refused_before_rotating(mockHelpingNowUTC, case):
         result = legacyPut(fx, fx.new)
     else:
         result = legacyPut(fx, fx.old)
-    assert result.status_code == 403
+    # an unsigned 401, which a canonical client reports as an authentication
+    # failure rather than as missing-signature
+    assert result.status_code == 401
+    assert "signature" not in result.headers
     assert result.json["description"] == "invalid signature on request"
     assert fx.agent.agentHab.kevers[fx.caid].sn == 0
     assert fx.agent.mgr.sxlt == "sxlt-before"
@@ -1283,7 +1286,7 @@ def test_canonical_agent_rotation_body_swapped(mockHelpingNowUTC):
         )
     )
     result = fx.client.simulate_put(path, headers=headers, body=fx.body)
-    assert result.status_code == 403
+    assert result.status_code == 401
     assert fx.agent.mgr.sxlt == "sxlt-before"
     assert fx.agent.agentHab.kevers[fx.caid].sn == 0
 
@@ -1318,7 +1321,7 @@ def test_agent_rotation_body_checked_before_parsing(
             )
         )
     result = fx.client.simulate_put(path, headers=headers, body=fx.body)
-    assert result.status_code == 403
+    assert result.status_code == 401
     assert parsed == []
     assert fx.agent.agentHab.kevers[fx.caid].sn == 0
     assert fx.agent.mgr.sxlt == "sxlt-before"

@@ -289,6 +289,8 @@ Canonical mode is [RFC 9421, HTTP Message Signatures](https://www.rfc-editor.org
 
 Every refusal is an unsigned `401`. A client that sent a canonical request must refuse a legacy or unsigned response, except that an unsigned `401` is reported as an authentication failure. It must not retry in legacy mode after a refusal.
 
+`PUT /agent/<Client AID>`, the passcode rotation request, is the exception. It verifies its own request rather than leaving that to the authentication layer, so that it can do so before applying the rotation. It refuses a request that fails verification with an unsigned `401`, as above, but it also answers `404` for a Client AID with no Agent and, once the body has matched its `Content-Digest`, `400` for a body missing a required field. Both are unsigned. A client sees them as `missing-signature`.
+
 Test vectors, generated independently of KERIA and shared with keripy and signify-ts, are in [`tests/vectors/keri-rfc9421/`](../tests/vectors/keri-rfc9421/): signed requests and responses with their signature bases, refusals by error code, and the legacy signatures below.
 
 ### Legacy mode
