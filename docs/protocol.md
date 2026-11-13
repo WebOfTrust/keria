@@ -274,13 +274,40 @@ To perform a passcode rotation recovery, the Signify Client requires only the ne
 7. Send all rotation event and all recrypted material in a POST request to the agent on `/agent/<Client AID>`
 
 ## Signify Request/Response Authentication
-Signify clients must sign all requests to the KERIA Admin Interface using the latest signing key of the Client AID and must expect all responses from the KERIA service be signed by the latest signing key of the Agent AID.  Both request and response signing rely on the same set of HTTP headers to accomplish request/response signing.
+Signify clients must sign all requests to the KERIA Admin Interface using the latest signing key of the Client AID and must expect all responses from the KERIA service be signed by the latest signing key of the Agent AID. KERIA accepts two signing modes and answers each request in the mode it was signed in. It tells them apart by the form of the `Signature` header.
 
-### Metadata Headers
-Document `Signify-Resource` and `Signify-Timestamp` headers here.
+### Canonical mode
+Canonical mode is [RFC 9421, HTTP Message Signatures](https://www.rfc-editor.org/rfc/rfc9421), used as written, with the body covered by `Content-Digest` ([RFC 9530](https://www.rfc-editor.org/rfc/rfc9530)). The KERI-specific choices are all in fields RFC 9421 leaves to the application, and are specified by [version 1.2 of the KERI profile](https://github.com/bakobo/fiki/blob/keri-profile-v1.2/docs/keri-profile.md), which keripy's `keri.end.httpsigning` implements and KERIA calls.
 
-### Signature Input Header
-Document the `Signature-Input` header here with link to https://httpwg.org/http-extensions/draft-ietf-httpbis-message-signatures.html
+- `Signature-Input` has exactly one member, with the parameters `created` (required), `expires`, `nonce`, `alg` (`ed25519`), `keyid` (required) and `tag`, in that order. Any other parameter is refused.
+- `keyid` is the Client AID in qb64. KERIA finds the Agent from it and verifies against the Client AID's current key state as the Agent holds it. Exactly one of its current signing keys must satisfy the signing threshold on its own, and that key is the one that verifies. A single-key AID qualifies, and so does a Signify Client AID after a passcode rotation, whose keys are the new key and the prior next key with threshold `['1', '0']`. A group, or a threshold any of several keys meets alone, is refused.
+- `Signature` is `signify=:<base64>:`, the raw 64-byte Ed25519 signature. Signify labels its member `signify`; KERIA accepts any single label, provided `Signature` uses the same one. KERIA accepts the base64 in `Signature` and `Content-Digest` with or without its `=` padding.
+- A request must cover `@method`, `@path` and `@query`, and `content-digest` whenever it has a body. Signify also covers `@authority`, which KERIA builds from `Host`, lowercased, with the default port of the scheme the request reached KERIA over removed (`:443` for `https`, `:80` for `http`) and any other port kept. `@path` is the path exactly as sent, percent-encoding included, and `@query` is the raw query with its leading `?`. A request whose path as sent differs from the path it is routed on, such as one whose target begins with `//`, is refused.
+- KERIA refuses a request whose `created` is more than `max_age` plus `skew` seconds in the past or more than `skew` seconds in the future, or whose `expires` has passed. The defaults are 300 and 60 seconds.
+- KERIA verifies the signature on the headers before it reads the body, then reads the body and recomputes its digest before the request reaches any endpoint. A body that is not covered by `content-digest`, or whose digest does not match, is refused.
+- A response covers `@status`, `content-digest` when it has a body, and the request's `"@method";req`, `"@path";req`, `"@query";req` and, when the request's content was non-empty, `"content-digest";req`, so that it is bound to what was asked. Here the request's headers do not count, only the content KERIA received. It is signed by the Agent AID, which is its `keyid`. A streamed body is buffered so that it can be covered.
 
-### Signature Header
-Document the signing method and `Signature` header.
+Every refusal is an unsigned `401`. A client that sent a canonical request must refuse a legacy or unsigned response, except that an unsigned `401` is reported as an authentication failure. It must not retry in legacy mode after a refusal.
+
+`PUT /agent/<Client AID>`, the passcode rotation request, is the exception. It verifies its own request rather than leaving that to the authentication layer, so that it can do so before applying the rotation. It refuses a request that fails verification with an unsigned `401`, as above, but it also answers `404` for a Client AID with no Agent and, once the body has matched its `Content-Digest`, `400` for a body missing a required field. Both are unsigned. A client sees them as `missing-signature`.
+
+Test vectors, generated independently of KERIA and shared with keripy and signify-ts, are in [`tests/vectors/keri-rfc9421/`](../tests/vectors/keri-rfc9421/): signed requests and responses with their signature bases, refusals by error code, and the legacy signatures below.
+
+### Legacy mode
+Legacy mode is the scheme Signify has used since KERIA's first release. Its signature base is not RFC 9421's, and it covers neither the query nor the body of a request, nor the status or body of a response. KERIA still accepts it so that existing clients keep working.
+
+- `Signify-Resource` is the Client AID on a request and the Agent AID on a response. `Signify-Timestamp` is an ISO 8601 time, covered but not checked.
+- `Signature-Input` covers `signify-resource`, `@method`, `@path` and `signify-timestamp`, labelled `signify`.
+- `Signature` is `indexed="?0";signify="<qb64>"`, a CESR Ed25519 signature.
+- KERIA verifies it against the key state it holds for `Signify-Resource`, and accepts it when it verifies under any current signing key that satisfies the signing threshold on its own. A legacy signature is not indexed, so nothing says which key made it. For every Signify Client AID that is its first current key, including after a passcode rotation. For an AID made with two keys under threshold `1`, which signify-ts's `createSignedRequest` signs with its first key, either key verifies. A group in which no key suffices alone is refused, and with threshold `['0', '1']` only the second key verifies. Version 1 of the profile took the first current key whatever the threshold said; version 1.1 took only a single effective signer, which refused threshold `1` over two keys; version 1.2 restored that traffic.
+- Legacy requests cover no authority, so `signatureAuthorities` does not apply to them. A deployment that needs the authority check for every request turns legacy mode off.
+
+### Configuration
+| Setting | Environment variable | Default | Meaning |
+|---|---|---|---|
+| `acceptLegacy` | `KERIA_ACCEPT_LEGACY` | `true` | Accept legacy-mode requests. Turn off once every client signs in canonical mode. |
+| `signatureMaxAge` | `KERIA_SIGNATURE_MAX_AGE` | `300` | Oldest a canonical signature may be, in seconds. Must be a positive integer. |
+| `signatureSkew` | `KERIA_SIGNATURE_SKEW` | `60` | Clock skew allowed either side, in seconds. Must be a positive integer. |
+| `signatureAuthorities` | `KERIA_SIGNATURE_AUTHORITIES` | none | `;`-separated authorities (`host[:port]`, lowercased), compared with `@authority` as KERIA builds it: the default port of the scheme the request arrived over is dropped, and any other port is kept, so list `keria.example.com:8443` with its port. When set, canonical requests must cover `@authority` and name one of them; legacy requests are not checked. An entry with a scheme, user, path or query stops KERIA at startup. |
+
+KERIA refuses to start with a setting that would put canonical verification below the profile's minimum.

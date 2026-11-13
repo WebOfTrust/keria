@@ -155,6 +155,13 @@ def launch(args):
             logRequests=args.logrequests if args.logrequests else False,
             cors=os.getenv("KERI_AGENT_CORS", "false").lower() in ("true", "1"),
             releaseTimeout=int(os.getenv("KERIA_RELEASER_TIMEOUT", "86400")),
+            acceptLegacy=getBoolVariable("KERIA_ACCEPT_LEGACY", default=True),
+            signatureMaxAge=int(os.getenv("KERIA_SIGNATURE_MAX_AGE", "300")),
+            signatureSkew=int(os.getenv("KERIA_SIGNATURE_SKEW", "60")),
+            signatureAuthorities=getListVariable(
+                "KERIA_SIGNATURE_AUTHORITIES", strip=True
+            )
+            or [],
             curls=getListVariable("KERIA_CURLS"),
             iurls=getListVariable("KERIA_IURLS"),
             durls=getListVariable("KERIA_DURLS"),
@@ -165,6 +172,42 @@ def launch(args):
     logger.info("Agent %s gracefully stopped", args.name)
 
 
-def getListVariable(name):
+def getListVariable(name, strip=False):
+    """
+    Returns the ';' separated environment variable name as a list, or None
+    when it is unset or empty. With strip, each entry is stripped of
+    surrounding whitespace and empty entries are dropped.
+    """
     value = os.getenv(name)
-    return value.split(";") if value else None
+    if not value:
+        return None
+    entries = value.split(";")
+    if strip:
+        entries = [entry.strip() for entry in entries if entry.strip()]
+    return entries
+
+
+TrueValues = ("true", "1", "yes", "on")
+FalseValues = ("false", "0", "no", "off")
+
+
+def getBoolVariable(name, default):
+    """
+    Returns the boolean environment variable name, or default when unset.
+
+    Accepts true, 1, yes or on, and false, 0, no or off, in any case and
+    with surrounding whitespace. Anything else is a ValueError, so that a
+    typo stops KERIA at startup rather than silently choosing a value.
+    """
+    value = os.getenv(name)
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    if normalized in TrueValues:
+        return True
+    if normalized in FalseValues:
+        return False
+    raise ValueError(
+        f"{name}={value!r} is not a boolean; use one of "
+        f"{', '.join(TrueValues)} or {', '.join(FalseValues)}."
+    )

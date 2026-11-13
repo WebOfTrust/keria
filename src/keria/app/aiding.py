@@ -304,6 +304,8 @@ class AgentResourceEnd:
               description: Successfully updated the agent configuration.
             400:
               description: Bad request. This could be due to missing or invalid parameters.
+            401:
+              description: The request signature or body digest did not verify.
             404:
               description: The requested agent was not found.
             500:
@@ -318,6 +320,13 @@ class AgentResourceEnd:
             ixn = self.interact(req, rep, agent, caid)
             self.anchorSeals(agent, ixn)
             return
+
+        try:
+            self.authn.checkDigest(req)
+        except (kering.AuthNError, ValueError) as ex:
+            raise falcon.HTTPUnauthorized(
+                description="invalid signature on request"
+            ) from ex
 
         body = req.get_media()
 
@@ -344,13 +353,24 @@ class AgentResourceEnd:
         rot = serdering.SerderKERI(sad=body["rot"])
         sigs = body["sigs"]
 
+        # Verify the request before applying the rotation, with the key state
+        # the rotation would give caid substituted for caid's current state,
+        # so that a refused request cannot leave the KEL rotated and the rest
+        # of this update undone; then verify it again once it is applied.
+        try:
+            self.authn.verifyPending(req, pre=caid, serder=rot)
+        except (kering.AuthNError, ValueError) as ex:
+            raise falcon.HTTPUnauthorized(
+                description="invalid signature on request"
+            ) from ex
+
         ctrlHab = agent.hby.habByName(caid, ns="agent")
         ctrlHab.rotate(serder=rot, sigers=[core.Siger(qb64=sig) for sig in sigs])
 
         try:
             self.authn.inbound(req)
         except (kering.AuthNError, ValueError) as ex:
-            raise falcon.HTTPForbidden(
+            raise falcon.HTTPUnauthorized(
                 description="invalid signature on request"
             ) from ex
 

@@ -5,8 +5,10 @@ keria.core.httping module
 
 """
 
+import functools
 import io
 import logging
+from urllib.parse import urlsplit
 
 import falcon
 from falcon.http_status import HTTPStatus
@@ -82,12 +84,14 @@ class RequestLoggerMiddleware:
         logger.debug("Request headers : %s", req.headers)
         if req.content_length and logger.isEnabledFor(logging.DEBUG):
             # Read and re-set the stream to allow further processing
-            body = req.stream.read()
+            body = req.bounded_stream.read()
             decoded_body = body.decode("utf-8") if body else "<empty>"
             logger.debug("Request body    : %s", decoded_body)
-            req.env["wsgi.input"] = io.BytesIO(
-                body
-            )  # Reset the stream for further processing
+            # Reset the stream for further processing. Falcon reads the body
+            # through req.stream (bound to wsgi.input when the request was
+            # built) and caches req.bounded_stream, so all three are reset.
+            req.stream = req.env["wsgi.input"] = io.BytesIO(body)
+            req._bounded_stream = None  # falcon 4.0's private cache; see readBody
             req.env["CONTENT_LENGTH"] = str(
                 len(body)
             )  # match WSGI env content length to body length
@@ -102,9 +106,13 @@ class RequestLoggerMiddleware:
         logger.debug("Response headers: %s", resp.headers)
 
 
+# Response headers a browser client must be able to read. A canonical-mode
+# (RFC 9421) client verifies a response from signature, signature-input and
+# content-digest, and a browser hides any of them not listed here.
 keriHeaders = [
     "cesr-attachment",
     "cesr-date",
+    "content-digest",
     "content-type",
     "signature",
     "signature-input",
@@ -125,6 +133,54 @@ def falconApp(logRequests=False, request_type=falcon.Request):
     return falcon.App(middleware=middlewares, request_type=request_type)
 
 
+@functools.cache
+def rawUriServerType(base):
+    """
+    Returns a subclass of the hio WSGI server class base that also passes the
+    request target as sent to the app.
+
+    hio percent-decodes the request path and re-encodes it with quote() to
+    build PATH_INFO, so the application never sees the client's bytes. An RFC
+    9421 verifier needs them for @path (RFC 9421 section 2.2.6), so the
+    subclass adds the raw request target to every environ it builds, as
+    RAW_URI, the name gunicorn uses.
+
+    The class is made from base on demand, rather than once from
+    hio.core.http.Server at import, so that createHttpServer builds whatever
+    that name holds when it runs.
+
+    Parameters:
+        base (type): hio.core.http.Server or a subclass
+    """
+
+    class RawUriServer(base):
+        def buildEnviron(self, requestant):
+            environ = super().buildEnviron(requestant)
+            environ["RAW_URI"] = requestant.url
+            return environ
+
+    return RawUriServer
+
+
+def rawPath(req):
+    """
+    Returns the path of the request target as the client sent it, percent
+    encoding included, from RAW_URI when the server provides it, and
+    otherwise req.path. An empty path is "/".
+
+    Parameters:
+        req (falcon.Request): request whose environ may carry RAW_URI
+    """
+    raw = req.env.get("RAW_URI")
+    if raw is None:
+        return req.path
+    if raw.startswith("/"):  # origin-form, the usual case
+        path = raw.split("?", 1)[0].split("#", 1)[0]
+    else:  # absolute-form
+        path = urlsplit(raw).path
+    return path or "/"
+
+
 def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):
     """
     Create an HTTP or HTTPS server depending on whether TLS key material is present
@@ -136,7 +192,7 @@ def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):
         certpath (string)  : the file path to the TLS signed certificate (public key)
         cafilepath (string): the file path to the TLS CA certificate chain file
     Returns:
-        hio.core.http.Server
+        hio.core.http.Server: with RAW_URI in its environ (see rawUriServerType)
     """
     if keypath is not None and certpath is not None and cafilepath is not None:
         servant = tcp.ServerTls(
@@ -146,7 +202,7 @@ def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):
             cafilepath=cafilepath,
             port=port,
         )
-        server = http.Server(port=port, app=app, servant=servant)
+        server = rawUriServerType(http.Server)(port=port, app=app, servant=servant)
     else:
-        server = http.Server(port=port, app=app)
+        server = rawUriServerType(http.Server)(port=port, app=app)
     return server

@@ -350,7 +350,9 @@ def test_locscheme_resource_end(helpers, mockHelpingNowUTC):
 
 def test_agent_resource(helpers, mockHelpingNowUTC):
     with helpers.openKeria() as (agency, agent, app, client):
-        agentEnd = aiding.AgentResourceEnd(agency=agency, authn=None)
+        # The body checks below are reached only once the request's content
+        # is authenticated; a mock authenticator passes every request.
+        agentEnd = aiding.AgentResourceEnd(agency=agency, authn=mock.Mock())
         app.add_route("/agent/{caid}", agentEnd)
 
         client = testing.TestClient(app=app)
@@ -528,10 +530,10 @@ def test_agent_resource_authentication(helpers, error):
             assert agent.mgr.sxlt == agent.mgr.sxlt
             delete_sxlt.assert_called_once_with()
         else:
-            assert res.status_code == 403
+            assert res.status_code == 401
             assert res.json == {
                 "description": "invalid signature on request",
-                "title": "403 Forbidden",
+                "title": "401 Unauthorized",
             }
             delete_sxlt.assert_not_called()
 
